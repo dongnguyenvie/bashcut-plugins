@@ -1,0 +1,53 @@
+#!/bin/sh
+# Install recipe for VieNeu TTS. BashCut runs it after the user approves, in the plugin's own environment:
+#   BASHCUT_PLUGIN_DATA  — kept across plugin updates: uv, a private Python 3.12 and the virtual environment
+#   BASHCUT_PLUGIN_CACHE — can be downloaded again: the voice model and uv's package cache
+# It does not depend on the Mac's Python (macOS ships 3.9; VieNeu needs 3.10+). `::progress` lines drive the
+# progress bar in BashCut. Running it again repairs or updates the install.
+set -eu
+data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.vieneu-tts}"
+cache="${BASHCUT_PLUGIN_CACHE:-$HOME/Library/Caches/BashCut/PluginData/bashcut.vieneu-tts}"
+mkdir -p "$data/bin" "$cache"
+export UV_CACHE_DIR="$cache/uv" UV_PYTHON_INSTALL_DIR="$data/python" UV_NO_PROGRESS=1
+
+echo "::progress 0.02 Preparing uv"
+uv="$(command -v uv || true)"
+if [ -z "$uv" ]; then
+    uv="$data/bin/uv"
+    if [ ! -x "$uv" ]; then
+        case "$(uname -m)" in
+            arm64) target="aarch64-apple-darwin" ;;
+            *) target="x86_64-apple-darwin" ;;
+        esac
+        echo "Downloading uv for $target"
+        tmp="$(mktemp -d)"
+        curl --fail --location --silent --show-error \
+            "https://github.com/astral-sh/uv/releases/latest/download/uv-$target.tar.gz" -o "$tmp/uv.tar.gz"
+        tar -xzf "$tmp/uv.tar.gz" -C "$tmp"
+        mv "$tmp/uv-$target/uv" "$uv"
+        rm -rf "$tmp"
+    fi
+fi
+"$uv" --version
+
+echo "::progress 0.10 Installing Python 3.12"
+python="$data/venv/bin/python3"
+# Only a Python uv manages inside this plugin's data folder: one the user installed may be removed later.
+if [ ! -x "$python" ] || ! "$python" -c "import sys; sys.exit(sys.version_info < (3, 10) or not sys.base_prefix.startswith('$data/python'))" 2>/dev/null; then
+    rm -rf "$data/venv"
+    "$uv" venv --python 3.12 --python-preference only-managed "$data/venv"
+fi
+
+echo "::progress 0.30 Installing VieNeu (about 750 MB)"
+# onnxruntime 1.23+ refuses the model's external data through Hugging Face's symlinked cache.
+"$uv" pip install --python "$python" --upgrade "vieneu>=3.8,<4" "onnxruntime>=1.20,<1.23"
+
+echo "::progress 0.70 Downloading the voice model (about 600 MB)"
+# A model from an earlier layout (inside the data folder) moves to the cache instead of downloading again.
+if [ -d "$data/huggingface" ] && [ ! -d "$cache/huggingface" ]; then mv "$data/huggingface" "$cache/huggingface"; fi
+HF_HOME="$cache/huggingface" HF_HUB_DISABLE_PROGRESS_BARS=1 "$python" -c "from vieneu import Vieneu; Vieneu()"
+
+echo "::progress 0.95 Cleaning up"
+# Packages are installed; uv's download cache would only take space.
+"$uv" cache clean >/dev/null 2>&1 || true
+echo "::progress 1.0 VieNeu is ready"

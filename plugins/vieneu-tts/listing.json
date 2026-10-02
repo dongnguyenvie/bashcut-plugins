@@ -1,0 +1,19 @@
+{
+  "name": {
+    "en": "VieNeu TTS (Vietnamese)",
+    "vi": "VieNeu TTS (tiếng Việt)"
+  },
+  "summary": {
+    "en": "Vietnamese voiceover on this Mac with VieNeu-TTS v3 Turbo: 25 preset voices and voice cloning from a short clip. Apache-2.0 model by pnnbao97.",
+    "vi": "Giọng đọc tiếng Việt chạy ngay trên máy bằng VieNeu-TTS v3 Turbo: 25 giọng mẫu và nhái giọng từ đoạn audio ngắn. Model Apache-2.0 của pnnbao97."
+  },
+  "publisher": "bashcut",
+  "category": "voice",
+  "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/vieneu-tts",
+  "minAppVersion": "0.0.1",
+  "platforms": [
+    "macos-arm64",
+    "macos-x86_64"
+  ],
+  "downloadBytes": 1500000000
+}
