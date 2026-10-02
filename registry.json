@@ -48,12 +48,10 @@
         "en": "Silence Markers",
         "vi": "Đánh dấu im lặng"
       },
-      "nameVi": "Đánh dấu im lặng",
       "summary": {
         "en": "Adds a section marker at every quiet stretch in the selected clip, to find pauses to cut.",
         "vi": "Thêm mốc tại mọi đoạn im lặng trong clip đang chọn, để tìm khoảng lặng cần cắt."
       },
-      "summaryVi": "Thêm mốc tại mọi đoạn im lặng trong clip đang chọn, để tìm khoảng lặng cần cắt.",
       "publisher": "bashcut",
       "category": "audio",
       "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/silence-markers",

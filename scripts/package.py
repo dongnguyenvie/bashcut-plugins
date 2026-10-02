@@ -97,10 +97,13 @@ def package(slug, folder, manifest):
 def register(slug, manifest, listing, archive, digest):
     path = ROOT / "registry.json"
     registry = json.loads(path.read_text())
-    entry = next((p for p in registry["plugins"] if p["id"] == manifest["id"]), None)
-    if entry is None:
-        entry = {"id": manifest["id"], "versions": []}
-        registry["plugins"].append(entry)
+    existing = next((p for p in registry["plugins"] if p["id"] == manifest["id"]), None)
+    # Metadata is rebuilt from the listing and manifest each time, so renamed or removed fields never linger;
+    # only the version history carries over.
+    entry = {"id": manifest["id"], "versions": existing["versions"] if existing else []}
+    if existing:
+        registry["plugins"].remove(existing)
+    registry["plugins"].append(entry)
     entry.update({key: listing[key] for key in LISTING_FIELDS if key in listing})
     entry.setdefault("name", manifest["name"])
     for field in LOCALIZED_FIELDS:

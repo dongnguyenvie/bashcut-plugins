@@ -59,7 +59,11 @@ Plugins sheet are the gate.
 
 A version is never re-published: bump it instead.
 
-## Installing by hand (until BashCut has the Browse tab)
+## Installing
 
-Download the zip from Releases, unzip it into `~/Library/Application Support/BashCut/Plugins/`, open **Plugins** in
-BashCut and choose **Trust**. Or use **Install Plugin…** on the unzipped folder.
+In BashCut, open **Plugins › Browse**, choose **Install**, review the source, checksum and dependency plan, and
+approve. Updates appear under **Updates**; **Installed › Remove** uninstalls. Agents can run
+`bashcut plugins search` and `bashcut plugins install <id>`, but only the user approves an install.
+
+By hand: download the zip from Releases, unzip it into `~/Library/Application Support/BashCut/Plugins/`, open
+**Plugins** and choose **Trust**.
