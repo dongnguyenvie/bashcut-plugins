@@ -1,0 +1,20 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate registry
+        run: python3 -c "import json; r=json.load(open('registry.json')); assert r['schemaVersion'] == 1"
+      - name: Test and package every plugin
+        run: |
+          for folder in plugins/*/; do
+            slug=$(basename "$folder")
+            if [ -d "$folder/tests" ]; then python3 -m unittest discover -s "$folder/tests" -v; fi
+            python3 scripts/package.py "$slug"
+          done

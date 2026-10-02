@@ -1,0 +1,35 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.silence-markers",
+  "name": "Silence Markers",
+  "version": "0.1.0",
+  "apiVersion": 2,
+  "entrypoint": "bin/provider",
+  "capabilities": [],
+  "dependencies": [
+    {"id": "python3", "name": "Python 3", "kind": "executable", "probe": {"executable": "python3", "arguments": ["--version"]}},
+    {"id": "afconvert", "name": "afconvert (macOS)", "kind": "executable", "probe": {"executable": "afconvert", "arguments": ["-h"]}}
+  ],
+  "options": [
+    {"id": "labelPrefix", "title": "Marker label", "titleVi": "Nhãn mốc", "type": "string", "default": "Silence", "scope": "project"}
+  ],
+  "contributes": {
+    "actions": [
+      {
+        "id": "bashcut.silence-markers.mark",
+        "title": "Mark silences in clip…",
+        "titleVi": "Đánh dấu đoạn im lặng trong clip…",
+        "icon": "waveform.badge.minus",
+        "placements": ["menu.plugins", "clip.context", "inspector.audio"],
+        "when": "selection && media",
+        "context": ["media"],
+        "params": [
+          {"id": "thresholdDb", "title": "Silence below (dBFS)", "titleVi": "Im lặng dưới (dBFS)", "type": "number",
+           "minimum": -80, "maximum": -10, "default": -40},
+          {"id": "minSilenceMs", "title": "Shortest silence (ms)", "titleVi": "Im lặng ngắn nhất (ms)", "type": "integer",
+           "minimum": 100, "maximum": 10000, "default": 400}
+        ]
+      }
+    ]
+  }
+}

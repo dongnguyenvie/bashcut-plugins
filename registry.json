@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "publishers": {
+    "bashcut": {"name": "BashCut", "keys": [], "verified": true}
+  },
+  "plugins": []
+}
