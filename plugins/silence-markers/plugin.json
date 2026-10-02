@@ -5,34 +5,11 @@
     "en": "Silence Markers",
     "vi": "Đánh dấu im lặng"
   },
-  "version": "0.0.1",
+  "version": "0.0.2",
   "apiVersion": 2,
   "entrypoint": "bin/provider",
   "capabilities": [],
-  "dependencies": [
-    {
-      "id": "python3",
-      "name": "Python 3",
-      "kind": "executable",
-      "probe": {
-        "executable": "python3",
-        "arguments": [
-          "--version"
-        ]
-      }
-    },
-    {
-      "id": "afconvert",
-      "name": "afconvert (macOS)",
-      "kind": "executable",
-      "probe": {
-        "executable": "afconvert",
-        "arguments": [
-          "-h"
-        ]
-      }
-    }
-  ],
+  "dependencies": [],
   "options": [
     {
       "id": "labelPrefix",

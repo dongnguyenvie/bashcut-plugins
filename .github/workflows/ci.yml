@@ -15,6 +15,7 @@ jobs:
         run: |
           for folder in plugins/*/; do
             slug=$(basename "$folder")
+            if [ -x "$folder/build.sh" ]; then "$folder/build.sh"; fi
             if [ -d "$folder/tests" ]; then python3 -m unittest discover -s "$folder/tests" -v; fi
             python3 scripts/package.py "$slug"
           done

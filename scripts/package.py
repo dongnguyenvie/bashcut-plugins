@@ -24,6 +24,12 @@ REPO = os.environ.get("GITHUB_REPOSITORY", "dongnguyenvie/bashcut-plugins")
 KEEP_VERSIONS = 3
 LISTING_FIELDS = ("name", "summary", "publisher", "category", "homepage")
 LOCALIZED_FIELDS = ("name", "summary")
+# Tools every Mac has without Xcode, Homebrew or Python. `python3`, `git`, `swift`, `make` and `clang` are left out
+# on purpose: on a fresh Mac they are shims that ask to install the Command Line Tools.
+MACOS_BUILT_INS = {
+    "sh", "bash", "zsh", "env", "curl", "tar", "gzip", "unzip", "ditto", "xattr", "shasum", "codesign",
+    "afconvert", "afinfo", "afplay", "sips", "osascript", "plutil", "defaults", "mdls", "say", "avconvert",
+}
 
 
 def fail(message):
@@ -47,10 +53,29 @@ def manifest_for(slug):
         fail(f"entrypoint {entrypoint} is missing or not executable")
     listing = json.loads((folder / "listing.json").read_text()) if (folder / "listing.json").is_file() else {}
     check_localized(manifest, "plugin.json")
+    check_dependencies(manifest)
     for field in LOCALIZED_FIELDS:
         if field in listing:
             check_text(listing[field], f"listing.json {field}")
     return folder, manifest, listing
+
+
+def check_dependencies(manifest):
+    """Users never install tools by hand: a dependency is a macOS built-in or has an install recipe."""
+    for dependency in manifest.get("dependencies", []):
+        probe = dependency.get("probe", {}).get("executable", "")
+        bundled = "/" in probe
+        if dependency.get("install") or bundled or probe in MACOS_BUILT_INS:
+            continue
+        fail(f'dependency {dependency.get("id")}: "{probe}" is not on every Mac; bundle it, add an install '
+             f'recipe that downloads it into BASHCUT_PLUGIN_DATA, or drop it')
+
+
+def build(folder):
+    """Runs the plugin's build.sh (compiled helpers) when it has one."""
+    script = folder / "build.sh"
+    if script.is_file():
+        subprocess.run([str(script)], check=True)
 
 
 def check_text(value, where):
@@ -81,13 +106,15 @@ def check_localized(manifest, where):
 
 
 def package(slug, folder, manifest):
+    build(folder)
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
     archive = dist / f'{manifest["id"]}-{manifest["version"]}.zip'
     archive.unlink(missing_ok=True)
     with tempfile.TemporaryDirectory() as staging:
         staged = pathlib.Path(staging) / manifest["id"]
-        shutil.copytree(folder, staged, ignore=shutil.ignore_patterns("listing.json", "__pycache__", ".DS_Store", "tests"))
+        shutil.copytree(folder, staged, ignore=shutil.ignore_patterns(
+            "listing.json", "__pycache__", ".DS_Store", "tests", "src", "build.sh"))
         subprocess.run(["ditto", "-c", "-k", "--norsrc", "--keepParent", str(staged), str(archive)], check=True)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (archive.parent / (archive.name + ".sha256")).write_text(f"{digest}  {archive.name}\n")
