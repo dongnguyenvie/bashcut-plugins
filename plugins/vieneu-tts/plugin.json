@@ -1,0 +1,225 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.vieneu-tts",
+  "name": {
+    "en": "VieNeu TTS (Vietnamese)",
+    "vi": "VieNeu TTS (tiếng Việt)"
+  },
+  "version": "0.0.2",
+  "apiVersion": 3,
+  "entrypoint": "bin/provider",
+  "transport": "session",
+  "capabilities": [
+    "voice.synthesize"
+  ],
+  "providers": [
+    {
+      "id": "bashcut.vieneu-tts.local",
+      "capability": "voice.synthesize",
+      "name": "VieNeu TTS (local)",
+      "priority": 10
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "vieneu",
+      "name": "VieNeu-TTS v3 Turbo",
+      "kind": "python",
+      "probe": {
+        "executable": "bin/check",
+        "arguments": []
+      },
+      "install": {
+        "summary": "Download uv and a private Python 3.12, install the vieneu package and the v3 Turbo model (about 1.4 GB). Your Mac's Python is not used.",
+        "command": {
+          "executable": "bin/setup",
+          "arguments": []
+        }
+      },
+      "estimatedBytes": 1500000000
+    }
+  ],
+  "options": [
+    {
+      "id": "voice",
+      "title": {
+        "en": "Voice",
+        "vi": "Giọng đọc"
+      },
+      "type": "enum",
+      "choices": [
+        "Hải Đăng",
+        "Adam bựa",
+        "Trúc Ly",
+        "Thiện Minh",
+        "Mai Anh",
+        "Thùy Dung",
+        "Thiền Tâm Đức",
+        "Ngọc Huyền",
+        "Quang Sơn",
+        "Ngọc Trân",
+        "Minh Đức",
+        "Phạm Tuyên",
+        "Thái Sơn",
+        "Xuân Vĩnh",
+        "Thanh Bình",
+        "Ngọc Linh",
+        "Đoan Trang",
+        "Thục Đoan",
+        "Minh Triết",
+        "Mỹ Duyên",
+        "Quỳnh Anh",
+        "Đức Trí",
+        "Kim Thanh",
+        "Adam",
+        "Quốc Tuấn"
+      ],
+      "default": "Hải Đăng",
+      "scope": "project",
+      "help": {
+        "en": "Preset voice used when no reference audio is set",
+        "vi": "Giọng mẫu dùng khi chưa đặt audio tham chiếu"
+      },
+      "choiceLabels": {
+        "Adam bựa": {
+          "en": "Adam bựa — male · North · natural",
+          "vi": "Adam bựa — Nam · Bắc · Tự nhiên"
+        },
+        "Trúc Ly": {
+          "en": "Trúc Ly — female · North · natural",
+          "vi": "Trúc Ly — Nữ · Bắc · Tự nhiên"
+        },
+        "Thiện Minh": {
+          "en": "Thiện Minh — male · North · storytelling",
+          "vi": "Thiện Minh — Nam · Bắc · Kể chuyện"
+        },
+        "Mai Anh": {
+          "en": "Mai Anh — female · North · news",
+          "vi": "Mai Anh — Nữ · Bắc · Tin tức"
+        },
+        "Hải Đăng": {
+          "en": "Hải Đăng — male · North · natural",
+          "vi": "Hải Đăng — Nam · Bắc · Tự nhiên"
+        },
+        "Thùy Dung": {
+          "en": "Thùy Dung — female · male · news",
+          "vi": "Thùy Dung — Nữ · Nam · Tin tức"
+        },
+        "Thiền Tâm Đức": {
+          "en": "Thiền Tâm Đức — male · North · storytelling",
+          "vi": "Thiền Tâm Đức — Nam · Bắc · Kể chuyện"
+        },
+        "Ngọc Huyền": {
+          "en": "Ngọc Huyền — female · North · natural",
+          "vi": "Ngọc Huyền — Nữ · Bắc · Tự nhiên"
+        },
+        "Quang Sơn": {
+          "en": "Quang Sơn — male · Central · natural",
+          "vi": "Quang Sơn — Nam · Trung · Tự nhiên"
+        },
+        "Ngọc Trân": {
+          "en": "Ngọc Trân — female · Central · natural",
+          "vi": "Ngọc Trân — Nữ · Trung · Tự nhiên"
+        },
+        "Minh Đức": {
+          "en": "Minh Đức — male · North · news",
+          "vi": "Minh Đức — Nam · Bắc · Tin tức"
+        },
+        "Phạm Tuyên": {
+          "en": "Phạm Tuyên — male · North · natural",
+          "vi": "Phạm Tuyên — Nam · Bắc · Tự nhiên"
+        },
+        "Thái Sơn": {
+          "en": "Thái Sơn — male · male · storytelling",
+          "vi": "Thái Sơn — Nam · Nam · Kể chuyện"
+        },
+        "Xuân Vĩnh": {
+          "en": "Xuân Vĩnh — male · North · natural",
+          "vi": "Xuân Vĩnh — Nam · Bắc · Tự nhiên"
+        },
+        "Thanh Bình": {
+          "en": "Thanh Bình — male · North · storytelling",
+          "vi": "Thanh Bình — Nam · Bắc · Kể chuyện"
+        },
+        "Ngọc Linh": {
+          "en": "Ngọc Linh — female · North · storytelling",
+          "vi": "Ngọc Linh — Nữ · Bắc · Kể chuyện"
+        },
+        "Đoan Trang": {
+          "en": "Đoan Trang — female · North · natural",
+          "vi": "Đoan Trang — Nữ · Bắc · Tự nhiên"
+        },
+        "Thục Đoan": {
+          "en": "Thục Đoan — female · male · storytelling",
+          "vi": "Thục Đoan — Nữ · Nam · Kể chuyện"
+        },
+        "Minh Triết": {
+          "en": "Minh Triết — male · male · news",
+          "vi": "Minh Triết — Nam · Nam · Tin tức"
+        },
+        "Mỹ Duyên": {
+          "en": "Mỹ Duyên — female · male · audiobook",
+          "vi": "Mỹ Duyên — Nữ · Nam · Đọc truyện"
+        },
+        "Quỳnh Anh": {
+          "en": "Quỳnh Anh — female · North · audiobook",
+          "vi": "Quỳnh Anh — Nữ · Bắc · Đọc truyện"
+        },
+        "Đức Trí": {
+          "en": "Đức Trí — male · male · audiobook",
+          "vi": "Đức Trí — Nam · Nam · Đọc truyện"
+        },
+        "Kim Thanh": {
+          "en": "Kim Thanh — female · male · audiobook",
+          "vi": "Kim Thanh — Nữ · Nam · Đọc truyện"
+        },
+        "Adam": {
+          "en": "Adam — male · male · natural",
+          "vi": "Adam — Nam · Nam · Tự nhiên"
+        },
+        "Quốc Tuấn": {
+          "en": "Quốc Tuấn — male · North · natural",
+          "vi": "Quốc Tuấn — Nam · Bắc · Tự nhiên"
+        }
+      }
+    },
+    {
+      "id": "referenceAudio",
+      "title": {
+        "en": "Clone voice from",
+        "vi": "Nhái giọng từ"
+      },
+      "type": "file",
+      "default": "",
+      "scope": "project",
+      "help": {
+        "en": "A clean 3–8 second clip of the voice to clone; none uses the preset voice",
+        "vi": "Đoạn 3–8 giây giọng cần nhái, thật sạch; để trống thì dùng giọng mẫu"
+      },
+      "fileTypes": [
+        "wav",
+        "mp3",
+        "m4a",
+        "flac",
+        "aiff"
+      ]
+    },
+    {
+      "id": "variation",
+      "title": {
+        "en": "Variation between takes",
+        "vi": "Độ biến hoá giữa các take"
+      },
+      "type": "number",
+      "minimum": 0.3,
+      "maximum": 1.2,
+      "default": 0.8,
+      "scope": "user",
+      "help": {
+        "en": "Sampling temperature: lower is steadier, higher gives more different takes",
+        "vi": "Nhiệt độ lấy mẫu: thấp thì ổn định, cao thì các take khác nhau hơn"
+      }
+    }
+  ],
+  "minApiVersion": 3
+}

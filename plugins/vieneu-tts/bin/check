@@ -1,0 +1,4 @@
+#!/bin/sh
+# Dependency probe: the private environment runs Python 3.10+ and imports vieneu.
+data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.vieneu-tts}"
+exec "$data/venv/bin/python3" -c 'import sys, vieneu; sys.exit(sys.version_info < (3, 10))' 2>/dev/null

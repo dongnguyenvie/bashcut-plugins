@@ -8,6 +8,7 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 | Plugin | What it does |
 |---|---|
 | [Silence Markers](plugins/silence-markers) | Adds a section marker at every quiet stretch in the selected clip |
+| [VieNeu TTS](plugins/vieneu-tts) | Vietnamese voiceover on this Mac (VieNeu-TTS v3 Turbo, Apache-2.0): 25 voices, voice cloning; `voice.synthesize` provider |
 
 ## Layout
 
@@ -49,6 +50,15 @@ languages must include `en`. Adding a language is adding a key — no new fields
 Each archive holds one folder named after the plugin id. The registry keeps the newest 3 versions of each plugin.
 `signature` (ed25519 over the archive) is reserved; until BashCut checks it, the SHA-256 plus the user's Trust in the
 Plugins sheet are the gate.
+
+## Testing locally
+
+`scripts/dev-link.sh <slug>` symlinks a plugin into `~/Library/Application Support/BashCut/Plugins/`. Open
+**Plugins** in BashCut and choose **Trust** once; changes to `plugin.json` or the entrypoint ask for Trust again,
+other files can change while you iterate. `scripts/dev-link.sh <slug> --remove` unlinks it. Plugins with heavy
+models have a fake mode for tests and CI (for VieNeu, `VIENEU_FAKE=1`).
+
+Versions stay `0.0.x` while plugins are in beta.
 
 ## Publishing
 
