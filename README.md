@@ -18,6 +18,8 @@ plugins/<slug>/plugin.json    manifest (bashcut.plugin/1)
 plugins/<slug>/bin/…          entrypoint and helpers
 plugins/<slug>/listing.json   store listing: name and summary ({en, vi, …}), category, platforms, minAppVersion
 plugins/<slug>/tests/         tests run by CI (not shipped)
+plugins/<slug>/build.sh       optional: builds compiled helpers into bin/ (CI and package.py run it; not shipped)
+plugins/<slug>/src/           optional: sources for build.sh (not shipped)
 scripts/package.py            zip + SHA-256 + registry entry
 ```
 
@@ -51,9 +53,20 @@ Each archive holds one folder named after the plugin id. The registry keeps the 
 `signature` (ed25519 over the archive) is reserved; until BashCut checks it, the SHA-256 plus the user's Trust in the
 Plugins sheet are the gate.
 
+## Rules for users who are not developers
+
+Installing a plugin is one click in BashCut; users never open Terminal, install Homebrew or fix a Python. So:
+
+- A dependency is either a tool every Mac has (`package.py` keeps the list: `sh`, `curl`, `afconvert`, `ditto`,
+  `osascript`…) or has an install recipe that downloads it into `BASHCUT_PLUGIN_DATA`. `python3`, `git`, `swift` and
+  Homebrew tools are refused: on a fresh Mac they are missing or ask to install the Command Line Tools.
+- Small plugins are compiled Swift (see Silence Markers: `build.sh` makes a universal binary with AVFoundation, no
+  runtime needed). Plugins that need Python bring their own with `uv`, like VieNeu.
+- Probes must exit 0 when the tool works (`afconvert -h` exits 2, for example).
+
 ## Testing locally
 
-`scripts/dev-link.sh <slug>` symlinks a plugin into `~/Library/Application Support/BashCut/Plugins/`. Open
+Run `plugins/<slug>/build.sh` first when the plugin has one. `scripts/dev-link.sh <slug>` symlinks a plugin into `~/Library/Application Support/BashCut/Plugins/`. Open
 **Plugins** in BashCut and choose **Trust** once; changes to `plugin.json` or the entrypoint ask for Trust again,
 other files can change while you iterate. `scripts/dev-link.sh <slug> --remove` unlinks it. Plugins with heavy
 models have a fake mode for tests and CI (for VieNeu, `VIENEU_FAKE=1`).
