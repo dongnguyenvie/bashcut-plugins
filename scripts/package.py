@@ -22,7 +22,8 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPO = os.environ.get("GITHUB_REPOSITORY", "dongnguyenvie/bashcut-plugins")
 KEEP_VERSIONS = 3
-LISTING_FIELDS = ("name", "nameVi", "summary", "summaryVi", "publisher", "category", "homepage")
+LISTING_FIELDS = ("name", "summary", "publisher", "category", "homepage")
+LOCALIZED_FIELDS = ("name", "summary")
 
 
 def fail(message):
@@ -45,7 +46,38 @@ def manifest_for(slug):
     if not os.access(entrypoint, os.X_OK):
         fail(f"entrypoint {entrypoint} is missing or not executable")
     listing = json.loads((folder / "listing.json").read_text()) if (folder / "listing.json").is_file() else {}
+    check_localized(manifest, "plugin.json")
+    for field in LOCALIZED_FIELDS:
+        if field in listing:
+            check_text(listing[field], f"listing.json {field}")
     return folder, manifest, listing
+
+
+def check_text(value, where):
+    """Display text is a string (English) or {"en": ..., "vi": ...}; several languages need "en"."""
+    if isinstance(value, str):
+        ok = bool(value.strip())
+    else:
+        ok = (isinstance(value, dict) and value and (len(value) == 1 or "en" in value)
+              and all(re.fullmatch(r"[a-z]{2,3}(-[A-Za-z0-9]{2,8})?", k) and isinstance(v, str) and v.strip()
+                      for k, v in value.items()))
+    if not ok:
+        fail(f"{where} must be a nonempty string or a language map with \"en\"")
+
+
+def check_localized(manifest, where):
+    """Checks every display field and rejects the old *Vi fields."""
+    check_text(manifest.get("name"), f"{where} name")
+    items = list(manifest.get("options", []))
+    for action in manifest.get("contributes", {}).get("actions", []):
+        items.append(action)
+        items.extend(action.get("params", []))
+    for item in items:
+        if any(key.endswith("Vi") for key in item):
+            fail(f'{where} {item.get("id")}: use "title": {{"en": ..., "vi": ...}} instead of *Vi fields')
+        for field in ("title", "help", "confirm"):
+            if field in item:
+                check_text(item[field], f'{where} {item.get("id")} {field}')
 
 
 def package(slug, folder, manifest):
@@ -71,6 +103,9 @@ def register(slug, manifest, listing, archive, digest):
         registry["plugins"].append(entry)
     entry.update({key: listing[key] for key in LISTING_FIELDS if key in listing})
     entry.setdefault("name", manifest["name"])
+    for field in LOCALIZED_FIELDS:
+        if isinstance(entry.get(field), str):
+            entry[field] = {"en": entry[field]}
     entry.setdefault("publisher", "bashcut")
     entry["capabilities"] = manifest.get("capabilities", [])
     entry["actions"] = [a["id"] for a in manifest.get("contributes", {}).get("actions", [])]
