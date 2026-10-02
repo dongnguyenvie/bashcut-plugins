@@ -48,6 +48,7 @@ def manifest_for(slug):
         fail("id must be reverse-domain style")
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?", manifest.get("version", "")):
         fail("version must be semantic")
+    build(folder)
     entrypoint = folder / manifest.get("entrypoint", "")
     if not os.access(entrypoint, os.X_OK):
         fail(f"entrypoint {entrypoint} is missing or not executable")
@@ -106,7 +107,6 @@ def check_localized(manifest, where):
 
 
 def package(slug, folder, manifest):
-    build(folder)
     dist = ROOT / "dist"
     dist.mkdir(exist_ok=True)
     archive = dist / f'{manifest["id"]}-{manifest["version"]}.zip'
