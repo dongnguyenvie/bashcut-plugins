@@ -1,0 +1,76 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.whisper-captions",
+  "name": {
+    "en": "Whisper Captions",
+    "vi": "Phụ đề Whisper"
+  },
+  "version": "0.0.1",
+  "apiVersion": 3,
+  "minApiVersion": 3,
+  "entrypoint": "bin/provider",
+  "transport": "session",
+  "capabilities": [
+    "captions.transcribe"
+  ],
+  "providers": [
+    {
+      "id": "bashcut.whisper-captions.local",
+      "capability": "captions.transcribe",
+      "name": "Whisper large-v3 turbo (local)",
+      "priority": 10
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "whisper",
+      "name": "Whisper large-v3 turbo (MLX)",
+      "kind": "python",
+      "probe": {
+        "executable": "bin/check",
+        "arguments": []
+      },
+      "install": {
+        "summary": "Download uv and a private Python 3.12, install mlx-whisper and PyAV, and the Whisper large-v3 turbo model (about 1.6 GB). Your Mac's Python and ffmpeg are not used.",
+        "command": {
+          "executable": "bin/setup",
+          "arguments": []
+        }
+      },
+      "estimatedBytes": 1900000000
+    }
+  ],
+  "options": [
+    {
+      "id": "vocabulary",
+      "title": {
+        "en": "Names and words",
+        "vi": "Tên riêng và từ ngữ"
+      },
+      "type": "string",
+      "default": "",
+      "scope": "project",
+      "maxLength": 500,
+      "help": {
+        "en": "Places, people and terms in this video, comma separated (for example: Buôn Đôn, Buôn Ma Thuột). They are spelled right more often.",
+        "vi": "Địa danh, tên người, thuật ngữ trong video, cách nhau bằng dấu phẩy (ví dụ: Buôn Đôn, Buôn Ma Thuột). Giúp viết đúng chính tả hơn."
+      }
+    },
+    {
+      "id": "maxCharacters",
+      "title": {
+        "en": "Characters per caption",
+        "vi": "Số ký tự mỗi dòng phụ đề"
+      },
+      "type": "integer",
+      "minimum": 16,
+      "maximum": 84,
+      "default": 42,
+      "scope": "user",
+      "help": {
+        "en": "Longer sentences are split into captions of at most this many characters",
+        "vi": "Câu dài được tách thành các phụ đề không quá số ký tự này"
+      }
+    }
+  ]
+}

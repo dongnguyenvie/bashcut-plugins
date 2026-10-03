@@ -1,0 +1,11 @@
+#!/bin/sh
+# Starts the Whisper provider in the plugin's private environment (made by bin/setup). Before setup it runs the
+# Mac's python3 only to answer with a clear "install the dependency" error.
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.whisper-captions}"
+cache="${BASHCUT_PLUGIN_CACHE:-$HOME/Library/Caches/BashCut/PluginData/bashcut.whisper-captions}"
+python="$data/venv/bin/python3"
+[ -x "$python" ] || python="$(command -v python3)"
+export HF_HOME="$cache/huggingface" HF_HUB_DISABLE_PROGRESS_BARS=1 HF_HUB_OFFLINE=1
+exec "$python" "$here/whisper_provider.py" "$@"

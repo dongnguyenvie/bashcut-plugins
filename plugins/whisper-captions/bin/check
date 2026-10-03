@@ -1,0 +1,9 @@
+#!/bin/sh
+# Dependency probe: the private environment imports mlx_whisper and av, and the model is downloaded.
+data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.whisper-captions}"
+cache="${BASHCUT_PLUGIN_CACHE:-$HOME/Library/Caches/BashCut/PluginData/bashcut.whisper-captions}"
+HF_HOME="$cache/huggingface" HF_HUB_OFFLINE=1 exec "$data/venv/bin/python3" -c '
+import mlx_whisper, av
+from huggingface_hub import snapshot_download
+snapshot_download("mlx-community/whisper-large-v3-turbo", local_files_only=True)
+' 2>/dev/null
