@@ -28,6 +28,22 @@
           "size": 49739,
           "downloadBytes": 0,
           "releasedAt": "2026-10-03"
+        },
+        {
+          "version": "0.0.3",
+          "apiVersion": 2,
+          "minApiVersion": 2,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/silence-markers-v0.0.3/bashcut.silence-markers-0.0.3.zip",
+          "sha256": "e3668eb6d0cc43c6dff402313d9069eb0a16324e8d0a0c348d81cf4d8c419252",
+          "signature": "ed25519:oyNpZnLaC4A01PFXWRgiKX4fPWVIIb/xn2gKsKxJNEoJ2ciSYMv0teykW1mSiNw9QmVMJGqyRCBuueg01e1vBA==",
+          "size": 64218,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-03"
         }
       ],
       "name": {
@@ -35,15 +51,16 @@
         "vi": "Đánh dấu im lặng"
       },
       "summary": {
-        "en": "Adds a section marker at every quiet stretch in the selected clip, to find pauses to cut.",
-        "vi": "Thêm mốc tại mọi đoạn im lặng trong clip đang chọn, để tìm khoảng lặng cần cắt."
+        "en": "Finds the pauses in a clip's speech: mark each one on the timeline, or cut them all out in one undoable step (linked sound included).",
+        "vi": "Tìm các khoảng lặng trong lời nói của clip: đánh dấu từng chỗ trên timeline, hoặc cắt bỏ tất cả trong một bước hoàn tác (kèm tiếng liên kết)."
       },
       "publisher": "bashcut",
       "category": "audio",
       "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/silence-markers",
       "capabilities": [],
       "actions": [
-        "bashcut.silence-markers.mark"
+        "bashcut.silence-markers.mark",
+        "bashcut.silence-markers.remove"
       ],
       "hooks": []
     },
