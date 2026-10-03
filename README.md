@@ -8,6 +8,7 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 | Plugin | What it does |
 |---|---|
 | [Silence Markers](plugins/silence-markers) | Adds a section marker at every quiet stretch in the selected clip |
+| [Whisper Captions](plugins/whisper-captions) | Captions from speech on Apple Silicon (Whisper large-v3 turbo via MLX, MIT): Vietnamese and about 100 languages, timed per word, split into even lines; `captions.transcribe` provider |
 | [VieNeu TTS](plugins/vieneu-tts) | Vietnamese voiceover on this Mac (VieNeu-TTS v3 Turbo, Apache-2.0): 25 voices, voice cloning; `voice.synthesize` provider |
 
 ## Layout

@@ -1,0 +1,53 @@
+#!/bin/sh
+# Install recipe for Whisper Captions. BashCut runs it after the user approves, in the plugin's own environment:
+#   BASHCUT_PLUGIN_DATA  — kept across plugin updates: uv, a private Python 3.12 and the virtual environment
+#   BASHCUT_PLUGIN_CACHE — can be downloaded again: the Whisper model and uv's package cache
+# It does not use the Mac's Python or ffmpeg (PyAV brings its own decoder). `::progress` lines drive the progress
+# bar in BashCut. Running it again repairs or updates the install.
+set -eu
+data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.whisper-captions}"
+cache="${BASHCUT_PLUGIN_CACHE:-$HOME/Library/Caches/BashCut/PluginData/bashcut.whisper-captions}"
+mkdir -p "$data/bin" "$cache"
+export UV_CACHE_DIR="$cache/uv" UV_PYTHON_INSTALL_DIR="$data/python" UV_NO_PROGRESS=1
+
+if [ "$(uname -m)" != "arm64" ]; then
+    echo "Whisper Captions needs a Mac with Apple Silicon (MLX runs on its GPU)." >&2
+    exit 1
+fi
+
+echo "::progress 0.02 Preparing uv"
+uv="$(command -v uv || true)"
+if [ -z "$uv" ]; then
+    uv="$data/bin/uv"
+    if [ ! -x "$uv" ]; then
+        echo "Downloading uv"
+        tmp="$(mktemp -d)"
+        curl --fail --location --silent --show-error \
+            "https://github.com/astral-sh/uv/releases/latest/download/uv-aarch64-apple-darwin.tar.gz" -o "$tmp/uv.tar.gz"
+        tar -xzf "$tmp/uv.tar.gz" -C "$tmp"
+        mv "$tmp/uv-aarch64-apple-darwin/uv" "$uv"
+        rm -rf "$tmp"
+    fi
+fi
+"$uv" --version
+
+echo "::progress 0.10 Installing Python 3.12"
+python="$data/venv/bin/python3"
+# Only a Python uv manages inside this plugin's data folder: one the user installed may be removed later.
+if [ ! -x "$python" ] || ! "$python" -c "import sys; sys.exit(sys.version_info < (3, 10) or not sys.base_prefix.startswith('$data/python'))" 2>/dev/null; then
+    rm -rf "$data/venv"
+    "$uv" venv --python 3.12 --python-preference only-managed "$data/venv"
+fi
+
+echo "::progress 0.25 Installing mlx-whisper and PyAV (about 300 MB)"
+"$uv" pip install --python "$python" --upgrade "mlx-whisper>=0.4.3,<0.5" "av>=12,<17"
+
+echo "::progress 0.45 Downloading Whisper large-v3 turbo (about 1.6 GB)"
+HF_HOME="$cache/huggingface" HF_HUB_DISABLE_PROGRESS_BARS=1 "$python" -c '
+from huggingface_hub import snapshot_download
+snapshot_download("mlx-community/whisper-large-v3-turbo")
+'
+
+echo "::progress 0.95 Cleaning up"
+"$uv" cache clean >/dev/null 2>&1 || true
+echo "::progress 1.0 Whisper is ready"
