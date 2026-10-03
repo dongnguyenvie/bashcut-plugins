@@ -193,8 +193,30 @@ def cues_from(segments, max_characters):
         text = " ".join(w["word"].strip() for w in words)
         if result and result[-1][2] == text:  # a loop Whisper sometimes repeats
             continue
-        result.append((start, end, text))
+        result.append((start, end, text, words))
     return result
+
+
+def word_timings(cues):
+    """Each caption word with its time, for BashCut's word-by-word captions (`wordsPath`). Words of one caption
+    stay inside its time range and in order, so they line up with the caption text word for word."""
+    timed = []
+    for start, end, _, words in cues:
+        for word in words:
+            text = word["word"].strip()
+            if not text:
+                continue
+            begin = min(max(float(word["start"]), start), end)
+            finish = min(max(float(word["end"]), begin), end)
+            # A "word" with spaces inside (a segment without word timings) is several caption words: share its time
+            # by length.
+            parts = text.split()
+            total = sum(len(part) for part in parts)
+            for part in parts:
+                length = (finish - begin) * len(part) / total
+                timed.append({"text": part, "start": round(begin, 3), "end": round(begin + length, 3)})
+                begin += length
+    return timed
 
 
 def timestamp(seconds):
@@ -207,7 +229,7 @@ def timestamp(seconds):
 
 def srt(cues):
     blocks = [f"{index}\n{timestamp(start)} --> {timestamp(end)}\n{text}\n"
-              for index, (start, end, text) in enumerate(cues, start=1)]
+              for index, (start, end, text, _) in enumerate(cues, start=1)]
     return "\n".join(blocks)
 
 
@@ -227,11 +249,13 @@ def transcribe(params, progress, transcriber):
     if not cues:
         raise ValueError("No speech found in this media")
     progress(0.95, f"{len(cues)} captions")
-    name = os.path.splitext(os.path.basename(path))[0] + ".srt"
-    with open(os.path.join(output, name), "w", encoding="utf-8") as file:
+    stem = os.path.splitext(os.path.basename(path))[0]
+    with open(os.path.join(output, stem + ".srt"), "w", encoding="utf-8") as file:
         file.write(srt(cues))
+    with open(os.path.join(output, stem + ".words.json"), "w", encoding="utf-8") as file:
+        json.dump(word_timings(cues), file, ensure_ascii=False)
     progress(1, "Done")
-    return {"srtPath": name}
+    return {"srtPath": stem + ".srt", "wordsPath": stem + ".words.json"}
 
 
 def handle(request, progress, transcriber):
