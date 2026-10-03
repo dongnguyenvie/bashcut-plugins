@@ -100,6 +100,42 @@
       ],
       "actions": [],
       "hooks": []
+    },
+    {
+      "id": "bashcut.whisper-captions",
+      "versions": [
+        {
+          "version": "0.0.1",
+          "apiVersion": 3,
+          "minApiVersion": 3,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/whisper-captions-v0.0.1/bashcut.whisper-captions-0.0.1.zip",
+          "sha256": "567cc8b2394c7844b610fe4bf1fab8eb85e84d0074c18dc83c6a287b2d8a222e",
+          "signature": "ed25519:Q1/hLbBcy+FV3H39HwUwKpdf5MplXMOHQSF3TWBMV/Cqig2n6y1slul/qlUWJQdyCbYTn6z/AzzHyrgKUFVaAA==",
+          "size": 8075,
+          "downloadBytes": 1900000000,
+          "releasedAt": "2026-10-03"
+        }
+      ],
+      "name": {
+        "en": "Whisper Captions",
+        "vi": "Phụ đề Whisper"
+      },
+      "summary": {
+        "en": "Captions from speech on this Mac with OpenAI Whisper large-v3 turbo (MIT) on Apple Silicon: Vietnamese, English and about 100 languages, timed per word and split into readable lines.",
+        "vi": "Tạo phụ đề từ giọng nói ngay trên máy bằng OpenAI Whisper large-v3 turbo (MIT) trên Apple Silicon: tiếng Việt, tiếng Anh và khoảng 100 ngôn ngữ, căn thời gian theo từng từ và tách thành dòng dễ đọc."
+      },
+      "publisher": "bashcut",
+      "category": "captions",
+      "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/whisper-captions",
+      "capabilities": [
+        "captions.transcribe"
+      ],
+      "actions": [],
+      "hooks": []
     }
   ]
 }
