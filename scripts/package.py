@@ -3,7 +3,8 @@
 
     scripts/package.py <slug>                 # zip into dist/ and print the archive, size and SHA-256
     scripts/package.py <slug> --tag <tag>     # also check the tag is <slug>-v<version>
-    scripts/package.py <slug> --register      # also add the version to registry.json (keeps the newest 3)
+    scripts/package.py <slug> --register      # also record the version in plugins/<slug>/versions.json (keeps the
+                                              # newest 3) and regenerate registry.json
 
 The archive holds one folder named after the plugin id, so BashCut can check it matches the registry entry. With
 BASHCUT_SIGNING_KEY set (the release workflow's secret), the archive's SHA-256 is signed with the BashCut ed25519
@@ -21,7 +22,7 @@ import subprocess
 import sys
 import tempfile
 
-from registry_tools import sign
+from registry_tools import load_versions, save_versions, sign, write_registry
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPO = os.environ.get("GITHUB_REPOSITORY", "dongnguyenvie/bashcut-plugins")
@@ -119,7 +120,7 @@ def package(slug, folder, manifest):
     with tempfile.TemporaryDirectory() as staging:
         staged = pathlib.Path(staging) / manifest["id"]
         shutil.copytree(folder, staged, ignore=shutil.ignore_patterns(
-            "listing.json", "__pycache__", ".DS_Store", "tests", "src", "build.sh"))
+            "listing.json", "versions.json", "__pycache__", ".DS_Store", "tests", "src", "build.sh"))
         subprocess.run(["ditto", "-c", "-k", "--norsrc", "--keepParent", str(staged), str(archive)], check=True)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (archive.parent / (archive.name + ".sha256")).write_text(f"{digest}  {archive.name}\n")
@@ -132,15 +133,12 @@ def package(slug, folder, manifest):
 
 
 def register(slug, manifest, listing, archive, digest, signature):
-    path = ROOT / "registry.json"
-    registry = json.loads(path.read_text())
-    existing = next((p for p in registry["plugins"] if p["id"] == manifest["id"]), None)
-    # Metadata is rebuilt from the listing and manifest each time, so renamed or removed fields never linger;
-    # only the version history carries over.
-    entry = {"id": manifest["id"], "versions": existing["versions"] if existing else []}
-    if existing:
-        registry["plugins"].remove(existing)
-    registry["plugins"].append(entry)
+    existing = load_versions(slug)
+    if existing and existing.get("id") != manifest["id"]:
+        fail(f'plugins/{slug}/versions.json is for {existing.get("id")}, not {manifest["id"]}')
+    # The listing is rebuilt from the released listing and manifest each time, so renamed or removed fields never
+    # linger; only the version history carries over. Unreleased changes on main stay out of the registry.
+    entry = {"versions": existing["versions"] if existing else []}
     entry.update({key: listing[key] for key in LISTING_FIELDS if key in listing})
     entry.setdefault("name", manifest["name"])
     for field in LOCALIZED_FIELDS:
@@ -171,8 +169,9 @@ def register(slug, manifest, listing, archive, digest, signature):
     entry["versions"] = [v for v in entry["versions"] if v["version"] != version["version"]] + [version]
     entry["versions"].sort(key=lambda v: [int(x) if x.isdigit() else x for x in re.split(r"[.+-]", v["version"])])
     entry["versions"] = entry["versions"][-KEEP_VERSIONS:]
-    registry["plugins"].sort(key=lambda p: p["id"])
-    path.write_text(json.dumps(registry, indent=2, ensure_ascii=False) + "\n")
+    versions = entry.pop("versions")
+    save_versions(slug, {"id": manifest["id"], "listing": entry, "versions": versions})
+    write_registry()
 
 
 def main():

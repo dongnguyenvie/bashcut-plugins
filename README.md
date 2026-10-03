@@ -13,15 +13,27 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 ## Layout
 
 ```text
-registry.json                 catalog BashCut reads
+registry.json                 catalog BashCut reads — generated, never edited by hand
+publishers.json               schemaVersion and publishers (source of registry.json)
+plugins/<slug>/versions.json  the plugin's listing at its last release and its published versions (source)
 plugins/<slug>/plugin.json    manifest (bashcut.plugin/1)
 plugins/<slug>/bin/…          entrypoint and helpers
 plugins/<slug>/listing.json   store listing: name and summary ({en, vi, …}), category, platforms, minAppVersion
 plugins/<slug>/tests/         tests run by CI (not shipped)
 plugins/<slug>/build.sh       optional: builds compiled helpers into bin/ (CI and package.py run it; not shipped)
 plugins/<slug>/src/           optional: sources for build.sh (not shipped)
-scripts/package.py            zip + SHA-256 + registry entry
+scripts/package.py            zip + SHA-256 + signature; --register records the version in versions.json
+scripts/build-registry.py     generates registry.json from the sources (--check in CI)
 ```
+
+## Why registry.json is generated
+
+Each release or yank writes only its own `plugins/<slug>/versions.json`, so changes to different plugins never touch
+the same source file, and BashCut still downloads one `registry.json` (one request, one consistent snapshot).
+`scripts/build-registry.py` rebuilds it deterministically; CI fails when it is out of date. A merge or rebase
+conflict in `registry.json` is resolved by running the script again — the release workflow does that itself when
+two releases race. The listing in `versions.json` is a snapshot of the released `listing.json` and manifest, so
+unreleased changes on `main` never reach users.
 
 ## Registry format
 
@@ -68,7 +80,8 @@ warning. The BashCut public key is compiled into the app (`PluginSignature.first
 
 ## Withdrawing a version
 
-`scripts/yank.py <id> <version> "<reason>"` marks a version `"yanked"`; commit and push. BashCut stops offering it,
+`scripts/yank.py <id> <version> "<reason>"` marks a version `"yanked"` in its `versions.json` and regenerates
+`registry.json`; commit both and push. BashCut stops offering it,
 tells users who have it why, and Updates offers the newest good version. `--undo` restores it. Never re-publish a
 yanked version number.
 
@@ -97,7 +110,8 @@ Versions stay `0.0.x` while plugins are in beta.
 1. Change `plugins/<slug>`, bump `version` in `plugin.json`, merge to `main`.
 2. Tag and push: `git tag silence-markers-v0.2.0 && git push origin silence-markers-v0.2.0`.
 3. The `Release plugin` workflow tests the plugin, zips it, creates the GitHub Release with the archive and its
-   `.sha256` and `.sig`, re-downloads and checks it, then commits the signed version to `registry.json`.
+   `.sha256` and `.sig`, re-downloads and checks it, then commits the signed version to `versions.json` and the
+   regenerated `registry.json`.
 
 A version is never re-published: bump it instead.
 

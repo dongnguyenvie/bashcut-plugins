@@ -12,6 +12,7 @@ jobs:
       - name: Validate registry
         run: |
           python3 -c "import json; r=json.load(open('registry.json')); assert r['schemaVersion'] == 1"
+          python3 scripts/build-registry.py --check
           swift scripts/verify-registry.swift registry.json
       - name: Test and package every plugin
         run: |
