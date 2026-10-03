@@ -50,8 +50,27 @@ languages must include `en`. Adding a language is adding a key — no new fields
 `titleVi`/`nameVi` style.
 
 Each archive holds one folder named after the plugin id. The registry keeps the newest 3 versions of each plugin.
-`signature` (ed25519 over the archive) is reserved; until BashCut checks it, the SHA-256 plus the user's Trust in the
-Plugins sheet are the gate.
+
+## Signatures
+
+`signature` is `ed25519:BASE64` over the 32 raw bytes of the archive's SHA-256. BashCut checks it before
+downloading and shows *Signed by BashCut*; a signature that matches no key is refused, an unsigned archive gets a
+warning. The BashCut public key is compiled into the app (`PluginSignature.firstPartyKeys`) and mirrored in
+`publishers.bashcut.keys` here for `scripts/verify-registry.swift`; the app ignores registry keys for `bashcut`.
+
+- The private key is the `BASHCUT_SIGNING_KEY` Actions secret (base64 raw 32 bytes). An offline copy is in the
+  maintainer's login keychain as "BashCut plugin signing key (ed25519)".
+- `release.yml` refuses to publish without it, uploads `<archive>.sig` next to the zip and verifies the registry.
+- `scripts/sign-registry.py` signs versions published before signing existed (it re-downloads and checks each
+  archive first); `scripts/sign.swift` is the signer both use.
+- Rotating: ship the new public key in a BashCut release first, then switch the secret; keep the old key in the app
+  for one release cycle.
+
+## Withdrawing a version
+
+`scripts/yank.py <id> <version> "<reason>"` marks a version `"yanked"`; commit and push. BashCut stops offering it,
+tells users who have it why, and Updates offers the newest good version. `--undo` restores it. Never re-publish a
+yanked version number.
 
 ## Rules for users who are not developers
 
@@ -78,7 +97,7 @@ Versions stay `0.0.x` while plugins are in beta.
 1. Change `plugins/<slug>`, bump `version` in `plugin.json`, merge to `main`.
 2. Tag and push: `git tag silence-markers-v0.2.0 && git push origin silence-markers-v0.2.0`.
 3. The `Release plugin` workflow tests the plugin, zips it, creates the GitHub Release with the archive and its
-   `.sha256`, re-downloads and checks it, then commits the new version to `registry.json`.
+   `.sha256` and `.sig`, re-downloads and checks it, then commits the signed version to `registry.json`.
 
 A version is never re-published: bump it instead.
 

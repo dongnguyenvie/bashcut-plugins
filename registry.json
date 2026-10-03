@@ -3,7 +3,9 @@
   "publishers": {
     "bashcut": {
       "name": "BashCut",
-      "keys": [],
+      "keys": [
+        "ed25519:q+RG+vvYLwP2xxRtVjNxPCbb3LhvuRyKNxSx3c1p6C4="
+      ],
       "verified": true
     }
   },
@@ -22,7 +24,7 @@
           ],
           "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/silence-markers-v0.0.2/bashcut.silence-markers-0.0.2.zip",
           "sha256": "2d1e642e59ba28c87d131c76b09ceb438e78381b8e5f61a74c56d631f817473f",
-          "signature": null,
+          "signature": "ed25519:FADUllDeIu1uqrrYB/LYvLSB3C71YsrGdWfe+Y7Hk9hwUrCodvi4W1/XK1CzBkoy41bmdPUI4DfilXW7jnnUCw==",
           "size": 49739,
           "downloadBytes": 0,
           "releasedAt": "2026-10-03"
@@ -59,7 +61,7 @@
           ],
           "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vieneu-tts-v0.0.2/bashcut.vieneu-tts-0.0.2.zip",
           "sha256": "a417dfabe40eadcf1c90e2219d74254b79802060a73ca6a741b9b333d2fc20e9",
-          "signature": null,
+          "signature": "ed25519:4r4BNE3cNVov/VDSYtMT40e7JwUb5Is8T85e2aNDb0z7xoGbZ/2gkIB9os4c1oH1v/2/0hnbCWde7/isIfD4Bw==",
           "size": 6798,
           "downloadBytes": 1500000000,
           "releasedAt": "2026-10-03"
