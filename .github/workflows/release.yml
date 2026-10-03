@@ -32,9 +32,12 @@ jobs:
           folder="plugins/${{ steps.tag.outputs.slug }}"
           if [ -x "$folder/build.sh" ]; then "$folder/build.sh"; fi
           if [ -d "$folder/tests" ]; then python3 -m unittest discover -s "$folder/tests" -v; fi
-      - name: Package and register
+      - name: Package, sign and register
         id: package
+        env:
+          BASHCUT_SIGNING_KEY: ${{ secrets.BASHCUT_SIGNING_KEY }}
         run: |
+          if [ -z "$BASHCUT_SIGNING_KEY" ]; then echo "::error::The BASHCUT_SIGNING_KEY secret is missing"; exit 1; fi
           out=$(python3 scripts/package.py "${{ steps.tag.outputs.slug }}" --tag "${{ steps.tag.outputs.tag }}" --register)
           echo "$out"
           echo "archive=$(echo "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["archive"])')" >> "$GITHUB_OUTPUT"
@@ -47,11 +50,12 @@ jobs:
             echo "::error::Release ${{ steps.tag.outputs.tag }} already exists; bump the version instead of re-publishing"
             exit 1
           fi
-          gh release create "${{ steps.tag.outputs.tag }}" "$archive" "$archive.sha256" \
+          gh release create "${{ steps.tag.outputs.tag }}" "$archive" "$archive.sha256" "$archive.sig" \
             --title "${{ steps.tag.outputs.tag }}" --notes "Plugin \`${{ steps.tag.outputs.slug }}\`. SHA-256: $(cut -d' ' -f1 "$archive.sha256")"
           # Verify what was published, not what was built.
           mkdir -p check && gh release download "${{ steps.tag.outputs.tag }}" -p '*.zip' -D check
           shasum -a 256 -c <(sed "s#  #  check/#" "$archive.sha256")
+          swift scripts/verify-registry.swift registry.json
       - name: Commit registry.json
         run: |
           git config user.name "github-actions[bot]"

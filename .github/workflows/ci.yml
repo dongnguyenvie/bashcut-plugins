@@ -10,7 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate registry
-        run: python3 -c "import json; r=json.load(open('registry.json')); assert r['schemaVersion'] == 1"
+        run: |
+          python3 -c "import json; r=json.load(open('registry.json')); assert r['schemaVersion'] == 1"
+          swift scripts/verify-registry.swift registry.json
       - name: Test and package every plugin
         run: |
           for folder in plugins/*/; do

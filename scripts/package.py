@@ -5,7 +5,9 @@
     scripts/package.py <slug> --tag <tag>     # also check the tag is <slug>-v<version>
     scripts/package.py <slug> --register      # also add the version to registry.json (keeps the newest 3)
 
-The archive holds one folder named after the plugin id, so BashCut can check it matches the registry entry.
+The archive holds one folder named after the plugin id, so BashCut can check it matches the registry entry. With
+BASHCUT_SIGNING_KEY set (the release workflow's secret), the archive's SHA-256 is signed with the BashCut ed25519
+key: the signature goes into registry.json and next to the archive as `<archive>.sig`.
 """
 import argparse
 import datetime
@@ -18,6 +20,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+
+from registry_tools import sign
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 REPO = os.environ.get("GITHUB_REPOSITORY", "dongnguyenvie/bashcut-plugins")
@@ -119,10 +123,15 @@ def package(slug, folder, manifest):
         subprocess.run(["ditto", "-c", "-k", "--norsrc", "--keepParent", str(staged), str(archive)], check=True)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (archive.parent / (archive.name + ".sha256")).write_text(f"{digest}  {archive.name}\n")
-    return archive, digest
+    signature = (sign([digest]) or [None])[0]
+    signature_file = archive.parent / (archive.name + ".sig")
+    signature_file.unlink(missing_ok=True)
+    if signature:
+        signature_file.write_text(signature + "\n")
+    return archive, digest, signature
 
 
-def register(slug, manifest, listing, archive, digest):
+def register(slug, manifest, listing, archive, digest, signature):
     path = ROOT / "registry.json"
     registry = json.loads(path.read_text())
     existing = next((p for p in registry["plugins"] if p["id"] == manifest["id"]), None)
@@ -150,13 +159,15 @@ def register(slug, manifest, listing, archive, digest):
         "platforms": listing.get("platforms", ["macos-arm64", "macos-x86_64"]),
         "url": f"https://github.com/{REPO}/releases/download/{tag}/{archive.name}",
         "sha256": digest,
-        "signature": None,
+        "signature": signature,
         "size": archive.stat().st_size,
         "downloadBytes": listing.get("downloadBytes", 0),
         "releasedAt": datetime.date.today().isoformat(),
     }
     if any(v["version"] == version["version"] and v["sha256"] != digest for v in entry["versions"]):
         fail(f'{manifest["id"]} {version["version"]} is already registered with a different archive')
+    if any(v["version"] == version["version"] and v.get("yanked") for v in entry["versions"]):
+        fail(f'{manifest["id"]} {version["version"]} was yanked; bump the version')
     entry["versions"] = [v for v in entry["versions"] if v["version"] != version["version"]] + [version]
     entry["versions"].sort(key=lambda v: [int(x) if x.isdigit() else x for x in re.split(r"[.+-]", v["version"])])
     entry["versions"] = entry["versions"][-KEEP_VERSIONS:]
@@ -173,10 +184,11 @@ def main():
     folder, manifest, listing = manifest_for(args.slug)
     if args.tag and args.tag != f'{args.slug}-v{manifest["version"]}':
         fail(f'tag {args.tag} does not match {args.slug}-v{manifest["version"]}')
-    archive, digest = package(args.slug, folder, manifest)
+    archive, digest, signature = package(args.slug, folder, manifest)
     if args.register:
-        register(args.slug, manifest, listing, archive, digest)
-    print(json.dumps({"archive": str(archive), "sha256": digest, "size": archive.stat().st_size}))
+        register(args.slug, manifest, listing, archive, digest, signature)
+    print(json.dumps({"archive": str(archive), "sha256": digest, "size": archive.stat().st_size,
+                      "signed": signature is not None}))
 
 
 if __name__ == "__main__":
