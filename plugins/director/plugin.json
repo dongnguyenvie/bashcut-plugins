@@ -48,16 +48,50 @@
         "vi": "Nhà cung cấp model"
       },
       "type": "enum",
-      "choices": ["anthropic", "openai", "google", "openrouter", "groq", "xai", "mistral"],
+      "choices": [
+        "anthropic",
+        "openai",
+        "google",
+        "openrouter",
+        "groq",
+        "xai",
+        "mistral",
+        "compatible"
+      ],
       "default": "anthropic",
       "choiceLabels": {
-        "anthropic": {"en": "Anthropic (Claude)", "vi": "Anthropic (Claude)"},
-        "openai": {"en": "OpenAI (GPT)", "vi": "OpenAI (GPT)"},
-        "google": {"en": "Google (Gemini)", "vi": "Google (Gemini)"},
-        "openrouter": {"en": "OpenRouter", "vi": "OpenRouter"},
-        "groq": {"en": "Groq", "vi": "Groq"},
-        "xai": {"en": "xAI (Grok)", "vi": "xAI (Grok)"},
-        "mistral": {"en": "Mistral", "vi": "Mistral"}
+        "anthropic": {
+          "en": "Anthropic (Claude)",
+          "vi": "Anthropic (Claude)"
+        },
+        "openai": {
+          "en": "OpenAI (GPT)",
+          "vi": "OpenAI (GPT)"
+        },
+        "google": {
+          "en": "Google (Gemini)",
+          "vi": "Google (Gemini)"
+        },
+        "openrouter": {
+          "en": "OpenRouter",
+          "vi": "OpenRouter"
+        },
+        "groq": {
+          "en": "Groq",
+          "vi": "Groq"
+        },
+        "xai": {
+          "en": "xAI (Grok)",
+          "vi": "xAI (Grok)"
+        },
+        "mistral": {
+          "en": "Mistral",
+          "vi": "Mistral"
+        },
+        "compatible": {
+          "en": "OpenAI-compatible (custom URL)",
+          "vi": "Tương thích OpenAI (URL riêng)"
+        }
       },
       "scope": "user",
       "help": {
@@ -81,6 +115,21 @@
       }
     },
     {
+      "id": "baseUrl",
+      "title": {
+        "en": "Base URL",
+        "vi": "Base URL"
+      },
+      "type": "string",
+      "default": "",
+      "scope": "user",
+      "maxLength": 500,
+      "help": {
+        "en": "For OpenAI-compatible only: the endpoint that serves /chat/completions, such as https://example.com/v1",
+        "vi": "Chỉ dùng cho Tương thích OpenAI: địa chỉ phục vụ /chat/completions, ví dụ https://example.com/v1"
+      }
+    },
+    {
       "id": "apiKey",
       "title": {
         "en": "API key",
@@ -100,13 +149,30 @@
         "vi": "Suy luận"
       },
       "type": "enum",
-      "choices": ["off", "low", "medium", "high"],
+      "choices": [
+        "off",
+        "low",
+        "medium",
+        "high"
+      ],
       "default": "off",
       "choiceLabels": {
-        "off": {"en": "Off", "vi": "Tắt"},
-        "low": {"en": "Low", "vi": "Thấp"},
-        "medium": {"en": "Medium", "vi": "Vừa"},
-        "high": {"en": "High", "vi": "Cao"}
+        "off": {
+          "en": "Off",
+          "vi": "Tắt"
+        },
+        "low": {
+          "en": "Low",
+          "vi": "Thấp"
+        },
+        "medium": {
+          "en": "Medium",
+          "vi": "Vừa"
+        },
+        "high": {
+          "en": "High",
+          "vi": "Cao"
+        }
       },
       "scope": "user",
       "help": {

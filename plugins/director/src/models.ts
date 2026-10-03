@@ -1,5 +1,6 @@
 // Which model a request uses: the `provider` and `model` options, with a default model per provider.
-import { createModels, type Model, type MutableModels } from "@earendil-works/pi-ai";
+import { createModels, createProvider, type Model, type MutableModels } from "@earendil-works/pi-ai";
+import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import { anthropicProvider } from "@earendil-works/pi-ai/providers/anthropic";
 import { googleProvider } from "@earendil-works/pi-ai/providers/google";
 import { groqProvider } from "@earendil-works/pi-ai/providers/groq";
@@ -20,6 +21,9 @@ export const DEFAULT_MODELS: Record<string, string> = {
     mistral: "mistral-medium-latest",
 };
 
+/** `compatible`: any OpenAI Chat Completions endpoint (a proxy, a gateway, a local server) at `baseUrl`. */
+export const COMPATIBLE = "compatible";
+
 export const PROVIDER_NAMES: Record<string, string> = {
     anthropic: "Anthropic",
     openai: "OpenAI",
@@ -28,6 +32,7 @@ export const PROVIDER_NAMES: Record<string, string> = {
     groq: "Groq",
     xai: "xAI",
     mistral: "Mistral",
+    [COMPATIBLE]: "OpenAI-compatible",
     [FAUX_PROVIDER]: "Faux (tests)",
 };
 
@@ -60,6 +65,7 @@ export interface Options {
     apiKey?: unknown;
     thinking?: unknown;
     maxTurns?: unknown;
+    baseUrl?: unknown;
 }
 
 export interface Resolved {
@@ -82,6 +88,7 @@ export function resolve(options: Options | undefined): Resolved {
     }
     const provider = typeof opts.provider === "string" && opts.provider ? opts.provider : "anthropic";
     const requested = typeof opts.model === "string" ? opts.model.trim() : "";
+    if (provider === COMPATIBLE) return compatible(opts, requested, apiKey);
     if (!(provider in DEFAULT_MODELS)) {
         return { provider, modelId: requested, apiKey, problem: `Unknown provider "${provider}"` };
     }
@@ -110,4 +117,37 @@ export function maxTurns(value: unknown): number {
 
 export function supportsImages(model: Model<any>): boolean {
     return model.input.includes("image");
+}
+
+/** A model on an OpenAI-compatible endpoint: the catalog does not know it, so it is described here. */
+function compatible(opts: Options, modelId: string, apiKey: string): Resolved {
+    const baseUrl = typeof opts.baseUrl === "string" ? opts.baseUrl.trim().replace(/\/+$/, "") : "";
+    if (!/^https?:\/\/[^\s]+$/.test(baseUrl)) {
+        return { provider: COMPATIBLE, modelId, apiKey, problem: "Set Base URL for the OpenAI-compatible provider" };
+    }
+    if (!modelId) return { provider: COMPATIBLE, modelId, apiKey, problem: "Set Model for the OpenAI-compatible provider" };
+    const model: Model<"openai-completions"> = {
+        id: modelId,
+        name: modelId,
+        api: "openai-completions",
+        provider: COMPATIBLE,
+        baseUrl,
+        // The Thinking option is sent as reasoning_effort; endpoints that ignore it are unaffected.
+        reasoning: true,
+        input: ["text", "image"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 200000,
+        maxTokens: 32000,
+    };
+    models().setProvider(
+        createProvider({
+            id: COMPATIBLE,
+            name: "OpenAI-compatible",
+            baseUrl,
+            auth: { apiKey: { name: "API key", resolve: async () => ({ auth: {} }) } },
+            models: [model],
+            api: openAICompletionsApi(),
+        }),
+    );
+    return { provider: COMPATIBLE, modelId, model, apiKey };
 }

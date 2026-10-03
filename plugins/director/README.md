@@ -17,10 +17,11 @@ named in the UI. Licenses of everything in the bundle are in `dist/THIRD-PARTY-N
 
 | Option | Type | Default | Notes |
 |---|---|---|---|
-| `provider` | enum | `anthropic` | `anthropic`, `openai`, `google`, `openrouter`, `groq`, `xai`, `mistral` |
-| `model` | string | empty | Empty means the provider's default (table below); otherwise a model ID from pi-ai's catalog |
+| `provider` | enum | `anthropic` | `anthropic`, `openai`, `google`, `openrouter`, `groq`, `xai`, `mistral`, `compatible` |
+| `model` | string | empty | Empty means the provider's default (table below); otherwise a model ID from pi-ai's catalog. Required for `compatible` |
+| `baseUrl` | string | empty | `compatible` only: an OpenAI Chat Completions endpoint (a proxy, a gateway, a local server), such as `https://example.com/v1` |
 | `apiKey` | secret | — | Kept in the Keychain by BashCut and sent only in the request; never logged or saved by the plugin |
-| `thinking` | enum | `off` | `off`, `low`, `medium`, `high`; ignored by models without reasoning |
+| `thinking` | enum | `off` | `off`, `low`, `medium`, `high`; ignored by models without reasoning. With `compatible` it is sent as `reasoning_effort` |
 | `maxTurns` | integer 5–200 | 40 | Model calls per message before Director stops and says so |
 
 | Provider | Default model |
