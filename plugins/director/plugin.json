@@ -18,6 +18,7 @@
       "id": "bashcut.director.agent",
       "capability": "agent.chat",
       "name": "Director",
+      "priority": 10,
       "timeoutSeconds": 300
     }
   ],
