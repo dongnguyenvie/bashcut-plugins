@@ -5,7 +5,7 @@
     "en": "Silence Markers",
     "vi": "Đánh dấu im lặng"
   },
-  "version": "0.0.2",
+  "version": "0.0.3",
   "apiVersion": 2,
   "entrypoint": "bin/provider",
   "capabilities": [],
@@ -62,6 +62,58 @@
             "minimum": 100,
             "maximum": 10000,
             "default": 400
+          }
+        ]
+      },
+      {
+        "id": "bashcut.silence-markers.remove",
+        "title": {
+          "en": "Remove silences in clip…",
+          "vi": "Cắt các đoạn im lặng trong clip…"
+        },
+        "icon": "scissors",
+        "placements": [
+          "menu.plugins",
+          "clip.context",
+          "inspector.audio"
+        ],
+        "when": "selection && media",
+        "context": [
+          "media"
+        ],
+        "params": [
+          {
+            "id": "thresholdDb",
+            "title": {
+              "en": "Silence below (dBFS)",
+              "vi": "Im lặng dưới (dBFS)"
+            },
+            "type": "number",
+            "minimum": -80,
+            "maximum": -10,
+            "default": -40
+          },
+          {
+            "id": "minSilenceMs",
+            "title": {
+              "en": "Shortest silence (ms)",
+              "vi": "Im lặng ngắn nhất (ms)"
+            },
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 10000,
+            "default": 400
+          },
+          {
+            "id": "paddingMs",
+            "title": {
+              "en": "Keep before and after words (ms)",
+              "vi": "Chừa trước và sau lời (ms)"
+            },
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 500,
+            "default": 100
           }
         ]
       }

@@ -69,6 +69,38 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(len(silences), 1)
         self.assertAlmostEqual(silences[0]["start"], round((2.8 - 2.0) / 2 * 30), delta=1)
 
+    def remove(self, minimum_ms=400, padding_ms=100, item=None):
+        params = self.params(minimum_ms=minimum_ms, item=item)
+        params["action"] = "bashcut.silence-markers.remove"
+        params["params"]["paddingMs"] = padding_ms
+        return call(params)
+
+    def test_remove_cuts_the_silence_with_padding(self):
+        result = self.remove()["result"]
+        ops = result["operations"]
+        # Silence 1.0–1.8 s; 0.1 s padding keeps 1.0–1.1 and 1.7–1.8: cut frames 133–151 of a clip at 100.
+        self.assertEqual([op["op"] for op in ops], ["split", "split", "delete"])
+        self.assertAlmostEqual(ops[0]["atFrame"], 151, delta=1)
+        self.assertAlmostEqual(ops[1]["atFrame"], 133, delta=1)
+        self.assertEqual(ops[2], {"op": "delete", "item": ops[1]["newID"], "ripple": True})
+        self.assertTrue(all(op["item"] == "c1" for op in ops[:2]))
+        self.assertEqual(result["ui"]["select"], "c1")
+        self.assertIn("Removed 1 silences", result["message"])
+
+    def test_remove_runs_right_to_left(self):
+        # 50 ms padding leaves 0.1 s of the 0.2 s silence to cut (100 ms would leave nothing).
+        ops = self.remove(minimum_ms=150, padding_ms=50)["result"]["operations"]
+        splits = [op["atFrame"] for op in ops if op["op"] == "split"]
+        self.assertEqual(splits, sorted(splits, reverse=True))
+        self.assertEqual(sum(op["op"] == "delete" for op in ops), 2)
+
+    def test_remove_at_the_clip_edges_needs_no_padding(self):
+        # The clip starts inside the first silence (source 1.2 s) and ends inside the second (source 2.9 s).
+        item = {"id": "c3", "at": 0, "dur": 51, "in": 36}
+        ops = self.remove(minimum_ms=50, item=item)["result"]["operations"]
+        self.assertEqual(ops[0]["op"], "split")
+        self.assertEqual(ops[-1], {"op": "delete", "item": "c3", "ripple": True})
+
     def test_errors_are_reported(self):
         params = self.params()
         params["context"]["media"] = None
