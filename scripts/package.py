@@ -76,7 +76,8 @@ def build(folder):
     """Runs the plugin's build.sh (compiled helpers) when it has one."""
     script = folder / "build.sh"
     if script.is_file():
-        subprocess.run([str(script)], check=True)
+        # Build output goes to stderr: stdout carries only the JSON result the release workflow reads.
+        subprocess.run([str(script)], check=True, stdout=sys.stderr)
 
 
 def check_text(value, where):
