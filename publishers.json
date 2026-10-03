@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "publishers": {
+    "bashcut": {
+      "name": "BashCut",
+      "keys": [
+        "ed25519:q+RG+vvYLwP2xxRtVjNxPCbb3LhvuRyKNxSx3c1p6C4="
+      ],
+      "verified": true
+    }
+  }
+}
