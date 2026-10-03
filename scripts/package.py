@@ -120,7 +120,9 @@ def package(slug, folder, manifest):
     with tempfile.TemporaryDirectory() as staging:
         staged = pathlib.Path(staging) / manifest["id"]
         shutil.copytree(folder, staged, ignore=shutil.ignore_patterns(
-            "listing.json", "versions.json", "__pycache__", ".DS_Store", "tests", "src", "build.sh"))
+            "listing.json", "versions.json", "__pycache__", ".DS_Store", "tests", "src", "build.sh",
+            # Node build inputs: build.sh bundles src/ and its locked dependencies into one file that ships instead.
+            "node_modules", "package.json", "package-lock.json", "tsconfig.json"))
         subprocess.run(["ditto", "-c", "-k", "--norsrc", "--keepParent", str(staged), str(archive)], check=True)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (archive.parent / (archive.name + ".sha256")).write_text(f"{digest}  {archive.name}\n")

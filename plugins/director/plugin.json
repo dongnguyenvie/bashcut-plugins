@@ -1,0 +1,201 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.director",
+  "name": {
+    "en": "Director",
+    "vi": "Director"
+  },
+  "version": "0.0.1",
+  "apiVersion": 4,
+  "minApiVersion": 4,
+  "entrypoint": "bin/provider",
+  "transport": "session",
+  "capabilities": [
+    "agent.chat"
+  ],
+  "providers": [
+    {
+      "id": "bashcut.director.agent",
+      "capability": "agent.chat",
+      "name": "Director",
+      "priority": 10,
+      "timeoutSeconds": 300
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "node",
+      "name": "Node.js 22",
+      "kind": "executable",
+      "probe": {
+        "executable": "bin/check",
+        "arguments": []
+      },
+      "install": {
+        "summary": "Download the official Node.js 22 LTS for this Mac from nodejs.org (about 50 MB) into Director's data folder, checked against its published SHA-256. A Node.js 22.19 or newer already on this Mac (Homebrew, nvm, Volta) is used instead.",
+        "command": {
+          "executable": "bin/setup",
+          "arguments": []
+        }
+      },
+      "estimatedBytes": 200000000
+    }
+  ],
+  "options": [
+    {
+      "id": "provider",
+      "title": {
+        "en": "Model provider",
+        "vi": "Nhà cung cấp model"
+      },
+      "type": "enum",
+      "choices": [
+        "anthropic",
+        "openai",
+        "google",
+        "openrouter",
+        "groq",
+        "xai",
+        "mistral",
+        "compatible"
+      ],
+      "default": "anthropic",
+      "choiceLabels": {
+        "anthropic": {
+          "en": "Anthropic (Claude)",
+          "vi": "Anthropic (Claude)"
+        },
+        "openai": {
+          "en": "OpenAI (GPT)",
+          "vi": "OpenAI (GPT)"
+        },
+        "google": {
+          "en": "Google (Gemini)",
+          "vi": "Google (Gemini)"
+        },
+        "openrouter": {
+          "en": "OpenRouter",
+          "vi": "OpenRouter"
+        },
+        "groq": {
+          "en": "Groq",
+          "vi": "Groq"
+        },
+        "xai": {
+          "en": "xAI (Grok)",
+          "vi": "xAI (Grok)"
+        },
+        "mistral": {
+          "en": "Mistral",
+          "vi": "Mistral"
+        },
+        "compatible": {
+          "en": "OpenAI-compatible (custom URL)",
+          "vi": "Tương thích OpenAI (URL riêng)"
+        }
+      },
+      "scope": "user",
+      "help": {
+        "en": "The company whose model Director uses. The API key below must be from this provider.",
+        "vi": "Công ty cung cấp model cho Director. Khoá API bên dưới phải của nhà cung cấp này."
+      }
+    },
+    {
+      "id": "model",
+      "title": {
+        "en": "Model",
+        "vi": "Model"
+      },
+      "type": "string",
+      "default": "",
+      "maxLength": 200,
+      "scope": "user",
+      "help": {
+        "en": "Leave empty for the provider's default: claude-sonnet-5-5 (Anthropic), gpt-5.5 (OpenAI), gemini-3.5-flash (Google), anthropic/claude-sonnet-5.5 (OpenRouter), openai/gpt-oss-120b (Groq), grok-4.7 (xAI), mistral-medium-latest (Mistral).",
+        "vi": "Để trống để dùng model mặc định: claude-sonnet-5-5 (Anthropic), gpt-5.5 (OpenAI), gemini-3.5-flash (Google), anthropic/claude-sonnet-5.5 (OpenRouter), openai/gpt-oss-120b (Groq), grok-4.7 (xAI), mistral-medium-latest (Mistral)."
+      }
+    },
+    {
+      "id": "baseUrl",
+      "title": {
+        "en": "Base URL",
+        "vi": "Base URL"
+      },
+      "type": "string",
+      "default": "",
+      "scope": "user",
+      "maxLength": 500,
+      "help": {
+        "en": "For OpenAI-compatible only: the endpoint that serves /chat/completions, such as https://example.com/v1",
+        "vi": "Chỉ dùng cho Tương thích OpenAI: địa chỉ phục vụ /chat/completions, ví dụ https://example.com/v1"
+      }
+    },
+    {
+      "id": "apiKey",
+      "title": {
+        "en": "API key",
+        "vi": "Khoá API"
+      },
+      "type": "secret",
+      "scope": "user",
+      "help": {
+        "en": "Your key for the provider above. It is kept in the macOS Keychain and sent only to Director.",
+        "vi": "Khoá của nhà cung cấp ở trên. Được lưu trong Keychain của macOS và chỉ gửi cho Director."
+      }
+    },
+    {
+      "id": "thinking",
+      "title": {
+        "en": "Thinking",
+        "vi": "Suy luận"
+      },
+      "type": "enum",
+      "choices": [
+        "off",
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "off",
+      "choiceLabels": {
+        "off": {
+          "en": "Off",
+          "vi": "Tắt"
+        },
+        "low": {
+          "en": "Low",
+          "vi": "Thấp"
+        },
+        "medium": {
+          "en": "Medium",
+          "vi": "Vừa"
+        },
+        "high": {
+          "en": "High",
+          "vi": "Cao"
+        }
+      },
+      "scope": "user",
+      "help": {
+        "en": "How much the model reasons before answering, on models that support it. More is slower and costs more.",
+        "vi": "Mức model suy nghĩ trước khi trả lời (với model hỗ trợ). Càng cao càng chậm và tốn phí hơn."
+      }
+    },
+    {
+      "id": "maxTurns",
+      "title": {
+        "en": "Max turns per message",
+        "vi": "Số lượt tối đa mỗi tin nhắn"
+      },
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 200,
+      "default": 40,
+      "scope": "user",
+      "help": {
+        "en": "Director stops after this many model calls for one message and tells you; send another message to continue.",
+        "vi": "Director dừng sau số lần gọi model này cho một tin nhắn và báo cho bạn; gửi tin nhắn mới để tiếp tục."
+      }
+    }
+  ]
+}

@@ -19,6 +19,9 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - name: Read the tag
         id: tag
         run: |
@@ -36,7 +39,8 @@ jobs:
         run: |
           folder="plugins/${{ steps.tag.outputs.slug }}"
           if [ -x "$folder/build.sh" ]; then "$folder/build.sh"; fi
-          if [ -d "$folder/tests" ]; then python3 -m unittest discover -s "$folder/tests" -v; fi
+          if ls "$folder"/tests/test_*.py >/dev/null 2>&1; then python3 -m unittest discover -s "$folder/tests" -v; fi
+          if [ -f "$folder/package.json" ]; then (cd "$folder" && npm test); fi
       - name: Package, sign and register
         id: package
         env:
