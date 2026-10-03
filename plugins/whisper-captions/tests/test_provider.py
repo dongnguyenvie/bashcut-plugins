@@ -101,6 +101,24 @@ class CaptionShapeTests(unittest.TestCase):
     def test_timestamps(self):
         self.assertEqual(whisper_provider.timestamp(3725.5), "01:02:05,500")
 
+class HeartbeatTests(unittest.TestCase):
+    def test_reports_progress_while_whisper_runs(self):
+        seen = []
+        original = whisper_provider.HEARTBEAT_SECONDS
+        whisper_provider.HEARTBEAT_SECONDS = 0.05
+        try:
+            with whisper_provider.heartbeat(lambda fraction, text: seen.append((fraction, text)), 600):
+                import time
+                time.sleep(0.3)
+        finally:
+            whisper_provider.HEARTBEAT_SECONDS = original
+        count = len(seen)
+        self.assertGreaterEqual(count, 2)
+        self.assertTrue(all(0.15 <= f <= 0.9 and t.startswith("Transcribing") for f, t in seen))
+        import time
+        time.sleep(0.15)
+        self.assertEqual(len(seen), count)  # stops when Whisper returns
+
 
 if __name__ == "__main__":
     unittest.main()
