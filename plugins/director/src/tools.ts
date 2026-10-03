@@ -174,7 +174,63 @@ export function startSummary(method: string, args: unknown): string {
     return oneLine(method + json, 160);
 }
 
-export function endSummary(result: any, isError: boolean): string {
+export const END_SUMMARY_LIMIT = 120;
+
+/**
+ * A short line for a finished tool row (at most 120 characters): the error message, or "ok" with what the result
+ * says at a glance (its revision, how many items its lists have, its message). Never the raw result.
+ */
+export function endSummary(method: string, result: any, isError: boolean): string {
     const text = (result?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join(" ");
-    return oneLine(isError ? text || "Failed" : text || "Done", isError ? 300 : 160);
+    if (isError) return oneLine(text || "Failed", END_SUMMARY_LIMIT);
+    if (method === "read_skill") {
+        const title = text.match(/^#\s+(.+)$/m)?.[1];
+        return oneLine(`read ${text.split("\n").length} lines${title ? ` · ${title}` : ""}`, END_SUMMARY_LIMIT);
+    }
+    let value: unknown;
+    try {
+        value = JSON.parse(text);
+    } catch {
+        // Cut at RESULT_LIMIT, or not JSON: say how big it is.
+        return text ? oneLine(`ok · ${text.length.toLocaleString("en-US")} characters`, END_SUMMARY_LIMIT) : "ok";
+    }
+    if (method === "ui.frame") {
+        const frame = value && typeof value === "object" ? (value as Record<string, unknown>).frame : undefined;
+        return typeof frame === "number" ? `frame image · frame ${frame}` : "frame image";
+    }
+    return oneLine(describe(value), END_SUMMARY_LIMIT);
+}
+
+function describe(value: unknown): string {
+    if (value === null || value === undefined || value === true) return "ok";
+    if (value === false) return "ok · false";
+    if (typeof value === "string") return value ? `ok · ${value}` : "ok";
+    if (typeof value === "number") return `ok · ${value}`;
+    if (Array.isArray(value)) return `ok · ${value.length} ${value.length === 1 ? "item" : "items"}`;
+    const object = value as Record<string, unknown>;
+    const parts = ["ok"];
+    for (const key of ["rev", "revision"]) {
+        if (typeof object[key] === "number" || typeof object[key] === "string") {
+            parts.push(`rev ${object[key]}`);
+            break;
+        }
+    }
+    for (const key of ["message", "summary", "status"]) {
+        if (typeof object[key] === "string" && object[key]) {
+            parts.push(oneLine(object[key] as string, 60));
+            break;
+        }
+    }
+    let lists = 0;
+    for (const [key, item] of Object.entries(object)) {
+        if (Array.isArray(item) && lists < 3) {
+            parts.push(`${key}: ${item.length}`);
+            lists += 1;
+        }
+    }
+    if (parts.length === 1) {
+        const keys = Object.keys(object);
+        if (keys.length > 0) parts.push(keys.slice(0, 4).join(", ") + (keys.length > 4 ? ", …" : ""));
+    }
+    return parts.join(" · ");
 }

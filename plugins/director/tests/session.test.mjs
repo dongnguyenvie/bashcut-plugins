@@ -187,7 +187,7 @@ test("a turn that calls a BashCut tool", async () => {
     const end = events.find((e) => e.kind === "toolEnd");
     assert.equal(end.callId, "c1");
     assert.equal(end.ok, true);
-    assert.match(end.summary, /V1/);
+    assert.equal(end.summary, "ok · tracks: 1", "a short summary, not the raw result");
     assert.ok(kinds.indexOf("tool") < kinds.indexOf("toolEnd"));
 
     const seen = report(events);
@@ -238,6 +238,8 @@ test("read_skill reads only the kit's skills, and ui.frame sends the picture", a
     await session.next((m) => m.id === "t1" && "result" in m);
     const ends = session.events("t1").filter((e) => e.kind === "toolEnd");
     assert.deepEqual(ends.map((e) => e.ok), [true, false, true]);
+    assert.equal(ends[0].summary, "read 2 lines · Cut silences");
+    assert.equal(ends[2].summary, "frame image · frame 12");
     const seen = report(session.events("t1"));
     assert.match(seen.toolResults[0], /# Cut silences/);
     assert.match(seen.toolResults[1], /without \/ or \.\./);
@@ -331,6 +333,186 @@ test("a model error ends the turn with its message", async () => {
     const reply = await session.request("t1", turn());
     assert.equal(reply.result.stopReason, "error");
     assert.match(reply.result.error, /Overloaded/);
+    await session.close();
+});
+
+test("toolEnd summaries are short and never the raw result", async () => {
+    const session = new Session({
+        data: temp("data"),
+        faux: script([
+            { toolCalls: [{ name: "bashcut_timeline_get", arguments: {} }] },
+            { toolCalls: [{ name: "bashcut_timeline_get", arguments: {} }] },
+            { toolCalls: [{ name: "bashcut_timeline_get", arguments: {} }] },
+            { text: "Done." },
+        ]),
+    });
+    session.write({ type: "request", id: "t1", apiVersion: 4, method: "agent.chat", params: turn() });
+    const results = [
+        { result: { ok: true, rev: 12, changed: ["A1", "A2"] } },
+        { result: { items: Array.from({ length: 500 }, (_, i) => ({ id: `clip-${i}`, text: "x".repeat(200) })) } },
+        { error: { code: -32602, message: "Edit refused: " + "the clip is locked ".repeat(20) } },
+    ];
+    for (const [index, answer] of results.entries()) {
+        const call = await session.next((m) => m.type === "call" && m.callId === `c${index + 1}`);
+        session.write({ type: "callResult", callId: call.callId, ...answer });
+    }
+    await session.next((m) => m.id === "t1" && "result" in m);
+    const ends = session.events("t1").filter((e) => e.kind === "toolEnd");
+    assert.equal(ends[0].summary, "ok · rev 12 · changed: 2");
+    assert.match(ends[1].summary, /^ok · [\d,]+ characters$/, "a result cut at 30,000 characters is not JSON");
+    assert.equal(ends[2].ok, false);
+    assert.match(ends[2].summary, /^Edit refused: the clip is locked/);
+    for (const end of ends) assert.ok(end.summary.length <= 120, end.summary);
+    await session.close();
+});
+
+test("commands lists Director's slash commands", async () => {
+    const session = new Session({ data: temp("data") });
+    const reply = await session.request("k1", { op: "commands", options: { provider: "anthropic", apiKey: "secret-key" } });
+    const commands = reply.result.commands;
+    assert.deepEqual(commands.map((c) => c.name), ["compact", "model", "thinking", "session"]);
+    assert.deepEqual(commands[0], { name: "compact", args: "[instructions]", summary: "Summarize older messages to free context" });
+    const model = commands[1];
+    assert.equal(model.args, "[model id]");
+    assert.equal(model.choices[0], "claude-sonnet-5-5", "the provider's default first");
+    assert.ok(model.choices.includes("claude-opus-5-5") && model.choices.every((id) => !id.includes("gpt")));
+    assert.deepEqual(commands[2].choices, ["off", "low", "medium", "high"]);
+    assert.deepEqual(commands[3], { name: "session", summary: "Model, messages and context use of this conversation" });
+    assert.ok(!JSON.stringify(reply).includes("secret-key"));
+    const compatible = await session.request("k2", { op: "commands", options: { provider: "compatible", baseUrl: "http://127.0.0.1:1/v1" } });
+    assert.deepEqual(compatible.result.commands[1].choices, []);
+    await session.close();
+});
+
+test("/model and /thinking show, set and validate", async () => {
+    const session = new Session({ data: temp("data") });
+    const options = { provider: "anthropic", apiKey: "secret-key", thinking: "off" };
+    const command = (id, name, args = "", opts = options) =>
+        session.request(id, { op: "command", conversation: "project-1", name, args, options: opts });
+
+    const show = (await command("m1", "model")).result;
+    assert.equal(show.options, undefined);
+    assert.match(show.text, /^Model: Anthropic · claude-sonnet-5-5\nAlso available: /);
+    assert.ok(show.text.split("\n")[1].split(", ").length <= 11);
+    assert.deepEqual((await command("m2", "model", "claude-opus-5-5")).result, {
+        options: { model: "claude-opus-5-5" },
+        text: "Model set to claude-opus-5-5",
+    });
+    const unknown = (await command("m3", "model", "gpt-5.5")).result;
+    assert.equal(unknown.options, undefined);
+    assert.match(unknown.text, /Anthropic has no model "gpt-5.5"/);
+    assert.deepEqual((await command("m4", "model", "default")).result, {
+        options: { model: "" },
+        text: "Model set to the default (claude-sonnet-5-5)",
+    });
+    const compatible = { provider: "compatible", baseUrl: "http://127.0.0.1:1/v1", model: "local", apiKey: "secret-key" };
+    assert.deepEqual((await command("m5", "model", "qwen3-coder", compatible)).result, {
+        options: { model: "qwen3-coder" },
+        text: "Model set to qwen3-coder",
+    });
+    assert.match((await command("m6", "model", "", compatible)).result.text, /^Model: OpenAI-compatible · local/);
+
+    assert.deepEqual((await command("h1", "thinking")).result, { text: "Thinking: off" });
+    assert.deepEqual((await command("h2", "thinking", "low")).result, { options: { thinking: "low" }, text: "Thinking: low" });
+    const bad = (await command("h3", "thinking", "max")).result;
+    assert.equal(bad.options, undefined);
+    assert.match(bad.text, /off, low, medium, high/);
+
+    const missing = await command("x1", "dance");
+    assert.equal(missing.error.code, "unknown_command");
+    for (const message of session.messages) assert.ok(!JSON.stringify(message).includes("secret-key"));
+    await session.close();
+});
+
+test("/session reports the model, messages and context use; status adds context numbers", async () => {
+    const session = new Session({ data: temp("data"), faux: script([{ text: "Sure." }]) });
+    await session.request("t1", turn({ text: "Hello" }));
+    const reply = await session.request("c1", { op: "command", conversation: "project-1", name: "session", args: "", options: turn().options });
+    const lines = reply.result.text.split("\n");
+    assert.equal(lines[0], "Model: Faux (tests) · faux-director");
+    assert.equal(lines[1], "Thinking: off (not supported by this model)");
+    assert.equal(lines[2], "Messages: 2");
+    assert.match(lines[3], /^Context: ~\d+ tokens \(\d+% of 200k\)$/);
+    assert.equal(lines[4], "Conversation: project-1");
+    const status = await session.request("s1", { op: "status", conversation: "project-1", options: turn().options });
+    assert.equal(status.result.contextWindow, 200_000);
+    assert.ok(status.result.contextTokens > 0);
+    const plain = await session.request("s2", { op: "status", options: turn().options });
+    assert.equal(plain.result.contextTokens, undefined);
+    await session.close();
+});
+
+test("/compact summarizes older messages with the model and keeps the newest", async () => {
+    const data = temp("data");
+    const long = (n) => `Message ${n}: ` + "please tighten every pause in this part. ".repeat(100);
+    const answers = Array.from({ length: 5 }, (_, i) => ({ text: `Answer ${i + 1}. ` + "Cut the pause at 00:01. ".repeat(60) }));
+    const first = new Session({
+        data,
+        faux: script([...answers, { text: "## Goal\nTighten the intro\n\n## Critical Context\n- caption style: bold" }]),
+    });
+    const options = turn().options;
+    const nothing = await first.request("c0", { op: "command", conversation: "project-1", name: "compact", args: "", options });
+    assert.deepEqual(nothing.result, { text: "Nothing to compact yet" });
+    for (let i = 1; i <= 5; i++) await first.request(`t${i}`, turn({ text: long(i) }));
+    const noKey = await first.request("c1", { op: "command", conversation: "project-1", name: "compact", args: "", options: { apiKey: "" } });
+    assert.match(noKey.result.text, /^Cannot compact: Add an API key/);
+
+    const reply = await first.request("c2", { op: "command", conversation: "project-1", name: "compact", args: "", options });
+    const match = reply.result.text.match(/^Compacted 4 messages \(~([\d.]+)k → ~([\d.]+)k tokens\)$/);
+    assert.ok(match, reply.result.text);
+    assert.ok(Number(match[2]) < Number(match[1]));
+    assert.equal(reply.result.options, undefined);
+    const session = await first.request("c3", { op: "command", conversation: "project-1", name: "session", args: "", options });
+    assert.match(session.result.text, /Messages: 7/, "summary + the newest 6 messages");
+    assert.equal(await first.close(), 0);
+
+    const saved = JSON.parse(readFileSync(join(data, "conversations", "project-1.json"), "utf8"));
+    const chat = saved.messages.filter((m) => m.role !== "system");
+    assert.equal(saved.messages[0].role, "system");
+    assert.equal(chat.length, 7);
+    assert.equal(chat[0].role, "user");
+    assert.match(chat[0].content, /^Summary of the earlier conversation:\n## Goal\nTighten the intro/);
+    assert.match(chat[1].content, /^Message 3:/);
+
+    // After a restart the model sees the summary; a second /compact merges it and the user's focus.
+    const second = new Session({ data, faux: script([{ reportContext: true }, { text: "ok" }, { reportContext: true }]) });
+    await second.request("t6", turn({ text: "What did we decide?" }));
+    const seen = report(second.events("t6"));
+    assert.equal(seen.roles.user, 5);
+    assert.equal(seen.roles.assistant, 3);
+    await second.request("t7", turn({ text: "Next" }));
+    const merged = await second.request("c4", {
+        op: "command",
+        conversation: "project-1",
+        name: "compact",
+        args: "preserve the caption decisions",
+        options,
+    });
+    assert.match(merged.result.text, /^Compacted \d+ messages/);
+    const after = JSON.parse(readFileSync(join(data, "conversations", "project-1.json"), "utf8"));
+    const summary = after.messages.find((m) => m.role === "user").content;
+    const prompt = JSON.parse(summary.slice("Summary of the earlier conversation:\n".length));
+    assert.match(prompt.systemPrompt, /Do NOT continue the conversation/);
+    assert.match(prompt.lastUser, /<previous-summary>\n## Goal\nTighten the intro/);
+    assert.match(prompt.lastUser, /\[User\]: Message 3:/);
+    assert.match(prompt.lastUser, /\[Assistant\]: Answer 3\./);
+    assert.match(prompt.lastUser, /Additional focus from the user: preserve the caption decisions$/);
+    assert.deepEqual(prompt.tools, []);
+    await second.close();
+});
+
+test("/compact is refused while a turn runs in the conversation", async () => {
+    const session = new Session({ data: temp("data"), faux: script([{ text: "one" }, { text: "two" }, { delayMs: 30_000, text: "slow" }]) });
+    await session.request("t1", turn({ text: "a" }));
+    await session.request("t2", turn({ text: "b" }));
+    session.write({ type: "request", id: "t3", apiVersion: 4, method: "agent.chat", params: turn({ text: "c" }) });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const busy = await session.request("c1", { op: "command", conversation: "project-1", name: "compact", args: "", options: turn().options });
+    assert.equal(busy.error.code, "busy");
+    const other = await session.request("c2", { op: "command", conversation: "project-1", name: "thinking", args: "", options: turn().options });
+    assert.deepEqual(other.result, { text: "Thinking: off" }, "other commands still answer");
+    session.write({ type: "cancel", id: "t3" });
+    assert.deepEqual((await session.next((m) => m.id === "t3" && "result" in m)).result, { stopReason: "aborted" });
     await session.close();
 });
 

@@ -1,4 +1,4 @@
-// agent.chat: turn, reset and status (spec 11 §3.3).
+// agent.chat: turn, reset and status (spec 11 §3.3). Commands are in commands.ts.
 import { Agent, type AgentMessage } from "@earendil-works/pi-agent-core";
 import { toToolDeclaration, type ImageContent, type SystemMessage } from "@earendil-works/pi-ai";
 import { readFile } from "node:fs/promises";
@@ -34,19 +34,47 @@ export function cancelAll(): Promise<unknown> {
     return Promise.all([...running.values()].map((entry) => entry.done.catch(() => undefined)));
 }
 
-export function status(options: Options | undefined) {
+/** Whether a turn (or a /compact) is running in the conversation. */
+export function busy(conversationId: string): boolean {
+    return running.has(conversationId);
+}
+
+/** Runs `work` with the conversation marked busy, so turns wait for it and `cancel` of `requestId` aborts it. */
+export async function hold<T>(conversationId: string, requestId: string, work: (signal: AbortSignal) => Promise<T>): Promise<T> {
+    if (running.has(conversationId)) throw new Error("Director is already answering in this conversation; stop it or wait.");
+    const controller = new AbortController();
+    let finish!: () => void;
+    const done = new Promise<void>((r) => (finish = r));
+    const abort = () => controller.abort();
+    running.set(conversationId, { requestId, abort, done });
+    cancellers.set(requestId, abort);
+    try {
+        return await work(controller.signal);
+    } finally {
+        running.delete(conversationId);
+        cancellers.delete(requestId);
+        finish();
+    }
+}
+
+export function status(options: Options | undefined, conversation?: unknown) {
     const resolved = resolve(options);
     const providerName = PROVIDER_NAMES[resolved.provider] ?? resolved.provider;
     let detail: string;
     if (resolved.problem) detail = resolved.problem;
     else if (!resolved.apiKey) detail = API_KEY_MISSING;
     else detail = `${providerName} · ${resolved.model!.name || resolved.modelId}`;
-    return {
+    const result: Record<string, unknown> = {
         ready: !resolved.problem && !!resolved.apiKey && !!resolved.model,
         provider: resolved.provider,
         model: resolved.modelId,
         detail,
     };
+    if (typeof conversation === "string" && conversation) {
+        result.contextTokens = store.estimateTokens(store.load(conversation).messages);
+        if (resolved.model) result.contextWindow = resolved.model.contextWindow;
+    }
+    return result;
 }
 
 export async function reset(conversation: string): Promise<Record<string, never>> {
@@ -250,7 +278,7 @@ export async function turn(requestId: string, params: Record<string, any>): Prom
                         kind: "toolEnd",
                         callId: toolContext.callIdFor(event.toolCallId),
                         ok: !event.isError,
-                        summary: endSummary(event.result, event.isError),
+                        summary: endSummary(methods.get(event.toolName) ?? event.toolName, event.result, event.isError),
                     });
                     break;
                 case "turn_end":
