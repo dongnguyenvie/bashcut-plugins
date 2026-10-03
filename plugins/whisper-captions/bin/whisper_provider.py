@@ -8,11 +8,15 @@ import math
 import os
 import re
 import sys
+import threading
+import time
 import traceback
 
 PROVIDER_ID = "bashcut.whisper-captions.local"
 MODEL = "mlx-community/whisper-large-v3-turbo"
 SAMPLE_RATE = 16000
+# BashCut times a request out after 120 s without a progress line, so long transcriptions report this often.
+HEARTBEAT_SECONDS = 20
 
 # Caption shape: a new caption after a pause, at sentence ends once the line is fairly full, and never longer
 # than the character limit or MAX_SECONDS on screen.
@@ -65,6 +69,30 @@ def fake_segments():
     ]
 
 
+class heartbeat:
+    """Reports progress every HEARTBEAT_SECONDS while Whisper runs (it has no callback of its own).
+    The fraction is an estimate from the audio length: about 10 s of audio per second once the model is warm."""
+
+    def __init__(self, progress, audio_seconds):
+        self.progress, self.audio_seconds = progress, audio_seconds
+        self.done = threading.Event()
+
+    def __enter__(self):
+        started = time.monotonic()
+
+        def tick():
+            while not self.done.wait(HEARTBEAT_SECONDS):
+                elapsed = time.monotonic() - started
+                guess = min(0.9, 0.15 + 0.75 * elapsed * 10 / max(self.audio_seconds, 1))
+                self.progress(round(guess, 2), f"Transcribing ({int(elapsed)} s)")
+
+        threading.Thread(target=tick, daemon=True).start()
+        return self
+
+    def __exit__(self, *_):
+        self.done.set()
+
+
 class Transcriber:
     def __init__(self):
         self.loaded = False
@@ -91,7 +119,8 @@ class Transcriber:
         if vocabulary:
             # Whisper reads the prompt as preceding text, so the names it lists are spelled the same way.
             options["initial_prompt"] = vocabulary
-        result = mlx_whisper.transcribe(audio, **options)
+        with heartbeat(progress, len(audio) / SAMPLE_RATE):
+            result = mlx_whisper.transcribe(audio, **options)
         self.loaded = True
         return result.get("segments") or []
 
@@ -216,9 +245,13 @@ def handle(request, progress, transcriber):
         return {"id": request["id"], "error": {"code": "failed", "message": str(error)}}
 
 
+SEND_LOCK = threading.Lock()
+
+
 def send(message):
-    sys.stdout.write(json.dumps(message, ensure_ascii=False) + "\n")
-    sys.stdout.flush()
+    with SEND_LOCK:  # the heartbeat thread writes progress lines too
+        sys.stdout.write(json.dumps(message, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
 
 
 def main():
