@@ -212,8 +212,9 @@ def word_timings(cues):
             # by length.
             parts = text.split()
             total = sum(len(part) for part in parts)
+            span = finish - begin
             for part in parts:
-                length = (finish - begin) * len(part) / total
+                length = span * len(part) / total
                 timed.append({"text": part, "start": round(begin, 3), "end": round(begin + length, 3)})
                 begin += length
     return timed
