@@ -19,7 +19,7 @@ named in the UI. Licenses of everything in the bundle are in `dist/THIRD-PARTY-N
 |---|---|---|---|
 | `provider` | enum | `anthropic` | `anthropic`, `openai`, `google`, `openrouter`, `groq`, `xai`, `mistral`, `compatible` |
 | `model` | string | empty | Empty means the provider's default (table below); otherwise a model ID from pi-ai's catalog. Required for `compatible` |
-| `baseUrl` | string | empty | `compatible` only: an OpenAI Chat Completions endpoint (a proxy, a gateway, a local server), such as `https://example.com/v1` |
+| `baseUrl` | string | empty | `compatible` only: an OpenAI Chat Completions endpoint (a proxy, a gateway, a local server), such as `https://example.com/v1`; HTTPS required except loopback HTTP, with no URL credentials, query or fragment |
 | `apiKey` | secret | — | Kept in the Keychain by BashCut and sent only in the request; never logged or saved by the plugin |
 | `thinking` | enum | `off` | `off`, `low`, `medium`, `high`; ignored by models without reasoning. With `compatible` it is sent as `reasoning_effort` |
 | `maxTurns` | integer 5–200 | 40 | Model calls per message before Director stops and says so |
@@ -86,9 +86,10 @@ During a turn the plugin sends:
   get `{"id","error":{"code":"invalid_params"|"unknown_method","message"}}`, and `command` adds the codes
   `unknown_command` and `busy` (below).
 
-The system prompt is a fixed first line plus three sections: `<instructions>` (`params.instructions`), `<skills>`
-(the kit's skills, telling the model to call `read_skill` first) and `<context>` (`params.context`). Later turns add
-a system message that patches only the sections that changed, so the cached prefix stays the same. `read_skill`
+The system prompt is a fixed first line plus two sections: `<instructions>` (`params.instructions`) and `<skills>`
+(the kit's skills, telling the model to call `read_skill` first). Later turns patch only changed system sections.
+Editor state (`params.context`) is JSON-encoded untrusted data in the user message; it never becomes a system
+section. Loading old conversations removes legacy system context sections before any model request. `read_skill`
 reads `<kit.root>/skills/<name>/SKILL.md` only; names with `/`, `\` or `..` are refused. `params.images` (PNG,
 JPEG, GIF, WebP) are attached to the user message when the model accepts images.
 

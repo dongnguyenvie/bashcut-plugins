@@ -94,6 +94,7 @@ function report(messages: any[]) {
     let images = 0;
     let lastUser = "";
     const toolResults: string[] = [];
+    const userTexts: string[] = [];
     for (const message of messages) {
         roles[message.role] = (roles[message.role] ?? 0) + 1;
         const content = Array.isArray(message.content) ? message.content : [];
@@ -102,7 +103,9 @@ function report(messages: any[]) {
             lastUser =
                 typeof message.content === "string"
                     ? message.content
-                    : content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n");
+                    : content.filter((b: any) => b.type === "text").at(-1)?.text ?? "";
+            userTexts.push(typeof message.content === "string" ? message.content :
+                content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n"));
         }
         if (message.role === "toolResult") {
             toolResults.push(content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n"));
@@ -112,6 +115,7 @@ function report(messages: any[]) {
         roles,
         images,
         lastUser,
+        userTexts,
         toolResults,
         systemPrompt: getCurrentSystemPrompt(messages),
         tools: getCurrentTools(messages).map((tool) => tool.name),
