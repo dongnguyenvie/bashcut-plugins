@@ -10,6 +10,7 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 | [Silence Markers](plugins/silence-markers) | Adds a section marker at every quiet stretch in the selected clip |
 | [Whisper Captions](plugins/whisper-captions) | Captions from speech on Apple Silicon (Whisper large-v3 turbo via MLX, MIT): Vietnamese and about 100 languages, timed per word, split into even lines; `captions.transcribe` provider |
 | [VieNeu TTS](plugins/vieneu-tts) | Vietnamese voiceover on this Mac (VieNeu-TTS v3 Turbo, Apache-2.0): 25 voices, voice cloning; `voice.synthesize` provider |
+| [Director](plugins/director) | BashCut's editing agent in the agent dock: chat with Claude, GPT, Gemini and others using your API key; it edits through BashCut's commands. Needs BashCut with plugin API 4; `agent.chat` provider |
 
 ## Layout
 
@@ -21,7 +22,7 @@ plugins/<slug>/plugin.json    manifest (bashcut.plugin/1)
 plugins/<slug>/bin/…          entrypoint and helpers
 plugins/<slug>/listing.json   store listing: name and summary ({en, vi, …}), category, platforms, minAppVersion
 plugins/<slug>/tests/         tests run by CI (not shipped)
-plugins/<slug>/build.sh       optional: builds compiled helpers into bin/ (CI and package.py run it; not shipped)
+plugins/<slug>/build.sh       optional: builds compiled helpers or bundles (CI and package.py run it; not shipped)
 plugins/<slug>/src/           optional: sources for build.sh (not shipped)
 scripts/package.py            zip + SHA-256 + signature; --register records the version in versions.json
 scripts/build-registry.py     generates registry.json from the sources (--check in CI)
@@ -93,6 +94,9 @@ Installing a plugin is one click in BashCut; users never open Terminal, install 
 - A dependency is either a tool every Mac has (`package.py` keeps the list: `sh`, `curl`, `afconvert`, `ditto`,
   `osascript`…) or has an install recipe that downloads it into `BASHCUT_PLUGIN_DATA`. `python3`, `git`, `swift` and
   Homebrew tools are refused: on a fresh Mac they are missing or ask to install the Command Line Tools.
+- Plugins written in TypeScript ship one esbuild bundle and need only Node.js, which their recipe downloads from
+  nodejs.org when the Mac has none (see Director: `build.sh` runs `npm ci` with the lockfile; `node_modules` is never
+  shipped). Their tests use `node:test` and run with `npm test` when the folder has a `package.json`.
 - Small plugins are compiled Swift (see Silence Markers: `build.sh` makes a universal binary with AVFoundation, no
   runtime needed). Plugins that need Python bring their own with `uv`, like VieNeu.
 - Probes must exit 0 when the tool works (`afconvert -h` exits 2, for example).

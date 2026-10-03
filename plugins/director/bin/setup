@@ -1,0 +1,58 @@
+#!/bin/sh
+# Install recipe for Director's Node.js. BashCut runs it after the user approves, in the plugin's environment.
+# Downloads the newest official Node.js 22 LTS for this Mac (darwin-arm64 or darwin-x64) from nodejs.org into
+# BASHCUT_PLUGIN_DATA/node, after checking the archive against the release's SHASUMS256.txt. `::progress` lines
+# drive the progress bar. Running it again updates or repairs the copy; a Node.js elsewhere on the Mac is not touched.
+set -eu
+data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.director}"
+base="${DIRECTOR_NODE_MIRROR:-https://nodejs.org/dist/latest-v22.x}"
+case "$(uname -m)" in
+    arm64) arch=arm64 ;;
+    x86_64) arch=x64 ;;
+    *) echo "Unsupported Mac architecture: $(uname -m)" >&2; exit 1 ;;
+esac
+mkdir -p "$data"
+work="$(mktemp -d "$data/.setup.XXXXXX")"
+trap 'rm -rf "$work"' EXIT
+
+echo "::progress 0.02 Finding the newest Node.js 22"
+curl --fail --location --silent --show-error "$base/SHASUMS256.txt" -o "$work/SHASUMS256.txt"
+line="$(grep -E "  node-v22\.[0-9]+\.[0-9]+-darwin-$arch\.tar\.gz\$" "$work/SHASUMS256.txt" | head -n 1)"
+if [ -z "$line" ]; then
+    echo "No darwin-$arch archive in $base/SHASUMS256.txt" >&2
+    exit 1
+fi
+sum="${line%% *}"
+name="${line##* }"
+folder="${name%.tar.gz}"
+echo "$name"
+
+echo "::progress 0.05 Downloading $folder"
+size="$(curl --fail --location --silent --head "$base/$name" | tr -d '\r' |
+    awk 'tolower($1) == "content-length:" { n = $2 } END { print n + 0 }')"
+curl --fail --location --silent --show-error "$base/$name" -o "$work/$name" &
+download=$!
+while kill -0 "$download" 2>/dev/null; do
+    if [ "$size" -gt 0 ] && [ -f "$work/$name" ]; then
+        have="$(wc -c < "$work/$name" | tr -d ' ')"
+        awk -v h="$have" -v s="$size" 'BEGIN { printf "::progress %.2f Downloading Node.js (%d of %d MB)\n", 0.05 + 0.8 * h / s, h / 1048576, s / 1048576 }'
+    fi
+    sleep 1
+done
+wait "$download"
+
+echo "::progress 0.86 Checking the SHA-256"
+actual="$(shasum -a 256 "$work/$name" | cut -d' ' -f1)"
+if [ "$actual" != "$sum" ]; then
+    echo "Checksum mismatch for $name: expected $sum, got $actual" >&2
+    exit 1
+fi
+
+echo "::progress 0.90 Unpacking"
+tar -xzf "$work/$name" -C "$work"
+"$work/$folder/bin/node" -v
+rm -rf "$data/node.old"
+[ -d "$data/node" ] && mv "$data/node" "$data/node.old"
+mv "$work/$folder" "$data/node"
+rm -rf "$data/node.old"
+echo "::progress 1.0 Node.js $("$data/node/bin/node" -v) is ready"
