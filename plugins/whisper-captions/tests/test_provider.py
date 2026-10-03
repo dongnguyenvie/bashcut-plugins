@@ -42,8 +42,14 @@ class ProviderTests(unittest.TestCase):
         messages = session(self.request(options={"maxCharacters": 42}))
         self.assertEqual(messages[0], {"type": "hello", "apiVersion": 2})
         result = next(m for m in messages if m.get("id") == "r0" and "result" in m)["result"]
-        self.assertEqual(result, {"srtPath": "clip 1.srt"})
+        self.assertEqual(result, {"srtPath": "clip 1.srt", "wordsPath": "clip 1.words.json"})
         text = pathlib.Path(self.output, "clip 1.srt").read_text(encoding="utf-8")
+        words = json.loads(pathlib.Path(self.output, "clip 1.words.json").read_text(encoding="utf-8"))
+        self.assertEqual([w["text"] for w in words[:4]], ["Xin", "chào", "các", "bạn."])
+        self.assertTrue(all(w["start"] <= w["end"] for w in words))
+        # Word for word with the caption text, so BashCut can use the timings as they are.
+        captions = [block.split("\n", 2)[2] for block in text.strip().split("\n\n")]
+        self.assertEqual(len(words), sum(len(line.split()) for line in captions))
         self.assertIn("00:00:00,500 --> 00:00:01,700\nXin chào các bạn.\n", text)
         self.assertIn("Hôm nay mình đi Buôn Đôn chơi", text)
         self.assertNotIn("Ghiền Mì Gõ", text)
@@ -66,17 +72,26 @@ class ProviderTests(unittest.TestCase):
 
 
 class CaptionShapeTests(unittest.TestCase):
+    def test_a_segment_without_word_times_shares_its_time_by_length(self):
+        cues = whisper_provider.cues_from([{"text": "ab cdef", "start": 1, "end": 4, "words": []}], 42)
+        words = whisper_provider.word_timings(cues)
+        self.assertEqual([w["text"] for w in words], ["ab", "cdef"])
+        self.assertEqual(words[0]["start"], 1)
+        self.assertEqual(words[0]["end"], words[1]["start"])
+        # cdef is twice as long as ab, so it gets twice the time.
+        self.assertAlmostEqual(words[1]["end"] - words[1]["start"], 2 * (words[0]["end"] - words[0]["start"]), 2)
+
     def test_long_speech_splits_at_the_character_limit(self):
         words = [word(f"từ{i}", i * 0.3, i * 0.3 + 0.25) for i in range(20)]
         cues = whisper_provider.cues_from([{"text": "x", "start": 0, "end": 6, "words": words}], 20)
-        self.assertTrue(all(len(text) <= 20 for _, _, text in cues))
-        self.assertEqual(" ".join(text for _, _, text in cues), " ".join(f"từ{i}" for i in range(20)))
+        self.assertTrue(all(len(text) <= 20 for _, _, text, _ in cues))
+        self.assertEqual(" ".join(text for _, _, text, _ in cues), " ".join(f"từ{i}" for i in range(20)))
 
     def test_a_long_sentence_splits_into_even_lines(self):
         text = "Ở Buôn Đôn luôn, ủa em tưởng là Buôn Ma Thuột chứ"
         words = [word(w, i * 0.25, i * 0.25 + 0.2) for i, w in enumerate(text.split())]
         cues = whisper_provider.cues_from([{"text": text, "start": 0, "end": 3, "words": words}], 42)
-        lines = [line for _, _, line in cues]
+        lines = [line for _, _, line, _ in cues]
         self.assertEqual(" ".join(lines), text)
         self.assertEqual(len(lines), 2)
         self.assertLess(abs(len(lines[0]) - len(lines[1])), 12)
@@ -84,7 +99,7 @@ class CaptionShapeTests(unittest.TestCase):
     def test_pauses_and_sentence_ends_start_new_captions(self):
         words = [word("Một", 0, 0.3), word("hai.", 0.3, 0.6), word("Ba", 0.7, 1.0), word("bốn", 3.0, 3.3)]
         cues = whisper_provider.cues_from([{"text": "x", "start": 0, "end": 3.3, "words": words}], 8)
-        self.assertEqual([text for _, _, text in cues], ["Một hai.", "Ba", "bốn"])
+        self.assertEqual([text for _, _, text, _ in cues], ["Một hai.", "Ba", "bốn"])
 
     def test_short_captions_stay_readable_without_overlapping(self):
         words = [word("A.", 1.0, 1.1), word("B", 1.15, 1.2)]
@@ -96,7 +111,7 @@ class CaptionShapeTests(unittest.TestCase):
         spoken = {"text": "Nhớ đăng ký kênh nha", "start": 0, "end": 2, "no_speech_prob": 0.05, "words": []}
         doubtful = {"text": "Hãy đăng ký kênh", "start": 5, "end": 7, "no_speech_prob": 0.5, "words": []}
         cues = whisper_provider.cues_from([spoken, doubtful], 42)
-        self.assertEqual([text for _, _, text in cues], ["Nhớ đăng ký kênh nha"])
+        self.assertEqual([text for _, _, text, _ in cues], ["Nhớ đăng ký kênh nha"])
 
     def test_timestamps(self):
         self.assertEqual(whisper_provider.timestamp(3725.5), "01:02:05,500")
