@@ -3,7 +3,8 @@
 import { createInterface } from "node:readline";
 import { flushed, guardStdout, log, send } from "./protocol.ts";
 import { settleCall } from "./tools.ts";
-import { cancel, cancelAll, reset, status, turn } from "./turn.ts";
+import { CommandError, list as listCommands, run as runCommand } from "./commands.ts";
+import { busy, cancel, cancelAll, hold, reset, status, turn } from "./turn.ts";
 
 const API_VERSION = 4;
 
@@ -49,7 +50,18 @@ async function handleRequest(message: Record<string, any>): Promise<void> {
                 }
                 return void (await send({ id, result: await reset(params.conversation) }));
             case "status":
-                return void (await send({ id, result: status(params.options) }));
+                return void (await send({ id, result: status(params.options, params.conversation) }));
+            case "commands":
+                return void (await send({ id, result: listCommands(params.options) }));
+            case "command": {
+                if (typeof params.name !== "string" || !params.name) return void (await fail(id, "invalid_params", "command needs a name"));
+                try {
+                    return void (await send({ id, result: await runCommand(id, params, { busy, hold }) }));
+                } catch (error) {
+                    if (error instanceof CommandError) return void (await fail(id, error.code, error.message));
+                    throw error;
+                }
+            }
             default:
                 return void (await fail(id, "invalid_params", `Unknown agent.chat op ${params.op}`));
         }

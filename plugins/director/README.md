@@ -54,7 +54,9 @@ carries protocol lines only; logs go to standard error.
 |---|---|
 | `turn` | `{"stopReason":"end"\|"aborted"\|"error","error"?}` — streams events and makes calls while it runs |
 | `reset` | `{}` — deletes the conversation |
-| `status` | `{"ready","provider","model","detail"}` — ready means a key is set and the model is in the catalog |
+| `status` | `{"ready","provider","model","detail","contextTokens"?,"contextWindow"?}` — ready means a key is set and the model is in the catalog. With `params.conversation`, also the conversation's estimated tokens and the model's context window |
+| `commands` | `{"commands":[{"name","args"?,"summary","choices"?}]}` — Director's slash commands (below) |
+| `command` | `{"text"?,"options"?}` — runs one: `params.name` (no slash), `params.args` (the rest of the line), `params.conversation`, `params.options` |
 
 During a turn the plugin sends:
 
@@ -63,7 +65,7 @@ During a turn the plugin sends:
 {"type":"event","id":"<request>","event":{"kind":"thinking","delta":"…"}}
 {"type":"event","id":"<request>","event":{"kind":"tool","callId":"c1","name":"bashcut_timeline_get","summary":"timeline.get {\"tracks\":true}"}}
 {"type":"call","id":"<request>","callId":"c1","method":"timeline.get","params":{"tracks":true}}
-{"type":"event","id":"<request>","event":{"kind":"toolEnd","callId":"c1","ok":true,"summary":"{\"tracks\":[…]}"}}
+{"type":"event","id":"<request>","event":{"kind":"toolEnd","callId":"c1","ok":true,"summary":"ok · tracks: 3"}}
 {"type":"event","id":"<request>","event":{"kind":"message","role":"assistant","text":"…"}}
 {"type":"event","id":"<request>","event":{"kind":"notice","text":"…"}}
 {"type":"progress","id":"<request>"}
@@ -71,19 +73,53 @@ During a turn the plugin sends:
 
 - `callId`s (`c1`, `c2`, … unique per process) are shared by the `tool`/`toolEnd` events and the `call` line, so the
   app can pair them. `read_skill` has tool events but no `call`.
+- `tool.summary` is the call (`method` and its arguments, at most 160 characters). `toolEnd.summary` is a short
+  line (at most 120 characters), never the raw result: the error message, or `ok` with what the result shows at a
+  glance (`ok · rev 12`, `ok · tracks: 3`, `ok · 41,230 characters` for a cut result), `frame image · frame 12`
+  for `ui.frame`, `read 40 lines · <title>` for `read_skill`.
 - A tool's result goes to the model as compact JSON, cut at 30,000 characters with a note. An error `callResult`
   becomes a tool error the model sees. For `ui.frame` the PNG at `result.path` is also attached as an image when
   the model accepts images.
 - `message` carries the final text of each assistant message (after its `text` deltas). `notice` reports
   compaction, skipped attachments and the `maxTurns` stop. A `progress` keepalive is sent every 20 seconds.
 - Turn errors (no key, unknown model, provider failure) are results with `stopReason: "error"`; malformed requests
-  get `{"id","error":{"code":"invalid_params"|"unknown_method","message"}}`.
+  get `{"id","error":{"code":"invalid_params"|"unknown_method","message"}}`, and `command` adds the codes
+  `unknown_command` and `busy` (below).
 
 The system prompt is a fixed first line plus three sections: `<instructions>` (`params.instructions`), `<skills>`
 (the kit's skills, telling the model to call `read_skill` first) and `<context>` (`params.context`). Later turns add
 a system message that patches only the sections that changed, so the cached prefix stays the same. `read_skill`
 reads `<kit.root>/skills/<name>/SKILL.md` only; names with `/`, `\` or `..` are refused. `params.images` (PNG,
 JPEG, GIF, WebP) are attached to the user message when the model accepts images.
+
+## Commands
+
+The app shows these in its `/` menu (spec 11 §3.4) and runs them with op `command`. A command's `text` is shown as
+a notice; `options` is a patch of Director's non-secret options (`model`, `thinking`) that the app saves as if the
+user had changed Settings. The API key is never part of a patch.
+
+| Command | Args | Choices | Result |
+|---|---|---|---|
+| `compact` | `[instructions]` | — | Summarizes older messages with the model; `{"text":"Compacted 4 messages (~6.4k → ~2.6k tokens)"}` |
+| `model` | `[model id]` | the provider's model IDs in pi-ai's catalog, default first (none for `compatible`) | No args: `{"text":"Model: Anthropic · claude-sonnet-5-5\nAlso available: …"}` (up to 10). A known ID (any ID for `compatible`): `{"options":{"model":"<id>"},"text":"Model set to <id>"}`; `default` sets `""`. Unknown: a `text` explaining, no `options` |
+| `thinking` | `[off\|low\|medium\|high]` | `off`, `low`, `medium`, `high` | No args: `{"text":"Thinking: off"}`. A level: `{"options":{"thinking":"low"},"text":"Thinking: low"}`. Other: a `text` listing the levels |
+| `session` | — | — | `{"text":"Model: …\nThinking: …\nMessages: 12\nContext: ~31k tokens (16% of 200k)\nConversation: <id>"}` |
+
+`/compact` works like pi's compaction. It keeps the newest messages verbatim (the last user message and everything
+after it, and at least the last 6 messages, cut only before a user or assistant message, so a tool call is never
+separated from its result). The older ones are serialized as plain text (`[User]: …`, `[Assistant tool calls]: …`,
+tool results cut at 2,000 characters) and summarized by the configured model in a structured checkpoint format
+(Goal, Constraints & Preferences, Progress, Key Decisions, Next Steps, Critical Context), with the optional
+instructions added as "Additional focus". The summary replaces them as one user message starting `Summary of the
+earlier conversation:`; system messages are kept, and a later `/compact` merges the previous summary. The
+conversation is saved right away. Results:
+
+- Too little to summarize (fewer than 2 older messages): `{"text":"Nothing to compact yet"}`.
+- No key, unknown model or a failed model request: a `text` that says so (`Cannot compact: …`, `Compaction failed:
+  …`); the conversation is unchanged.
+- A turn running in that conversation: `{"id","error":{"code":"busy","message"}}`. While `/compact` runs, a turn in
+  that conversation is refused the same way as a second turn, and `cancel` with the command's request id stops it.
+- An unknown name: `{"id","error":{"code":"unknown_command","message"}}`.
 
 ## Conversations and compaction
 
