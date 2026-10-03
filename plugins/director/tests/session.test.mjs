@@ -150,6 +150,37 @@ test("hello, and status without a key", async () => {
     assert.equal(await session.close(), 0);
 });
 
+test("compatible endpoints require HTTPS except loopback and never echo credentials", async () => {
+    const session = new Session({ data: temp("endpoints") });
+    try {
+        const cases = [
+            ["https://example.com/v1", true],
+            ["http://localhost:8080/v1", true],
+            ["http://127.0.0.1:8080/v1", true],
+            ["http://[::1]:8080/v1", true],
+            ["http://example.com/v1", false],
+            ["http://localhost.example.com/v1", false],
+            ["http://192.168.1.1/v1", false],
+            ["ftp://localhost/v1", false],
+            ["https://user:credential-must-not-leak@example.com/v1", false],
+            ["https://example.com/v1?key=credential-must-not-leak", false],
+            ["https://example.com/v1#credential-must-not-leak", false],
+            ["https://exa mple.com", false],
+            ["https://", false],
+        ];
+        for (const [index, [baseUrl, ready]] of cases.entries()) {
+            const reply = await session.request(`endpoint-${index}`, {
+                op: "status", options: { provider: "compatible", model: "local-model", apiKey: "test-key", baseUrl },
+            });
+            assert.equal(reply.result.ready, ready, baseUrl);
+            assert.ok(!JSON.stringify(reply).includes("credential-must-not-leak"));
+        }
+        assert.ok(!session.stderr.includes("credential-must-not-leak"));
+    } finally {
+        await session.close();
+    }
+});
+
 test("a turn without a key ends with an error the user can act on", async () => {
     const session = new Session({ data: temp("data"), faux: script([{ text: "never" }]) });
     const reply = await session.request("t1", turn({ options: { apiKey: "" } }));
