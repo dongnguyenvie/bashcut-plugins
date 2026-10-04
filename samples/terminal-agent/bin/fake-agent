@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""A stand-in agent CLI. It does what a real CLI does at start-up (read its config, start the MCP server with the
+session variables, list tools, call one) and prints what it saw, then echoes input so the tab stays open."""
+import json
+import os
+import subprocess
+import sys
+import uuid
+
+folder = os.getcwd()
+with open(os.path.join(folder, "settings.json")) as handle:
+    settings = json.load(handle)
+resumed = len(sys.argv) > 2 and sys.argv[1] == "--resume"
+session = sys.argv[2] if resumed else str(uuid.uuid4())
+with open(os.path.join(folder, "last-session"), "w") as handle:
+    handle.write(session)
+
+name, server = next(iter(settings["mcpServers"].items()))
+env = {key: os.path.expandvars(value) for key, value in server["env"].items()}
+process = subprocess.Popen([server["command"], *server["args"]], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                           text=True, env={**os.environ, **env})
+
+
+def rpc(message):
+    process.stdin.write(json.dumps(message) + "\n")
+    process.stdin.flush()
+    return json.loads(process.stdout.readline()) if "id" in message else None
+
+
+init = rpc({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+    "protocolVersion": "2025-06-18", "clientInfo": {"name": "sample-terminal-agent", "version": "0.0.1"},
+    "capabilities": {}}})
+rpc({"jsonrpc": "2.0", "method": "notifications/initialized"})
+tools = rpc({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+context = rpc({"jsonrpc": "2.0", "id": 3, "method": "tools/call",
+               "params": {"name": "bashcut_context_get", "arguments": {}}})
+process.stdin.close()
+
+skills = os.path.join(folder, ".sample", "skills")
+report = {
+    "session": session,
+    "resumed": resumed,
+    "server": (init.get("result") or {}).get("serverInfo"),
+    "tools": len((tools.get("result") or {}).get("tools", [])),
+    "contextOK": not (context.get("result") or {}).get("isError", True),
+    "skills": sorted(os.listdir(skills)) if os.path.isdir(skills) else [],
+    "tokenSet": bool(os.environ.get("BASHCUT_SESSION_TOKEN")),
+}
+with open(os.environ.get("SAMPLE_REPORT", os.path.join(folder, "report.json")), "w") as out:
+    json.dump(report, out, indent=2)
+print(f"{settings.get('greeting') or 'Hello'}! Sample terminal agent, session {session}")
+print(json.dumps(report, indent=2))
+while True:
+    try:
+        line = input("sample> ")
+    except EOFError:
+        break
+    print("echo:", line)

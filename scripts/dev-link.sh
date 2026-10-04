@@ -1,13 +1,17 @@
 #!/bin/sh
 # Links plugins/<slug> into BashCut's user plugin folder for local testing (no release, no download).
-#   scripts/dev-link.sh vieneu-tts          link
-#   scripts/dev-link.sh vieneu-tts --remove unlink
+#   scripts/dev-link.sh vieneu-tts                 link plugins/vieneu-tts
+#   scripts/dev-link.sh vieneu-tts --remove        unlink
+#   scripts/dev-link.sh samples/terminal-agent     link a sample (samples/ is never published)
 # Open Plugins in BashCut and choose Trust once. Editing plugin.json or the entrypoint asks for Trust again;
 # other files (for example a Python module the entrypoint runs) can change freely while you iterate.
 set -eu
 root="$(cd "$(dirname "$0")/.." && pwd)"
 slug="${1:?usage: dev-link.sh <slug> [--remove]}"
-source="$root/plugins/$slug"
+case "$slug" in
+    samples/*) source="$root/$slug" ;;
+    *) source="$root/plugins/$slug" ;;
+esac
 id="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$source/plugin.json")"
 target="$HOME/Library/Application Support/BashCut/Plugins/$id"
 if [ "${2:-}" = "--remove" ]; then
