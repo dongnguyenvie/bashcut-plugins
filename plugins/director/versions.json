@@ -1,0 +1,39 @@
+{
+  "id": "bashcut.director",
+  "listing": {
+    "name": {
+      "en": "Director",
+      "vi": "Director"
+    },
+    "summary": {
+      "en": "BashCut's own editing agent in the agent dock: chat with Claude, GPT, Gemini and other models using your API key. It edits through BashCut's commands (undoable, in History), looks at frames and follows the agent kit's skills. Needs BashCut with plugin API 4.",
+      "vi": "Trợ lý dựng phim ngay trong BashCut: trò chuyện với Claude, GPT, Gemini và các model khác bằng khoá API của bạn. Trợ lý chỉnh sửa qua lệnh của BashCut (hoàn tác được, có trong Lịch sử), xem khung hình và làm theo kỹ năng của bộ agent kit. Cần BashCut hỗ trợ plugin API 4."
+    },
+    "publisher": "bashcut",
+    "category": "agents",
+    "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/director",
+    "capabilities": [
+      "agent.chat"
+    ],
+    "actions": [],
+    "hooks": []
+  },
+  "versions": [
+    {
+      "version": "0.0.2",
+      "apiVersion": 4,
+      "minApiVersion": 4,
+      "minAppVersion": "0.0.1",
+      "platforms": [
+        "macos-arm64",
+        "macos-x86_64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/director-v0.0.2/bashcut.director-0.0.2.zip",
+      "sha256": "b588911970841cd70c24c032f5f3cf432d2da7e2e1299455efc762bf7510cede",
+      "signature": "ed25519:YxA/+m4TCZcGeD/f+eRSLY8HGm80FtOGrt0ya5SD9S2PZQ2FCxzd5CEHL9pPoamwYU/SLp3G9yxJKriOhjPoDw==",
+      "size": 447628,
+      "downloadBytes": 50000000,
+      "releasedAt": "2026-10-04"
+    }
+  ]
+}
