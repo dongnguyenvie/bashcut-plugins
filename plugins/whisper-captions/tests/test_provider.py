@@ -57,6 +57,23 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(kinds[-1], "reply")
         self.assertIn("progress", kinds)
 
+    def test_a_range_transcribes_only_that_stretch_in_media_time(self):
+        messages = session(self.request(startSeconds=2.5, endSeconds=5))
+        self.assertTrue(any("result" in m for m in messages if m.get("id") == "r0"))
+        text = pathlib.Path(self.output, "clip 1.srt").read_text(encoding="utf-8")
+        self.assertNotIn("Xin chào", text)
+        self.assertIn("00:00:02,600 --> ", text)
+        self.assertIn("Hôm nay mình đi Buôn Đôn chơi", text)
+        bad = session(self.request(startSeconds=5, endSeconds=2))
+        self.assertIn("error", next(m for m in bad if m.get("id") == "r0"))
+
+    def test_stretch_times_are_moved_back_to_media_time(self):
+        segments = [{"start": 0.0, "end": 1.0, "text": "a", "words": [word("a", 0.2, 0.6)]}]
+        moved = whisper_provider.shifted(segments, 128.0)
+        self.assertEqual((moved[0]["start"], moved[0]["end"]), (128.0, 129.0))
+        self.assertEqual((moved[0]["words"][0]["start"], moved[0]["words"][0]["end"]), (128.2, 128.6))
+        self.assertEqual(segments[0]["start"], 0.0)
+
     def test_errors_are_reported(self):
         missing = self.request(mediaPath="/nonexistent/clip.mp4")
         messages = session(missing, self.request(outputDirectory=""), {"method": "voice.synthesize", "params": {}})
