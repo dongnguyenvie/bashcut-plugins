@@ -1,0 +1,10 @@
+#!/bin/sh
+# The plugin health probe runs with a restricted PATH; the official installer uses ~/.local/bin.
+set -eu
+agy="$(command -v agy 2>/dev/null || true)"
+if [ -z "$agy" ] && [ -x "$HOME/.local/bin/agy" ]; then agy="$HOME/.local/bin/agy"; fi
+if [ -z "$agy" ]; then
+    echo "Antigravity CLI (agy) was not found. Install the dependency or visit antigravity.google/docs/cli/install." >&2
+    exit 1
+fi
+"$agy" --version

@@ -1,0 +1,44 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.antigravity",
+  "name": {"en": "Antigravity", "vi": "Antigravity"},
+  "version": "0.0.1",
+  "apiVersion": 5,
+  "entrypoint": "bin/provider",
+  "capabilities": ["agent.terminal"],
+  "providers": [
+    {"id": "bashcut.antigravity.cli", "capability": "agent.terminal", "name": "Antigravity CLI"}
+  ],
+  "terminal": {
+    "icon": "sparkles",
+    "environment": [
+      "GEMINI_API_KEY", "GOOGLE_GEMINI_BASE_URL", "GOOGLE_APPLICATION_CREDENTIALS",
+      "GOOGLE_CLOUD_PROJECT", "CLOUDSDK_CORE_PROJECT", "NO_BROWSER"
+    ]
+  },
+  "dependencies": [
+    {
+      "id": "agy",
+      "name": "Antigravity CLI",
+      "kind": "executable",
+      "probe": {"executable": "bin/check"},
+      "install": {
+        "summary": "Install Google's Antigravity CLI (agy) from antigravity.google into ~/.local/bin. The official installer is downloaded over HTTPS and run only after you approve this setup; your shell profile is not changed.",
+        "command": {"executable": "bin/setup"}
+      }
+    }
+  ],
+  "options": [
+    {
+      "id": "bypassPermissions",
+      "title": {"en": "Bypass permission mode", "vi": "Bỏ qua chế độ xác nhận quyền"},
+      "type": "bool",
+      "default": false,
+      "scope": "user",
+      "help": {
+        "en": "Start new Antigravity tabs with --dangerously-skip-permissions. Antigravity will not ask before running shell, file, web or MCP tools; BashCut's own edit and export controls still apply.",
+        "vi": "Mở tab Antigravity mới với --dangerously-skip-permissions. Antigravity sẽ không hỏi trước khi chạy công cụ shell, file, web hoặc MCP; quyền chỉnh sửa và xuất của BashCut vẫn áp dụng."
+      }
+    }
+  ]
+}

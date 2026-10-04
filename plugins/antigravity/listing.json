@@ -1,0 +1,13 @@
+{
+  "name": {"en": "Antigravity", "vi": "Antigravity"},
+  "summary": {
+    "en": "Use Google's Antigravity CLI in BashCut's agent dock with BashCut tools, editing skills and per-project conversation resume. Uses your Antigravity login or Gemini API key.",
+    "vi": "Dùng Antigravity CLI của Google trong agent dock của BashCut, với công cụ BashCut, kỹ năng dựng phim và tiếp tục trò chuyện theo từng project. Dùng tài khoản Antigravity hoặc Gemini API key."
+  },
+  "publisher": "bashcut",
+  "category": "agents",
+  "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/antigravity",
+  "minAppVersion": "0.0.1",
+  "platforms": ["macos-arm64", "macos-x86_64"],
+  "downloadBytes": 0
+}

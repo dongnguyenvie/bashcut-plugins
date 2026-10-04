@@ -3,6 +3,7 @@
 A starting point for adding an agent CLI (Gemini CLI, Qwen Code, opencode, aider…) to BashCut's agent dock as a
 terminal tab, next to Claude, Codex and Shell. It needs BashCut with plugin API 5. The full protocol is in
 [BashCut's spec 12 — Terminal agents](https://github.com/dongnguyenvie/BashCut/blob/main/docs/specs/12-terminal-agents.md).
+For a production plugin built from this API, see [Antigravity](../../plugins/antigravity/README.md).
 
 This sample is **not published**: the registry only lists `plugins/*`, so it never shows in BashCut's Browse tab.
 Its CLI is `bin/fake-agent`, a stand-in that starts the BashCut MCP server the way a real CLI would, calls
