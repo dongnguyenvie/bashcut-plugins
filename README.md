@@ -128,3 +128,7 @@ approve. Updates appear under **Updates**; **Installed › Remove** uninstalls. 
 
 By hand: download the zip from Releases, unzip it into `~/Library/Application Support/BashCut/Plugins/`, open
 **Plugins** and choose **Trust**.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
