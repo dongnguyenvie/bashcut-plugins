@@ -4,5 +4,6 @@ __pycache__/
 .DS_Store
 # Built by plugins/<slug>/build.sh (CI and package.py run it)
 plugins/silence-markers/bin/provider
+plugins/antigravity/bin/provider
 plugins/director/dist/
 node_modules/

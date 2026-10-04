@@ -1,0 +1,10 @@
+#!/bin/sh
+# BashCut runs this only after the user approves the displayed dependency install plan.
+set -eu
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+echo "::progress 0.1 Downloading the official Antigravity CLI installer"
+curl --fail --location --silent --show-error https://antigravity.google/cli/install.sh -o "$work/install.sh"
+echo "::progress 0.5 Installing Antigravity CLI without changing shell aliases or PATH"
+bash "$work/install.sh" --skip-aliases --skip-path
+echo "::progress 1.0 Antigravity CLI is installed; sign in by opening an Antigravity terminal"
