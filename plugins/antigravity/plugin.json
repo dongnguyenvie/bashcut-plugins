@@ -2,7 +2,7 @@
   "schema": "bashcut.plugin/1",
   "id": "bashcut.antigravity",
   "name": {"en": "Antigravity", "vi": "Antigravity"},
-  "version": "0.0.1",
+  "version": "0.0.2",
   "apiVersion": 5,
   "entrypoint": "bin/provider",
   "capabilities": ["agent.terminal"],
