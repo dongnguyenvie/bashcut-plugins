@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write   # when main only takes pull requests, the registry commit goes in through one
+  pull-requests: write   # when main only takes pull requests, the registry commit is opened as one
 
 concurrency:
   group: registry
@@ -84,16 +84,14 @@ jobs:
           for attempt in 1 2 3 4 5; do
             if out=$(git push origin HEAD:main 2>&1); then echo "$out"; exit 0; fi
             echo "$out"
-            # A protected main (pull requests only) refuses the push: hand the commit over in a pull request.
+            # A protected main (pull requests only) refuses the push: open a pull request with the commit to merge.
             if echo "$out" | grep -qE "GH006|GH013|protected branch"; then
               branch="registry/$tag"
               git push --force origin "HEAD:refs/heads/$branch"
               url=$(gh pr create --base main --head "$branch" --title "registry: $tag" \
                 --body "Registry update for the release \`$tag\`, opened by the release workflow because main only takes pull requests.")
-              echo "Opened $url"
-              gh pr merge "$url" --merge --delete-branch && exit 0
-              echo "::error::Could not merge $url; merge it to list $tag in the registry"
-              exit 1
+              echo "::notice::Opened $url; merge it to list $tag in the registry"
+              exit 0
             fi
             if ! git pull --rebase origin main; then
               # Another plugin's release changed registry.json: it is generated, so build it again.
