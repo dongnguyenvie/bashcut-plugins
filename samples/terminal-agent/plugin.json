@@ -1,0 +1,16 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "example.terminal-agent",
+  "name": {"en": "Sample Terminal Agent", "vi": "Terminal agent mẫu"},
+  "version": "0.0.1",
+  "apiVersion": 5,
+  "entrypoint": "bin/provider",
+  "capabilities": ["agent.terminal"],
+  "providers": [
+    {"id": "example.terminal-agent.cli", "capability": "agent.terminal", "name": "Sample Terminal Agent"}
+  ],
+  "terminal": {"icon": "wand.and.stars", "environment": ["SAMPLE_*"]},
+  "options": [
+    {"id": "greeting", "title": {"en": "Greeting", "vi": "Lời chào"}, "type": "string", "default": "Xin chào"}
+  ]
+}

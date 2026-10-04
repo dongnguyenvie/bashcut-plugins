@@ -24,6 +24,7 @@ plugins/<slug>/listing.json   store listing: name and summary ({en, vi, …}), c
 plugins/<slug>/tests/         tests run by CI (not shipped)
 plugins/<slug>/build.sh       optional: builds compiled helpers or bundles (CI and package.py run it; not shipped)
 plugins/<slug>/src/           optional: sources for build.sh (not shipped)
+samples/<slug>/               examples for plugin authors (never published), such as samples/terminal-agent
 scripts/package.py            zip + SHA-256 + signature; --register records the version in versions.json
 scripts/build-registry.py     generates registry.json from the sources (--check in CI)
 ```
@@ -107,6 +108,9 @@ Run `plugins/<slug>/build.sh` first when the plugin has one. `scripts/dev-link.s
 **Plugins** in BashCut and choose **Trust** once; changes to `plugin.json` or the entrypoint ask for Trust again,
 other files can change while you iterate. `scripts/dev-link.sh <slug> --remove` unlinks it. Plugins with heavy
 models have a fake mode for tests and CI (for VieNeu, `VIENEU_FAKE=1`).
+
+Samples link the same way: `scripts/dev-link.sh samples/terminal-agent` adds a sample agent CLI to the agent dock
+(`agent.terminal`, plugin API 5). Its README explains how to turn it into a real CLI plugin such as Gemini CLI.
 
 Versions stay `0.0.x` while plugins are in beta.
 

@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""agent.terminal provider (plugin API 5): tells BashCut how to start the agent CLI in a dock terminal tab.
+
+BashCut runs `bin/provider rpc` once per request and writes one JSON request line to stdin:
+
+- op "launch":  build the command line for a new tab. Write the CLI's config (MCP server, system prompt) into
+                agentFolder, then answer {executable, arguments, directory, environment, skillsFolder}.
+- op "session": answer {"id": ...} with the newest session for the project, so the next tab resumes it.
+
+This sample starts bin/fake-agent, a stand-in CLI. For a real CLI, change write_config() and command_line().
+"""
+import json
+import os
+import sys
+
+
+def write_config(params):
+    """Everything the CLI needs, in the place the CLI reads it. Gemini CLI, for example, reads
+    <cwd>/.gemini/settings.json (mcpServers) and <cwd>/GEMINI.md (context)."""
+    folder = params["agentFolder"]
+    mcp = params["mcp"]
+    settings = {
+        "mcpServers": {
+            mcp["name"]: {
+                "command": mcp["command"],
+                "args": mcp["arguments"],
+                # The values are only in the terminal's environment; never write the token to a file.
+                "env": {name: "$" + name for name in mcp["environment"]},
+            }
+        },
+        "greeting": params["options"].get("greeting", ""),
+    }
+    with open(os.path.join(folder, "settings.json"), "w") as out:
+        json.dump(settings, out, indent=2)
+    with open(os.path.join(folder, "PROMPT.md"), "w") as out:
+        out.write(params["prompt"])
+
+
+def command_line(params):
+    folder = params["agentFolder"]
+    return {
+        # A name on PATH ("gemini"), an absolute path, or a path inside this plugin.
+        "executable": "bin/fake-agent",
+        "arguments": ["--resume", params["resume"]] if params["resume"] else [],
+        # Run in agentFolder so the CLI finds the config written above.
+        "directory": folder,
+        "environment": {"SAMPLE_REPORT": os.path.join(folder, "report.json")},
+        # BashCut links the agent kit's skills here (inside agentFolder), or removes them when the kit is off.
+        "skillsFolder": os.path.join(folder, ".sample", "skills"),
+    }
+
+
+def latest_session(params):
+    """Real CLIs keep sessions in their own store; look for the newest one started in agentFolder."""
+    path = os.path.join(params["agentFolder"], "last-session")
+    if not os.path.exists(path):
+        return None
+    with open(path) as handle:
+        return handle.read().strip() or None
+
+
+def main():
+    request = json.loads(sys.stdin.readline())
+    params = request["params"]
+    if params.get("op") == "launch":
+        write_config(params)
+        response = {"id": request["id"], "result": command_line(params)}
+    elif params.get("op") == "session":
+        response = {"id": request["id"], "result": {"id": latest_session(params)}}
+    else:
+        response = {"id": request["id"], "error": {"code": "unknown_op", "message": f"Unknown op {params.get('op')}"}}
+    sys.stdout.write(json.dumps(response) + "\n")
+
+
+if __name__ == "__main__":
+    main()
