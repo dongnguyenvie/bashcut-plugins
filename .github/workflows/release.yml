@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write   # when main only takes pull requests, the registry commit goes in through one
 
 concurrency:
   group: registry
@@ -66,6 +67,8 @@ jobs:
           shasum -a 256 -c <(sed "s#  #  check/#" "$archive.sha256")
           swift scripts/verify-registry.swift registry.json
       - name: Commit versions.json and registry.json
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -76,9 +79,22 @@ jobs:
           cp "$RUNNER_TEMP/new-versions.json" "$folder/versions.json"
           python3 scripts/build-registry.py
           git add registry.json "$folder/versions.json"
-          git commit -m "registry: ${{ steps.tag.outputs.tag }}"
+          tag="${{ steps.tag.outputs.tag }}"
+          git commit -m "registry: $tag"
           for attempt in 1 2 3 4 5; do
-            git push origin HEAD:main && exit 0
+            if out=$(git push origin HEAD:main 2>&1); then echo "$out"; exit 0; fi
+            echo "$out"
+            # A protected main (pull requests only) refuses the push: hand the commit over in a pull request.
+            if echo "$out" | grep -qE "GH006|GH013|protected branch"; then
+              branch="registry/$tag"
+              git push --force origin "HEAD:refs/heads/$branch"
+              url=$(gh pr create --base main --head "$branch" --title "registry: $tag" \
+                --body "Registry update for the release \`$tag\`, opened by the release workflow because main only takes pull requests.")
+              echo "Opened $url"
+              gh pr merge "$url" --merge --delete-branch && exit 0
+              echo "::error::Could not merge $url; merge it to list $tag in the registry"
+              exit 1
+            fi
             if ! git pull --rebase origin main; then
               # Another plugin's release changed registry.json: it is generated, so build it again.
               git diff --name-only --diff-filter=U | grep -qvx registry.json && exit 1
