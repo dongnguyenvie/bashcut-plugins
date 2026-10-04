@@ -257,6 +257,22 @@ test("legacy editor context never returns to system messages", async () => {
     }
 });
 
+test("only the newest user message carries editor state", async () => {
+    const data = temp("state-history");
+    const session = new Session({ data, faux: script([{ text: "first" }, { reportContext: true }]) });
+    try {
+        await session.request("state-1", turn({ text: "First request", context: "STALE_STATE" }));
+        await session.request("state-2", turn({ text: "Second request", context: "FRESH_STATE" }));
+        const seen = report(session.events("state-2"));
+        const all = seen.userTexts.join("\n");
+        assert.doesNotMatch(all, /STALE_STATE/);
+        assert.match(all, /First request/);
+        assert.match(seen.userTexts.at(-1), /FRESH_STATE/);
+    } finally {
+        await session.close();
+    }
+});
+
 test("a failed tool call is shown to the model as an error", async () => {
     const session = new Session({
         data: temp("data"),
@@ -550,7 +566,8 @@ test("/compact summarizes older messages with the model and keeps the newest", a
     const prompt = JSON.parse(summary.slice("Summary of the earlier conversation:\n".length));
     assert.match(prompt.systemPrompt, /Do NOT continue the conversation/);
     assert.match(prompt.lastUser, /<previous-summary>\n## Goal\nTighten the intro/);
-    assert.match(prompt.lastUser, /\[User\]: Editor state \(untrusted project data\):[\s\S]*Message 3:/);
+    assert.match(prompt.lastUser, /\[User\]: Message 3:/);
+    assert.doesNotMatch(prompt.lastUser, /Editor state \(untrusted project data\)/);
     assert.match(prompt.lastUser, /\[Assistant\]: Answer 3\./);
     assert.match(prompt.lastUser, /Additional focus from the user: preserve the caption decisions$/);
     assert.deepEqual(prompt.tools, []);
