@@ -1,6 +1,7 @@
 """Whisper captions provider for BashCut (`captions.transcribe`, plugin API 2).
 
 `provider session` keeps the model loaded and answers NDJSON requests; `provider rpc` answers one request.
+`startSeconds`/`endSeconds` transcribe only that stretch of the media; times stay in media seconds.
 WHISPER_FAKE=1 skips the model and decoder and uses a fixed transcript (tests and CI).
 """
 import json
@@ -96,15 +97,38 @@ class heartbeat:
         self.thread.join()
 
 
+def shifted(segments, offset):
+    """Segment and word times moved by `offset` seconds (a stretch's times back to media time)."""
+    if not offset:
+        return segments
+    moved = []
+    for segment in segments:
+        segment = dict(segment, start=segment["start"] + offset, end=segment["end"] + offset)
+        segment["words"] = [dict(w, start=w["start"] + offset, end=w["end"] + offset) for w in segment.get("words") or []]
+        moved.append(segment)
+    return moved
+
+
+def within(segments, start, end):
+    """Segments that overlap the stretch, with their words inside it."""
+    kept = []
+    for segment in segments:
+        if segment["end"] <= start or (end is not None and segment["start"] >= end):
+            continue
+        words = [w for w in segment.get("words") or [] if w["end"] > start and (end is None or w["start"] < end)]
+        kept.append(dict(segment, words=words))
+    return kept
+
+
 class Transcriber:
     def __init__(self):
         self.loaded = False
 
-    def segments(self, path, language, vocabulary, progress):
+    def segments(self, path, language, vocabulary, progress, start=0.0, end=None):
         if os.environ.get("WHISPER_FAKE") == "1":
             if not os.path.isfile(path):
                 raise ValueError(f"Media not found: {path}")
-            return fake_segments()
+            return within(fake_segments(), start, end) if start or end is not None else fake_segments()
         try:
             import mlx_whisper
         except ImportError as error:
@@ -112,6 +136,12 @@ class Transcriber:
                 "Whisper is not installed yet: open Plugins and install the Whisper dependency") from error
         progress(0.05, "Reading audio")
         audio = load_audio(path)
+        if start or end is not None:
+            first = int(start * SAMPLE_RATE)
+            last = len(audio) if end is None else min(len(audio), int(end * SAMPLE_RATE))
+            if last - first < SAMPLE_RATE // 10:
+                raise ValueError("The range is outside the audio")
+            audio = audio[first:last]
         progress(0.15, "Loading Whisper" if not self.loaded else "Transcribing")
         options = {
             "path_or_hf_repo": MODEL, "word_timestamps": True, "condition_on_previous_text": False,
@@ -125,7 +155,7 @@ class Transcriber:
         with heartbeat(progress, len(audio) / SAMPLE_RATE):
             result = mlx_whisper.transcribe(audio, **options)
         self.loaded = True
-        return result.get("segments") or []
+        return shifted(result.get("segments") or [], start)
 
 
 def spoken(segment):
@@ -248,7 +278,12 @@ def transcribe(params, progress, transcriber):
     options = params.get("options") or {}
     vocabulary = (options.get("vocabulary") or "").strip()
     max_characters = int(options.get("maxCharacters") or 42)
-    segments = transcriber.segments(path, language, vocabulary, progress)
+    start = float(params.get("startSeconds") or 0)
+    end = params.get("endSeconds")
+    end = float(end) if end is not None else None
+    if start < 0 or (end is not None and end <= start):
+        raise ValueError("endSeconds must follow startSeconds")
+    segments = transcriber.segments(path, language, vocabulary, progress, start, end)
     cues = cues_from(segments, max_characters)
     if not cues:
         raise ValueError("No speech found in this media")
