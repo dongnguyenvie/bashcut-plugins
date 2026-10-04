@@ -81,6 +81,22 @@
           "size": 64218,
           "downloadBytes": 0,
           "releasedAt": "2026-10-03"
+        },
+        {
+          "version": "0.0.4",
+          "apiVersion": 2,
+          "minApiVersion": 2,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/silence-markers-v0.0.4/bashcut.silence-markers-0.0.4.zip",
+          "sha256": "a3cbae135459c62c4b62ad7bba5deed5f96abfc8b439734d412b50d5d365b9f6",
+          "signature": "ed25519:l9WrJJQF2MMflxxhudMbSOAJ7Eok3sNQEunU+3wrY7eCvTaSS9AbKADkm5F+rwijOi6uMj7kLqpPECSdbl4uCg==",
+          "size": 64216,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-04"
         }
       ],
       "name": {
