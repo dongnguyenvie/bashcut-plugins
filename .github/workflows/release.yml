@@ -87,7 +87,7 @@ jobs:
             # A protected main (pull requests only) refuses the push: open a pull request with the commit to merge.
             if echo "$out" | grep -qE "GH006|GH013|protected branch"; then
               branch="registry/$tag"
-              git push --force origin "HEAD:refs/heads/$branch"
+              git push origin "HEAD:refs/heads/$branch"
               url=$(gh pr create --base main --head "$branch" --title "registry: $tag" \
                 --body "Registry update for the release \`$tag\`, opened by the release workflow because main only takes pull requests.")
               echo "::notice::Opened $url; merge it to list $tag in the registry"
