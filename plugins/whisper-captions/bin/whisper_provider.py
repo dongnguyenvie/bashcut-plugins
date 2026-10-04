@@ -86,11 +86,14 @@ class heartbeat:
                 guess = min(0.9, 0.15 + 0.75 * elapsed * 10 / max(self.audio_seconds, 1))
                 self.progress(round(guess, 2), f"Transcribing ({int(elapsed)} s)")
 
-        threading.Thread(target=tick, daemon=True).start()
+        self.thread = threading.Thread(target=tick, daemon=True)
+        self.thread.start()
         return self
 
     def __exit__(self, *_):
+        # Wait for a tick already under way, so no progress is reported after Whisper returns.
         self.done.set()
+        self.thread.join()
 
 
 class Transcriber:
