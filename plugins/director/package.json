@@ -1,7 +1,7 @@
 {
   "name": "bashcut-director",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2",
   "type": "module",
   "description": "Build and test sources of the BashCut Director plugin (not shipped; build.sh bundles src/ into dist/director.mjs)",
   "license": "MIT",
