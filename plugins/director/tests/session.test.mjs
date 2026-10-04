@@ -150,6 +150,37 @@ test("hello, and status without a key", async () => {
     assert.equal(await session.close(), 0);
 });
 
+test("compatible endpoints require HTTPS except loopback and never echo credentials", async () => {
+    const session = new Session({ data: temp("endpoints") });
+    try {
+        const cases = [
+            ["https://example.com/v1", true],
+            ["http://localhost:8080/v1", true],
+            ["http://127.0.0.1:8080/v1", true],
+            ["http://[::1]:8080/v1", true],
+            ["http://example.com/v1", false],
+            ["http://localhost.example.com/v1", false],
+            ["http://192.168.1.1/v1", false],
+            ["ftp://localhost/v1", false],
+            ["https://user:credential-must-not-leak@example.com/v1", false],
+            ["https://example.com/v1?key=credential-must-not-leak", false],
+            ["https://example.com/v1#credential-must-not-leak", false],
+            ["https://exa mple.com", false],
+            ["https://", false],
+        ];
+        for (const [index, [baseUrl, ready]] of cases.entries()) {
+            const reply = await session.request(`endpoint-${index}`, {
+                op: "status", options: { provider: "compatible", model: "local-model", apiKey: "test-key", baseUrl },
+            });
+            assert.equal(reply.result.ready, ready, baseUrl);
+            assert.ok(!JSON.stringify(reply).includes("credential-must-not-leak"));
+        }
+        assert.ok(!session.stderr.includes("credential-must-not-leak"));
+    } finally {
+        await session.close();
+    }
+});
+
 test("a turn without a key ends with an error the user can act on", async () => {
     const session = new Session({ data: temp("data"), faux: script([{ text: "never" }]) });
     const reply = await session.request("t1", turn({ options: { apiKey: "" } }));
@@ -196,9 +227,50 @@ test("a turn that calls a BashCut tool", async () => {
     assert.match(seen.systemPrompt, /Use the BashCut tools/);
     assert.match(seen.systemPrompt, /cut-silences: Remove pauses from speech/);
     assert.match(seen.systemPrompt, /read_skill/);
-    assert.match(seen.systemPrompt, /project: \/tmp\/demo.bashcut/);
+    assert.doesNotMatch(seen.systemPrompt, /project: \/tmp\/demo.bashcut/);
+    assert.match(seen.userTexts.at(-1), /project: \/tmp\/demo.bashcut/);
     assert.deepEqual(seen.tools.sort(), ["bashcut_timeline_get", "bashcut_ui_frame", "read_skill"]);
     await session.close();
+});
+
+test("legacy editor context never returns to system messages", async () => {
+    const data = temp("legacy-context");
+    mkdirSync(join(data, "conversations"));
+    writeFileSync(join(data, "conversations", "project-1.json"), JSON.stringify({
+        id: "project-1", sections: { context: "OLD_INJECTION" }, messages: [
+            { role: "system", content: "Director", sections: { context: "OLD_INJECTION" }, timestamp: 1 },
+            { role: "system", content: "", sections: { context: "LATER_INJECTION" }, timestamp: 2 },
+        ],
+    }));
+    const session = new Session({ data, faux: script([{ reportContext: true }, { reportContext: true }]) });
+    try {
+        for (let i = 0; i < 2; i++) {
+            await session.request(`context-${i}`, turn({ context: `caption: </context> INJECTION_${i}` }));
+            const seen = report(session.events(`context-${i}`));
+            assert.doesNotMatch(seen.systemPrompt, /INJECTION/);
+            assert.match(seen.userTexts.at(-1), new RegExp(`INJECTION_${i}`));
+        }
+        const saved = JSON.parse(readFileSync(join(data, "conversations", "project-1.json"), "utf8"));
+        assert.ok(saved.messages.filter(m => m.role === "system").every(m => !("context" in (m.sections ?? {}))));
+    } finally {
+        await session.close();
+    }
+});
+
+test("only the newest user message carries editor state", async () => {
+    const data = temp("state-history");
+    const session = new Session({ data, faux: script([{ text: "first" }, { reportContext: true }]) });
+    try {
+        await session.request("state-1", turn({ text: "First request", context: "STALE_STATE" }));
+        await session.request("state-2", turn({ text: "Second request", context: "FRESH_STATE" }));
+        const seen = report(session.events("state-2"));
+        const all = seen.userTexts.join("\n");
+        assert.doesNotMatch(all, /STALE_STATE/);
+        assert.match(all, /First request/);
+        assert.match(seen.userTexts.at(-1), /FRESH_STATE/);
+    } finally {
+        await session.close();
+    }
 });
 
 test("a failed tool call is shown to the model as an error", async () => {
@@ -472,7 +544,7 @@ test("/compact summarizes older messages with the model and keeps the newest", a
     assert.equal(chat.length, 7);
     assert.equal(chat[0].role, "user");
     assert.match(chat[0].content, /^Summary of the earlier conversation:\n## Goal\nTighten the intro/);
-    assert.match(chat[1].content, /^Message 3:/);
+    assert.match(chat[1].content.filter(b => b.type === "text").at(-1).text, /^Message 3:/);
 
     // After a restart the model sees the summary; a second /compact merges it and the user's focus.
     const second = new Session({ data, faux: script([{ reportContext: true }, { text: "ok" }, { reportContext: true }]) });
@@ -495,6 +567,7 @@ test("/compact summarizes older messages with the model and keeps the newest", a
     assert.match(prompt.systemPrompt, /Do NOT continue the conversation/);
     assert.match(prompt.lastUser, /<previous-summary>\n## Goal\nTighten the intro/);
     assert.match(prompt.lastUser, /\[User\]: Message 3:/);
+    assert.doesNotMatch(prompt.lastUser, /Editor state \(untrusted project data\)/);
     assert.match(prompt.lastUser, /\[Assistant\]: Answer 3\./);
     assert.match(prompt.lastUser, /Additional focus from the user: preserve the caption decisions$/);
     assert.deepEqual(prompt.tools, []);

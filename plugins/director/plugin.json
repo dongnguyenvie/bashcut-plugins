@@ -44,6 +44,7 @@
   "options": [
     {
       "id": "provider",
+      "bindsSecrets": true,
       "title": {
         "en": "Model provider",
         "vi": "Nhà cung cấp model"
@@ -117,6 +118,7 @@
     },
     {
       "id": "baseUrl",
+      "bindsSecrets": true,
       "title": {
         "en": "Base URL",
         "vi": "Base URL"

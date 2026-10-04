@@ -119,11 +119,27 @@ export function supportsImages(model: Model<any>): boolean {
     return model.input.includes("image");
 }
 
+/** Plaintext is restricted to loopback; endpoint credentials never belong in a URL. */
+function endpoint(value: unknown): string | undefined {
+    if (typeof value !== "string" || /[\s\\]/.test(value.trim())) return undefined;
+    try {
+        const url = new URL(value.trim());
+        const loopback = url.hostname === "localhost" || url.hostname === "[::1]" ||
+            /^127\.\d+\.\d+\.\d+$/.test(url.hostname);
+        if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback)) return undefined;
+        if (url.username || url.password || url.search || url.hash) return undefined;
+        return url.href.replace(/\/+$/, "");
+    } catch {
+        return undefined;
+    }
+}
+
 /** A model on an OpenAI-compatible endpoint: the catalog does not know it, so it is described here. */
 function compatible(opts: Options, modelId: string, apiKey: string): Resolved {
-    const baseUrl = typeof opts.baseUrl === "string" ? opts.baseUrl.trim().replace(/\/+$/, "") : "";
-    if (!/^https?:\/\/[^\s]+$/.test(baseUrl)) {
-        return { provider: COMPATIBLE, modelId, apiKey, problem: "Set Base URL for the OpenAI-compatible provider" };
+    const baseUrl = endpoint(opts.baseUrl);
+    if (!baseUrl) {
+        return { provider: COMPATIBLE, modelId, apiKey,
+            problem: "Set a valid HTTPS Base URL (HTTP is allowed only for loopback), without credentials, query or fragment" };
     }
     if (!modelId) return { provider: COMPATIBLE, modelId, apiKey, problem: "Set Model for the OpenAI-compatible provider" };
     const model: Model<"openai-completions"> = {
