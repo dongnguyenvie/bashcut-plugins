@@ -11,6 +11,43 @@
   },
   "plugins": [
     {
+      "id": "bashcut.antigravity",
+      "versions": [
+        {
+          "version": "0.0.2",
+          "apiVersion": 5,
+          "minApiVersion": 5,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/antigravity-v0.0.2/bashcut.antigravity-0.0.2.zip",
+          "sha256": "770215a0e8d4b42dd06b55efe52a01698c9d399137e97776635cc16ba7a8ae18",
+          "signature": "ed25519:Ph9MEJ+exA+PSYAv3IVehfl8eTmfeDjzMsB9fdK7IZ0HOMNhOOFz1hZpIa1HVsBg991XI3QBOyUPOjhB5VWQCA==",
+          "size": 64815,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-04"
+        }
+      ],
+      "name": {
+        "en": "Antigravity",
+        "vi": "Antigravity"
+      },
+      "summary": {
+        "en": "Use Google's Antigravity CLI in BashCut's agent dock with BashCut tools, editing skills and per-project conversation resume. Uses your Antigravity login or Gemini API key.",
+        "vi": "Dùng Antigravity CLI của Google trong agent dock của BashCut, với công cụ BashCut, kỹ năng dựng phim và tiếp tục trò chuyện theo từng project. Dùng tài khoản Antigravity hoặc Gemini API key."
+      },
+      "publisher": "bashcut",
+      "category": "agents",
+      "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/antigravity",
+      "capabilities": [
+        "agent.terminal"
+      ],
+      "actions": [],
+      "hooks": []
+    },
+    {
       "id": "bashcut.director",
       "versions": [
         {
