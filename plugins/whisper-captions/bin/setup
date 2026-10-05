@@ -1,14 +1,20 @@
 #!/bin/sh
 # Install recipe for Whisper Captions. BashCut runs it after the user approves, in the plugin's own environment:
-#   BASHCUT_PLUGIN_DATA  — kept across plugin updates: uv, a private Python 3.12 and the virtual environment
-#   BASHCUT_PLUGIN_CACHE — can be downloaded again: the Whisper model and uv's package cache
+#   BASHCUT_PLUGIN_DATA  — kept across plugin updates: uv and the virtual environment
+#   BASHCUT_PLUGIN_CACHE — can be downloaded again: the Whisper model
+#   BASHCUT_SHARED_DATA  — shared with other Python plugins: uv's Python 3.12
+#   BASHCUT_SHARED_CACHE — shared with other Python plugins: uv's package cache. The venv gets APFS clones of its
+#                          files, so clearing it never breaks the venv, and this script never cleans it.
+# Without the shared folders (an older BashCut), Python and the package cache stay in the plugin's own folders.
 # It does not use the Mac's Python or ffmpeg (PyAV brings its own decoder). `::progress` lines drive the progress
 # bar in BashCut. Running it again repairs or updates the install.
 set -eu
 data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.whisper-captions}"
 cache="${BASHCUT_PLUGIN_CACHE:-$HOME/Library/Caches/BashCut/PluginData/bashcut.whisper-captions}"
+pythons="${BASHCUT_SHARED_DATA:+$BASHCUT_SHARED_DATA/python}"
+packages="${BASHCUT_SHARED_CACHE:+$BASHCUT_SHARED_CACHE/uv}"
 mkdir -p "$data/bin" "$cache"
-export UV_CACHE_DIR="$cache/uv" UV_PYTHON_INSTALL_DIR="$data/python" UV_NO_PROGRESS=1
+export UV_CACHE_DIR="${packages:-$cache/uv}" UV_PYTHON_INSTALL_DIR="${pythons:-$data/python}" UV_NO_PROGRESS=1
 
 if [ "$(uname -m)" != "arm64" ]; then
     echo "Whisper Captions needs a Mac with Apple Silicon (MLX runs on its GPU)." >&2
@@ -33,11 +39,15 @@ fi
 
 echo "::progress 0.10 Installing Python 3.12"
 python="$data/venv/bin/python3"
-# Only a Python uv manages inside this plugin's data folder: one the user installed may be removed later.
-if [ ! -x "$python" ] || ! "$python" -c "import sys; sys.exit(sys.version_info < (3, 10) or not sys.base_prefix.startswith('$data/python'))" 2>/dev/null; then
+# Only a Python uv manages in UV_PYTHON_INSTALL_DIR: one the user installed may be removed later. A venv on the
+# plugin's own Python from before the shared folders is made again on the shared one.
+if [ ! -x "$python" ] || ! "$python" -c "import sys; sys.exit(sys.version_info < (3, 10) or not sys.base_prefix.startswith('$UV_PYTHON_INSTALL_DIR/'))" 2>/dev/null; then
     rm -rf "$data/venv"
     "$uv" venv --python 3.12 --python-preference only-managed "$data/venv"
 fi
+# The plugin's own Python and package cache are no longer used once the shared ones are.
+if [ -n "$pythons" ]; then rm -rf "$data/python"; fi
+if [ -n "$packages" ]; then rm -rf "$cache/uv"; fi
 
 echo "::progress 0.25 Installing mlx-whisper and PyAV (about 300 MB)"
 "$uv" pip install --python "$python" --upgrade "mlx-whisper>=0.4.3,<0.5" "av>=12,<17"
@@ -48,6 +58,9 @@ from huggingface_hub import snapshot_download
 snapshot_download("mlx-community/whisper-large-v3-turbo")
 '
 
-echo "::progress 0.95 Cleaning up"
-"$uv" cache clean >/dev/null 2>&1 || true
+# Without a shared cache, uv's package cache would only take space. A shared one is kept for other plugins.
+if [ -z "$packages" ]; then
+    echo "::progress 0.95 Cleaning up"
+    "$uv" cache clean >/dev/null 2>&1 || true
+fi
 echo "::progress 1.0 Whisper is ready"
