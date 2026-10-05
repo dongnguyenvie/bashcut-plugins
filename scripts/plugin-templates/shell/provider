@@ -1,0 +1,6 @@
+#!/bin/sh
+# Entrypoint of {{NAME}} ({{ID}}). The protocol is in bashcut-plugin.sh and your code in handlers.sh.
+here="$(cd "$(dirname "$0")" && pwd)"
+. "$here/bashcut-plugin.sh"
+. "$here/handlers.sh"
+bc_run "$@"

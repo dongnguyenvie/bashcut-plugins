@@ -26,6 +26,8 @@ plugins/<slug>/tests/         tests run by CI (not shipped)
 plugins/<slug>/build.sh       optional: builds compiled helpers or bundles (CI and package.py run it; not shipped)
 plugins/<slug>/src/           optional: sources for build.sh (not shipped)
 samples/<slug>/               examples for plugin authors (never published), such as samples/terminal-agent
+scripts/new-plugin.py         creates a new plugin from a template (scripts/plugin-templates/)
+scripts/plugin_manifest.py    the manifest rules BashCut applies, and the category list
 scripts/package.py            zip + SHA-256 + signature; --register records the version in versions.json
 scripts/build-registry.py     generates registry.json from the sources (--check in CI)
 ```
@@ -89,6 +91,38 @@ warning. The BashCut public key is compiled into the app (`PluginSignature.first
 tells users who have it why, and Updates offers the newest good version. `--undo` restores it. Never re-publish a
 yanked version number.
 
+## Writing a plugin
+
+`scripts/new-plugin.py` creates a working plugin to start from: the manifest, an entrypoint that already speaks the
+protocol, smoke tests and a README.
+
+```sh
+scripts/new-plugin.py my-voice --template capability --capability voice.synthesize --name "My Voice"
+scripts/new-plugin.py clip-tools --template action --lang shell
+scripts/new-plugin.py my-agent --template chat-agent --lang node --private --out ~/code
+```
+
+| Template | What you get |
+|---|---|
+| `capability` | A provider for `voice.synthesize`, `captions.transcribe`, `audio.beats`, `audio.loudness` or `audio.sync` (`--capability`), returning a valid placeholder result |
+| `action` | A `contributes.actions` command that proposes a timeline edit (a marker at the playhead) |
+| `hook` | `contributes.hooks` on `export.finished` (writes `pluginData`) and `media.imported` |
+| `options` | Options of every type, including a `secret`, read by an action |
+| `chat-agent` | An `agent.chat` session plugin: a tab in the agent dock that streams events and calls BashCut commands |
+
+`--lang` picks the language: `swift` (default; `build.sh` compiles a universal binary, nothing to install for users),
+`shell` (sh and macOS built-ins; not for `chat-agent`), `node` (plain ES modules; the install recipe downloads Node.js
+when the Mac has none) or `python` (standard library; fine for private plugins, but the registry refuses a `python3`
+dependency, see below). Your code goes in one handlers file; the protocol file next to it handles requests, errors,
+progress, events and host calls.
+
+The plugin goes to `plugins/<slug>` with a `listing.json` (category from the list in `scripts/plugin_manifest.py`) and
+an empty `versions.json`. `--private`, or `--out` outside `plugins/`, makes a standalone plugin for people who keep it
+to themselves; link it with `scripts/dev-link.sh <folder>`. The script checks the manifest against BashCut's rules
+before writing, refuses an existing folder or a plugin id already in use, and prints the next steps: build, run the
+tests, dev-link, Trust. `scripts/tests/test_new_plugin.py` generates every template in every language and runs its
+tests, so the templates keep up with the API.
+
 ## Rules for users who are not developers
 
 Installing a plugin is one click in BashCut; users never open Terminal, install Homebrew or fix a Python. So:
@@ -110,7 +144,7 @@ Run `plugins/<slug>/build.sh` first when the plugin has one. `scripts/dev-link.s
 other files can change while you iterate. `scripts/dev-link.sh <slug> --remove` unlinks it. Plugins with heavy
 models have a fake mode for tests and CI (for VieNeu, `VIENEU_FAKE=1`).
 
-Samples link the same way: `scripts/dev-link.sh samples/terminal-agent` adds a sample agent CLI to the agent dock
+Any plugin folder links too: `scripts/dev-link.sh ~/code/my-plugin`. Samples link the same way: `scripts/dev-link.sh samples/terminal-agent` adds a sample agent CLI to the agent dock
 (`agent.terminal`, plugin API 5). Its README explains how to turn it into a real CLI plugin such as Gemini CLI.
 
 Versions stay `0.0.x` while plugins are in beta.
