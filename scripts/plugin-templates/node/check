@@ -1,0 +1,9 @@
+#!/bin/sh
+# Dependency probe: exits 0 and prints the Node.js that {{PLAIN_NAME}} will use (22 or newer), or exits 1.
+here="$(cd "$(dirname "$0")" && pwd)"
+if node="$("$here/find-node")"; then
+    echo "Node.js $("$node" -v) at $node"
+    exit 0
+fi
+echo "Node.js 22 or newer was not found (plugin data folder, Homebrew, nvm, Volta)." >&2
+exit 1
