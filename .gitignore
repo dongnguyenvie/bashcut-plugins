@@ -7,3 +7,6 @@ plugins/silence-markers/bin/provider
 plugins/antigravity/bin/provider
 plugins/director/dist/
 node_modules/
+
+# Local-only notes and scripts (release steps, signing, reusable how-tos); never committed.
+.local/
