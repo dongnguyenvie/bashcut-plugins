@@ -142,7 +142,8 @@ def contribution_for(template, plugin_id, name, capability):
 def build_manifest(args):
     minimum, part = contribution_for(args.template, args.id, args.name, args.capability)
     manifest = {"schema": "bashcut.plugin/1", "id": args.id, "name": text(args.name, args.name_vi),
-                "version": "0.0.1", "apiVersion": API_CURRENT, "minApiVersion": minimum, "entrypoint": "bin/provider"}
+                "version": "0.0.1", "apiVersion": API_CURRENT, "minApiVersion": minimum, "entrypoint": "bin/provider",
+                "category": args.category}
     if "transport" in part:
         manifest["transport"] = part.pop("transport")
     manifest["capabilities"] = part.pop("capabilities")
@@ -332,7 +333,7 @@ def parse(argv):
     parser.add_argument("--lang", choices=tuple(LANGUAGES), default="swift")
     parser.add_argument("--capability", choices=PROVIDED_CAPABILITIES,
                         help="for --template capability (default: audio.beats)")
-    parser.add_argument("--category", choices=CATEGORIES, help="store category in listing.json")
+    parser.add_argument("--category", choices=CATEGORIES, help="category in plugin.json and listing.json")
     parser.add_argument("--out", help="parent folder of the new plugin (default: plugins/ in this repo)")
     parser.add_argument("--private", action="store_true", help="a standalone plugin, outside the registry layout")
     args = parser.parse_args(argv)

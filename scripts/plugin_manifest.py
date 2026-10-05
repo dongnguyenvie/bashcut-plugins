@@ -14,7 +14,8 @@ API_CURRENT = 5
 # Capabilities BashCut wires today (docs/guides/plugins.md › Capabilities).
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")
-# Store categories for listing.json. One list for the registry, the scaffold and (#63) the app's category filter.
+# Plugin categories, in BashCut's display order (PluginCategory in the app). listing.json and plugin.json may only
+# name one of these; scripts/build-registry.py --check rejects anything else.
 CATEGORIES = ("agents", "captions", "voice", "audio", "color", "effects", "export", "utilities")
 OPTION_TYPES = ("string", "enum", "number", "integer", "bool", "file", "secret")
 PLACEMENTS = {
@@ -107,6 +108,8 @@ def manifest_problems(manifest):
         api = minimum = API_CURRENT
     if not relative_path_ok(manifest.get("entrypoint")):
         problems.append("entrypoint must be a relative path inside the plugin folder")
+    if "category" in manifest and manifest["category"] not in CATEGORIES:
+        problems.append(f"category must be one of {', '.join(CATEGORIES)}")
 
     capabilities = manifest.get("capabilities")
     contributes = manifest.get("contributes") or {}
