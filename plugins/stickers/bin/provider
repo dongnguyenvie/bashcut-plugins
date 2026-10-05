@@ -1,0 +1,4 @@
+#!/bin/sh
+# A sticker pack has no code to run: BashCut lists the images in stickers/ itself and never calls this.
+echo "bashcut.stickers only ships sticker images" >&2
+exit 1

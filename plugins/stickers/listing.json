@@ -1,0 +1,19 @@
+{
+  "name": {
+    "en": "BashCut Stickers",
+    "vi": "Nhãn dán BashCut"
+  },
+  "summary": {
+    "en": "A starter sticker pack for the Stickers panel: 61 PNG and 20 animated GIF stickers (badges in English and Vietnamese, bursts, speech bubbles, arrows, marks, numbers). Needs BashCut with plugin API 6.",
+    "vi": "Bộ nhãn dán khởi đầu cho panel Nhãn dán: 61 PNG và 20 GIF động (nhãn chữ tiếng Anh và tiếng Việt, hình nổ, bong bóng thoại, mũi tên, ký hiệu, số). Cần BashCut có plugin API 6."
+  },
+  "publisher": "bashcut",
+  "category": "effects",
+  "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/stickers",
+  "minAppVersion": "0.0.1",
+  "platforms": [
+    "macos-arm64",
+    "macos-x86_64"
+  ],
+  "downloadBytes": 0
+}

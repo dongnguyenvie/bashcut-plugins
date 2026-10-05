@@ -11,6 +11,7 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 | [Silence Markers](plugins/silence-markers) | Adds a section marker at every quiet stretch in the selected clip |
 | [Whisper Captions](plugins/whisper-captions) | Captions from speech on Apple Silicon (Whisper large-v3 turbo via MLX, MIT): Vietnamese and about 100 languages, timed per word, split into even lines; `captions.transcribe` provider |
 | [VieNeu TTS](plugins/vieneu-tts) | Vietnamese voiceover on this Mac (VieNeu-TTS v3 Turbo, Apache-2.0): 25 voices, voice cloning; `voice.synthesize` provider |
+| [BashCut Stickers](plugins/stickers) | A starter sticker pack for the Stickers panel: 61 PNG and 20 animated GIF stickers (badges in English and Vietnamese, bursts, speech bubbles, arrows, marks, numbers). Only images, no code runs. Needs BashCut with plugin API 6; `contributes.stickers` |
 | [Director](plugins/director) | BashCut's editing agent in the agent dock: chat with Claude, GPT, Gemini and others using your API key; it edits through BashCut's commands. Needs BashCut with plugin API 4; `agent.chat` provider |
 
 ## Layout
@@ -147,6 +148,10 @@ models have a fake mode for tests and CI (for VieNeu, `VIENEU_FAKE=1`).
 
 Any plugin folder links too: `scripts/dev-link.sh ~/code/my-plugin`. Samples link the same way: `scripts/dev-link.sh samples/terminal-agent` adds a sample agent CLI to the agent dock
 (`agent.terminal`, plugin API 5). Its README explains how to turn it into a real CLI plugin such as Gemini CLI.
+
+A sticker pack (`contributes.stickers`, plugin API 6) is only images: see [BashCut Stickers](plugins/stickers). Its
+`bin/provider` is a stub BashCut never calls, the images in `stickers/` are committed, and
+`swift plugins/stickers/src/sticker-pack.swift` draws them again after a change to its lists.
 
 Versions stay `0.0.x` while plugins are in beta.
 

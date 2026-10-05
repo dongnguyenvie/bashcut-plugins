@@ -10,7 +10,7 @@ import re
 
 SCHEMA = "bashcut.plugin/1"
 API_MINIMUM = 1
-API_CURRENT = 5
+API_CURRENT = 6
 # Capabilities BashCut wires today (docs/guides/plugins.md › Capabilities).
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")
@@ -114,11 +114,12 @@ def manifest_problems(manifest):
     capabilities = manifest.get("capabilities")
     contributes = manifest.get("contributes") or {}
     actions, hooks = contributes.get("actions", []), contributes.get("hooks", [])
+    stickers = contributes.get("stickers", [])
     if not isinstance(capabilities, list):
-        problems.append("capabilities is required (it may be [] when the plugin contributes actions or hooks)")
+        problems.append("capabilities is required (it may be [] when the plugin contributes actions, hooks or stickers)")
         capabilities = []
-    if not capabilities and not actions and not hooks:
-        problems.append("a plugin needs a capability, an action or a hook")
+    if not capabilities and not actions and not hooks and not stickers:
+        problems.append("a plugin needs a capability, an action, a hook or a sticker pack")
     if len(set(capabilities)) != len(capabilities) or not all(re.fullmatch(CAPABILITY_PATTERN, c) for c in capabilities):
         problems.append("capabilities must be unique lowercase identifiers")
     providers = manifest.get("providers", [])
@@ -160,6 +161,18 @@ def manifest_problems(manifest):
         problems.append("agent.terminal and the terminal object go together")
     if "agent.terminal" in capabilities and api < 5:
         problems.append("agent.terminal needs apiVersion 5")
+    if stickers and api < 6:
+        problems.append("contributes.stickers needs apiVersion 6")
+    if len({s.get("id") for s in stickers}) != len(stickers) or len(stickers) > 16:
+        problems.append("sticker pack ids must be unique (at most 16)")
+    for pack in stickers:
+        where = f'sticker pack {pack.get("id")}'
+        if not str(pack.get("id", "")).startswith(f"{plugin_id}.") or not re.fullmatch(ID_PATTERN, str(pack.get("id", ""))):
+            problems.append(f"{where}: id must start with the plugin id and a dot")
+        if not text_ok(pack.get("title"), limit=80):
+            problems.append(f"{where}: title is required, up to 80 characters")
+        if not relative_path_ok(pack.get("path")):
+            problems.append(f"{where}: path must be a relative folder inside the plugin folder")
 
     if len({o.get("id") for o in options}) != len(options) or len(options) > 64:
         problems.append("option ids must be unique (at most 64)")
