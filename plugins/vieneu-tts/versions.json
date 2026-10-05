@@ -50,6 +50,22 @@
       "size": 6798,
       "downloadBytes": 1500000000,
       "releasedAt": "2026-10-04"
+    },
+    {
+      "version": "0.0.4",
+      "apiVersion": 3,
+      "minApiVersion": 3,
+      "minAppVersion": "0.0.1",
+      "platforms": [
+        "macos-arm64",
+        "macos-x86_64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vieneu-tts-v0.0.4/bashcut.vieneu-tts-0.0.4.zip",
+      "sha256": "eb056bd7444f7c711c927b55aa086ffd32e7ec6cfa96d07c93e1e88e2c77bfcc",
+      "signature": "ed25519:UDsI7eyR94Ydhb4QJ8Vzf+KqQGQluJyIsHWIBEm6A5SM/yS/4mL5KlLCGKfbAM7wbQpM8IDZqTwO+z/nwmsLAA==",
+      "size": 7069,
+      "downloadBytes": 1500000000,
+      "releasedAt": "2026-10-05"
     }
   ]
 }
