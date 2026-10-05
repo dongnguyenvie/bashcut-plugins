@@ -22,6 +22,7 @@ import subprocess
 import sys
 import tempfile
 
+from plugin_manifest import CATEGORIES
 from registry_tools import load_versions, save_versions, sign, write_registry
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -63,6 +64,9 @@ def manifest_for(slug):
     for field in LOCALIZED_FIELDS:
         if field in listing:
             check_text(listing[field], f"listing.json {field}")
+    for source, value in (("plugin.json", manifest.get("category")), ("listing.json", listing.get("category"))):
+        if value is not None and value not in CATEGORIES:
+            fail(f"{source} category must be one of {', '.join(CATEGORIES)}")
     return folder, manifest, listing
 
 

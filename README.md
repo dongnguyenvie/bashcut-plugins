@@ -116,8 +116,9 @@ when the Mac has none) or `python` (standard library; fine for private plugins, 
 dependency, see below). Your code goes in one handlers file; the protocol file next to it handles requests, errors,
 progress, events and host calls.
 
-The plugin goes to `plugins/<slug>` with a `listing.json` (category from the list in `scripts/plugin_manifest.py`) and
-an empty `versions.json`. `--private`, or `--out` outside `plugins/`, makes a standalone plugin for people who keep it
+The plugin goes to `plugins/<slug>` with a `listing.json` and an empty `versions.json`. `--category` (one of
+`CATEGORIES` in `scripts/plugin_manifest.py`, which BashCut groups plugins by) goes in both `plugin.json` and
+`listing.json`; `scripts/build-registry.py --check` refuses any other category. `--private`, or `--out` outside `plugins/`, makes a standalone plugin for people who keep it
 to themselves; link it with `scripts/dev-link.sh <folder>`. The script checks the manifest against BashCut's rules
 before writing, refuses an existing folder or a plugin id already in use, and prints the next steps: build, run the
 tests, dev-link, Trust. `scripts/tests/test_new_plugin.py` generates every template in every language and runs its
