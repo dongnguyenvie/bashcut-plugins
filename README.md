@@ -2,7 +2,7 @@
 
 The plugin registry for [BashCut](https://github.com/dongnguyenvie/BashCut). There is no server: BashCut reads
 [`registry.json`](registry.json) from this repo, downloads plugin archives from this repo's GitHub Releases and checks
-their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin API 2
+their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin API (2–8)
 ([Writing plugins](https://github.com/dongnguyenvie/BashCut/blob/main/docs/guides/plugins.md)).
 
 | Plugin | What it does |
@@ -25,7 +25,7 @@ plugins/<slug>/listing.json   store listing: name and summary ({en, vi, …}), c
 plugins/<slug>/tests/         tests run by CI (not shipped)
 plugins/<slug>/build.sh       optional: builds compiled helpers or bundles (CI and package.py run it; not shipped)
 plugins/<slug>/src/           optional: sources for build.sh (not shipped)
-samples/<slug>/               examples for plugin authors (never published), such as samples/terminal-agent
+samples/<slug>/               examples for plugin authors (never published): samples/terminal-agent, samples/views-example
 scripts/new-plugin.py         creates a new plugin from a template (scripts/plugin-templates/)
 scripts/plugin_manifest.py    the manifest rules BashCut applies, and the category list
 scripts/package.py            zip + SHA-256 + signature; --register records the version in versions.json
@@ -139,6 +139,18 @@ agents while the plugin is trusted and turned on, as `<plugin-id>:<name>`. Write
 
 Keep it under 64 KB (a folder under 2 MB) and text only. `package.py` refuses a skill BashCut would leave out.
 `plugins/whisper-captions/skills/whisper-captions` is an example.
+
+### Panels and views
+
+A plugin can have its own panel in BashCut's left rail (plugin API 8): `contributes.container` (an SF Symbol icon and
+a title) and `contributes.views`. A view is not UI code: BashCut asks `view.render`, the plugin answers with JSON
+components (text, lists, buttons, inputs, images, audio…), BashCut draws them natively and sends what the user does
+back as `view.event`. The panel also lists the plugin's actions as Tools, its skills, the plugins it `requires` and the
+capabilities it `uses`.
+
+Start from [`samples/views-example`](samples/views-example): every component, events and state, and how to reuse other
+plugins from a view (generate speech with `voice.speak` through whichever voice plugin the user has, call another
+plugin's capability with `plugins.invoke`). `scripts/dev-link.sh samples/views-example` to try it.
 
 ## Rules for users who are not developers
 
