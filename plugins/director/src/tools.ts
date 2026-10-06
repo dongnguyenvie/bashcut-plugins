@@ -1,5 +1,5 @@
 // The model's tools: one per BashCut catalog command the app offers (each runs in the app through a `call` line),
-// plus read_skill for the agent kit. Cut AI has no shell and no file writes.
+// plus read_skill for the agent kit. AI Editor has no shell and no file writes.
 import type { AgentTool, AgentToolResult } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
 import { readFile, realpath, stat } from "node:fs/promises";

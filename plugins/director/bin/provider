@@ -1,9 +1,9 @@
 #!/bin/sh
-# Starts Cut AI (bin/provider session). The bundle in dist/ is built from src/ by build.sh and shipped in the
+# Starts AI Editor (bin/provider session). The bundle in dist/ is built from src/ by build.sh and shipped in the
 # archive, so nothing is installed with npm on the user's Mac; only Node.js is needed (bin/setup can download it).
 here="$(cd "$(dirname "$0")" && pwd)"
 if ! node="$("$here/find-node")"; then
-    echo "Cut AI needs Node.js 22.19 or newer: choose Install Dependencies in Settings › Plugins." >&2
+    echo "AI Editor needs Node.js 22.19 or newer: choose Install Dependencies in Settings › Plugins." >&2
     exit 1
 fi
 exec "$node" "$here/../dist/director.mjs" "$@"

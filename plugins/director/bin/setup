@@ -1,5 +1,5 @@
 #!/bin/sh
-# Install recipe for Cut AI's Node.js. BashCut runs it after the user approves, in the plugin's environment.
+# Install recipe for AI Editor's Node.js. BashCut runs it after the user approves, in the plugin's environment.
 # Downloads the newest official Node.js 22 LTS for this Mac (darwin-arm64 or darwin-x64) from nodejs.org into
 # BASHCUT_PLUGIN_DATA/node, after checking the archive against the release's SHASUMS256.txt. `::progress` lines
 # drive the progress bar. Running it again updates or repairs the copy; a Node.js elsewhere on the Mac is not touched.

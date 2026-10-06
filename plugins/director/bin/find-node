@@ -1,5 +1,5 @@
 #!/bin/sh
-# Prints the path of a Node.js >= 22.19 for Cut AI, or exits 1. Shared by bin/check, bin/provider and bin/setup.
+# Prints the path of a Node.js >= 22.19 for AI Editor, or exits 1. Shared by bin/check, bin/provider and bin/setup.
 # Order: the copy bin/setup installs in the plugin data folder, Homebrew, /usr/local, nvm (newest first), Volta,
 # then PATH. BashCut starts plugins with PATH=/usr/bin:/bin:/usr/sbin:/sbin (+ Homebrew), so nvm and Volta are
 # looked up by folder.
