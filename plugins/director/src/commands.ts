@@ -1,4 +1,4 @@
-// agent.chat ops `commands` and `command` (spec 11 §3.3–3.4): Director's own slash commands, /compact, /model,
+// agent.chat ops `commands` and `command` (spec 11 §3.3–3.4): Cut AI's own slash commands, /compact, /model,
 // /thinking and /session. A command answers with a notice `text` and, for /model and /thinking, an `options` patch
 // that the app stores like a Settings change. Secret options (the API key) are never part of a patch.
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
@@ -83,11 +83,11 @@ export async function run(requestId: string, params: Record<string, any>, hooks:
         case "compact":
             if (!conversation) throw new CommandError("invalid_params", "compact needs a conversation id");
             if (hooks.busy(conversation)) {
-                throw new CommandError("busy", "Director is answering in this conversation; stop it or wait, then compact.");
+                throw new CommandError("busy", "Cut AI is answering in this conversation; stop it or wait, then compact.");
             }
             return hooks.hold(conversation, requestId, (signal) => compactCommand(conversation, args, options, signal));
         default:
-            throw new CommandError("unknown_command", `Director has no command "${name}"`);
+            throw new CommandError("unknown_command", `Cut AI has no command "${name}"`);
     }
 }
 
@@ -119,7 +119,7 @@ function modelCommand(args: string, options: Options): CommandResult {
     if (!ids.includes(args)) {
         const close = ids.filter((id) => id.includes(args) || args.includes(id)).slice(0, 5);
         const hint = close.length > 0 ? `Did you mean ${close.join(", ")}?` : `Known models: ${ids.slice(0, 10).join(", ")}${ids.length > 10 ? ", …" : ""}`;
-        return { text: `${providerName} has no model "${args}" in Director's catalog. ${hint}` };
+        return { text: `${providerName} has no model "${args}" in Cut AI's catalog. ${hint}` };
     }
     return { options: { model: args }, text: `Model set to ${args}` };
 }
@@ -187,7 +187,7 @@ export const SUMMARY_PREFIX = "Summary of the earlier conversation:\n";
 
 const SUMMARY_SYSTEM_PROMPT =
     "You are a context summarization assistant. Your task is to read a conversation between a user and an AI " +
-    "video-editing assistant (Director, inside the BashCut video editor), then produce a structured summary " +
+    "video-editing assistant (Cut AI, inside the BashCut video editor), then produce a structured summary " +
     "following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions " +
     "in the conversation. ONLY output the structured summary.";
 
@@ -233,7 +233,7 @@ function textOf(content: any): string {
         .join("\n");
 }
 
-/** pi's serializeConversation, for Director's messages. */
+/** pi's serializeConversation, for Cut AI's messages. */
 export function serialize(messages: AgentMessage[]): string {
     const parts: string[] = [];
     for (const message of messages as any[]) {

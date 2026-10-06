@@ -1,4 +1,4 @@
-// Director: BashCut's in-app editing agent (plugin `bashcut.director`, capability `agent.chat`, plugin API 4).
+// Cut AI: BashCut's in-app editing agent (plugin `bashcut.director`, capability `agent.chat`, plugin API 4).
 // BashCut starts `bin/provider session` and talks NDJSON over stdin/stdout; see README.md for the protocol.
 import { createInterface } from "node:readline";
 import { flushed, guardStdout, log, send } from "./protocol.ts";

@@ -11,7 +11,7 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 | [Silence Markers](plugins/silence-markers) | Adds a section marker at every quiet stretch in the selected clip |
 | [Whisper Captions](plugins/whisper-captions) | Captions from speech on Apple Silicon (Whisper large-v3 turbo via MLX, MIT): Vietnamese and about 100 languages, timed per word, split into even lines; `captions.transcribe` provider |
 | [VieNeu TTS](plugins/vieneu-tts) | Vietnamese voiceover on this Mac (VieNeu-TTS v3 Turbo, Apache-2.0): 25 voices, voice cloning; `voice.synthesize` provider |
-| [Director](plugins/director) | BashCut's editing agent in the agent dock: chat with Claude, GPT, Gemini and others using your API key; it edits through BashCut's commands. Needs BashCut with plugin API 4; `agent.chat` provider |
+| [Cut AI](plugins/director) | BashCut's editing agent in the agent dock: chat with Claude, GPT, Gemini and others using your API key; it edits through BashCut's commands. Needs BashCut with plugin API 4; `agent.chat` provider |
 
 ## Layout
 
@@ -132,7 +132,7 @@ Installing a plugin is one click in BashCut; users never open Terminal, install 
   `osascript`…) or has an install recipe that downloads it into `BASHCUT_PLUGIN_DATA`. `python3`, `git`, `swift` and
   Homebrew tools are refused: on a fresh Mac they are missing or ask to install the Command Line Tools.
 - Plugins written in TypeScript ship one esbuild bundle and need only Node.js, which their recipe downloads from
-  nodejs.org when the Mac has none (see Director: `build.sh` runs `npm ci` with the lockfile; `node_modules` is never
+  nodejs.org when the Mac has none (see Cut AI: `build.sh` runs `npm ci` with the lockfile; `node_modules` is never
   shipped). Their tests use `node:test` and run with `npm test` when the folder has a `package.json`.
 - Small plugins are compiled Swift (see Silence Markers: `build.sh` makes a universal binary with AVFoundation, no
   runtime needed). Plugins that need Python bring their own with `uv`, like VieNeu.
