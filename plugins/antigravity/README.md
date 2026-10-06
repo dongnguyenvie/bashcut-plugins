@@ -4,6 +4,8 @@ The Antigravity plugin adds Google's `agy` CLI as a terminal in BashCut's agent 
 login or Gemini API-key configuration, BashCut's MCP tools and editing skills, and separate conversation history for
 each BashCut project. It requires BashCut plugin API 5.
 
+Contributed by [Luan Tran](https://github.com/luantran069) ([#21](https://github.com/dongnguyenvie/bashcut-plugins/pull/21)); maintained and published by BashCut.
+
 ## Install and use
 
 For a local checkout, run `plugins/antigravity/build.sh` and `scripts/dev-link.sh antigravity`, then reopen
