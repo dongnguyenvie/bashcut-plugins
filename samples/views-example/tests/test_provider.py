@@ -105,6 +105,41 @@ class GalleryTests(unittest.TestCase):
         self.assertEqual(starred["result"]["state"]["starred"], ["s3"])
 
 
+class TitleCardTests(unittest.TestCase):
+    def test_gallery_button_opens_the_sheet(self):
+        session = Session({"plugins.show-view": {"location": "sheet"}})
+        try:
+            session.view("gallery", event={"node": "openSheet", "type": "click"})
+            self.assertEqual(session.calls[-1], ("plugins.show-view", {"plugin": "bashcut.views-example", "view": "titleCard"}))
+        finally:
+            session.close()
+
+    def test_form_checks_then_closes(self):
+        session = Session({"ui.notify": {}})
+        try:
+            empty = session.view("titleCard", values={"title": ""}, event={"node": "create", "type": "click"})["result"]
+            self.assertFalse(empty.get("close", False))
+            self.assertIn("Write a title first.", json.dumps(empty))
+            done = session.view("titleCard", values={"title": "Chapter 1", "style": "neon", "seconds": 4},
+                                event={"node": "create", "type": "click"})["result"]
+            self.assertTrue(done["close"])
+            self.assertEqual(session.calls[-1][0], "ui.notify")
+            cancelled = session.view("titleCard", event={"node": "cancel", "type": "click"})["result"]
+            self.assertTrue(cancelled["close"])
+        finally:
+            session.close()
+
+    def test_action_opens_the_sheet(self):
+        session = Session({"plugins.show-view": {}})
+        try:
+            reply = session.request("plugin.action", {"action": "bashcut.views-example.title-card", "params": {},
+                                                      "options": {}, "context": {}})
+            self.assertEqual(reply["result"]["message"], "Opened the title card form")
+            self.assertEqual(session.calls[-1][0], "plugins.show-view")
+        finally:
+            session.close()
+
+
 class VoiceTests(unittest.TestCase):
     def test_takes_come_from_voice_speak_and_loudness_from_invoke(self):
         take = os.path.join(tempfile.mkdtemp(), "take-1.wav")

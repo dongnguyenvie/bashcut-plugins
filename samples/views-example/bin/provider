@@ -4,8 +4,10 @@
 Read it top to bottom:
   1. Protocol   - the session transport: hello, requests, host calls (about 50 lines you can copy).
   2. Gallery    - the "Components" view: every component type, events and state.
-  3. Voice      - the "Voice" view: reuse other plugins through BashCut (voice.speak, plugins.invoke, media.import).
-  4. Action     - a Tools button that calls BashCut while it runs.
+  3. Voice      - the "Voice" view, a tab in the agent dock: reuse other plugins through BashCut (voice.speak,
+                  plugins.invoke, media.import).
+  4. Title card - a sheet: a short form that closes itself when done.
+  5. Actions    - Tools buttons that call BashCut while they run, one opening the sheet.
 
 Views are answers, not widgets: BashCut sends `view.render` (draw) or `view.event` (the user did something) and the
 plugin answers with the whole component tree. Keep what you need between requests in `state`.
@@ -106,6 +108,9 @@ def handle(request):
             raise ValueError(f"unknown view {params.get('view')}")
         return view(request, params.get("state") or {}, params.get("values") or {}, params.get("event"))
     if request.method == "plugin.action":
+        if params.get("action") == f"{PLUGIN_ID}.title-card":
+            request.call("plugins.show-view", {"plugin": PLUGIN_ID, "view": "titleCard"})
+            return {"message": "Opened the title card form"}
         return hello_action(request)
     raise ValueError(f"unknown method {request.method}")
 
@@ -132,7 +137,10 @@ def gallery(request, state, values, event):
     starred = set(state.get("starred", []))
     if event:
         node, kind, value = event.get("node"), event.get("type"), event.get("value")
-        if node == "add":
+        if node == "openSheet":
+            # A plugin opens its own views where they live (panel, dock tab or sheet).
+            request.call("plugins.show-view", {"plugin": PLUGIN_ID, "view": "titleCard"})
+        elif node == "add":
             count += 1
         elif node == "reset":
             count = 0
@@ -174,6 +182,7 @@ def gallery(request, state, values, event):
             {"type": "section", "title": "Buttons and state", "children": [
                 {"type": "text", "text": f"Clicked {count} times", "style": "heading"},
                 {"type": "progress", "value": min(count / 10, 1), "label": f"{min(count, 10)} / 10"},
+                {"type": "button", "id": "openSheet", "title": "Open the title card sheet", "icon": "macwindow"},
                 {"type": "row", "children": [
                     {"type": "button", "id": "add", "title": "Add one", "icon": "plus", "style": "primary"},
                     {"type": "button", "id": "reset", "title": "Reset", "style": "destructive",
@@ -302,9 +311,49 @@ def voice(request, state, values, event):
     }
 
 
-VIEWS = {"gallery": gallery, "voice": voice}
+# --------------------------------------------------------------------------------------------------- 4. Title card
 
-# ------------------------------------------------------------------------------------------------------ 4. Action
+
+def title_card(request, state, values, event):
+    """A sheet: a short form. Answer `"close": true` to close the sheet when the user is done."""
+    node = (event or {}).get("node")
+    if node == "cancel":
+        return {"body": [], "close": True, "state": {}}
+    if node == "create":
+        title = str(values.get("title") or "").strip()
+        if not title:
+            return title_card_form(values, "Write a title first.")
+        request.call("ui.notify", {"message": f"Title card: {title} ({values.get('style', 'bold')}, "
+                                              f"{values.get('seconds', 3)} s)"})
+        return {"body": [], "close": True, "state": {}, "notify": "Title card created"}
+    return title_card_form(values, "")
+
+
+def title_card_form(values, problem):
+    return {
+        "title": "New title card",
+        "body": [
+            {"type": "textField", "id": "title", "label": "Title", "placeholder": "Chapter 1", "submit": True},
+            {"type": "textField", "id": "subtitle", "label": "Subtitle"},
+            {"type": "picker", "id": "style", "label": "Style", "value": values.get("style", "bold"),
+             "options": [{"value": "bold", "label": "Bold"}, {"value": "minimal", "label": "Minimal"},
+                         {"value": "neon", "label": "Neon"}]},
+            {"type": "slider", "id": "seconds", "label": "Seconds", "min": 1, "max": 10, "step": 0.5,
+             "value": values.get("seconds", 3)},
+            {"type": "text", "text": problem, "style": "caption", "color": "red"} if problem else {"type": "spacer", "size": 0},
+            {"type": "row", "children": [
+                {"type": "button", "id": "cancel", "title": "Cancel"},
+                {"type": "spacer"},
+                {"type": "button", "id": "create", "title": "Create", "style": "primary"},
+            ]},
+        ],
+    }
+
+
+VIEWS = {"gallery": gallery, "voice": voice, "titleCard": title_card}
+PLUGIN_ID = "bashcut.views-example"
+
+# ----------------------------------------------------------------------------------------------------- 5. Actions
 
 
 def hello_action(request):

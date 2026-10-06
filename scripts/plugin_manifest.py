@@ -48,6 +48,7 @@ MAX_SKILL_NAME, MAX_SKILL_DESCRIPTION = 64, 1024
 MAX_VIEWS, MAX_REQUIRES, MAX_USES, MAX_FEATURES = 8, 16, 32, 32
 SYMBOL_PATTERN = r"[a-z0-9]+(?:\.[a-z0-9]+)*"
 VERSION_RANGE_PATTERN = r"\*|(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?)(?: +(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?))*"
+VIEW_LOCATIONS = ("panel", "dock", "sheet")
 FEATURE_PATTERN = r"[a-z][a-zA-Z0-9]*(?:[.-][a-zA-Z0-9]+)*"
 
 
@@ -239,8 +240,8 @@ def composition_problems(manifest, api, transport, container, views):
         if "title" in container and not text_ok(container["title"], limit=24):
             problems.append("contributes.container.title needs at most 24 characters per language")
     if views:
-        if container is None:
-            problems.append("contributes.views needs contributes.container")
+        if container is None and any(v.get("location", "panel") == "panel" for v in views):
+            problems.append("panel views need contributes.container (dock and sheet views do not)")
         if transport != "session":
             problems.append('contributes.views needs "transport": "session"')
     if len(views) > MAX_VIEWS or len({v.get("id") for v in views}) != len(views):
@@ -250,6 +251,10 @@ def composition_problems(manifest, api, transport, container, views):
             problems.append(f'view {view.get("id")}: id must be a short key')
         if not text_ok(view.get("title"), limit=40):
             problems.append(f'view {view.get("id")}: title is required, up to 40 characters')
+        if view.get("location", "panel") not in VIEW_LOCATIONS:
+            problems.append(f'view {view.get("id")}: location must be one of {", ".join(VIEW_LOCATIONS)}')
+        if "icon" in view and not re.fullmatch(SYMBOL_PATTERN, str(view["icon"])):
+            problems.append(f'view {view.get("id")}: icon must be an SF Symbol name')
     requires = requires or []
     if len(requires) > MAX_REQUIRES or len({r.get("id") for r in requires}) != len(requires):
         problems.append(f"requires lists at most {MAX_REQUIRES} different plugins")

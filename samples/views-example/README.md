@@ -1,14 +1,17 @@
 # Views Example
 
-A sample plugin panel for BashCut (plugin API 8), in one Python file with no dependencies. It adds an icon to the
-left rail that opens a panel with two views:
+A sample of plugin views for BashCut (plugin API 8), in one Python file with no dependencies. It shows the three
+places a view can live:
 
-- **Components** (`gallery`): every view component — text and markdown, badges, key/value rows, progress, buttons
+- **Components** (`gallery`, the rail panel): every view component — text and markdown, badges, key/value rows, progress, buttons
   (with `confirm`), a live search field, toggle, picker, slider, text area, a list with selection and row buttons,
   images, a before/after comparison and an audio preview — and how events and `state` work.
-- **Voice** (`voice`): how a plugin reuses other plugins without knowing them. It generates speech with
+- **Voice** (`voice`, `"location": "dock"`: a tab in the agent dock on the right): how a plugin reuses other plugins without knowing them. It generates speech with
   `voice.speak` (BashCut picks the user's `voice.synthesize` plugin, such as VieNeu TTS), measures a take's loudness
   with `plugins.invoke` (`audio.loudness`, listed in `uses`) and places the chosen take with `media.import`.
+
+- **Title card** (`titleCard`, `"location": "sheet"`): a short form in a sheet. The gallery's button and the
+  **New title card…** action open it with the host call `plugins.show-view`; the answer `"close": true` closes it.
 
 It also has a Tools action (**Say hello**) that calls BashCut while it runs, a skill for agents, and
 `requires` on the built-in `bashcut.audio-analysis` plugin.
@@ -29,6 +32,7 @@ bashcut plugins views
 bashcut plugins view bashcut.views-example --view gallery --open
 bashcut plugins view-event bashcut.views-example --view gallery --node add
 bashcut plugins view-event bashcut.views-example --view gallery --node query --type change --value coffee
+bashcut plugins show-view bashcut.views-example --view titleCard
 ```
 
 Run its tests with `python3 -m unittest discover -s samples/views-example/tests`.

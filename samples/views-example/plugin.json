@@ -1,7 +1,10 @@
 {
   "schema": "bashcut.plugin/1",
   "id": "bashcut.views-example",
-  "name": {"en": "Views Example", "vi": "Ví dụ giao diện"},
+  "name": {
+    "en": "Views Example",
+    "vi": "Ví dụ giao diện"
+  },
   "version": "0.0.1",
   "apiVersion": 8,
   "entrypoint": "bin/provider",
@@ -9,26 +12,92 @@
   "category": "utilities",
   "capabilities": [],
   "dependencies": [],
-  "requires": [{"id": "bashcut.audio-analysis", "version": ">=1.0.0"}],
-  "uses": ["audio.loudness"],
-  "features": ["views"],
+  "requires": [
+    {
+      "id": "bashcut.audio-analysis",
+      "version": ">=1.0.0"
+    }
+  ],
+  "uses": [
+    "audio.loudness"
+  ],
+  "features": [
+    "views"
+  ],
   "options": [
-    {"id": "greeting", "title": {"en": "Greeting", "vi": "Lời chào"}, "type": "string", "default": "Xin chào"}
+    {
+      "id": "greeting",
+      "title": {
+        "en": "Greeting",
+        "vi": "Lời chào"
+      },
+      "type": "string",
+      "default": "Xin chào"
+    }
   ],
   "contributes": {
-    "container": {"icon": "square.grid.2x2", "title": {"en": "Views", "vi": "Giao diện"}},
+    "container": {
+      "icon": "square.grid.2x2",
+      "title": {
+        "en": "Views",
+        "vi": "Giao diện"
+      }
+    },
     "views": [
-      {"id": "gallery", "title": {"en": "Components", "vi": "Thành phần"}},
-      {"id": "voice", "title": {"en": "Voice", "vi": "Giọng nói"}}
+      {
+        "id": "gallery",
+        "title": {
+          "en": "Components",
+          "vi": "Thành phần"
+        }
+      },
+      {
+        "id": "voice",
+        "title": {
+          "en": "Voice",
+          "vi": "Giọng nói"
+        },
+        "location": "dock",
+        "icon": "waveform"
+      },
+      {
+        "id": "titleCard",
+        "title": {
+          "en": "Title card",
+          "vi": "Thẻ tiêu đề"
+        },
+        "location": "sheet",
+        "icon": "textformat"
+      }
     ],
     "actions": [
       {
         "id": "bashcut.views-example.hello",
-        "title": {"en": "Say hello", "vi": "Chào"},
+        "title": {
+          "en": "Say hello",
+          "vi": "Chào"
+        },
         "icon": "hand.wave",
-        "placements": ["menu.plugins"]
+        "placements": [
+          "menu.plugins"
+        ]
+      },
+      {
+        "id": "bashcut.views-example.title-card",
+        "title": {
+          "en": "New title card…",
+          "vi": "Thẻ tiêu đề mới…"
+        },
+        "icon": "textformat",
+        "placements": [
+          "menu.plugins"
+        ]
       }
     ],
-    "skills": [{"path": "skills/views-example"}]
+    "skills": [
+      {
+        "path": "skills/views-example"
+      }
+    ]
   }
 }

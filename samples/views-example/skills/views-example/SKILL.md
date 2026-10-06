@@ -5,8 +5,8 @@ description: Drive the Views Example plugin panel from the command line — rend
 
 # Views Example
 
-The plugin adds a panel to BashCut's left rail with two views: `gallery` (every view component) and `voice`
-(generates speech with whichever voice plugin the user installed).
+The plugin adds a panel to BashCut's left rail with `gallery` (every view component), a `voice` tab in the agent dock
+(generates speech with whichever voice plugin the user installed) and a `titleCard` form in a sheet.
 
 ## Look at a view
 
@@ -16,6 +16,8 @@ bashcut plugins view bashcut.views-example --view gallery --open
 ```
 
 `plugins view` returns the components with their ids and the current input values.
+
+Open any view where it lives with `bashcut plugins show-view bashcut.views-example --view titleCard`.
 
 ## Act like the user
 
