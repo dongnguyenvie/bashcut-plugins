@@ -1,0 +1,4 @@
+#!/bin/sh
+# Pre-production only ships agent skills (skills/), so BashCut never starts this program.
+echo '{"error": {"code": "unsupported", "message": "bashcut.preproduction only ships agent skills"}}'
+exit 1
