@@ -12,7 +12,7 @@ import re
 
 SCHEMA = "bashcut.plugin/1"
 API_MINIMUM = 1
-API_CURRENT = 7
+API_CURRENT = 8
 # Capabilities BashCut wires today (docs/guides/plugins.md › Capabilities).
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")
@@ -44,6 +44,12 @@ SKILL_NAME_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 # contributes.skills limits (PluginSkillContribution in the app).
 MAX_SKILLS, MAX_SKILL_TEXT, MAX_SKILL_FOLDER = 16, 64 * 1024, 2 * 1024 * 1024
 MAX_SKILL_NAME, MAX_SKILL_DESCRIPTION = 64, 1024
+# Plugin API 8 (PluginComposition.swift in the app): the rail panel, views, requires, uses and host features.
+MAX_VIEWS, MAX_REQUIRES, MAX_USES, MAX_FEATURES = 8, 16, 32, 32
+SYMBOL_PATTERN = r"[a-z0-9]+(?:\.[a-z0-9]+)*"
+VERSION_RANGE_PATTERN = r"\*|(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?)(?: +(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?))*"
+VIEW_LOCATIONS = ("panel", "dock", "sheet")
+FEATURE_PATTERN = r"[a-z][a-zA-Z0-9]*(?:[.-][a-zA-Z0-9]+)*"
 
 
 def text_ok(value, limit=None):
@@ -124,8 +130,9 @@ def manifest_problems(manifest):
     if not isinstance(capabilities, list):
         problems.append("capabilities is required (it may be [] when the plugin contributes something)")
         capabilities = []
-    if not capabilities and not actions and not hooks and not library and not skills:
-        problems.append("a plugin needs a capability, an action, a hook, a library pack or a skill")
+    container, views = contributes.get("container"), contributes.get("views", [])
+    if not capabilities and not actions and not hooks and not library and not skills and not container and not views:
+        problems.append("a plugin needs a capability, an action, a hook, a library pack, a skill or a panel")
     if len(set(capabilities)) != len(capabilities) or not all(re.fullmatch(CAPABILITY_PATTERN, c) for c in capabilities):
         problems.append("capabilities must be unique lowercase identifiers")
     providers = manifest.get("providers", [])
@@ -178,6 +185,8 @@ def manifest_problems(manifest):
         if not relative_path_ok(path) or path.startswith("~"):
             problems.append(f"skill path {path} must stay inside the plugin folder")
 
+    problems += composition_problems(manifest, api, transport, container, views)
+
     if len({o.get("id") for o in options}) != len(options) or len(options) > 64:
         problems.append("option ids must be unique (at most 64)")
     for option in options:
@@ -214,6 +223,56 @@ def manifest_problems(manifest):
             problems.append(f'hook {event} fires often and needs "transport": "session"')
         if isinstance(hook, dict) and not 0 <= hook.get("debounceMs", 0) <= 60000:
             problems.append(f"hook {event}: debounceMs must be 0–60000")
+    return problems
+
+
+def composition_problems(manifest, api, transport, container, views):
+    """contributes.container and views, requires, uses and features (plugin API 8)."""
+    problems = []
+    requires, uses, features = manifest.get("requires"), manifest.get("uses"), manifest.get("features")
+    if container is None and not views and requires is None and uses is None and features is None:
+        return problems
+    if api < 8:
+        problems.append("contributes.container, contributes.views, requires, uses and features need apiVersion 8")
+    if container is not None:
+        if not re.fullmatch(SYMBOL_PATTERN, str(container.get("icon", ""))) or len(str(container.get("icon"))) > 64:
+            problems.append("contributes.container.icon must be an SF Symbol name")
+        if "title" in container and not text_ok(container["title"], limit=24):
+            problems.append("contributes.container.title needs at most 24 characters per language")
+    if views:
+        if container is None and any(v.get("location", "panel") == "panel" for v in views):
+            problems.append("panel views need contributes.container (dock and sheet views do not)")
+        if transport != "session":
+            problems.append('contributes.views needs "transport": "session"')
+    if len(views) > MAX_VIEWS or len({v.get("id") for v in views}) != len(views):
+        problems.append(f"view ids must be unique (at most {MAX_VIEWS})")
+    for view in views:
+        if not re.fullmatch(OPTION_ID_PATTERN, str(view.get("id", ""))):
+            problems.append(f'view {view.get("id")}: id must be a short key')
+        if not text_ok(view.get("title"), limit=40):
+            problems.append(f'view {view.get("id")}: title is required, up to 40 characters')
+        if view.get("location", "panel") not in VIEW_LOCATIONS:
+            problems.append(f'view {view.get("id")}: location must be one of {", ".join(VIEW_LOCATIONS)}')
+        if "icon" in view and not re.fullmatch(SYMBOL_PATTERN, str(view["icon"])):
+            problems.append(f'view {view.get("id")}: icon must be an SF Symbol name')
+    requires = requires or []
+    if len(requires) > MAX_REQUIRES or len({r.get("id") for r in requires}) != len(requires):
+        problems.append(f"requires lists at most {MAX_REQUIRES} different plugins")
+    for requirement in requires:
+        if not re.fullmatch(ID_PATTERN, str(requirement.get("id", ""))) or requirement.get("id") == manifest.get("id"):
+            problems.append(f'requires: {requirement.get("id")} must be another plugin\'s id')
+        if not re.fullmatch(VERSION_RANGE_PATTERN, str(requirement.get("version", "*")).strip()):
+            problems.append(f'requires {requirement.get("id")}: invalid version range {requirement.get("version")}')
+    uses = uses or []
+    if len(uses) > MAX_USES or len(set(uses)) != len(uses) \
+            or not all(re.fullmatch(CAPABILITY_PATTERN, str(c)) for c in uses):
+        problems.append(f"uses lists at most {MAX_USES} different capability ids")
+    if {"agent.chat", "agent.terminal"} & set(uses):
+        problems.append("uses cannot name agent.chat or agent.terminal")
+    features = features or []
+    if len(features) > MAX_FEATURES or len(set(features)) != len(features) \
+            or not all(re.fullmatch(FEATURE_PATTERN, str(f)) for f in features):
+        problems.append(f"features lists at most {MAX_FEATURES} different feature names")
     return problems
 
 
