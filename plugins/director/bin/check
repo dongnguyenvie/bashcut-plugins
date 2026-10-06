@@ -1,5 +1,5 @@
 #!/bin/sh
-# Dependency probe: exits 0 and prints the Node.js that Cut AI will use (>= 22.19), or exits 1 with the reason.
+# Dependency probe: exits 0 and prints the Node.js that AI Editor will use (>= 22.19), or exits 1 with the reason.
 here="$(cd "$(dirname "$0")" && pwd)"
 if node="$("$here/find-node")"; then
     echo "Node.js $("$node" -v) at $node"

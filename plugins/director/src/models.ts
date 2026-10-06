@@ -36,7 +36,7 @@ export const PROVIDER_NAMES: Record<string, string> = {
     [FAUX_PROVIDER]: "Faux (tests)",
 };
 
-export const API_KEY_MISSING = "Add an API key in Settings › Plugins › Cut AI";
+export const API_KEY_MISSING = "Add an API key in Settings › Plugins › AI Editor";
 
 let collection: MutableModels | undefined;
 
@@ -99,7 +99,7 @@ export function resolve(options: Options | undefined): Resolved {
             provider,
             modelId,
             apiKey,
-            problem: `${PROVIDER_NAMES[provider]} has no model "${modelId}" in Cut AI's catalog; leave Model empty for ${DEFAULT_MODELS[provider]}`,
+            problem: `${PROVIDER_NAMES[provider]} has no model "${modelId}" in AI Editor's catalog; leave Model empty for ${DEFAULT_MODELS[provider]}`,
         };
     }
     return { provider, modelId, model, apiKey };

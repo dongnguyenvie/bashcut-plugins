@@ -1,6 +1,6 @@
-# Cut AI
+# AI Editor
 
-BashCut's own editing agent, shown as the **Cut AI** tab in the agent dock. You chat with a model from Anthropic,
+BashCut's own editing agent, shown as the **AI Editor** tab in the agent dock. You chat with a model from Anthropic,
 OpenAI, Google, OpenRouter, Groq, xAI or Mistral using your own API key. The model works only through BashCut's
 catalogued commands, with the same checks as other agents: edit permission, approvals, History and Show Changes.
 It can look at the result with `ui frame` and follow the agent kit's skills. It has no shell and cannot write files.
@@ -15,7 +15,7 @@ The model runtime is the MIT-licensed [pi](https://github.com/earendil-works/pi)
 (`@earendil-works/pi-agent-core` and `@earendil-works/pi-ai` 1.0.1). pi is an implementation detail and is never
 named in the UI. Licenses of everything in the bundle are in `dist/THIRD-PARTY-NOTICES.txt`.
 
-## Settings (Settings › Plugins › Cut AI)
+## Settings (Settings › Plugins › AI Editor)
 
 | Option | Type | Default | Notes |
 |---|---|---|---|
@@ -24,7 +24,7 @@ named in the UI. Licenses of everything in the bundle are in `dist/THIRD-PARTY-N
 | `baseUrl` | string | empty | `compatible` only: an OpenAI Chat Completions endpoint (a proxy, a gateway, a local server), such as `https://example.com/v1`; HTTPS required except loopback HTTP, with no URL credentials, query or fragment |
 | `apiKey` | secret | — | Kept in the Keychain by BashCut and sent only in the request; never logged or saved by the plugin |
 | `thinking` | enum | `off` | `off`, `low`, `medium`, `high`; ignored by models without reasoning. With `compatible` it is sent as `reasoning_effort` |
-| `maxTurns` | integer 5–200 | 40 | Model calls per message before Cut AI stops and says so |
+| `maxTurns` | integer 5–200 | 40 | Model calls per message before AI Editor stops and says so |
 
 | Provider | Default model |
 |---|---|
@@ -57,7 +57,7 @@ carries protocol lines only; logs go to standard error.
 | `turn` | `{"stopReason":"end"\|"aborted"\|"error","error"?}` — streams events and makes calls while it runs |
 | `reset` | `{}` — deletes the conversation |
 | `status` | `{"ready","provider","model","detail","contextTokens"?,"contextWindow"?}` — ready means a key is set and the model is in the catalog. With `params.conversation`, also the conversation's estimated tokens and the model's context window |
-| `commands` | `{"commands":[{"name","args"?,"summary","choices"?}]}` — Cut AI's slash commands (below) |
+| `commands` | `{"commands":[{"name","args"?,"summary","choices"?}]}` — AI Editor's slash commands (below) |
 | `command` | `{"text"?,"options"?}` — runs one: `params.name` (no slash), `params.args` (the rest of the line), `params.conversation`, `params.options` |
 
 During a turn the plugin sends:
@@ -98,7 +98,7 @@ JPEG, GIF, WebP) are attached to the user message when the model accepts images.
 ## Commands
 
 The app shows these in its `/` menu (spec 11 §3.4) and runs them with op `command`. A command's `text` is shown as
-a notice; `options` is a patch of Cut AI's non-secret options (`model`, `thinking`) that the app saves as if the
+a notice; `options` is a patch of AI Editor's non-secret options (`model`, `thinking`) that the app saves as if the
 user had changed Settings. The API key is never part of a patch.
 
 | Command | Args | Choices | Result |
