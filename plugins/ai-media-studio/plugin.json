@@ -584,6 +584,11 @@
         "icon": "wand.and.stars",
         "confirm": "Process this video? Cleaning can take several minutes."
       }
+    ],
+    "skills": [
+      {
+        "path": "skills/ai-media-studio"
+      }
     ]
   }
 }

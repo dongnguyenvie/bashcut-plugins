@@ -13,6 +13,7 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 | [VieNeu TTS](plugins/vieneu-tts) | Vietnamese voiceover on this Mac (VieNeu-TTS v3 Turbo, Apache-2.0): 25 voices, voice cloning; `voice.synthesize` provider |
 | [AI Editor](plugins/director) | BashCut's editing agent in the agent dock: chat with Claude, GPT, Gemini and others using your API key; it edits through BashCut's commands. Needs BashCut with plugin API 4; `agent.chat` provider |
 | [Pre-production](plugins/preproduction) | Agent skills for the work before the edit; `scene-prompt` turns a plot or scene idea into a cinematic prompt for AI video models (based on [cinematic-video-prompt-engineer](https://github.com/CyberJ0605/cinematic-video-prompt-engineer-skill), MIT) |
+| [AI Media Studio](plugins/ai-media-studio) | Vibi voiceover and voice browsing, visible Gemini/Veo watermark cleanup, and scene scripts to editable timelines; plugin API 8 (unreleased) |
 
 ## Layout
 

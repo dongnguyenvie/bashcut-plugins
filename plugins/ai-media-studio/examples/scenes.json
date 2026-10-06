@@ -1,0 +1,22 @@
+[
+  {
+    "id": "SC01",
+    "character": "Narrator",
+    "character_info": "Voiceover only",
+    "prompt": "Opening scene",
+    "subtitle_ids": [1],
+    "start_at": "00:00:00,000",
+    "end_at": "00:00:02,000",
+    "motion": {"type": "zoom_in", "strength": "subtle"}
+  },
+  {
+    "id": "SC02",
+    "character": "Narrator",
+    "character_info": "Voiceover only",
+    "prompt": "Closing scene",
+    "subtitle_ids": [2],
+    "start_at": "00:00:02,000",
+    "end_at": "AUDIO_END",
+    "motion": {"type": "pan_right", "strength": "subtle"}
+  }
+]
