@@ -26,7 +26,8 @@ plugins/<slug>/listing.json   store listing: name and summary ({en, vi, …}), c
 plugins/<slug>/tests/         tests run by CI (not shipped)
 plugins/<slug>/build.sh       optional: builds compiled helpers or bundles (CI and package.py run it; not shipped)
 plugins/<slug>/src/           optional: sources for build.sh (not shipped)
-samples/<slug>/               examples for plugin authors (never published): samples/terminal-agent, samples/views-example
+samples/<slug>/               examples for plugin authors (never published): samples/terminal-agent, samples/views-example,
+                              samples/review-check-example
 scripts/new-plugin.py         creates a new plugin from a template (scripts/plugin-templates/)
 scripts/plugin_manifest.py    the manifest rules BashCut applies, and the category list
 scripts/package.py            zip + SHA-256 + signature; --register records the version in versions.json
@@ -157,6 +158,11 @@ capabilities it `uses`.
 Start from [`samples/views-example`](samples/views-example): every component, events and state, and how to reuse other
 plugins from a view (generate speech with `voice.speak` through whichever voice plugin the user has, call another
 plugin's capability with `plugins.invoke`). `scripts/dev-link.sh samples/views-example` to try it.
+
+A plugin can also add its own checks to BashCut's review (plugin API 9): a `review.check` provider gets the project
+and returns issues (severity, frames, an optional fix) that `review run` lists next to the built-in ones, marked with
+the plugin. Start from [`samples/review-check-example`](samples/review-check-example): brand fonts and a call to action
+at the end, in one Python file.
 
 ## Rules for users who are not developers
 

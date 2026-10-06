@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""Review Check Example: a `review.check` provider (plugin API 9) in one file, Python standard library only.
+
+BashCut runs it on `review measure` (or the Review sheet's Measure) with one JSON request on stdin:
+  {"id", "apiVersion", "method": "review.check", "provider", "params": {"project", "revision", "fps", "duration",
+   "width", "height", "projectRoot", "options"}}
+and expects one line back: {"id", "result": {"issues": [...]}} (or {"id", "error": {"code", "message"}}).
+
+Each issue: id, title, detail, frame (timeline frame), optional endFrame, severity (error | warning | info) and fix
+(command + arguments, and/or hint). BashCut prefixes the id with the provider, adds this plugin as `source`, and keeps
+the issues for the measured revision. A check that crashes or takes longer than its time limit becomes one info
+issue; it never breaks the review, so failing loudly is fine.
+
+Two rules, both reading only the project:
+  - brand fonts: text drawn with a font outside the `fonts` option;
+  - call to action: no text in the last `ctaSeconds` that asks the viewer to follow, subscribe, comment or buy.
+"""
+import json
+import re
+import sys
+
+CTA_WORDS = [
+    "follow", "subscribe", "like", "comment", "share", "link", "buy", "order", "shop", "save",
+    "theo dõi", "đăng ký", "bình luận", "chia sẻ", "mua", "đặt hàng", "lưu", "nhắn tin", "inbox",
+]
+
+
+def text_items(project):
+    for track in project.get("tracks", []):
+        if track.get("kind") != "text":
+            continue
+        for item in track.get("items", []):
+            yield item
+
+
+def brand_font_issues(project, fonts):
+    allowed = {name.strip().lower() for name in fonts.split(",") if name.strip()}
+    if not allowed:
+        return []
+    issues, seen = [], set()
+    for item in sorted(text_items(project), key=lambda item: item.get("at", 0)):
+        font = (item.get("textStyle") or {}).get("font")
+        if not font or font.lower() in allowed or font in seen:
+            continue
+        seen.add(font)
+        issues.append({
+            "id": "font-" + str(item.get("id")),
+            "title": "Font outside the brand kit",
+            "detail": f"{font} is not one of the brand fonts ({fonts}).",
+            "frame": item.get("at", 0), "endFrame": item.get("at", 0) + item.get("dur", 1),
+            "severity": "warning",
+            "fix": {"hint": "Use a brand font for on-screen text (text style › Font)."},
+        })
+    return issues
+
+
+def cta_issues(project, duration, fps, seconds):
+    if duration <= 0 or seconds <= 0:
+        return []
+    start = max(0, duration - int(seconds * fps))
+    pattern = re.compile("|".join(re.escape(word) for word in CTA_WORDS), re.IGNORECASE)
+    for item in text_items(project):
+        at, end = item.get("at", 0), item.get("at", 0) + item.get("dur", 0)
+        if end > start and at < duration and pattern.search(item.get("text", "")):
+            return []
+    return [{
+        "id": "cta",
+        "title": "No call to action at the end",
+        "detail": f"No text in the last {seconds:g} s asks the viewer to follow, comment or buy.",
+        "frame": start, "endFrame": duration, "severity": "info",
+        "fix": {"hint": "Add an end card such as \"Theo dõi để xem phần 2\" over the last seconds."},
+    }]
+
+
+def check(params):
+    project = params.get("project") or {}
+    options = params.get("options") or {}
+    fps = float(params.get("fps") or 30)
+    duration = int(params.get("duration") or 0)
+    return brand_font_issues(project, str(options.get("fonts") or "")) + cta_issues(
+        project, duration, fps, float(options.get("ctaSeconds", 5)))
+
+
+def main():
+    if sys.argv[1:] != ["rpc"]:
+        sys.stderr.write("usage: provider rpc < request.json\n")
+        return 2
+    request = json.loads(sys.stdin.read())
+    if request.get("method") != "review.check":
+        answer = {"id": request.get("id"), "error": {"code": "unsupported", "message": request.get("method", "")}}
+    else:
+        answer = {"id": request["id"], "result": {"issues": check(request.get("params") or {})}}
+    sys.stdout.write(json.dumps(answer) + "\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
