@@ -3,7 +3,7 @@
 
     scripts/new-plugin.py <slug> --template <template> [--name "My Plugin"] [--name-vi "…"] [--id author.my-plugin]
                           [--lang swift|shell|node|python] [--capability <id>] [--category <id>]
-                          [--out <dir>] [--private]
+                          [--skill] [--out <dir>] [--private]
 
 Templates:
     capability   a provider for a capability (--capability voice.synthesize, captions.transcribe, audio.beats,
@@ -19,6 +19,9 @@ Languages (--lang):
     node    plain ES modules; Node.js is found on the Mac or downloaded by the install recipe (bin/setup)
     python  standard library only; needs a python3, which the registry refuses (see "Rules for users who are
             not developers" in README.md): fine for private plugins, bring your own Python with uv to publish
+
+--skill adds an agent skill (contributes.skills, plugin API 7): skills/<slug>/SKILL.md, a starting point that tells
+agents when and how to use what the plugin adds. Fill it in before publishing.
 
 By default the plugin goes to plugins/<slug> with listing.json and an empty versions.json, ready for the registry.
 --private, or --out outside this repo's plugins/ folder, makes a standalone plugin in <out>/<slug> (default: the
@@ -150,6 +153,8 @@ def build_manifest(args):
     manifest.update({k: part.pop(k) for k in ("providers",) if k in part})
     manifest["dependencies"] = dependencies_for(args.lang)
     manifest.update(part)
+    if getattr(args, "skill", False):
+        manifest.setdefault("contributes", {})["skills"] = [{"path": f"skills/{args.slug}"}]
     return manifest
 
 
@@ -216,6 +221,7 @@ FILE_NOTES = {
     "build.sh": "builds `bin/provider` (universal binary) from `src/`; not shipped",
     "bin/provider (built)": "the entrypoint BashCut runs, built by `build.sh` (not in git)",
     "tests/test_plugin.py": "smoke tests that run the entrypoint like BashCut; not shipped",
+    "skills/": "the agent skill (`SKILL.md`): when and how agents should use this plugin; **fill it in**",
 }
 
 
@@ -242,6 +248,7 @@ def readme(args, files, registry):
                  "Python with `uv` like `plugins/vieneu-tts`, or switch to Swift, shell or Node.\n")
     if args.lang == "swift":
         files = set(files) | {"bin/provider (built)"}
+    files = {"skills/" if path.startswith("skills/") else path for path in files}
     lines = [f"- `{path.split(' ')[0]}`: {FILE_NOTES[path]}" for path in sorted(files) if path in FILE_NOTES]
     page = render((TEMPLATES / "README.md").read_text(), {
         "PLAIN_NAME": args.name, "SUMMARY": args.summary, "ID": args.id, "TEMPLATE": args.template,
@@ -294,6 +301,10 @@ def generate(args, registry, staging):
         }
         write("listing.json", json.dumps(listing, indent=2, ensure_ascii=False) + "\n")
         write("versions.json", json.dumps({"id": args.id, "listing": {}, "versions": []}, indent=2) + "\n")
+    if getattr(args, "skill", False):
+        write(f"skills/{args.slug}/SKILL.md", render((TEMPLATES / "skill/SKILL.md").read_text(), {
+            "SLUG": args.slug, "NAME": args.name, "SUMMARY": args.summary, "ID": args.id,
+        }))
     write("README.md", readme(args, set(written) | {"README.md"}, registry))
     return manifest
 
@@ -336,6 +347,8 @@ def parse(argv):
     parser.add_argument("--category", choices=CATEGORIES, help="category in plugin.json and listing.json")
     parser.add_argument("--out", help="parent folder of the new plugin (default: plugins/ in this repo)")
     parser.add_argument("--private", action="store_true", help="a standalone plugin, outside the registry layout")
+    parser.add_argument("--skill", action="store_true",
+                        help="add an agent skill (skills/<slug>/SKILL.md, contributes.skills, plugin API 7)")
     args = parser.parse_args(argv)
 
     if not re.fullmatch(SLUG_PATTERN, args.slug):

@@ -5,8 +5,8 @@
     "en": "Whisper Captions",
     "vi": "Phụ đề Whisper"
   },
-  "version": "0.0.5",
-  "apiVersion": 3,
+  "version": "0.0.6",
+  "apiVersion": 7,
   "minApiVersion": 3,
   "entrypoint": "bin/provider",
   "transport": "session",
@@ -72,5 +72,12 @@
         "vi": "Câu dài được tách thành các phụ đề không quá số ký tự này"
       }
     }
-  ]
+  ],
+  "contributes": {
+    "skills": [
+      {
+        "path": "skills/whisper-captions"
+      }
+    ]
+  }
 }

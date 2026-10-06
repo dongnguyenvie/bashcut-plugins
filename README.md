@@ -124,6 +124,22 @@ before writing, refuses an existing folder or a plugin id already in use, and pr
 tests, dev-link, Trust. `scripts/tests/test_new_plugin.py` generates every template in every language and runs its
 tests, so the templates keep up with the API.
 
+### Agent skills
+
+A plugin can teach agents how to use it (plugin API 7): `--skill` adds `skills/<slug>/SKILL.md` and
+`"contributes": {"skills": [{"path": "skills/<slug>"}]}`. BashCut gives the skill to Claude, Codex and its other
+agents while the plugin is trusted and turned on, as `<plugin-id>:<name>`. Write it like the agent kit's skills:
+
+- Front matter `name` equal to the folder name, and a `description`: what it is for, "Use when …", then
+  `Triggers:` with the words users really say (Vietnamese and English).
+- When to use the plugin, and when another tool is better.
+- The exact `bashcut` commands in order (`plugins run <action> --params '{…}'`, the capability's command such as
+  `captions generate`, `plugins option` for the options that matter), and what to check afterwards.
+- Limits: what needs the user (Trust, Install Dependencies…) and what to say when it fails.
+
+Keep it under 64 KB (a folder under 2 MB) and text only. `package.py` refuses a skill BashCut would leave out.
+`plugins/whisper-captions/skills/whisper-captions` is an example.
+
 ## Rules for users who are not developers
 
 Installing a plugin is one click in BashCut; users never open Terminal, install Homebrew or fix a Python. So:

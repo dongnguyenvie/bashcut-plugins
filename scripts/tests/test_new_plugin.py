@@ -21,7 +21,7 @@ sys.path.insert(0, str(SCRIPTS))
 spec = importlib.util.spec_from_file_location("new_plugin", SCRIPTS / "new-plugin.py")
 new_plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(new_plugin)
-from plugin_manifest import manifest_problems  # noqa: E402
+from plugin_manifest import manifest_problems, skill_problems  # noqa: E402
 
 CASES = [(template, lang) for template in new_plugin.TEMPLATE_NAMES for lang in new_plugin.LANGUAGES
          if not (lang == "shell" and template in new_plugin.SESSION_TEMPLATES)]
@@ -111,6 +111,39 @@ class BehaviourTests(unittest.TestCase):
         self.assertEqual(manifest["id"], "local.my-voice")
         self.assertEqual(manifest["providers"][0]["id"], "local.my-voice.synthesize")
         self.assertIn("ln -sfn", (plugin / "README.md").read_text())
+
+    def test_skill(self):
+        plugin = make(self.root, "clip-skill", "--template", "action", "--lang", "shell", "--skill")
+        manifest = json.loads((plugin / "plugin.json").read_text())
+        self.assertEqual(manifest["contributes"]["skills"], [{"path": "skills/clip-skill"}])
+        self.assertGreaterEqual(manifest["apiVersion"], 7)
+        self.assertEqual(manifest_problems(manifest), [])
+        self.assertEqual(skill_problems(plugin, manifest), [])
+        text = (plugin / "skills/clip-skill/SKILL.md").read_text()
+        self.assertIn("name: clip-skill", text)
+        self.assertNotIn("{{", text)
+
+    def test_skill_problems(self):
+        plugin = self.root / "skilled"
+        manifest = {"contributes": {"skills": [{"path": f"skills/{name}"} for name in
+                                               ("good", "wrong", "bare", "missing", "huge")]}}
+        texts = {"good": "---\nname: good\ndescription: Use when.\n---\n",
+                 "wrong": "---\nname: other\ndescription: Use when.\n---\n",
+                 "bare": "# No front matter\n",
+                 "huge": "---\nname: huge\ndescription: Use when.\n---\n" + "x" * 70000}
+        for name, text in texts.items():
+            (plugin / "skills" / name).mkdir(parents=True)
+            (plugin / "skills" / name / "SKILL.md").write_text(text)
+        problems = skill_problems(plugin, manifest)
+        self.assertEqual(len(problems), 5, problems)  # bare misses both name and description
+        self.assertTrue(any("must match the folder" in p for p in problems))
+        self.assertTrue(any("skills/missing" in p and "no SKILL.md" in p for p in problems))
+        self.assertTrue(any("skills/huge" in p for p in problems))
+        old = {"schema": "bashcut.plugin/1", "id": "a.b", "name": "A", "version": "0.0.1", "apiVersion": 6,
+               "entrypoint": "bin/provider", "capabilities": [], "contributes": {"skills": [{"path": "skills/a"}]}}
+        self.assertIn("contributes.skills needs apiVersion 7", manifest_problems(old))
+        self.assertTrue(any("inside the plugin" in p for p in manifest_problems(
+            {**old, "apiVersion": 7, "contributes": {"skills": [{"path": "../x"}]}})))
 
     def test_registry_layout(self):
         args = new_plugin.parse(["fresh-thing", "--template", "chat-agent", "--name", "Fresh", "--name-vi", "Tươi"])
