@@ -1,0 +1,33 @@
+#!/bin/sh
+# BashCut runs this install recipe after native user approval.
+set -eu
+studio_here="$(cd "$(dirname "$0")/.." && pwd)"
+studio_data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.ai-media-studio}"
+studio_cache="${BASHCUT_PLUGIN_CACHE:-$HOME/Library/Caches/BashCut/PluginData/bashcut.ai-media-studio}"
+mkdir -p "$studio_data/bin" "$studio_cache"
+export UV_CACHE_DIR="${BASHCUT_SHARED_CACHE:-$studio_cache}/uv"
+export UV_PYTHON_INSTALL_DIR="${BASHCUT_SHARED_DATA:-$studio_data}/python"
+export UV_NO_PROGRESS=1
+printf '%s\n' '::progress 0.02 Preparing uv'
+studio_uv="$studio_data/bin/uv"
+if [ ! -x "$studio_uv" ]; then
+    case "$(uname -m)" in
+        arm64) studio_target=aarch64-apple-darwin ;;
+        x86_64) studio_target=x86_64-apple-darwin ;;
+        *) printf '%s\n' 'Unsupported architecture'; exit 1 ;;
+    esac
+    studio_tmp="$(mktemp -d)"
+    trap 'rm -rf "$studio_tmp"' EXIT HUP INT TERM
+    curl --fail --location --silent --show-error \
+      "https://github.com/astral-sh/uv/releases/latest/download/uv-$studio_target.tar.gz" -o "$studio_tmp/uv.tar.gz"
+    tar -xzf "$studio_tmp/uv.tar.gz" -C "$studio_tmp"
+    mv "$studio_tmp/uv-$studio_target/uv" "$studio_uv"
+fi
+printf '%s\n' '::progress 0.15 Installing private Python 3.12'
+if [ ! -x "$studio_data/venv/bin/python3" ]; then
+    "$studio_uv" venv --python 3.12 --python-preference only-managed "$studio_data/venv"
+fi
+printf '%s\n' '::progress 0.45 Installing media tools and bundled ffmpeg'
+"$studio_uv" pip install --python "$studio_data/venv/bin/python3" --upgrade -r "$studio_here/requirements.txt"
+"$studio_data/venv/bin/python3" -c 'import numpy, PIL, requests, certifi, imageio_ffmpeg; import subprocess; subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-version"], check=True, stdout=subprocess.DEVNULL)'
+printf '%s\n' '::progress 1.0 AI Media Studio is ready'

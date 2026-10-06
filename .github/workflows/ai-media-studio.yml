@@ -1,0 +1,32 @@
+name: AI Media Studio tests
+on:
+  push:
+    paths: ['plugins/ai-media-studio/**', '.github/workflows/ai-media-studio.yml']
+  pull_request:
+    paths: ['plugins/ai-media-studio/**', '.github/workflows/ai-media-studio.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install isolated test dependencies
+        run: |
+          uv venv --python 3.12 "$RUNNER_TEMP/studio-tests"
+          uv pip install --python "$RUNNER_TEMP/studio-tests/bin/python" -r plugins/ai-media-studio/requirements.txt
+      - name: Test without network or paid Vibi calls
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          VIBI_FAKE: '1'
+        run: '"$RUNNER_TEMP/studio-tests/bin/python" -B -m unittest discover -s plugins/ai-media-studio/tests -v'
+      - name: Check registry and package
+        run: |
+          python3 scripts/build-registry.py --check
+          python3 scripts/package.py ai-media-studio
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ai-media-studio
+          path: dist/bashcut.ai-media-studio-0.0.1.zip*

@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+studio_here="$(cd "$(dirname "$0")/.." && pwd)"
+studio_data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.ai-media-studio}"
+studio_python="$studio_data/venv/bin/python3"
+if [ ! -x "$studio_python" ]; then
+    printf '%s\n' 'Install AI Media Studio dependencies from BashCut Plugins before using it.' >&2
+    exit 1
+fi
+export PYTHONDONTWRITEBYTECODE=1
+cd "$studio_here"
+exec "$studio_python" -B -m studio.protocol "$@"

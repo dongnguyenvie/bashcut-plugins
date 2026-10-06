@@ -1,0 +1,2 @@
+class VibiError(ValueError):
+    pass

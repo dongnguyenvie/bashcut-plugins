@@ -1,0 +1,589 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.ai-media-studio",
+  "name": {
+    "en": "AI Media Studio",
+    "vi": "AI Media Studio"
+  },
+  "version": "0.0.1",
+  "apiVersion": 8,
+  "minApiVersion": 8,
+  "entrypoint": "bin/provider",
+  "transport": "session",
+  "category": "voice",
+  "features": [
+    "views",
+    "location.panel",
+    "location.dock",
+    "location.sheet",
+    "views.imageCompare",
+    "views.audio"
+  ],
+  "capabilities": [
+    "voice.synthesize"
+  ],
+  "providers": [
+    {
+      "id": "bashcut.ai-media-studio.vibi",
+      "capability": "voice.synthesize",
+      "name": "Vibi (ElevenLabs / MiniMax / CapCut)",
+      "priority": 10,
+      "timeoutSeconds": 300
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "runtime",
+      "name": "Private Python 3.12 and media tools",
+      "kind": "python",
+      "probe": {
+        "executable": "bin/check",
+        "arguments": []
+      },
+      "install": {
+        "summary": "Download uv, private Python 3.12, numpy, Pillow, requests, certifi and bundled ffmpeg (about 100 MB).",
+        "command": {
+          "executable": "bin/setup",
+          "arguments": []
+        }
+      },
+      "estimatedBytes": 110000000
+    }
+  ],
+  "options": [
+    {
+      "id": "apiKey",
+      "title": "Vibi API key",
+      "type": "secret",
+      "scope": "user"
+    },
+    {
+      "id": "provider",
+      "title": "Speech provider",
+      "type": "enum",
+      "scope": "user",
+      "choices": [
+        "elevenlabs",
+        "minimax",
+        "capcut"
+      ],
+      "default": "elevenlabs"
+    },
+    {
+      "id": "voice",
+      "title": "Voice ID (or choose in Voices)",
+      "type": "string",
+      "scope": "user",
+      "default": ""
+    },
+    {
+      "id": "model",
+      "title": "Speech model",
+      "type": "enum",
+      "scope": "user",
+      "choices": [
+        "eleven_v3",
+        "eleven_multilingual_v2",
+        "eleven_flash_v2_5",
+        "eleven_turbo_v2_5",
+        "speech-2.8-hd",
+        "speech-2.8-turbo",
+        "speech-2.6-hd",
+        "speech-2.6-turbo",
+        "speech-02-hd",
+        "speech-01-hd",
+        "capcut"
+      ],
+      "default": "eleven_v3",
+      "help": "When the model belongs to another provider, that provider’s first model is used.",
+      "choiceLabels": {
+        "eleven_v3": {
+          "en": "eleven v3"
+        },
+        "eleven_multilingual_v2": {
+          "en": "eleven multilingual v2"
+        },
+        "eleven_flash_v2_5": {
+          "en": "eleven flash v2 5"
+        },
+        "eleven_turbo_v2_5": {
+          "en": "eleven turbo v2 5"
+        },
+        "speech-2.8-hd": {
+          "en": "speech-2.8-hd"
+        },
+        "speech-2.8-turbo": {
+          "en": "speech-2.8-turbo"
+        },
+        "speech-2.6-hd": {
+          "en": "speech-2.6-hd"
+        },
+        "speech-2.6-turbo": {
+          "en": "speech-2.6-turbo"
+        },
+        "speech-02-hd": {
+          "en": "speech-02-hd"
+        },
+        "speech-01-hd": {
+          "en": "speech-01-hd"
+        },
+        "capcut": {
+          "en": "capcut"
+        }
+      }
+    },
+    {
+      "id": "speed",
+      "title": "Speed",
+      "type": "number",
+      "scope": "user",
+      "minimum": 0.7,
+      "maximum": 1.5,
+      "default": 1
+    },
+    {
+      "id": "pitch",
+      "title": "Pitch (MiniMax / CapCut)",
+      "type": "number",
+      "scope": "user",
+      "minimum": -12,
+      "maximum": 12,
+      "default": 0
+    },
+    {
+      "id": "stability",
+      "title": "Stability (ElevenLabs)",
+      "type": "number",
+      "scope": "user",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.5
+    },
+    {
+      "id": "similarity",
+      "title": "Similarity (ElevenLabs)",
+      "type": "number",
+      "scope": "user",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.75
+    },
+    {
+      "id": "volume",
+      "title": "Volume (MiniMax)",
+      "type": "number",
+      "scope": "user",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 1
+    },
+    {
+      "id": "transcript",
+      "title": "Request SRT transcript (extra credits)",
+      "type": "bool",
+      "scope": "user",
+      "default": false
+    },
+    {
+      "id": "maxTakes",
+      "title": "Maximum paid takes per generation",
+      "type": "integer",
+      "scope": "user",
+      "minimum": 1,
+      "maximum": 3,
+      "default": 1,
+      "help": "Set Voice takes to 1. Requests exceeding this guard fail before spending credits."
+    }
+  ],
+  "contributes": {
+    "container": {
+      "icon": "sparkles.tv",
+      "title": "Studio"
+    },
+    "views": [
+      {
+        "id": "studio",
+        "title": "Studio",
+        "location": "panel"
+      },
+      {
+        "id": "voices",
+        "title": "Vibi Voices",
+        "location": "dock",
+        "icon": "waveform"
+      },
+      {
+        "id": "watermark",
+        "title": "Watermark check",
+        "location": "sheet",
+        "icon": "wand.and.stars"
+      },
+      {
+        "id": "build",
+        "title": "Build timeline",
+        "location": "sheet",
+        "icon": "film.stack"
+      }
+    ],
+    "actions": [
+      {
+        "id": "bashcut.ai-media-studio.clean-image",
+        "title": "Remove Gemini image watermark…",
+        "placements": [
+          "media.context",
+          "menu.plugins"
+        ],
+        "context": [
+          "media"
+        ],
+        "params": [
+          {
+            "id": "path",
+            "title": "Source file (or selected media)",
+            "type": "file",
+            "default": "",
+            "fileTypes": [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp",
+              "mp4",
+              "mov"
+            ]
+          },
+          {
+            "id": "mode",
+            "title": "Mode",
+            "type": "enum",
+            "choices": [
+              "auto",
+              "classic",
+              "veo3",
+              "gemini"
+            ],
+            "default": "auto"
+          },
+          {
+            "id": "scale",
+            "title": "Mask scale (0 = automatic)",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 0
+          },
+          {
+            "id": "offsetX",
+            "title": "Horizontal offset (blank = automatic)",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "offsetY",
+            "title": "Vertical offset (blank = automatic)",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "preview",
+            "title": "Open before/after sheet first",
+            "type": "bool",
+            "default": true
+          }
+        ],
+        "icon": "wand.and.stars",
+        "when": "media.kind == image"
+      },
+      {
+        "id": "bashcut.ai-media-studio.clean-video",
+        "title": "Remove Veo / Gemini video watermark…",
+        "placements": [
+          "media.context",
+          "menu.plugins"
+        ],
+        "context": [
+          "media"
+        ],
+        "params": [
+          {
+            "id": "path",
+            "title": "Source file (or selected media)",
+            "type": "file",
+            "default": "",
+            "fileTypes": [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp",
+              "mp4",
+              "mov"
+            ]
+          },
+          {
+            "id": "mode",
+            "title": "Mode",
+            "type": "enum",
+            "choices": [
+              "auto",
+              "classic",
+              "veo3",
+              "gemini"
+            ],
+            "default": "auto"
+          },
+          {
+            "id": "scale",
+            "title": "Mask scale (0 = automatic)",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 0
+          },
+          {
+            "id": "offsetX",
+            "title": "Horizontal offset (blank = automatic)",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "offsetY",
+            "title": "Vertical offset (blank = automatic)",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "preview",
+            "title": "Open before/after sheet first",
+            "type": "bool",
+            "default": true
+          }
+        ],
+        "icon": "wand.and.stars",
+        "confirm": "Process this video? Cleaning can take several minutes.",
+        "when": "media.kind == video"
+      },
+      {
+        "id": "bashcut.ai-media-studio.build-timeline",
+        "title": "Build timeline from scenes…",
+        "placements": [
+          "menu.plugins",
+          "timeline.context"
+        ],
+        "context": [
+          "timeline"
+        ],
+        "params": [
+          {
+            "id": "scenes",
+            "title": "Scene script or edit document",
+            "type": "file",
+            "fileTypes": [
+              "json"
+            ]
+          },
+          {
+            "id": "images",
+            "title": "Image folder",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "audio",
+            "title": "Voice file",
+            "type": "file",
+            "fileTypes": [
+              "mp3",
+              "wav",
+              "m4a"
+            ]
+          },
+          {
+            "id": "srt",
+            "title": "SubRip captions",
+            "type": "file",
+            "fileTypes": [
+              "srt"
+            ]
+          },
+          {
+            "id": "dryRun",
+            "title": "Validate and preview without editing",
+            "type": "bool",
+            "default": true
+          }
+        ],
+        "icon": "film.stack"
+      },
+      {
+        "id": "bashcut.ai-media-studio.speak",
+        "title": "Generate Vibi speech…",
+        "placements": [
+          "menu.plugins",
+          "panel.voice"
+        ],
+        "params": [
+          {
+            "id": "text",
+            "title": "Text",
+            "type": "string"
+          },
+          {
+            "id": "takes",
+            "title": "Paid takes",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3,
+            "default": 1
+          }
+        ],
+        "icon": "waveform"
+      },
+      {
+        "id": "bashcut.ai-media-studio.voices",
+        "title": "Open Vibi voice library",
+        "placements": [
+          "menu.plugins",
+          "panel.voice"
+        ]
+      },
+      {
+        "id": "bashcut.ai-media-studio.credits",
+        "title": "Refresh Vibi credit balance",
+        "placements": [
+          "menu.plugins",
+          "panel.voice"
+        ]
+      },
+      {
+        "id": "bashcut.ai-media-studio.clean-image-file",
+        "title": "Remove Gemini image watermark…",
+        "placements": [
+          "menu.plugins"
+        ],
+        "context": [
+          "media"
+        ],
+        "params": [
+          {
+            "id": "path",
+            "title": "Source file (or selected media)",
+            "type": "file",
+            "default": "",
+            "fileTypes": [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp",
+              "mp4",
+              "mov"
+            ]
+          },
+          {
+            "id": "mode",
+            "title": "Mode",
+            "type": "enum",
+            "choices": [
+              "auto",
+              "classic",
+              "veo3",
+              "gemini"
+            ],
+            "default": "auto"
+          },
+          {
+            "id": "scale",
+            "title": "Mask scale (0 = automatic)",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 0
+          },
+          {
+            "id": "offsetX",
+            "title": "Horizontal offset (blank = automatic)",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "offsetY",
+            "title": "Vertical offset (blank = automatic)",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "preview",
+            "title": "Open before/after sheet first",
+            "type": "bool",
+            "default": true
+          }
+        ],
+        "icon": "wand.and.stars"
+      },
+      {
+        "id": "bashcut.ai-media-studio.clean-video-file",
+        "title": "Remove Veo / Gemini video watermark…",
+        "placements": [
+          "menu.plugins"
+        ],
+        "context": [
+          "media"
+        ],
+        "params": [
+          {
+            "id": "path",
+            "title": "Source file (or selected media)",
+            "type": "file",
+            "default": "",
+            "fileTypes": [
+              "png",
+              "jpg",
+              "jpeg",
+              "webp",
+              "mp4",
+              "mov"
+            ]
+          },
+          {
+            "id": "mode",
+            "title": "Mode",
+            "type": "enum",
+            "choices": [
+              "auto",
+              "classic",
+              "veo3",
+              "gemini"
+            ],
+            "default": "auto"
+          },
+          {
+            "id": "scale",
+            "title": "Mask scale (0 = automatic)",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 0
+          },
+          {
+            "id": "offsetX",
+            "title": "Horizontal offset (blank = automatic)",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "offsetY",
+            "title": "Vertical offset (blank = automatic)",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "preview",
+            "title": "Open before/after sheet first",
+            "type": "bool",
+            "default": true
+          }
+        ],
+        "icon": "wand.and.stars",
+        "confirm": "Process this video? Cleaning can take several minutes."
+      }
+    ]
+  }
+}

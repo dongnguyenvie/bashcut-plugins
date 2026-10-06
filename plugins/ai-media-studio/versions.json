@@ -1,0 +1,22 @@
+{
+  "id": "bashcut.ai-media-studio",
+  "listing": {
+    "name": {
+      "en": "AI Media Studio",
+      "vi": "AI Media Studio"
+    },
+    "summary": {
+      "en": "Vibi voiceover and voice library, Gemini/Veo watermark cleanup, and scene scripts to BashCut timelines.",
+      "vi": "Lồng tiếng Vibi, thư viện giọng, xóa watermark Gemini/Veo và dựng timeline từ kịch bản cảnh."
+    },
+    "publisher": "bashcut",
+    "category": "voice",
+    "platforms": [
+      "macos-arm64",
+      "macos-x86_64"
+    ],
+    "minAppVersion": "0.0.14",
+    "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/ai-media-studio"
+  },
+  "versions": []
+}

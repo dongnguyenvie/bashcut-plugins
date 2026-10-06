@@ -1,0 +1,5 @@
+numpy>=2,<3
+Pillow>=11,<12
+requests>=2.32,<3
+certifi>=2025
+imageio-ffmpeg>=0.6,<0.7
