@@ -1,4 +1,4 @@
-"""AI Media Studio phase 2."""
+"""AI Media Studio phase 3."""
 from . import state
 from .speech import synthesize
 from .vibi import Client, MODELS
@@ -7,6 +7,7 @@ from pathlib import Path
 import hashlib
 PLUGIN_ID="bashcut.ai-media-studio"
 PROVIDER_ID=PLUGIN_ID+".vibi"
+from . import cleanup,timeline
 
 def button(id,title,**extra):
     return dict(type='button',id=id,title=title,**extra)
@@ -191,13 +192,55 @@ def handle(request):
                 takes=values.get('takes',1))}
     if action=='build-timeline':
         show(request,'build');return {'message':'Scene build is added in phase 4.'}
-    if action.startswith('clean-'):
-        raise ValueError('Watermark tools are added in phase 3.')
+    if action in ('clean-image','clean-video','clean-image-file','clean-video-file'):
+        kind = 'image' if action.startswith('clean-image') else 'video'
+        if values.get('preview',True):
+            cleanup.preview(request,values,kind)
+            show(request,'watermark')
+            return {'message':'Review the watermark preview, then Save to project.'}
+        return cleanup.save(request,values,kind)
     raise ValueError('Unknown AI Media Studio action.')
 
 
 def watermark_view(request,view_state,values,event):
-    return {'title':'Watermark','body':[{'type':'text','text':'This tool is added in the next phase.'}]}
+    saved=state.read().get('watermark') or {}
+    node=event.get('node')
+    if not saved:
+        return {'title':'Watermark check','body':[{'type':'text','text':'Select media and run Remove watermark first.'}]}
+    if node=='preview':
+        selected={'path':saved['source'],'mode':values.get('mode',saved['options']['mode']),
+                  'scale':values.get('scale',saved['options']['scale'] or 0),
+                  'offsetX':values.get('offsetX',saved['options']['offsetX']),
+                  'offsetY':values.get('offsetY',saved['options']['offsetY'])}
+        saved=cleanup.preview(request,selected,saved['kind'])
+    elif node=='save':
+        if saved['root'] != timeline.project_root(request) or saved['fingerprint'] != timeline.fingerprint([saved['source']]):
+            raise ValueError('Project or source changed. Preview the watermark again.')
+        reviewed=saved['options']
+        edited=cleanup.settings({'mode':values.get('mode',reviewed['mode']),
+            'scale':values.get('scale',reviewed['scale'] or 0),
+            'offsetX':values.get('offsetX',reviewed['offsetX']),
+            'offsetY':values.get('offsetY',reviewed['offsetY'])},saved['kind'])
+        if reviewed!=edited:
+            raise ValueError('Mask settings changed. Click Preview before Save.')
+        params={'path':saved['source'],'mode':reviewed['mode'],'scale':reviewed['scale'] or 0,
+                'offsetX':str(reviewed['offsetX']) if reviewed['offsetX'] is not None else '',
+                'offsetY':str(reviewed['offsetY']) if reviewed['offsetY'] is not None else '', 'preview':False}
+        request.wait_job(request.call('plugins.run',{'action':PLUGIN_ID+'.clean-'+saved['kind']+'-file','params':params}))
+        return {'title':'Watermark check','body':[{'type':'text','text':'Clean file added to project media.'}],
+                'close':True,'notify':'Clean file added.'}
+    options=saved['options']
+    return {'title':'Watermark check','body':[
+        {'type':'imageCompare','before':saved['before'],'after':saved['after'],'height':260,
+         'beforeLabel':'Original','afterLabel':'Clean'},
+        {'type':'text','text':Path(saved['source']).name,'style':'caption'},
+        {'type':'picker','id':'mode','label':'Watermark mode','value':options['mode'],
+         'options':['auto','classic'] if saved['kind']=='image' else ['veo3','gemini']},
+        field('scale','Mask scale (0 = automatic)',str(options['scale'] or 0)),
+        field('offsetX','Horizontal offset',str(options['offsetX']) if options['offsetX'] is not None else ''),
+        field('offsetY','Vertical offset',str(options['offsetY']) if options['offsetY'] is not None else ''),
+        button('preview','Preview'),button('save','Save to project',style='primary')]}
+
 
 def build_view(request,view_state,values,event):
     return {'title':'Build','body':[{'type':'text','text':'This tool is added in the next phase.'}]}
