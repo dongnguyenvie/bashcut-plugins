@@ -54,6 +54,7 @@ def manifest_for(slug):
         fail("id must be reverse-domain style")
     if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?", manifest.get("version", "")):
         fail("version must be semantic")
+    check_package_versions(folder, manifest["version"])
     build(folder)
     entrypoint = folder / manifest.get("entrypoint", "")
     if not os.access(entrypoint, os.X_OK):
@@ -68,6 +69,20 @@ def manifest_for(slug):
         if value is not None and value not in CATEGORIES:
             fail(f"{source} category must be one of {', '.join(CATEGORIES)}")
     return folder, manifest, listing
+
+
+def check_package_versions(folder, version):
+    """A Node plugin's package.json and package-lock.json carry the same version as plugin.json."""
+    found = []
+    if (folder / "package.json").is_file():
+        found.append(("package.json", json.loads((folder / "package.json").read_text()).get("version")))
+    if (folder / "package-lock.json").is_file():
+        lock = json.loads((folder / "package-lock.json").read_text())
+        found.append(("package-lock.json", lock.get("version")))
+        found.append(('package-lock.json packages[""]', lock.get("packages", {}).get("", {}).get("version")))
+    for where, value in found:
+        if value != version:
+            fail(f"{where} version is {value}, but plugin.json says {version}; bump them together")
 
 
 def check_dependencies(manifest):
