@@ -1,13 +1,14 @@
-"""AI Media Studio phase 3."""
-from . import state
+"""BashCut actions and native component trees for AI Media Studio."""
+import hashlib
+from pathlib import Path
+from . import state, cleanup, timeline
 from .speech import synthesize
 from .vibi import Client, MODELS
 from .credits import estimate_tts_credits
-from pathlib import Path
-import hashlib
-PLUGIN_ID="bashcut.ai-media-studio"
-PROVIDER_ID=PLUGIN_ID+".vibi"
-from . import cleanup,timeline
+
+PLUGIN_ID = 'bashcut.ai-media-studio'
+PROVIDER_ID = PLUGIN_ID+'.vibi'
+
 
 def button(id,title,**extra):
     return dict(type='button',id=id,title=title,**extra)
@@ -50,6 +51,41 @@ def speak(request,text,takes=1):
             shutil.copy2(last['srt'],target)
         state.update(lastTake={'audio':paths[-1],'srt':str(target)})
     return result
+
+
+def handle(request):
+    if request.method=='voice.synthesize':
+        return synthesize(request)
+    if request.method in ('view.render','view.event'):
+        return view(request)
+    if request.method!='plugin.action':
+        raise ValueError('Unknown AI Media Studio method.')
+    action = request.params.get('action','').removeprefix(PLUGIN_ID+'.')
+    values = request.params.get('params') or {}
+    if action=='voices':
+        show(request,'voices');return {'message':'Opened the Vibi voice library.'}
+    if action=='credits':
+        return {'message':'Vibi balance: '+balance(request)+' credits.'}
+    if action=='speak':
+        return {'message':'Vibi speech ready.','data':speak(request,str(values.get('text','')),
+                takes=values.get('takes',1))}
+    if action=='build-timeline':
+        if not values.get('scenes'):
+            show(request,'build');return {'message':'Choose scene inputs in the Build timeline sheet.'}
+        summary = timeline.prepare(request,values)
+        if values.get('dryRun',True) or summary.get('missing'):
+            return {'message':'Scene build preview ready.' if not summary['missing'] else 'Scene images are missing.',
+                    'data':summary}
+        result = timeline.commit(request,summary['plan'])
+        return {'message':f"Built {summary['scenes']} scenes in one undoable edit.",'data':dict(summary,edit=result)}
+    if action in ('clean-image','clean-video','clean-image-file','clean-video-file'):
+        kind = 'image' if action.startswith('clean-image') else 'video'
+        if values.get('preview',True):
+            cleanup.preview(request,values,kind)
+            show(request,'watermark')
+            return {'message':'Review the watermark preview, then Save to project.'}
+        return cleanup.save(request,values,kind)
+    raise ValueError('Unknown AI Media Studio action.')
 
 
 def view(request):
@@ -174,34 +210,6 @@ def voices_view(request,view_state,values,event):
     return {'title':'Vibi Voices','body':body,'state':view_state}
 
 
-def handle(request):
-    if request.method=='voice.synthesize':
-        return synthesize(request)
-    if request.method in ('view.render','view.event'):
-        return view(request)
-    if request.method!='plugin.action':
-        raise ValueError('Unknown AI Media Studio method.')
-    action = request.params.get('action','').removeprefix(PLUGIN_ID+'.')
-    values = request.params.get('params') or {}
-    if action=='voices':
-        show(request,'voices');return {'message':'Opened the Vibi voice library.'}
-    if action=='credits':
-        return {'message':'Vibi balance: '+balance(request)+' credits.'}
-    if action=='speak':
-        return {'message':'Vibi speech ready.','data':speak(request,str(values.get('text','')),
-                takes=values.get('takes',1))}
-    if action=='build-timeline':
-        show(request,'build');return {'message':'Scene build is added in phase 4.'}
-    if action in ('clean-image','clean-video','clean-image-file','clean-video-file'):
-        kind = 'image' if action.startswith('clean-image') else 'video'
-        if values.get('preview',True):
-            cleanup.preview(request,values,kind)
-            show(request,'watermark')
-            return {'message':'Review the watermark preview, then Save to project.'}
-        return cleanup.save(request,values,kind)
-    raise ValueError('Unknown AI Media Studio action.')
-
-
 def watermark_view(request,view_state,values,event):
     saved=state.read().get('watermark') or {}
     node=event.get('node')
@@ -243,5 +251,36 @@ def watermark_view(request,view_state,values,event):
 
 
 def build_view(request,view_state,values,event):
-    return {'title':'Build','body':[{'type':'text','text':'This tool is added in the next phase.'}]}
-
+    node=event.get('node')
+    if node=='preview':
+        request.render([{'type':'progress','label':'Validating scene inputs and timeline…'}])
+        view_state['summary']=timeline.prepare(request,values)
+        view_state['inputs']={k:values.get(k,'') for k in ('scenes','images','audio','srt')}
+        state.update(lastFolders=view_state['inputs'])
+    elif node=='build':
+        if {k:values.get(k,'') for k in ('scenes','images','audio','srt')}!=view_state.get('inputs'):
+            raise ValueError('Inputs changed. Preview the scene build again.')
+        summary=view_state.get('summary') or {}
+        if not summary.get('plan'):
+            raise ValueError('Preview a complete scene build first.')
+        timeline.commit(request,summary['plan'])
+        return {'title':'Build timeline','body':[{'type':'text','text':f"Built {summary['scenes']} scenes."}],
+                'close':True,'notify':'Scene timeline built. One Undo removes the complete build.'}
+    last=state.read().get('lastFolders') or {}
+    body=[{'type':'text','text':'Builds onto an empty main video layer. Preview validates all inputs before editing.',
+           'style':'secondary'}]
+    for key,label in [('scenes','scenes.json or edit document path'),('images','Image folder path'),
+                      ('audio','Voice file path'),('srt','SubRip file path')]:
+        body.append(field(key,label,values.get(key,last.get(key,''))))
+    body.append(button('preview','Preview / dry run'))
+    summary=view_state.get('summary') or {}
+    if summary:
+        body.append({'type':'keyValue','items':[{'key':'Scenes','value':str(summary['scenes'])},
+            {'key':'Captions','value':str(summary['captions'])},{'key':'Duration','value':f"{summary['duration']:.3f} s"}]})
+        body.append({'type':'list','id':'sceneList','items':summary.get('sceneRows',[]),'empty':'No scenes'})
+        if summary['missing']:
+            body.append({'type':'text','text':'Missing images: '+', '.join(summary['missing']),'color':'red'})
+        for warning in summary['warnings'][:20]:
+            body.append({'type':'text','text':warning,'style':'caption'})
+    body.append(button('build','Build timeline',style='primary',disabled=not summary.get('plan')))
+    return {'title':'Build timeline','body':body,'state':view_state}
