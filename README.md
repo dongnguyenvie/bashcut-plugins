@@ -51,7 +51,7 @@ unreleased changes on `main` never reach users.
   "plugins": [{
     "id": "bashcut.silence-markers", "name": {"en": "Silence Markers", "vi": "Đánh dấu im lặng"},
     "summary": {"en": "Adds a section marker at every quiet stretch…", "vi": "Thêm mốc tại mọi đoạn im lặng…"},
-    "publisher": "bashcut", "category": "audio",
+    "publisher": "bashcut", "author": {"name": "BashCut", "url": "https://github.com/dongnguyenvie"}, "category": "audio",
     "capabilities": [], "actions": ["bashcut.silence-markers.mark"], "hooks": [],
     "versions": [{
       "version": "0.1.0", "apiVersion": 2, "minApiVersion": 2, "minAppVersion": "0.0.1",
@@ -67,6 +67,11 @@ Display text (`name`, `summary`, and in manifests `title`, `help`, `confirm`) is
 `{"en": "Silence Markers", "vi": "Đánh dấu im lặng"}`; a plain string means English, and a map with several
 languages must include `en`. Adding a language is adding a key — no new fields. `package.py` rejects the old
 `titleVi`/`nameVi` style.
+
+`author` (`{"name", "url"}`, url optional) is who wrote the plugin; `package.py` copies it from the manifest's
+`author`. `publisher` is who signs and ships it (`bashcut` for everything in this repo), so a contributed plugin keeps
+`publisher: bashcut` and names its contributor as `author`. BashCut shows *By <name>* in Plugins; older versions ignore
+the field.
 
 Each archive holds one folder named after the plugin id. The registry keeps the newest 3 versions of each plugin.
 

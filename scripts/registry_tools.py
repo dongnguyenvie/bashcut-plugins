@@ -18,7 +18,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 VERSIONS = "versions.json"
 # Entry fields in registry order; `id` and `versions` come first.
-LISTING_KEYS = ("name", "summary", "publisher", "category", "homepage", "capabilities", "actions", "hooks")
+LISTING_KEYS = ("name", "summary", "publisher", "author", "category", "homepage", "capabilities", "actions", "hooks")
 
 
 def write_json(path, value):
