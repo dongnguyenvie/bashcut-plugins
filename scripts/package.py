@@ -168,6 +168,9 @@ def register(slug, manifest, listing, archive, digest, signature):
         if isinstance(entry.get(field), str):
             entry[field] = {"en": entry[field]}
     entry.setdefault("publisher", "bashcut")
+    # Who wrote the plugin comes from its manifest; the publisher is who signs and ships it.
+    if manifest.get("author"):
+        entry["author"] = manifest["author"]
     entry["capabilities"] = manifest.get("capabilities", [])
     entry["actions"] = [a["id"] for a in manifest.get("contributes", {}).get("actions", [])]
     entry["hooks"] = [h if isinstance(h, str) else h["event"] for h in manifest.get("contributes", {}).get("hooks", [])]

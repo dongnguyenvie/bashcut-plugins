@@ -101,6 +101,20 @@ def option_problems(option, where, is_param=False):
     return problems
 
 
+def author_problems(author):
+    """`author` (PluginAuthor in the app): {"name": 1–80 characters on one line, "url": optional http(s) link}."""
+    if not isinstance(author, dict):
+        return ['author must be {"name": "…", "url": "https://…"} (url optional)']
+    problems = []
+    name, url = author.get("name"), author.get("url")
+    if not isinstance(name, str) or not name.strip() or name != name.strip() or len(name) > 80 or "\n" in name:
+        problems.append("author.name must be 1–80 characters on one line")
+    if url is not None and (not isinstance(url, str) or len(url) > 512
+                            or not re.fullmatch(r"https?://[^/\s?#]+[^\s]*", url, re.IGNORECASE)):
+        problems.append("author.url must be an http or https link of at most 512 characters")
+    return problems
+
+
 def manifest_problems(manifest):
     """Every rule the manifest breaks, as readable sentences; an empty list means BashCut will load it."""
     problems = []
@@ -122,6 +136,8 @@ def manifest_problems(manifest):
         problems.append("entrypoint must be a relative path inside the plugin folder")
     if "category" in manifest and manifest["category"] not in CATEGORIES:
         problems.append(f"category must be one of {', '.join(CATEGORIES)}")
+    if "author" in manifest:
+        problems += author_problems(manifest["author"])
 
     capabilities = manifest.get("capabilities")
     contributes = manifest.get("contributes") or {}
