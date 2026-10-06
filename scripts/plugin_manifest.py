@@ -1,16 +1,18 @@
 """Checks a plugin.json against the rules BashCut applies when it loads a plugin (PluginManifest.validate in the app).
 
-    from plugin_manifest import manifest_problems
+    from plugin_manifest import manifest_problems, skill_problems
     problems = manifest_problems(json.load(open("plugin.json")))   # [] when the manifest is valid
+    problems += skill_problems(folder, manifest)                     # the SKILL.md files contributes.skills names
 
 `scripts/new-plugin.py` checks every manifest it writes, and its CI test checks every template, so templates never
 drift from the API. The app stays the authority: this mirrors its rules, it does not replace them.
 """
+import pathlib
 import re
 
 SCHEMA = "bashcut.plugin/1"
 API_MINIMUM = 1
-API_CURRENT = 5
+API_CURRENT = 7
 # Capabilities BashCut wires today (docs/guides/plugins.md › Capabilities).
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")
@@ -38,6 +40,10 @@ CAPABILITY_PATTERN = r"[a-z0-9]+(?:[.-][a-z0-9]+)*"
 VERSION_PATTERN = r"[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?"
 OPTION_ID_PATTERN = r"[A-Za-z][A-Za-z0-9_-]{0,63}"
 LANGUAGE_PATTERN = r"[a-z]{2,3}(-[A-Za-z0-9]{2,8})?"
+SKILL_NAME_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
+# contributes.skills limits (PluginSkillContribution in the app).
+MAX_SKILLS, MAX_SKILL_TEXT, MAX_SKILL_FOLDER = 16, 64 * 1024, 2 * 1024 * 1024
+MAX_SKILL_NAME, MAX_SKILL_DESCRIPTION = 64, 1024
 
 
 def text_ok(value, limit=None):
@@ -114,11 +120,12 @@ def manifest_problems(manifest):
     capabilities = manifest.get("capabilities")
     contributes = manifest.get("contributes") or {}
     actions, hooks = contributes.get("actions", []), contributes.get("hooks", [])
+    library, skills = contributes.get("library", []), contributes.get("skills", [])
     if not isinstance(capabilities, list):
-        problems.append("capabilities is required (it may be [] when the plugin contributes actions or hooks)")
+        problems.append("capabilities is required (it may be [] when the plugin contributes something)")
         capabilities = []
-    if not capabilities and not actions and not hooks:
-        problems.append("a plugin needs a capability, an action or a hook")
+    if not capabilities and not actions and not hooks and not library and not skills:
+        problems.append("a plugin needs a capability, an action, a hook, a library pack or a skill")
     if len(set(capabilities)) != len(capabilities) or not all(re.fullmatch(CAPABILITY_PATTERN, c) for c in capabilities):
         problems.append("capabilities must be unique lowercase identifiers")
     providers = manifest.get("providers", [])
@@ -160,6 +167,16 @@ def manifest_problems(manifest):
         problems.append("agent.terminal and the terminal object go together")
     if "agent.terminal" in capabilities and api < 5:
         problems.append("agent.terminal needs apiVersion 5")
+    if library and api < 6:
+        problems.append("contributes.library needs apiVersion 6")
+    if skills and api < 7:
+        problems.append("contributes.skills needs apiVersion 7")
+    skill_paths = [s.get("path") if isinstance(s, dict) else None for s in skills]
+    if len(skills) > MAX_SKILLS or len({str(p).rstrip("/") for p in skill_paths}) != len(skills):
+        problems.append(f"contributes.skills lists at most {MAX_SKILLS} different skill folders")
+    for path in skill_paths:
+        if not relative_path_ok(path) or path.startswith("~"):
+            problems.append(f"skill path {path} must stay inside the plugin folder")
 
     if len({o.get("id") for o in options}) != len(options) or len(options) > 64:
         problems.append("option ids must be unique (at most 64)")
@@ -197,4 +214,65 @@ def manifest_problems(manifest):
             problems.append(f'hook {event} fires often and needs "transport": "session"')
         if isinstance(hook, dict) and not 0 <= hook.get("debounceMs", 0) <= 60000:
             problems.append(f"hook {event}: debounceMs must be 0–60000")
+    return problems
+
+
+def front_matter(text):
+    """The `key: value` lines between the first two `---` lines of a SKILL.md, quotes removed."""
+    lines = text.replace("\r\n", "\n").split("\n")
+    if not lines or lines[0].strip() != "---":
+        return {}
+    fields = {}
+    for line in lines[1:]:
+        if line.strip() == "---":
+            return fields
+        if ":" in line and not line.startswith(" "):
+            key, value = line.split(":", 1)
+            value = value.strip()
+            if len(value) >= 2 and value[0] in "\"'" and value[-1] == value[0]:
+                value = value[1:-1]
+            fields.setdefault(key.strip(), value)
+    return {}
+
+
+def skill_problems(folder, manifest):
+    """What BashCut would refuse in the skill folders `contributes.skills` names (PluginSkills.read in the app):
+    each resolves inside the plugin, has a SKILL.md whose front matter `name` is the folder name and has a
+    `description`, and stays within the size limits. BashCut leaves such a skill out; publishing refuses it."""
+    folder = pathlib.Path(folder)
+    base = folder.resolve()
+    problems = []
+    for entry in (manifest.get("contributes") or {}).get("skills", []):
+        path = entry.get("path") if isinstance(entry, dict) else None
+        where = f"skill {path}"
+        if not relative_path_ok(path):
+            continue  # manifest_problems reports it
+        skill = (folder / path).resolve()
+        if base not in skill.parents:
+            problems.append(f"{where}: the folder is outside the plugin")
+            continue
+        text_file = skill / "SKILL.md"
+        if not text_file.is_file() or base not in text_file.resolve().parents:
+            problems.append(f"{where}: the folder has no SKILL.md")
+            continue
+        total = 0
+        for item in skill.rglob("*"):
+            if item.is_symlink() and base not in item.resolve().parents:
+                problems.append(f"{where}: {item.name} links outside the plugin")
+            if item.is_file():
+                total += item.stat().st_size
+        if total > MAX_SKILL_FOLDER:
+            problems.append(f"{where}: the folder is larger than {MAX_SKILL_FOLDER // 1024 // 1024} MB")
+        data = text_file.read_bytes()
+        if len(data) > MAX_SKILL_TEXT:
+            problems.append(f"{where}: SKILL.md is larger than {MAX_SKILL_TEXT // 1024} KB")
+            continue
+        fields = front_matter(data.decode("utf-8", errors="replace"))
+        name, description = fields.get("name", ""), fields.get("description", "")
+        if not re.fullmatch(SKILL_NAME_PATTERN, name) or len(name) > MAX_SKILL_NAME:
+            problems.append(f"{where}: front matter name must be lowercase words joined by - (at most {MAX_SKILL_NAME})")
+        elif name != skill.name:
+            problems.append(f"{where}: front matter name {name} must match the folder {skill.name}")
+        if not description or len(description) > MAX_SKILL_DESCRIPTION:
+            problems.append(f"{where}: front matter needs a description of at most {MAX_SKILL_DESCRIPTION} characters")
     return problems

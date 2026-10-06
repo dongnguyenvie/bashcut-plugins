@@ -22,7 +22,7 @@ import subprocess
 import sys
 import tempfile
 
-from plugin_manifest import CATEGORIES
+from plugin_manifest import CATEGORIES, skill_problems
 from registry_tools import load_versions, save_versions, sign, write_registry
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -62,6 +62,8 @@ def manifest_for(slug):
     listing = json.loads((folder / "listing.json").read_text()) if (folder / "listing.json").is_file() else {}
     check_localized(manifest, "plugin.json")
     check_dependencies(manifest)
+    for problem in skill_problems(folder, manifest):
+        fail(problem)
     for field in LOCALIZED_FIELDS:
         if field in listing:
             check_text(listing[field], f"listing.json {field}")
