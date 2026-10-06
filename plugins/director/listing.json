@@ -1,7 +1,7 @@
 {
   "name": {
-    "en": "Director",
-    "vi": "Director"
+    "en": "Cut AI",
+    "vi": "Cut AI"
   },
   "summary": {
     "en": "BashCut's own editing agent in the agent dock: chat with Claude, GPT, Gemini and other models using your API key. It edits through BashCut's commands (undoable, in History), looks at frames and follows the agent kit's skills. Needs BashCut with plugin API 4.",

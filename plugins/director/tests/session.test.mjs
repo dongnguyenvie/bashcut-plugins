@@ -137,7 +137,7 @@ test("hello, and status without a key", async () => {
         ready: false,
         provider: "openai",
         model: "gpt-5.5",
-        detail: "Add an API key in Settings › Plugins › Director",
+        detail: "Add an API key in Settings › Plugins › Cut AI",
     });
     const ready = await session.request("s2", { op: "status", options: { provider: "anthropic", apiKey: "k" } });
     assert.equal(ready.result.ready, true);
@@ -184,7 +184,7 @@ test("compatible endpoints require HTTPS except loopback and never echo credenti
 test("a turn without a key ends with an error the user can act on", async () => {
     const session = new Session({ data: temp("data"), faux: script([{ text: "never" }]) });
     const reply = await session.request("t1", turn({ options: { apiKey: "" } }));
-    assert.deepEqual(reply.result, { stopReason: "error", error: "Add an API key in Settings › Plugins › Director" });
+    assert.deepEqual(reply.result, { stopReason: "error", error: "Add an API key in Settings › Plugins › Cut AI" });
     await session.close();
 });
 
@@ -238,7 +238,7 @@ test("legacy editor context never returns to system messages", async () => {
     mkdirSync(join(data, "conversations"));
     writeFileSync(join(data, "conversations", "project-1.json"), JSON.stringify({
         id: "project-1", sections: { context: "OLD_INJECTION" }, messages: [
-            { role: "system", content: "Director", sections: { context: "OLD_INJECTION" }, timestamp: 1 },
+            { role: "system", content: "Cut AI", sections: { context: "OLD_INJECTION" }, timestamp: 1 },
             { role: "system", content: "", sections: { context: "LATER_INJECTION" }, timestamp: 2 },
         ],
     }));
@@ -438,7 +438,7 @@ test("toolEnd summaries are short and never the raw result", async () => {
     await session.close();
 });
 
-test("commands lists Director's slash commands", async () => {
+test("commands lists Cut AI's slash commands", async () => {
     const session = new Session({ data: temp("data") });
     const reply = await session.request("k1", { op: "commands", options: { provider: "anthropic", apiKey: "secret-key" } });
     const commands = reply.result.commands;

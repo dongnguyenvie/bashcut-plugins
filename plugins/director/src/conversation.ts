@@ -42,7 +42,7 @@ export function load(id: string): Conversation {
     try {
         const stored = JSON.parse(readFileSync(pathFor(id), "utf8"));
         if (stored && stored.id === id && Array.isArray(stored.messages)) {
-            // Older Director versions promoted editor state into system sections. Remove every
+            // Older Cut AI versions promoted editor state into system sections. Remove every
             // such section before turns or /compact can send this history to a model again.
             const { context: _legacyContext, ...sections } = stored.sections ?? {};
             const messages = stored.messages.map((message: AgentMessage) => {
