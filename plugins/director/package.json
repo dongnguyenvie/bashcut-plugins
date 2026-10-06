@@ -1,7 +1,7 @@
 {
   "name": "bashcut-director",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "description": "Build and test sources of the BashAI Editor Editor plugin (ID bashcut.director) (not shipped; build.sh bundles src/ into dist/director.mjs)",
   "license": "MIT",
