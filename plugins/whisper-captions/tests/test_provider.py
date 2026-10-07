@@ -47,6 +47,7 @@ class ProviderTests(unittest.TestCase):
         words = json.loads(pathlib.Path(self.output, "clip 1.words.json").read_text(encoding="utf-8"))
         self.assertEqual([w["text"] for w in words[:4]], ["Xin", "chào", "các", "bạn."])
         self.assertTrue(all(w["start"] <= w["end"] for w in words))
+        self.assertEqual((words[0]["confidence"], words[0]["noSpeechProb"]), (0.9, 0.0))
         # Word for word with the caption text, so BashCut can use the timings as they are.
         captions = [block.split("\n", 2)[2] for block in text.strip().split("\n\n")]
         self.assertEqual(len(words), sum(len(line.split()) for line in captions))
@@ -93,6 +94,8 @@ class CaptionShapeTests(unittest.TestCase):
         cues = whisper_provider.cues_from([{"text": "ab cdef", "start": 1, "end": 4, "words": []}], 42)
         words = whisper_provider.word_timings(cues)
         self.assertEqual([w["text"] for w in words], ["ab", "cdef"])
+        # Shared time is not Whisper's word timing: no confidence.
+        self.assertNotIn("confidence", words[0])
         self.assertEqual(words[0]["start"], 1)
         self.assertEqual(words[0]["end"], words[1]["start"])
         # cdef is twice as long as ab, so it gets twice the time.
