@@ -8,8 +8,8 @@ Separate static visual design from temporal video direction. A reference-first w
 
 Use two distinct compiled outputs:
 
-- `无参考图直出版`: self-contained text-to-video prompt with the necessary static and dynamic information.
-- `参考图驱动版`: image-to-video prompt bound to actual selected images; static descriptions are minimized and temporal instructions carry the detail.
+- `No-reference direct version`: self-contained text-to-video prompt with the necessary static and dynamic information.
+- `Reference-driven version`: image-to-video prompt bound to actual selected images; static descriptions are minimized and temporal instructions carry the detail.
 
 Do not try to make one prompt optimal for both modes.
 
@@ -19,9 +19,9 @@ Resolve the target aspect ratio before creating composition-controlling producti
 
 First classify every supplied or planned image by source and authority:
 
-- `灵感参考图`: an external still, photograph, painting, mood board, or user-provided style example used to abstract one or a few declared dimensions such as composition method, color logic, material mood, or subject direction. It is not automatically authoritative for identity, exact blocking, scene topology, or story action. Do not copy a recognizable shot, cast arrangement, prop combination, or complete visual design.
-- `生产资产参考图`: an approved/generated character, wardrobe, location, prop, product, or vehicle asset intended to lock the named static facts across generation.
-- `状态/首帧参考图`: an approved image intended to lock the current pose, screen positions, contact, prop state, or opening composition for one clip. It does not control later movement, performance change, or camera development unless explicitly assigned.
+- `Inspiration reference image`: an external still, photograph, painting, mood board, or user-provided style example used to abstract one or a few declared dimensions such as composition method, color logic, material mood, or subject direction. It is not automatically authoritative for identity, exact blocking, scene topology, or story action. Do not copy a recognizable shot, cast arrangement, prop combination, or complete visual design.
+- `Production asset reference image`: an approved/generated character, wardrobe, location, prop, product, or vehicle asset intended to lock the named static facts across generation.
+- `State/first-frame reference image`: an approved image intended to lock the current pose, screen positions, contact, prop state, or opening composition for one clip. It does not control later movement, performance change, or camera development unless explicitly assigned.
 
 If the user's intent is ambiguous, treat external inspiration as inspiration rather than a production lock. A production image may serve several compatible fields only when they do not conflict, but still state its authority explicitly.
 
@@ -47,18 +47,18 @@ Choose the smallest asset set that solves those risks. Do not create one referen
 Stage 1 output:
 
 ```text
-【参考图素材规划】
-本阶段需要：...
-不单独生成：...（原因）
+【Reference image plan】
+Needed at this stage: ...
+Not generated separately: ... (reason)
 
-【参考图提示词】
-参考图1｜类型与用途：...
-提示词：...
+【Reference image prompts】
+Reference image 1 | Type and purpose: ...
+Prompt: ...
 ```
 
 Follow `Execution Decisions and Agent Capabilities` and `Production Path Routing` in `../SKILL.md`. Stage 1 is complete when the requested asset plan/prompts are delivered, but it is not completion of a requested reference-driven video prompt. Wait only for missing/unreadable required images or an explicitly reserved image approval. Selected, readable images skip this wait and proceed to inspection. Authorized tool-based generation may continue after inspection unless user approval was reserved. Without image-viewing capability, identify the needed visual facts and any provisional text work; never claim to have inspected pixels. Image prompts are design intent, not evidence of the generated result.
 
-For `9:16竖屏`, create composition-controlling assets—blocking scene plates, relationship/two-shots, first/tail frames, and ordered keyframes—in the target ratio. Identity or isolated prop references may use another practical ratio only when they are attribute references and crop-safe; any literal first/last frame must match 9:16, and first/last frames must match each other. Do not treat a side-cropped horizontal frame as a valid vertical keyframe until people, hands, props, exits, light source, and action path have been inspected and deliberately recomposed.
+For `9:16 vertical`, create composition-controlling assets—blocking scene plates, relationship/two-shots, first/tail frames, and ordered keyframes—in the target ratio. Identity or isolated prop references may use another practical ratio only when they are attribute references and crop-safe; any literal first/last frame must match 9:16, and first/last frames must match each other. Do not treat a side-cropped horizontal frame as a valid vertical keyframe until people, hands, props, exits, light source, and action path have been inspected and deliberately recomposed.
 
 ## Reference Image Prompt Compiler
 
@@ -73,15 +73,15 @@ Compile each image prompt in this order, omitting fields that do not serve that 
 7. material behavior that affects continuity, such as layer, weight, wear, wetness, reflectivity, or contact
 8. a short scene-specific exclusion list
 
-Prefer specific nouns, physical relationships, and source-based light over generic labels such as `电影感`, `高级感`, `史诗感`, `大师级`, `8K`, or `高度细节`. The image should remain specific after generic quality words are removed. Unless the user explicitly requests a turnaround, contact sheet, collage, or storyboard, request one standalone frame and one composition; do not ask the image model to place several views or several reference types on one canvas. Do not impose a universal aspect ratio or English-only prompt format.
+Prefer specific nouns, physical relationships, and source-based light over generic labels such as `cinematic`, `premium look`, `epic`, `masterpiece`, `8K`, or `highly detailed`. The image should remain specific after generic quality words are removed. Unless the user explicitly requests a turnaround, contact sheet, collage, or storyboard, request one standalone frame and one composition; do not ask the image model to place several views or several reference types on one canvas. Do not impose a universal aspect ratio or English-only prompt format.
 
 Use type-specific information budgets as selection gates rather than one template for every image. The listed fields are maxima and candidate categories, not a requirement to fill every slot. Keep the exclusion list to the few likely failures for that asset—normally 3-6 failure classes—and remove generic negatives that do not protect production use.
 
-- `人物定妆图`: keep 4-6 stable identity/costume anchors plus one readable emotional baseline. Use a neutral, current-state posture; no story interaction, second person, relationship action, or elaborate narrative background. If costume construction is critical, describe visible layers, fasteners, material, fit, and current wear state, but remove decorative details that will not recur.
-- `纯场景图`: keep 4-6 topology/light anchors, one main source-light rule, and 2-3 causal environmental traces that reveal age, use, weather, or a recent event. Clarify entrances, exits, depth, action path, and obstacles; use `无人物` when a clean plate is required. Do not clutter the room with objects that do not affect later blocking or story.
-- `双人关系图`: lock one relationship axis, screen-left/right positions, height/distance, eye lines, and one contact or no-contact state. Choose one visual center and one composition decision produced by the relationship pressure; do not turn it into two independent fashion portraits.
-- `首帧/关键帧图`: use one main action state, one secondary story clue, one principal composition decision, one motivated primary light source, and 2-3 decisive environment facts. A keyframe may imply what just happened and what may happen next, but should not try to depict several time beats at once.
-- `关键道具/产品图`: lock identity, scale, material, orientation, readable marking when essential, wear/state, owner or placement when relevant, and one clear viewing angle. Do not add a decorative story scene unless context is required to judge scale or use.
+- `Character look reference`: keep 4-6 stable identity/costume anchors plus one readable emotional baseline. Use a neutral, current-state posture; no story interaction, second person, relationship action, or elaborate narrative background. If costume construction is critical, describe visible layers, fasteners, material, fit, and current wear state, but remove decorative details that will not recur.
+- `Empty scene plate`: keep 4-6 topology/light anchors, one main source-light rule, and 2-3 causal environmental traces that reveal age, use, weather, or a recent event. Clarify entrances, exits, depth, action path, and obstacles; use `no people` when a clean plate is required. Do not clutter the room with objects that do not affect later blocking or story.
+- `Two-person relationship image`: lock one relationship axis, screen-left/right positions, height/distance, eye lines, and one contact or no-contact state. Choose one visual center and one composition decision produced by the relationship pressure; do not turn it into two independent fashion portraits.
+- `First-frame/keyframe image`: use one main action state, one secondary story clue, one principal composition decision, one motivated primary light source, and 2-3 decisive environment facts. A keyframe may imply what just happened and what may happen next, but should not try to depict several time beats at once.
+- `Key prop/product image`: lock identity, scale, material, orientation, readable marking when essential, wear/state, owner or placement when relevant, and one clear viewing angle. Do not add a decorative story scene unless context is required to judge scale or use.
 
 For relationship and keyframe composition, decide internally:
 
@@ -107,7 +107,7 @@ Before binding, make a compact internal inventory for each selected image:
 
 The actual selected image is authoritative for its visible state. Its original image prompt records design intent but is not evidence that the result contains every requested fact. Do not name, lock, move, or transfer an absent/unclear prop merely because it appeared in the earlier prompt. If an absent detail is essential to the opening action, repair/regenerate the frame or bind a compatible dedicated reference first. If it can enter later, give it a visible source, entrance/contact action, and final state instead of making it appear.
 
-Do not send a contaminated production reference forward without warning. A negative clause such as `不要水印` is not a reliable way to remove a watermark or malformed detail already embedded in the input. Recommend cleaning, cropping, repairing, or regenerating the asset when the flaw is likely to persist or animate.
+Do not send a contaminated production reference forward without warning. A negative clause such as `no watermark` is not a reliable way to remove a watermark or malformed detail already embedded in the input. Recommend cleaning, cropping, repairing, or regenerating the asset when the flaw is likely to persist or animate.
 
 ### Reference-to-Motion Physical Feasibility Audit
 
@@ -121,14 +121,14 @@ Before writing the timeline, reconstruct the visible starting geometry and test 
 - room to stand, turn, cross, or exit without intersecting furniture or another person
 - whether the chosen shot size can actually show the important contact and its consequence
 
-Write contact as `approach -> contact -> pressure/weight response -> release or transfer -> visible endpoint`. Replace brittle numeric precision such as `停在2厘米处` with a visually judgeable event such as `指尖将触未触时停住`, unless measurement itself matters to the story. If the selected frame cannot support the motion, change the blocking, repair the keyframe, add a compatible view, or split the action; do not ask the model to solve impossible geometry.
+Write contact as `approach -> contact -> pressure/weight response -> release or transfer -> visible endpoint`. Replace brittle numeric precision such as `stops 2 cm away` with a visually judgeable event such as `stops just before the fingertips touch`, unless measurement itself matters to the story. If the selected frame cannot support the motion, change the blocking, repair the keyframe, add a compatible view, or split the action; do not ask the model to solve impossible geometry.
 
 Assign each reference one narrow authority:
 
 ```text
-参考图1：锁定女主身份、面容、发髻与当前服装状态。
-参考图2：锁定厅堂空间布局、门窗方位与烛光方向。
-参考图3：锁定两人初始左右站位、距离与视线关系。
+Reference image 1: locks the heroine's identity, face, hair bun and current costume state.
+Reference image 2: locks the hall's spatial layout, the positions of the doors and windows, and the direction of the candlelight.
+Reference image 3: locks the two people's initial left/right positions, distance and eyeline relationship.
 ```
 
 This mapping is required when several references could compete. Do not ask two references to control the same fact differently. If they conflict, choose the authoritative image for that fact, repair/regenerate the conflicting asset, or explicitly describe the intended on-screen change.
@@ -138,29 +138,29 @@ This mapping is required when several references could compete. Do not ask two r
 Use this when the user likes most of a generated reference image and asks to correct a limited failure. Inspect the actual result when available; do not diagnose only from the original prompt.
 
 1. Name at most 1-3 dominant failed fields.
-2. List the approved visual facts under `保持不变`.
-3. Put the requested correction under `只修改`.
+2. List the approved visual facts under `Keep unchanged`.
+3. Put the requested correction under `Change only`.
 4. Include only unavoidable physical dependents of that correction, such as sleeve fold after changing a cuff, shadow/contact after moving a hand, or reflections after changing a prop material.
-5. Put likely collateral drift under `禁止连带变化`.
+5. Put likely collateral drift under `No side changes`.
 
 Repair shape:
 
 ```text
-【保持不变】
-人物身份、已确认服装主体、构图、摄影机位置、背景与光源保持不变。
+【Keep unchanged】
+Keep the character's identity, the confirmed main costume, the composition, the camera position, the background and the light sources unchanged.
 
-【只修改】
-将右侧袖口改为窄口交领袍结构；同步修正与袖口直接相连的布料褶皱和手腕遮挡关系。
+【Change only】
+Change the right cuff to the narrow-cuffed, cross-collar robe construction; correct the fabric folds directly connected to the cuff and the way it covers the wrist to match.
 
-【禁止连带变化】
-不得改变脸型、年龄感、发髻、服装颜色、身体比例、机位、场景布局和光线方向。
+【No side changes】
+Do not change the face shape, apparent age, hair bun, costume colors, body proportions, camera position, scene layout or light direction.
 ```
 
 If the failed field is foundational—wrong person, wrong era, unusable topology, or a composition that cannot support the intended video—recommend regenerating that asset instead of accumulating contradictory repair clauses. Do not claim repair success until the revised image has been generated and inspected.
 
 ## Static Information Deduplication
 
-In a `参考图驱动版` video prompt:
+In a `Reference-driven version` video prompt:
 
 Keep only:
 
@@ -195,7 +195,7 @@ The images control assigned static visible facts. The video text controls time:
 When a static fact must change, write it as a timed delta with cause and endpoint:
 
 ```text
-12秒时，她转身过急，参考图1中的红色外袍从右肩滑落，露出里面原本穿着的白色丧服；外袍最终挂在左肘，不恢复原位。
+At 12s, she turns too quickly; the red outer robe from reference image 1 slips off her right shoulder, revealing the white mourning garment she was wearing underneath; the outer robe ends up hanging on her left elbow and does not return to its place.
 ```
 
 Avoid bare contradictions such as describing the character as wearing white at the start while the identity reference shows a red outer robe.
@@ -204,7 +204,7 @@ Avoid bare contradictions such as describing the character as wearing white at t
 
 Before applying this section, distinguish a previous tail-frame state reference from an explicitly bound opening frame. A supplied previous ending does not automatically authorize matching its composition. Follow `continuity_director_contract.md` for cross-clip cuts and shot-to-reference coverage. Only a user-selected actual first-frame binding uses the opening-composition contract below.
 
-A `状态/首帧参考图` controls the opening state, not the whole film grammar. Unless the user explicitly requests `固定镜头`, `一镜到底`, or the model/workflow requires a locked view, its shot size, angle, framing, and focus authority ends after the opening beat is established. Identity, costume state, scene topology, relationship axis, light direction, handedness, and prop continuity remain locked across later views.
+A `State/first-frame reference image` controls the opening state, not the whole film grammar. Unless the user explicitly requests `static shot`, `one-take`, or the model/workflow requires a locked view, its shot size, angle, framing, and focus authority ends after the opening beat is established. Identity, costume state, scene topology, relationship axis, light direction, handedness, and prop continuity remain locked across later views.
 
 Choose the structure from the dramatic content before writing the timeline:
 
@@ -219,17 +219,17 @@ Reference stability and cinematic coverage are separate goals: references keep t
 ## Reference-Driven Prompt Shape
 
 ```text
-【参考图绑定】
-参考图1锁定...；参考图2锁定...。未明确改变的静态信息保持不变。
+【Reference binding】
+Reference image 1 locks ...; reference image 2 locks .... Static information not explicitly changed stays the same.
 
-【生成优先级】
-先保证...，其次...；弱化不必要的装饰性变化。
+【Generation priority】
+First ensure ..., then ...; play down unnecessary decorative changes.
 
-【动态视频提示词】
-片长与结构：...（明确一镜到底或多镜头；首帧只锁开场还是按用户要求锁全片）
-0-...秒：动作、表演、镜头、声音...
-...秒：明确变化与因果...
-结尾状态：...
+【Motion video prompt】
+Duration and structure: ... (state one-take or multi-shot; whether the first frame locks only the opening or, at the user's request, the whole clip)
+0-...s: action, performance, camera, sound...
+...s: explicit changes and cause and effect...
+Ending state: ...
 ```
 
 Do not force every label when a compact paragraph is clearer. The essential invariant is `binding + temporal direction + explicit deltas`, not a fixed template.

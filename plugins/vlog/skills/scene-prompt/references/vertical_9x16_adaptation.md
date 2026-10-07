@@ -6,20 +6,20 @@ Read this file only when the user explicitly requests vertical/portrait/`9:16`, 
 
 Resolve aspect ratio before composition-sensitive writing:
 
-1. Follow an explicit `横屏`, `竖屏`, `16:9`, `9:16`, or other ratio without asking.
+1. Follow an explicit `landscape`, `vertical`, `16:9`, `9:16`, or other ratio without asking.
 2. Inherit the actual ratio of a production first frame, keyframe, or approved previous clip unless the user requests reformatting.
 3. Preserve the last confirmed ratio across a continued series without asking again.
 4. Follow a platform format only when the user states the format; do not assume one universal ratio from a platform name that supports several formats.
-5. If ratio is unspecified and the scene is low-risk—a single subject, close performance, simple object action, or no production references—default to `16:9横屏` and continue.
+5. If ratio is unspecified and the scene is low-risk—a single subject, close performance, simple object action, or no production references—default to `16:9 landscape` and continue.
 6. Ask once only when ratio cannot be inferred and would materially change expensive work: production references, two-person/table blocking, three or more people, full-body movement, dance/fight/chase, architecture/landscape/vehicle scale, or a multi-platform master. Merge this with any existing direction or production-path checkpoint.
 
 Use one concise question:
 
 ```text
-这组参考图/调度会受画幅明显影响，请确认最终输出采用16:9横屏还是9:16竖屏？
+The aspect ratio will noticeably affect these reference images/this blocking. Please confirm whether the final output should be 16:9 landscape or 9:16 vertical.
 ```
 
-Do not ask again after the ratio is confirmed or inherited. If the user delegates, default to `16:9横屏` unless an actual vertical production asset or explicit vertical delivery context controls the choice.
+Do not ask again after the ratio is confirmed or inherited. If the user delegates, default to `16:9 landscape` unless an actual vertical production asset or explicit vertical delivery context controls the choice.
 
 ## Vertical Composition Principles
 
@@ -73,11 +73,11 @@ Select by story function first, then adapt the path to the narrow frame. Read `c
 
 Use as decision patterns, not fixed templates:
 
-- Restrained single-person emotion: `MCU/CU保护层 -> 极慢Dolly In或Static -> 触发后CU/BCU -> 呼吸与余味`.
-- Two-person relationship: `MS/MLS建立深度/隔断 -> OTS/CU说话者 -> CU/BCU听者 -> 必要的手/道具插入 -> 较宽结尾确认距离或离场`.
-- Discovery/suspense: `主体靠近中轴 -> 视线/声音触发 -> Rack Focus、短Pan或切镜显露深处/上下线索 -> 面部反应 -> 保留未知空间`.
-- Stand/turn/exit: `可读起点 -> 动作前拉宽或切KS/FLS -> 头脚与出口可见 -> Follow/短Track离场 -> 空位或剩余人物结尾`.
-- Group/scale: `单一锚点 -> 前后景逐层揭示 -> 高度、门窗、楼梯或Crane/Tilt建立尺度 -> 回到人物后果`.
+- Restrained single-person emotion: `MCU/CU protective layer -> very slow Dolly In or Static -> CU/BCU after the trigger -> breath and lingering aftertaste`.
+- Two-person relationship: `MS/MLS establishes depth/separation -> OTS/CU on the speaker -> CU/BCU on the listener -> necessary hand/prop insert -> wider ending confirms the distance or the exit`.
+- Discovery/suspense: `subject near the central axis -> eyeline/sound trigger -> Rack Focus, a short Pan or a cut reveals a clue in depth/above/below -> facial reaction -> keep the unknown space`.
+- Stand/turn/exit: `readable starting point -> widen or cut to KS/FLS before the action -> head, feet and exit visible -> Follow/short Track exit -> end on the empty spot or the remaining character`.
+- Group/scale: `single anchor -> foreground and background revealed layer by layer -> height, doors and windows, stairs or Crane/Tilt establish scale -> return to the consequences for the character`.
 
 ## Reference-First Vertical Workflow
 
@@ -90,7 +90,7 @@ Use as decision patterns, not fixed templates:
 
 ## Vertical Failure Checks
 
-- Is `9:16竖屏` stated when vertical output is selected and the prompt/tool needs it?
+- Is `9:16 vertical` stated when vertical output is selected and the prompt/tool needs it?
 - Do central action, face, hands, key prop, entry/exit, and final state fit the narrow frame?
 - Are multiple people layered or covered through motivated shots rather than squeezed side by side?
 - Does full-body action have head/foot room and a visible destination?

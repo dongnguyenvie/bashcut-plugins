@@ -1,61 +1,61 @@
 # Observable Emotion Performance Prompt Library
 
-本库基于 [Seedance Emotion Direction](https://seedance-emotion-direction.vercel.app/) 的 25 类表演方向重新整理。用途是把抽象情绪转译成眼神、眉眼、嘴部、呼吸、头颈、肩背、手部和重心的可见变化，而不是复制固定表演。
+This library reorganizes the 25 performance directions from [Seedance Emotion Direction](https://seedance-emotion-direction.vercel.app/). Its purpose is to translate abstract emotions into visible changes in the eyes, brows, mouth, breathing, head and neck, shoulders and back, hands and center of gravity, rather than copying a fixed performance.
 
-## 调用原则
+## Usage principles
 
-1. 先写人物为什么出现这种情绪、由什么事件或台词触发，再选一个最接近的基础模块。
-2. 单次情绪变化通常只保留2–4个最有辨识度的可见/可听信号；不要把整条模块全部塞进短镜头。
-3. 情绪必须有 `起始状态 -> 触发 -> 形成/峰值 -> 保持、释放或转化`，不能从第一帧直接摆出终点表情。
-4. 根据人物年龄、身份、关系、体力和克制程度调节幅度。`爆发`、`中等`、`细微`是起始建议，不是硬性强度。
-5. 自然语言表演动作优先；AU/FACS 只在高要求面部特写中作辅助校准，不在最终提示词里堆代码。
-6. 最终输出用中文描述表演，不输出本库的英文情绪名称、分类标签或解释性分析，除非用户明确要求。
+1. First write why the character feels this emotion and which event or dialogue line triggers it, then choose the closest base module.
+2. A single emotional change usually keeps only 2–4 of the most distinctive visible/audible signals; do not cram an entire module into a short shot.
+3. The emotion must follow `starting state -> trigger -> build/peak -> hold, release or transform`; never strike the end-point expression from the first frame.
+4. Adjust the intensity to the character's age, identity, relationships, physical strength and degree of restraint. `Explosive`, `Medium` and `Subtle` are starting suggestions, not fixed intensities.
+5. Natural-language performance actions come first; AU/FACS is only an auxiliary calibration for demanding facial close-ups, and its codes are not piled into the final prompt.
+6. Describe the performance in the final output in plain natural language; do not output this library's emotion names, category labels or explanatory analysis unless the user explicitly asks.
 
-## 25种人物情感表演模块
+## 25 character emotion performance modules
 
-| # | 情感与建议强度 | 可调用的中文表演模块 | 使用边界 |
+| # | Emotion and suggested intensity | Performance module | Usage limits |
 |---|---|---|---|
-| 01 | 大笑｜爆发 | 眼睛先被笑意挤出细纹，嘴角迅速打开，笑声带动头部前倾后仰，肩膀随换气轻颤；最后笑声减弱，余笑仍留在脸上。 | 适合真正失控的快乐；克制喜悦只取眼角、呼气和余笑，不使用大幅摇头耸肩。 |
-| 02 | 震惊｜爆发 | 触发瞬间双眼骤然睁大，眉毛上提，下颌失去控制地松开，头部轻微后缩；表情短暂冻结后才出现一次迟来的眨眼。 | 必须有明确突发信息；不要长时间维持瞪眼和张嘴。 |
-| 03 | 惊恐｜爆发 | 眉头向上并向内收紧，视线锁死威胁方向，身体本能后缩，下巴回收；胸口出现急促浅呼吸，迟迟不敢眨眼。 | 用于真实危险；悬疑不确定时优先使用“怀疑”或“焦虑”。 |
-| 04 | 盛怒｜爆发 | 眉眼向下压紧，鼻翼扩张，咬肌和颈部逐渐绷硬，身体微微向前逼近；重呼吸从鼻腔推出，怒意在爆发边缘持续。 | 需要破防或强烈侵犯；克制愤怒应减少露齿、前冲和颈部用力。 |
-| 05 | 厌恶｜中等 | 鼻梁皱起，上唇轻抬，眼睛收窄，下巴向内，头部与上身从对象方向撤开；短暂侧开视线后仍保持排斥。 | 区分道德厌恶与生理恶心；不要自动加入呕吐或夸张扭脸。 |
-| 06 | 崩溃哭泣｜爆发 | 眼眶和鼻尖先泛红，呼吸连续卡住，眼泪越过下眼睑；嘴部失去稳定形状，下巴颤抖，肩背随后才开始震动。 | 必须由情绪累积后发生；不能从首帧直接大哭，也不能用于用户要求克制的场景。 |
-| 07 | 疼痛/皱缩｜爆发 | 刺激出现时眼睛紧闭，牙关骤然收紧，头部偏离受力方向，一侧肩膀本能抬起保护；肌肉维持短暂收缩后才略微放松。 | 要和受力点、身体方向及恢复过程一致；避免无原因的通用痛苦脸。 |
-| 08 | 翻白眼/不耐烦｜中等 | 视线缓慢向上绕开对方，头部跟随形成轻微倾斜，鼻腔呼出一口气；眼睛回落时眼睑压低，停留片刻再移开。 | 偏社交表达，容易显得喜剧化；严肃古装或悲剧情境慎用。 |
-| 09 | 怀疑｜细微 | 下巴略低而眼睛仍向上观察，一侧眉毛比另一侧更高，头部只转动少许，视线从侧面锁住线索；一侧嘴角悄然收紧。 | 适合证据不足阶段；不要提前演成已经确认真相。 |
-| 10 | 调情/暧昧试探｜细微 | 下巴略收，视线短暂避开后重新返回，眨眼速度放慢，一侧嘴角逐渐形成温暖但克制的浅笑；身体不明显后退。 | 只用于安全、成年、双方自愿的关系；不能替代明确的同意，也不做露骨性暗示。 |
-| 11 | 得意/幸灾乐祸｜中等 | 眼睑微压，一侧嘴角慢慢挑起，眉毛短促抬起后归位，下巴略微上扬；保持不回避的注视，让优越感停留。 | 区分自信与恶意；避免把轻松胜利全部演成反派冷笑。 |
-| 12 | 无聊｜细微 | 眼皮逐渐沉重，视线失去焦点并游离，一次眨眼停留过久，下颌和肩膀慢慢松垮；长呼气让身体进一步下沉。 | 适合注意力流失；不要与疲惫混用，除非情节同时支持体力下降。 |
-| 13 | 困惑｜中等 | 两侧眉毛形成不对称，眼睛在相关人物或线索之间来回搜索，头部轻微偏斜，嘴唇微张；没有得到答案时困惑继续加深。 | 视线搜索对象必须真实存在；不要用随机左右扫视代替思考。 |
-| 14 | 顿悟｜中等 | 原本停滞的思考状态被打断，焦点突然重新锁定，眼睛略微睁大，眉毛上提，嘴唇随无声吸气分开；确认后出现一个很小的点头。 | 点头不是必需；真相震撼时可停在冻结或呼吸变化，不必立即表示确认。 |
-| 15 | 敬畏/惊叹｜中等 | 视线逐步抬高并扩大，眉间保持松弛，嘴唇缓慢开启，头颈和上身不自觉向目标靠近；表情保持开放而非恐惧。 | 需要宏大、美丽或超越经验的对象；避免和惊恐共用紧张眉眼。 |
-| 16 | 决心｜中等 | 视线从低处抬起并固定，深吸气撑开胸腔，咬肌在下颌处收紧，肩背重新展开；最后以一次小而明确的动作确认选择。 | 最后的确认动作可为点头、握紧、站直或迈步，按剧情选一个。 |
-| 17 | 挫败｜中等 | 眼睛先紧闭，牙关或下颌出现短促摩擦，鼻腔呼出锐利的一口气，头部轻轻否定一次；随后仰头长呼气，部分紧张才松开。 | 挫败包含“努力后失败”；没有努力过程时更接近烦躁或疲惫。 |
-| 18 | 焦虑｜中等 | 眉间持续收紧，视线频繁检查不同方向，呼吸浅而快；手指反复扣紧或摩擦，身体重心在两脚/座位之间小幅移动。 | 只选一项手部动作，避免重复小动作像机械循环；视线检查应有现实原因。 |
-| 19 | 悲伤｜细微 | 眉头内侧缓慢上提，嘴角逐渐失去支撑，下巴出现一次短促颤动；视线下沉，吞咽和一次缓慢眨眼都没能恢复表情。 | 适合安静受伤；眼泪不是必需，也不要自动发展成崩溃哭泣。 |
-| 20 | 愧疚｜细微 | 想开口却停住，视线先从对方身上滑开再落向地面，头部逐渐低下；一次艰难吞咽后，手短暂触碰颈后或衣领寻找支撑。 | 手部动作根据服装和姿态调整；不要把愧疚直接演成承认全部事实。 |
-| 21 | 尴尬｜中等 | 脸颊出现轻微热度，视线迅速落向侧下方，嘴唇压出不自然的半笑；头部随即低下转开，一只手靠近嘴边又停住。 | 可偏喜剧或真实社交不适；严肃场景应降低脸红和遮嘴幅度。 |
-| 22 | 精疲力竭｜细微 | 眼皮缓慢下坠，一次闭眼持续得比正常更久，头部下沉后费力回正；下颌松开，长呼气把胸腔彻底放空，眼睛只重新睁开一半。 | 强调体力/心理资源耗尽；动作节奏要慢，不能突然恢复敏捷。 |
-| 23 | 如释重负｜中等 | 一次完整呼气先让胸腔下降，眼睛随后闭合，原本抬起的眉毛和肩膀逐步落回；呼气结束后才出现微微发抖的浅笑。 | 先释放压力、后出现笑；不要把释然从一开始演成开心。 |
-| 24 | 骄傲/满足｜细微 | 下巴略抬，胸腔自然展开，闭唇微笑缓慢而均匀地形成；肩背回正，一次从容眨眼后保持稳定姿态。 | 可表达安静自豪；双臂抱胸会改变关系语义，只有符合人物身份时使用。 |
-| 25 | 紧张假笑｜细微 | 嘴角主动拉出笑形，但眼周没有相应笑纹；眨眼略快，喉结或颈前出现一次明显吞咽，视线短暂下落后又把僵硬笑容恢复。 | 用于掩饰、社交防御或说谎；必须让“嘴笑而眼睛不笑”的矛盾可读。 |
+| 01 | Laughter (Explosive) | Amusement first squeezes fine lines around the eyes, the corners of the mouth open quickly, the laughter drives the head forward and back, and the shoulders tremble slightly with each breath; finally the laughter fades, and the leftover smile stays on the face. | For genuinely uncontrolled joy; for restrained joy take only the corners of the eyes, the exhale and the leftover smile, without big head shakes or shrugs. |
+| 02 | Shock (Explosive) | At the moment of the trigger both eyes snap wide open, the brows lift, the jaw drops uncontrollably, and the head pulls back slightly; the expression freezes briefly before one delayed blink. | Needs a clear piece of sudden information; do not hold the wide stare and open mouth for long. |
+| 03 | Terror (Explosive) | The brows tighten upward and inward, the gaze locks onto the direction of the threat, the body instinctively recoils and the chin pulls in; rapid shallow breathing appears in the chest, and the character does not dare to blink for a long time. | For real danger; when suspense is uncertain, prefer "Suspicion" or "Anxiety". |
+| 04 | Rage (Explosive) | The brows and eyes press down hard, the nostrils flare, the jaw muscles and neck gradually go rigid, and the body edges slightly forward; heavy breaths are pushed out through the nose, and the anger stays on the edge of erupting. | Needs a breaking point or a strong violation; for restrained anger reduce bared teeth, lunging forward and neck strain. |
+| 05 | Disgust (Medium) | The bridge of the nose wrinkles, the upper lip lifts slightly, the eyes narrow, the chin pulls in, and the head and upper body withdraw from the object; after briefly looking away the rejection remains. | Distinguish moral disgust from physical nausea; do not automatically add vomiting or exaggerated face-twisting. |
+| 06 | Breakdown crying (Explosive) | The rims of the eyes and the tip of the nose redden first, the breath catches again and again, and tears spill over the lower lids; the mouth loses a stable shape, the chin trembles, and only then do the shoulders and back begin to shake. | Must happen after the emotion has built up; never start sobbing from the first frame, and never use it in scenes where the user asks for restraint. |
+| 07 | Pain/Flinch (Explosive) | When the stimulus hits, the eyes squeeze shut, the jaw clenches suddenly, the head turns away from the direction of force, and one shoulder rises instinctively to protect; the muscles hold the contraction briefly before relaxing slightly. | Must match the point of impact, the body's direction and the recovery; avoid a generic pained face with no cause. |
+| 08 | Eye-roll/Impatience (Medium) | The gaze slowly circles upward away from the other person, the head follows into a slight tilt, and a breath is let out through the nose; as the eyes come back down the lids lower, linger a moment and then look away. | Leans toward social expression and easily reads as comic; use with care in serious period dramas or tragic situations. |
+| 09 | Suspicion (Subtle) | The chin is slightly lowered while the eyes still look up to observe, one brow sits higher than the other, the head turns only a little, and the gaze locks onto the clue from the side; one corner of the mouth tightens quietly. | For the stage when evidence is insufficient; do not play it as if the truth were already confirmed. |
+| 10 | Flirting/Romantic testing (Subtle) | The chin tucks slightly, the gaze briefly looks away and then returns, blinks slow down, and one corner of the mouth gradually forms a warm but restrained small smile; the body does not visibly pull back. | Only for safe, adult, mutually willing relationships; it cannot replace clear consent, and there is no explicit sexual suggestion. |
+| 11 | Smugness/Gloating (Medium) | The eyelids lower slightly, one corner of the mouth slowly curls up, the brows lift briefly and settle back, and the chin rises slightly; hold an unflinching gaze and let the sense of superiority linger. | Distinguish confidence from malice; avoid playing every easy victory as a villain's sneer. |
+| 12 | Boredom (Subtle) | The eyelids gradually grow heavy, the gaze loses focus and drifts, one blink lasts too long, and the jaw and shoulders slowly slacken; a long exhale lets the body sink further. | For attention slipping away; do not mix with exhaustion unless the plot also supports a drop in physical energy. |
+| 13 | Confusion (Medium) | The two brows become asymmetrical, the eyes search back and forth between the relevant people or clues, the head tilts slightly and the lips part a little; when no answer comes, the confusion deepens. | The objects the gaze searches must really exist; do not substitute random left-right glances for thinking. |
+| 14 | Realization (Medium) | A previously stalled state of thought is interrupted, the focus suddenly locks on again, the eyes widen slightly, the brows lift, and the lips part with a silent inhale; after confirming, a very small nod appears. | The nod is not required; when the truth is staggering, it can stop at a freeze or a change in breathing without immediate confirmation. |
+| 15 | Awe/Wonder (Medium) | The gaze gradually rises and widens, the space between the brows stays relaxed, the lips slowly open, and the head, neck and upper body unconsciously lean toward the object; the expression stays open rather than fearful. | Needs something grand, beautiful or beyond experience; avoid sharing the tense brows and eyes of terror. |
+| 16 | Determination (Medium) | The gaze rises from low and fixes, a deep breath opens the chest, the jaw muscles tighten at the jawline, and the shoulders and back open up again; finally a small, clear action confirms the choice. | The final confirming action can be a nod, a tightened grip, standing up straight or taking a step; choose one according to the story. |
+| 17 | Frustration (Medium) | The eyes squeeze shut first, the teeth or jaw grind briefly, a sharp breath is let out through the nose, and the head gives one small shake of denial; then the head tilts back with a long exhale, and only part of the tension releases. | Frustration includes "failing after trying"; without an effort process it is closer to irritation or fatigue. |
+| 18 | Anxiety (Medium) | The space between the brows stays tight, the gaze frequently checks different directions, and breathing is shallow and fast; the fingers repeatedly clench or rub, and the body's weight shifts slightly between the feet/on the seat. | Choose only one hand action, to avoid repeated small movements looking like a mechanical loop; the gaze checks should have a real reason. |
+| 19 | Sadness (Subtle) | The inner ends of the brows slowly lift, the corners of the mouth gradually lose support, and the chin gives one brief tremble; the gaze sinks, and neither a swallow nor a slow blink restores the expression. | For quiet hurt; tears are not required, and it should not automatically develop into breakdown crying. |
+| 20 | Guilt (Subtle) | About to speak but stopping, the gaze first slides off the other person and then falls to the ground, and the head gradually lowers; after a difficult swallow, a hand briefly touches the back of the neck or the collar for support. | Adjust the hand action to the costume and posture; do not play guilt as directly admitting all the facts. |
+| 21 | Embarrassment (Medium) | A slight warmth appears in the cheeks, the gaze quickly drops to the lower side, and the lips press into an awkward half-smile; the head then lowers and turns away, and one hand moves toward the mouth and stops. | Can lean comic or toward real social discomfort; in serious scenes reduce the blushing and mouth-covering. |
+| 22 | Exhaustion (Subtle) | The eyelids slowly droop, one closing of the eyes lasts longer than normal, and the head sinks before being pulled upright with effort; the jaw slackens, a long exhale empties the chest completely, and the eyes reopen only halfway. | Emphasizes depleted physical/mental resources; the rhythm of movement must be slow, with no sudden return to agility. |
+| 23 | Relief (Medium) | One full exhale first lets the chest drop, then the eyes close, and the raised brows and shoulders gradually settle back down; only after the exhale ends does a slightly trembling small smile appear. | Release the pressure first, then the smile; do not play relief as happiness from the start. |
+| 24 | Pride/Satisfaction (Subtle) | The chin lifts slightly, the chest opens naturally, and a closed-lip smile forms slowly and evenly; the shoulders and back straighten, and after one unhurried blink the posture holds steady. | Can express quiet pride; folding the arms across the chest changes the meaning of the relationship and is used only when it fits the character's identity. |
+| 25 | Nervous fake smile (Subtle) | The corners of the mouth actively pull into a smile shape, but there are no matching smile lines around the eyes; blinks are a little fast, the Adam's apple or front of the neck shows one visible swallow, and the gaze drops briefly before the stiff smile is restored. | For covering up, social defense or lying; the contradiction of "the mouth smiles but the eyes don't" must be readable. |
 
-## 组合与转化
+## Combination and transformation
 
-不要把多个模块并列堆叠。人物出现复合情绪时，确定主情绪和保护层：
+Do not stack several modules side by side. When a character has a compound emotion, decide the main emotion and the protective layer:
 
-- 冷静保护悲伤：平稳视线与压紧嘴唇先维持，触发后才出现悲伤模块中的吞咽、眉头内收或下巴颤动。
-- 假笑掩饰焦虑：先建立紧张假笑，只加入一次视线检查或手指扣紧，不同时使用全部焦虑动作。
-- 怀疑转顿悟：先侧向锁住线索，证据出现后焦点重新锁定、嘴唇随吸气分开；不要从怀疑直接跳到大幅震惊。
-- 愤怒转崩溃：盛怒是保护层；只有关键台词或事实击穿后，咬肌才松开、呼吸卡住、泪水出现。
-- 挫败转决心：长呼气释放失败感后，视线重新抬起、肩背展开，并以一个决定性动作结束。
+- Calm protecting sadness: a steady gaze and pressed lips hold first; only after the trigger do the swallow, inward brow pull or chin tremble from the Sadness module appear.
+- Fake smile masking anxiety: establish the nervous fake smile first, adding only one gaze check or finger clench, not all the anxiety actions at once.
+- Suspicion turning into realization: first lock onto the clue from the side; once the evidence appears, the focus locks on again and the lips part with an inhale; do not jump straight from suspicion to big shock.
+- Anger turning into breakdown: rage is the protective layer; only after a key dialogue line or fact breaks through do the jaw muscles loosen, the breath catch and tears appear.
+- Frustration turning into determination: after a long exhale releases the sense of failure, the gaze rises again, the shoulders and back open up, and it ends with one decisive action.
 
-## 表演输出检查
+## Performance output check
 
-- 情绪是否有具体触发，而不是从第一帧就摆好？
-- 2–4个核心信号是否来自不同层级，如眼神＋呼吸＋手部/重心，而不是堆满五官动作？
-- 眼睛先动、头颈肩随后响应，呼吸和声音是否与身体变化一致？
-- 表演幅度是否符合人物身份、关系、年龄、体力和场景距离？
-- 是否给峰值之后留下保持、释放或转化，而不是立刻切走？
-- 是否避免把表演模块机械复制成所有角色相同的脸谱？
+- Does the emotion have a specific trigger, rather than being set from the first frame?
+- Do the 2–4 core signals come from different layers, such as eyes + breathing + hands/center of gravity, rather than filling every facial feature with action?
+- Do the eyes move first with the head, neck and shoulders responding after, and are breathing and voice consistent with the body's changes?
+- Does the size of the performance fit the character's identity, relationships, age, physical strength and distance in the scene?
+- Is there a hold, release or transformation left after the peak, rather than cutting away immediately?
+- Does it avoid mechanically copying performance modules into the same stock face for every character?
