@@ -5,7 +5,7 @@ Read it top to bottom:
   1. Protocol   - the session transport: hello, requests, host calls (about 50 lines you can copy).
   2. Gallery    - the "Components" view: every component type, events and state.
   3. Voice      - the "Voice" view, a tab in the agent dock: reuse other plugins through BashCut (voice.speak,
-                  plugins.invoke, media.import).
+                  plugins.invoke, voice.place).
   4. Title card - a sheet: a short form that closes itself when done.
   5. Actions    - Tools buttons that call BashCut while they run, one opening the sheet.
 
@@ -259,9 +259,9 @@ def sample_tone():
 
 def voice(request, state, values, event):
     """Reuse other plugins without knowing them:
-    - voice.speak: BashCut picks the user's voice.synthesize plugin (VieNeu-TTS or any other);
+    - voice.speak: BashCut picks the user's voice.synthesize plugin (VieNeu-TTS or any other) and keeps every take;
     - plugins.invoke: a capability without its own command (audio.loudness, listed in "uses");
-    - media.import: place the chosen take on the timeline, as an undoable edit by this plugin."""
+    - voice.place: place the chosen take on the timeline, as an undoable edit by this plugin."""
     takes = state.get("takes", [])
     message = state.get("message", "")
     if event and event.get("node") == "speak":
@@ -270,7 +270,7 @@ def voice(request, state, values, event):
             message = "Write something to say first."
         else:
             request.render([{"type": "progress", "label": "Generating takes with your voice plugin…"}])
-            result = request.wait_job(request.call("voice.speak", {"text": text, "takes": 2, "keepTakes": True}))
+            result = request.wait_job(request.call("voice.speak", {"text": text, "takes": 2}))
             takes = [{"path": take["path"], "score": take.get("score"), "seconds": take.get("seconds")}
                      for take in result.get("takes", [])]
             message = f"{len(takes)} takes. Play them, measure them or use one."
@@ -284,8 +284,7 @@ def voice(request, state, values, event):
             take["lufs"] = loudness.get("integratedLUFS")
             message = f"Measured with {measured.get('plugin')}: {take['lufs']:.1f} LUFS"
         elif take and action == "use":
-            rev = request.call("context.get")["rev"]
-            request.call("media.import", {"path": take["path"], "place": True, "baseRev": rev})
+            request.call("voice.place", {"take": take["path"]})
             request.notify("Take placed on the timeline")
             message = "Placed. Undo works like any edit."
     rows = [{
@@ -323,8 +322,8 @@ def title_card(request, state, values, event):
         title = str(values.get("title") or "").strip()
         if not title:
             return title_card_form(values, "Write a title first.")
-        request.call("ui.notify", {"message": f"Title card: {title} ({values.get('style', 'bold')}, "
-                                              f"{values.get('seconds', 3)} s)"})
+        request.call("ui.action", {"action": "notify", "target": f"Title card: {title} ({values.get('style', 'bold')}, "
+                                                                f"{values.get('seconds', 3)} s)"})
         return {"body": [], "close": True, "state": {}, "notify": "Title card created"}
     return title_card_form(values, "")
 
@@ -360,7 +359,8 @@ def hello_action(request):
     """A Tools button: actions of session plugins (API 8) can call BashCut too."""
     greeting = (request.params.get("options") or {}).get("greeting") or "Hello"
     timeline = request.call("context.get")
-    request.call("ui.notify", {"message": f"{greeting}! The project is at revision {timeline.get('rev')}."})
+    request.call("ui.action", {"action": "notify",
+                               "target": f"{greeting}! The project is at revision {timeline.get('rev')}."})
     return {"message": greeting}
 
 

@@ -22,7 +22,7 @@ not measure (T07 §7, T15 §7). Write each chosen range, its source and its reas
 | Shortest shot `minShotSeconds` | the bottom of the insert band | a fast unboxing montage can go shorter on purpose (short shots are only notes) | `review shots --summary` min |
 | Long static shot `stillMotion` | just under the motion of the hero shots you keep | a tripod hero shot on a turntable moves; a product photo does not | `review shots` → `motion.mean` after `bashcut review measure` |
 | Product photo or held hero `maxStillSeconds`, `severities.still` | 1.5–4 s, longer while a line is said over it (T07 §3); `warning` | a spec card to read holds longer | `review measure`, then `bashcut review picture` |
-| Hook `hookSeconds` | 2–3 s vertical (structure below); long-form up to the 3–5 s hook cadence (T07 §3) | the price question must land inside it | `bashcut review hook` |
+| Hook `hookSeconds` | 2–3 s vertical (structure below); long-form up to the 3–5 s hook cadence (T07 §3) | the price question must land inside it | `bashcut review layout --to F`, `transcript words --to F` |
 | Talking parts | as `bashcut.vlog:talking-head` (pauses, punch-in headroom, framing) | — | see that recipe |
 | Captions and numbers `captionLineChars`, `minTextSize` | vertical 15–32 characters, 1–2 lines (T09 §3); numbers on screen held for reading time (T09 §3) | long specs need more lines or a card instead of a caption | `bashcut review layout` → `longestLineChars`, `holdSeconds`, `fontShare` |
 | Music under the voice | 5–18 dB under (T11 §3), light | the product's own sound (a click, a motor) leads when it is the point | `bashcut audio mix-measure` → `musicUnderSpeech` |
@@ -52,9 +52,9 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 | What | Sample range | Why it varies | Measure with |
 |---|---|---|---|
 | Pattern interrupt | each point is a new beat; 8–12 s points sit inside the 10–30 s short-form band, long-form 30–90 s (T07 §3) | a long-form review needs inserts inside each point | `bashcut review shots --summary` per section |
-| Hook and verdict | the verdict answers the hook's question; the hook promises only what the points pay off (T14 §4) | — | `bashcut review hook` → `opening` and `close` |
-| Transitions | hard cuts between talking and inserts; `vlog-zoom-hit` on the reveal; `vlog-soft-cut` between points (T08 §7) | an unboxing montage may whip; say so | `bashcut review cuts` → counts per kind, runs |
-| Transition budget | special transitions 1–3 per minute of short form (T08 §3) | long-form landscape reviews use fewer | `review cuts` counts ÷ minutes |
+| Hook and verdict | the verdict answers the hook's question; the hook promises only what the points pay off (T14 §4) | — | opening and close: `transcript words --to F` / `--from F`, `review layout --to F` / `--from F` |
+| Transitions | hard cuts between talking and inserts; `vlog-zoom-hit` on the reveal; `vlog-soft-cut` between points (T08 §7) | an unboxing montage may whip; say so | `bashcut review shots` → count `cut.kind` and its runs |
+| Transition budget | special transitions 1–3 per minute of short form (T08 §3) | long-form landscape reviews use fewer | `review shots` `cut.kind` counts ÷ minutes |
 | Section chip | `vlog-section-chip` 2–3 s at the point's start (T13 §7) | longer labels need longer | `bashcut review layout` → `holdSeconds` |
 | Pro / con labels | land on the claim word: entrance 0.15–0.6 s ending on the word (T13 §3, §7) | energy | `bashcut transcript words` |
 | Spec card | one idea 3–8 s, held through the line it illustrates; a comparison table 8–14 s (T13 §3) | words on the card; narration length | `review layout` → `holdSeconds` |
@@ -71,7 +71,7 @@ the spec as text.
 - Every number on screen (price, battery hours, weight). Pros green, cons red (`vlog-pro`, `vlog-con`).
 - Sponsored or gifted: say so in the first seconds and add `vlog-disclosure` ("Hợp tác cùng …") — ask the user.
 - Sound: light music under the voice; click/pop on stickers; real sound of the product when it has one. Loudness is
-  each output's own target (`bashcut platforms list`).
+  each output's own target (`bashcut platforms get`).
 - Look intent: true-to-life colour (the product's real colour matters more than mood), clean whites. Measure first
   (`bc:color-grade`); grade the product shots to match each other.
 

@@ -1,6 +1,6 @@
 ---
 name: ideate
-description: Find the angle of a vlog in BashCut before planning — footage first (media inventory, contact sheets, described shots, transcripts), 3–5 angles each backed by real shots and a source, research only when it changes the choice, "nothing solid" when nothing holds, a 3-hook screen per idea against actual shots, a decision table with a recommendation, then the project brief written with `project set-brief` (each field stated, inferred or confirmed, with its source). Use before bashcut.vlog:plan when the user has footage but no clear angle, asks what to make, wants ideas, titles or a topic, or the brief is empty. Triggers: "làm video gì", "ý tưởng video", "góc kể", "nên kể gì", "chủ đề", "brainstorm", "lên ý tưởng", "footage này làm được gì", "ideas", "what should I make".
+description: Find the angle of a vlog in BashCut before planning — footage first (media inventory, contact sheets, described shots, transcripts), 3–5 angles each backed by real shots and a source, research only when it changes the choice, "nothing solid" when nothing holds, a 3-hook screen per idea against actual shots, a decision table with a recommendation, then the project brief written with `project set-data brief` (each field stated, inferred or confirmed, with its source). Use before bashcut.vlog:plan when the user has footage but no clear angle, asks what to make, wants ideas, titles or a topic, or the brief is empty. Triggers: "làm video gì", "ý tưởng video", "góc kể", "nên kể gì", "chủ đề", "brainstorm", "lên ý tưởng", "footage này làm được gì", "ideas", "what should I make".
 ---
 
 # Ideate: find the angle
@@ -14,7 +14,7 @@ own history and what the footage holds come first.
 
 ## 1. Read what is already known
 
-- `bashcut context get` and `bashcut project brief` — an existing brief: keep `confirmed` fields, ask only about the
+- `bashcut context get` and `bashcut project data brief` — an existing brief: keep `confirmed` fields, ask only about the
   rest.
 - `bashcut knowledge prefs` and `bashcut knowledge facts` — the creator's preferences, channel, audience, past lessons.
 - `bashcut media inventory` — what the footage holds: clips, seconds, capture times and places (grouped on a grid),
@@ -104,7 +104,7 @@ Write the brief as project data. Each field is `{value, status, source}`:
 ```
 
 ```sh
-bashcut project set-brief brief.json --base-rev N
+bashcut project set-data brief brief.json --base-rev N
 ```
 
 Write only what you know; leave a field out rather than guess. Review compares the brief's length and outputs with the
@@ -112,7 +112,7 @@ edit, as info. For a reference, write what to learn **and what not to copy** (T0
 
 **Brief gate (G1).** `bashcut checkpoint request G1 --summary "<angle, length, outputs, audience, what is missing>"
 --attach <contact sheet>`; poll `bashcut checkpoint status`. Approved: set the approved fields to `confirmed` with
-`bashcut project set-brief brief.json --merge --base-rev N`. Changes: update and ask again. The gate is skipped only
+`bashcut project set-data brief brief.json --merge --base-rev N`. Changes: update and ask again. The gate is skipped only
 when `workflow gates` says so.
 
 Then continue with `bashcut.vlog:plan`.

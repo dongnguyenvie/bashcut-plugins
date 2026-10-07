@@ -11,7 +11,7 @@ The plugin adds a panel to BashCut's left rail with `gallery` (every view compon
 ## Look at a view
 
 ```sh
-bashcut plugins views
+bashcut plugins list --views
 bashcut plugins view bashcut.views-example --view gallery --open
 ```
 

@@ -24,7 +24,7 @@ source and its reason in the plan.
 | Speechless stretch | look again at any lift over 10–20 s with no speech: silence is not empty picture in a screen demo (T06 §3) | a silent demonstration may be the step itself | `bashcut media speech-map --media <id>` → `gaps`; `bashcut narration windows --min-seconds <n>` |
 | Shortest shot `minShotSeconds` | long enough to see the click and its result | a vertical tip cuts tighter | `review shots --summary` min |
 | Zoom onto the screen | 1.5–2.5× as a start, eased, up to the clip's headroom | a Retina recording in a 1080 project has room to zoom without upscaling; a 1080 recording does not | `bashcut timeline get` → `scale.maxZoomNative`, `pixelRatio`; `bashcut clip motion --focus` |
-| Hook `hookSeconds` | 5–7 s landscape (structure below); a vertical tip 1.5–3 s | the result must play with its own sound before the explanation | `bashcut review hook` |
+| Hook `hookSeconds` | 5–7 s landscape (structure below); a vertical tip 1.5–3 s | the result must play with its own sound before the explanation | `bashcut review layout --to F`, `transcript words --to F` |
 | Captions `captionLineChars`, `captionMaxLines` | landscape subtitles 6–8 words or 32–42 characters × 2 lines; vertical 15–32 characters (T09 §3, §7) | landscape takes a sidecar caption file, vertical burns them in (T09 §7) | `bashcut review layout` → `longestLineChars` |
 | Music under the voice | the deep end of 5–18 dB (T11 §3), or none | dense instruction needs every word | `bashcut audio mix-measure` → `musicUnderSpeech` |
 
@@ -59,7 +59,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 | Presenter size (picture in picture) | 0.25–0.6 of the frame width (T19 §3, a contradiction between sources) | smaller when the screen text is dense; larger when the face carries the story | `bashcut ui frame <frame> --phone` |
 | Demo speed | 1.5–2× when narrated over; 4–20× for silent waiting (T19 §3) | how much of the action must still read | `bashcut timeline get` → item speed |
 | Pattern interrupt | a zoom, a new step or a result every 10–30 s in a vertical tip; long-form sources say at most 15 s against 30–45 s (T07 §3, a contradiction) | a zoom inside one screen counts as a change | `bashcut review shots --summary`; `bashcut review picture` |
-| Transitions | hard cuts inside a step; `vlog-soft-cut` between steps; 0–1 special transitions per minute (T08 §3) | — | `bashcut review cuts` → counts per kind |
+| Transitions | hard cuts inside a step; `vlog-soft-cut` between steps; 0–1 special transitions per minute (T08 §3) | — | `bashcut review shots` → count `cut.kind` |
 | Step card | `vlog-step` 2–4 s at the step start (T13 §7); key text on screen held 5 s or more (T09 §3) | the label's length | `bashcut review layout` → `holdSeconds` |
 | Shortcut, menu path, value | on screen while said, held for reading: about letters ÷ 15 + 1–1.5 s (T09 §3) | how long the path is | `review layout` → `holdSeconds` |
 | Graphic density | high for a tutorial: 3–8 per minute (T13 §3, §7) | a quick tip has fewer | `review layout` → text items per minute |
@@ -68,7 +68,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 
 - Captions from the presenter; every shortcut, menu path and value on screen as text ("⌘K → Export").
 - Sound: the presenter's voice; mute the screen recording unless its sound is the result; quiet music bed or none;
-  click sounds only if they help. Loudness is each output's own target (`bashcut platforms list`).
+  click sounds only if they help. Loudness is each output's own target (`bashcut platforms get`).
 - Look: leave the screen recording ungraded; grade only the presenter camera to natural skin (`bc:color-grade`).
 
 For the Shorts output, make a vertical cut of the hook and one step (`bashcut.vlog:publish`).

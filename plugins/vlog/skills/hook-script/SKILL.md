@@ -6,7 +6,7 @@ description: Write the words of a vlog in BashCut — 2–3 story options, 3–5
 # Hook and script
 
 Reply in the user's language; write the viewer-facing words in the video's language (`contentLanguage` in
-`bashcut project get`). Read `bashcut plan get` (sections, mode, existing beats) and `bashcut project brief` first, and
+`bashcut project get`). Read `bashcut project data plan` (sections, mode, existing beats) and `bashcut project data brief` first, and
 use the structure of the active recipe (`recipe.skill` in `project get`, see `bashcut.vlog:plan`).
 
 Numbers below are sample ranges with their source (T02 = script notes, T10 = voiceover notes). A **measured** rate of
@@ -32,14 +32,14 @@ describes what the picture already shows is cut (T02 §4).
 In `create` mode, write **2–3 story options** before the script (T00 §3, T02 §3): for each, the spine in one sentence,
 which sections and shots carry it, its hook, and what it leaves out. Recommend one. In `directed` mode (the user gave
 the story) write one; in `revision` mode keep the `frozen` sections' lines word for word. Store the options with
-`bashcut plan set options.json --merge --base-rev N` (`options` field) and the choice in `decisions`.
+`bashcut project set-data plan options.json --merge --base-rev N` (`options` field) and the choice in `decisions`.
 
 ## 3. The hook
 
 The hook is a promise in the first seconds: one line on screen (`vlog-hook-question`, hook-title preset) and, if
 someone speaks, the same idea said. Write **3–5 options across different kinds** (T02 §3, T02 §7) and pick against the
-best shot of the footage and the hook facts (`bashcut review hook` once a cut exists: first words, first text, first
-cut, which described subjects appear first).
+best shot of the footage and the hook facts once a cut exists, over the opening frames: `bashcut transcript words
+--to F` (first words), `review layout --to F` (first text), `review shots --to F` (first cut, described subjects).
 
 | Kind | Example |
 |---|---|
@@ -52,7 +52,7 @@ cut, which described subjects appear first).
 
 | Check | Sample range | Why it varies | Measure with |
 |---|---|---|---|
-| Hook window | short-form 1–3 s; long-form up to about 15 s (T02 §3, a contradiction between sources) | platform, length, whether the viewer chose to watch | `bashcut review hook` → `firstWords`, `firstTitle` |
+| Hook window | short-form 1–3 s; long-form up to about 15 s (T02 §3, a contradiction between sources) | platform, length, whether the viewer chose to watch | `bashcut transcript words --to F`, `review layout --to F` |
 | Hook text on screen | about 6 words or fewer per frame (T14 §3); about 60 characters at most in 9:16 (T14 §3) | font size, how long it holds | `bashcut review layout` → `longestLineChars`, `holdSeconds` |
 | Options compared | 3–5, show the best 2 (T02 §3) | — | — |
 
@@ -65,9 +65,9 @@ Size every line to its window with a **measured** rate, never a fixed table:
 
 - **The creator speaks**: `bashcut speech rate --media <id>` → per speaker p10/p50/p90 in the content language's unit
   (syllables for Vietnamese, characters for Chinese, Japanese and Korean, else words).
-- **A synthesized voice**: `bashcut voice voices` → `measuredRate` per voice and language. No measurement yet: make
-  one test line with `bashcut voice speak "<line>" --keep-takes` (nothing is placed), then `bashcut speech rate
-  --voice <provider/voice>`.
+- **A synthesized voice**: `bashcut capabilities get voice.synthesize --voices` → `measuredRate` per voice and
+  language. No measurement yet: make one test line with `bashcut voice speak "<line>"` (nothing is placed), then
+  `bashcut speech rate --voice <provider/voice>`.
 - **Budget per window**: `bashcut narration windows --min-seconds <n> --rate <units per second>` adds how many units fit
   each window. Use the p50 rate for the budget and the p10–p90 spread as the margin (T02 §7), not a fixed ×0.85.
 
@@ -109,13 +109,14 @@ Before showing the script, test it (T02 §4):
 
 ## 7. Into the plan, then the script gate
 
-Write the beats as `beats` [{id, section, text}] (text = the exact words to be heard) with `bashcut plan set beats.json
---merge --base-rev N`. Show the hook options, the story options and the script to the user, then request the script
+Write the beats as `beats` [{id, section, text}] (text = the exact words to be heard) with `bashcut project set-data
+plan beats.json --merge --base-rev N`. Show the hook options, the story options and the script to the user, then request the script
 gate before any voice is made: `bashcut checkpoint request G4 --summary "<hook, story, beats>"` and poll `bashcut
 checkpoint status`. After voiceover and editing, `bashcut script check` shows per beat how much was heard as written
 and where; fix the beats or the edit, not the measurement.
 
-`bc:voiceover` produces the voice (`voice speak --target-rate` picks the take closest to the rate you sized for).
+`bc:voiceover` produces the voice: `voice speak` measures the takes, you place the one whose `unitsPerSecond` is
+closest to the rate you sized for (`voice place`).
 
 ## On-screen text and CTA
 

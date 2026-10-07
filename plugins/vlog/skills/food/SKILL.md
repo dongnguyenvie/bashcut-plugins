@@ -22,7 +22,7 @@ Outputs: vertical → `tiktok`, `reels`, `shorts`. The ranges are starting point
 | Long static shot `stillMotion` | just under the motion of the macro shots you keep | a tripod top-down plate barely moves; handheld street food moves a lot | `review shots` → `motion.mean` after `bashcut review measure` |
 | Held plate or photo `maxStillSeconds` | 1.5–4 s, longer while a line is said over it (T07 §3: change every 1.5–3 s in short-form, calm holds 2–4 s) | a menu board to read holds longer; a silent plate does not | `review measure`, then `bashcut review picture` |
 | Frozen picture `severities.still` | `error` or `warning` | error when every held plate gets a push-in in this edit; warning when the footage is mostly photos and some holds are deliberate | `bashcut review run` |
-| Hook `hookSeconds` | 1.5–2 s (structure below) | longer only when the price or question is spoken and cannot be cut | `bashcut review hook` |
+| Hook `hookSeconds` | 1.5–2 s (structure below) | longer only when the price or question is spoken and cannot be cut | `bashcut review layout --to F`, `transcript words --to F` |
 | Slow motion | as slow as the source has real frames: project fps ÷ source fps (60 fps in a 30 fps project → 0.5×, 120 fps → 0.25×) | a 30 fps source at 0.5× repeats frames and stutters; use a speed ramp or full speed instead | `bashcut media list` → `fps` per media; project fps from `bashcut timeline get` |
 | Punch-in on a reaction | up to the clip's headroom, and only while the face and food stay framed | a 4K source in a 1080 project has room; a phone 1080 clip has none | `bashcut timeline get` → `scale.maxZoomNative` (beyond it, upscaled) |
 | Captions `captionLineChars`, `captionMaxLines` | vertical 15–32 characters, 1–2 lines (T09 §3) | energetic talk takes 2–4 words a group, calm talk 3–6 (T09 §3) | `bashcut review layout` → `longestLineChars`, `wordsPerSecond` |
@@ -56,8 +56,8 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 | Tone bands | process inserts 0.5–1.5 s; the tasting slower, 2–4 s a bite (T07 §3, §7) | a calm cooking video holds longer everywhere | `bashcut review shots --summary` per section |
 | Pattern interrupt | a new step, bite or verdict every 10–30 s (T07 §3) | a 30 s short changes almost every section | `review shots --summary` per section |
 | Breath before the bite | one moment of near-silence, 0.5–2 s, before the first bite's sound; once (T07 §3; real sound leads in food, T11 §7) | an ASMR-style edit uses more | `bashcut review window <frame>`; `bashcut audio measure --timeline` |
-| Transitions | `vlog-zoom-hit` into the dish at a section start; `vlog-whip-fast` between shops in a multi-shop video; none inside the tasting (T08 §3) | one shop needs almost none | `bashcut review cuts` → counts per kind, runs |
-| Transition budget | special transitions 1–3 per minute of short form (T08 §3) | a declared motif (a whip every new dish) may go over; say so | `review cuts` counts ÷ minutes |
+| Transitions | `vlog-zoom-hit` into the dish at a section start; `vlog-whip-fast` between shops in a multi-shop video; none inside the tasting (T08 §3) | one shop needs almost none | `bashcut review shots` → count `cut.kind` and its runs |
+| Transition budget | special transitions 1–3 per minute of short form (T08 §3) | a declared motif (a whip every new dish) may go over; say so | `review shots` `cut.kind` counts ÷ minutes |
 | Price tag | lands on the word the price is said (entrance 0.15–0.6 s ending on the word) and stays while it is said and read (T13 §3) | price read from a board needs longer | `bashcut transcript words`; `bashcut review layout` → `holdSeconds` |
 | Stickers | at most one keyword sticker per bite (`vlog-pro`, `vlog-con`, `vlog-drool`), 0.5–2 s as an accent (T13 §3) | a review-style food video uses pro/con labels on the claim word | `review layout` → text items per minute |
 
@@ -72,7 +72,7 @@ fallback when the headroom allows it.
 
 - Text: price always on screen; one keyword sticker per bite at most.
 - Sound: keep the real sizzle, crunch and slurp up front (ASMR moments: music dips under them); short pop/ding on
-  price tags (`bc:audio-mix` for finding SFX). Loudness is each output's own target (`bashcut platforms list`).
+  price tags (`bc:audio-mix` for finding SFX). Loudness is each output's own target (`bashcut platforms get`).
 - Look intent: warm, rich colour, appetising; never green-tinted or grey; highlights on sauce kept. Measure first
   (`bc:color-grade`); no fixed numbers.
 

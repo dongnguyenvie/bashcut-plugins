@@ -5,7 +5,7 @@ keeps — structure, hook, text, sound and look intent — and tables of **sampl
 lengths, rhythm and interrupt bands, transition vocabulary and budget, graphic holds and density, presenter presence,
 hook window, captions, severities), each with its source, why it varies and how to measure it. The agent surveys the
 footage, chooses a range and a value for each key and writes them, with the reason, into the project's **edit plan**
-(`bashcut plan set`: sections with length ranges, shot rows, decisions) and **review profile**, so two folders of the
+(`bashcut project set-data plan`: sections with length ranges, shot rows, decisions) and **review profile**, so two folders of the
 same genre can get different, justified plans. A measured reference profile (`bc:style-study`) replaces a recipe's
 ranges wherever it has a measurement. Each recipe ends with review notes in viewer terms and a `needs_user` list. The
 plugin runs no program; BashCut gives the skills to Claude, Codex and its other agents while it is trusted and turned
@@ -14,7 +14,7 @@ the agent kit (`bc:`); a recipe says what to measure and which range to choose f
 
 | Skill | Use it for |
 |---|---|
-| `ideate` | No angle yet: angles from the footage with a source each, a 3-hook screen, a decision table, the project brief (`project set-brief`) |
+| `ideate` | No angle yet: angles from the footage with a source each, a 3-hook screen, a decision table, the project brief (`project set-data brief`) |
 | `plan` | Start here: read the brief, pick the recipe, survey, write the edit plan (sections with ranges, shot rows, establish or hook first, chosen ranges with reasons) and the review profile and outputs |
 | `hook-script` | Story options, hook options checked against real shots, the script as beats (job, ON SCREEN, source per line) sized with the measured speaking rate, a counterfactual review, on-screen text, CTA |
 | `publish` | Platform facts from data (`platforms get`), one export per output, cover candidates checked at phone size (`export cover`), YouTube chapters (`export chapters`), title, caption and hashtags |
@@ -39,7 +39,7 @@ A recipe ships ranges, not settings: no recipe has a profile block to copy. Each
 analysis notes T00–T19, e.g. "(T07 §3)") and says what makes it move. The agent picks a range and a value and says why
 in the plan; contradictions between sources are shown, not hidden. It never fixes colour values
 or loudness: a look is an intent the agent grades to after measuring the footage (`bc:color-grade`), and each export
-is normalized to its own output's target (`bashcut platforms list`), never one number for every platform.
+is normalized to its own output's target (`bashcut platforms get`), never one number for every platform.
 
 ## Adding a recipe
 
