@@ -1,0 +1,4 @@
+#!/bin/sh
+# Vlog only ships agent skills (skills/) and a library pack (library/), so BashCut never starts this program.
+echo '{"error": {"code": "unsupported", "message": "bashcut.vlog only ships agent skills and a library pack"}}'
+exit 1

@@ -1,0 +1,405 @@
+{
+  "format": 1,
+  "name": "Vlog",
+  "items": [
+    {
+      "id": "vlog-hook-question",
+      "kind": "text-preset",
+      "name": "Hook question",
+      "tags": [
+        "hook",
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "48H Ở ĐÀ LẠT HẾT BAO NHIÊU?",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-section-chip",
+      "kind": "text-preset",
+      "name": "Section chip n/N",
+      "tags": [
+        "section",
+        "travel",
+        "tutorial",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "chapter-card",
+        "text": "1/5 · CHỢ ĐÊM"
+      }
+    },
+    {
+      "id": "vlog-time-stamp",
+      "kind": "text-preset",
+      "name": "Time stamp",
+      "tags": [
+        "daily",
+        "travel"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "place-card",
+        "text": "07:30 · SÁNG"
+      }
+    },
+    {
+      "id": "vlog-price-tag",
+      "kind": "text-preset",
+      "name": "Price tag",
+      "tags": [
+        "price",
+        "food",
+        "travel",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "keyword-sticker",
+        "text": "45K",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-pro",
+      "kind": "text-preset",
+      "name": "Pro (tick)",
+      "tags": [
+        "product-review",
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "bold-outline",
+        "text": "✓ ĐÁNG TIỀN",
+        "textStyle": {
+          "fill": "#3DDC84"
+        },
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-con",
+      "kind": "text-preset",
+      "name": "Con (cross)",
+      "tags": [
+        "product-review",
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "bold-outline",
+        "text": "✗ HƠI NGỌT",
+        "textStyle": {
+          "fill": "#FF5A5F"
+        },
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-step",
+      "kind": "text-preset",
+      "name": "Step card",
+      "tags": [
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "chapter-card",
+        "text": "BƯỚC 1"
+      }
+    },
+    {
+      "id": "vlog-keyword",
+      "kind": "text-preset",
+      "name": "Keyword pop",
+      "tags": [
+        "talking-head",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "keyword-sticker",
+        "text": "QUAN TRỌNG",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-verdict",
+      "kind": "text-preset",
+      "name": "Verdict",
+      "tags": [
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "8.5/10 — NÊN MUA",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-cta",
+      "kind": "text-preset",
+      "name": "Call to action",
+      "tags": [
+        "cta",
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "LƯU LẠI ĐỂ ĐI NHÉ!",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-disclosure",
+      "kind": "text-preset",
+      "name": "Disclosure label",
+      "tags": [
+        "disclosure",
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "place-card",
+        "text": "Ảnh minh hoạ tạo bằng AI",
+        "textStyle": {
+          "size": 0.028
+        }
+      }
+    },
+    {
+      "id": "vlog-plane",
+      "kind": "sticker",
+      "name": "Plane",
+      "tags": [
+        "travel"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "✈️",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-map",
+      "kind": "sticker",
+      "name": "Map",
+      "tags": [
+        "travel"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "🗺️",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-camera",
+      "kind": "sticker",
+      "name": "Camera",
+      "tags": [
+        "travel",
+        "daily"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "📸",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-money",
+      "kind": "sticker",
+      "name": "Money",
+      "tags": [
+        "travel",
+        "product-review",
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "💸",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-drool",
+      "kind": "sticker",
+      "name": "Drooling",
+      "tags": [
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "🤤",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-clock",
+      "kind": "sticker",
+      "name": "Clock",
+      "tags": [
+        "daily",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "⏰",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-check",
+      "kind": "sticker",
+      "name": "Check",
+      "tags": [
+        "product-review",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "✅",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-cross",
+      "kind": "sticker",
+      "name": "Cross",
+      "tags": [
+        "product-review",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "❌",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-sparkles",
+      "kind": "sticker",
+      "name": "Sparkles",
+      "tags": [
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "✨",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-point-down",
+      "kind": "sticker",
+      "name": "Point down",
+      "tags": [
+        "cta",
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "👇",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-bulb",
+      "kind": "sticker",
+      "name": "Idea",
+      "tags": [
+        "talking-head",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "💡",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-warning",
+      "kind": "sticker",
+      "name": "Warning",
+      "tags": [
+        "tutorial",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "⚠️",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-whip-fast",
+      "kind": "transition-preset",
+      "name": "Fast whip",
+      "tags": [
+        "travel",
+        "daily",
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "kind": "whip",
+        "duration": 6,
+        "easing": "out"
+      }
+    },
+    {
+      "id": "vlog-blink",
+      "kind": "transition-preset",
+      "name": "Blink",
+      "tags": [
+        "talking-head",
+        "daily"
+      ],
+      "version": 1,
+      "params": {
+        "kind": "blink",
+        "duration": 4
+      }
+    },
+    {
+      "id": "vlog-soft-cut",
+      "kind": "transition-preset",
+      "name": "Soft cut",
+      "tags": [
+        "daily",
+        "tutorial",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "kind": "dissolve",
+        "duration": 8,
+        "easing": "inOut"
+      }
+    },
+    {
+      "id": "vlog-zoom-hit",
+      "kind": "transition-preset",
+      "name": "Zoom hit",
+      "tags": [
+        "food",
+        "travel",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "kind": "zoom",
+        "duration": 8,
+        "easing": "in"
+      }
+    }
+  ]
+}

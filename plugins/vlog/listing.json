@@ -1,0 +1,18 @@
+{
+  "name": {
+    "en": "Vlog",
+    "vi": "Vlog"
+  },
+  "summary": {
+    "en": "Recipes for making vlogs, one skill per topic (travel, food, daily life, product review, talking head, tutorial): structure, pacing, hook, text, sound and look, the review profile they set on the project, and a plan, hook-and-script and publish skill around them. Includes a library pack of vlog text styles, stickers and transitions, and scene-prompt for AI video prompts.",
+    "vi": "Công thức làm vlog, mỗi chủ đề một kỹ năng (du lịch, ăn uống, đời thường, review sản phẩm, nói trước camera, hướng dẫn): cấu trúc, nhịp cắt, hook, chữ, âm thanh và màu, cùng ngưỡng review đặt cho project; thêm các kỹ năng lên kế hoạch, viết hook và lời thoại, đăng bài. Kèm gói thư viện kiểu chữ, sticker, chuyển cảnh cho vlog và scene-prompt viết prompt video AI."
+  },
+  "publisher": "bashcut",
+  "category": "utilities",
+  "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/vlog",
+  "minAppVersion": "0.0.1",
+  "platforms": [
+    "macos-arm64",
+    "macos-x86_64"
+  ]
+}
