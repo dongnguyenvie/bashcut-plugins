@@ -6,7 +6,9 @@
     "vi": "Đánh dấu im lặng"
   },
   "version": "0.0.4",
-  "apiVersion": 2,
+  "apiVersion": 8,
+  "minApiVersion": 2,
+  "transport": "session",
   "entrypoint": "bin/provider",
   "capabilities": [],
   "dependencies": [],
@@ -42,10 +44,38 @@
         ],
         "params": [
           {
+            "id": "detect",
+            "title": {
+              "en": "Find silences with",
+              "vi": "Tìm im lặng bằng"
+            },
+            "type": "enum",
+            "choices": [
+              "auto",
+              "speechMap",
+              "level"
+            ],
+            "default": "auto",
+            "choiceLabels": {
+              "auto": {
+                "en": "Speech map when measured, else level",
+                "vi": "Bản đồ lời nói nếu đã đo, nếu không thì mức âm"
+              },
+              "speechMap": {
+                "en": "Speech map only (media analyze first)",
+                "vi": "Chỉ bản đồ lời nói (chạy media analyze trước)"
+              },
+              "level": {
+                "en": "Level below the threshold",
+                "vi": "Mức âm dưới ngưỡng"
+              }
+            }
+          },
+          {
             "id": "thresholdDb",
             "title": {
-              "en": "Silence below (dBFS)",
-              "vi": "Im lặng dưới (dBFS)"
+              "en": "Silence below (dBFS, level only)",
+              "vi": "Im lặng dưới (dBFS, chỉ mức âm)"
             },
             "type": "number",
             "minimum": -80,
@@ -83,10 +113,38 @@
         ],
         "params": [
           {
+            "id": "detect",
+            "title": {
+              "en": "Find silences with",
+              "vi": "Tìm im lặng bằng"
+            },
+            "type": "enum",
+            "choices": [
+              "auto",
+              "speechMap",
+              "level"
+            ],
+            "default": "auto",
+            "choiceLabels": {
+              "auto": {
+                "en": "Speech map when measured, else level",
+                "vi": "Bản đồ lời nói nếu đã đo, nếu không thì mức âm"
+              },
+              "speechMap": {
+                "en": "Speech map only (media analyze first)",
+                "vi": "Chỉ bản đồ lời nói (chạy media analyze trước)"
+              },
+              "level": {
+                "en": "Level below the threshold",
+                "vi": "Mức âm dưới ngưỡng"
+              }
+            }
+          },
+          {
             "id": "thresholdDb",
             "title": {
-              "en": "Silence below (dBFS)",
-              "vi": "Im lặng dưới (dBFS)"
+              "en": "Silence below (dBFS, level only)",
+              "vi": "Im lặng dưới (dBFS, chỉ mức âm)"
             },
             "type": "number",
             "minimum": -80,
