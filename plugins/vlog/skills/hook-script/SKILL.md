@@ -19,8 +19,8 @@ crowd), music, silence or narration (T02 §4). Narration is a choice; **none** i
 speaks for itself.
 
 - `bashcut media speech-map --media <id>` — where the real speech is, and its gaps.
-- `bashcut narration windows --min-seconds <n>` — stretches with no spoken word and no voiceover, with their owner
-  (music, footage or silence), the shots under them and the section they fall in. Choose `n` from the shortest line
+- `bashcut narration windows --min-seconds <n>` — stretches with no spoken word and no voiceover, with the share
+  music and footage sound cover (`covered`; the larger one owns it, neither is silence), the shots under them and the section they fall in. Choose `n` from the shortest line
   you would write (about one short sentence); add `--levels` to see how loud the mix is there.
 
 **Real speech first**: when the footage has the person talking, build from their lines (`bashcut media transcript

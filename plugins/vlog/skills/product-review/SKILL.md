@@ -79,6 +79,6 @@ the spec as text.
 
 - A viewer notices: a claim with no picture behind it, a number said but not on screen, the product's colour wrong,
   a sponsored video that does not say so early. Treat these as blockers.
-- Deliberate in a review: repeated framing in the talking parts (`framing` at `info`), held spec cards.
+- Deliberate in a review: repeated framing in the talking parts (no `jumpCutChange` there), held spec cards.
 - `needs_user`: whether the product was sponsored or gifted and the disclosure wording, the price and where to buy,
   the user's own verdict when they have one.

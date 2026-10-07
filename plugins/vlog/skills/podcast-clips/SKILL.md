@@ -56,13 +56,13 @@ widened.
 
 Hand the candidates to a fresh sub-agent that sees only each clip's text with one sentence of context on each side,
 not your reasons (T06 §4). It returns **publish**, **review** or **drop** with a one-line reason per clip. Mark the
-drops: `bashcut selects mark <ids> --status rejected --reason "<why>" --base-rev N`. Expect about a third to drop.
+drops: `bashcut selects set rejects.json --base-rev N` with `[{"id":"…","status":"rejected","reason":"<why>"}]`. Expect about a third to drop.
 
 ## 4. The user picks
 
 Show the table: quote, length, the hook sentence, the verdict, and why you rank it. Request the strategy gate:
 `bashcut checkpoint request G2 --summary "<N clips proposed, M recommended>"`, poll `bashcut checkpoint status`. Mark
-the chosen ones `kept` (`bashcut selects mark <ids> --status kept --base-rev N`).
+the chosen ones `kept` (`bashcut selects set` with `{"id":"…","status":"kept"}` rows).
 
 ## 5. One project per clip
 
