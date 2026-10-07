@@ -1,15 +1,18 @@
 # Vlog
 
-Agent skills and a library pack for making vlogs in BashCut. Each **topic skill is a recipe**: the decisions one kind
-of vlog makes the same way every time — structure, pacing, hook, text, sound and look intent — and the **review
-profile** it sets on the project (`review` thresholds and severities, `output.presets`), so one prompt gives a
-consistent result. The plugin runs no program; BashCut gives the skills to Claude, Codex and its other agents while it
-is trusted and turned on, as `bashcut.vlog:<name>`, and lists the pack's items in the library. How to cut, mix, grade
-and caption stays in the agent kit (`bc:`); a recipe says which values those skills use.
+Agent skills and a library pack for making vlogs in BashCut. Each **topic skill is a recipe**: what one kind of vlog
+keeps — structure, hook, text, sound and look intent — and a **Ranges** table of the checks a review can make (shot
+lengths, still holds, hook window, captions, severities), each with a sample range from published practice, why it
+varies and how to measure it. The agent surveys the footage, chooses values inside the ranges, writes the project's
+`review` profile and `output.presets` itself and says why in the plan, so two folders of the same genre can get
+different, justified profiles. The plugin runs no program; BashCut gives the skills to Claude, Codex and its other
+agents while it is trusted and turned on, as `bashcut.vlog:<name>`, and lists the pack's items in the library. How to
+cut, mix, grade and caption stays in the agent kit (`bc:`); a recipe says what to measure and which range to choose
+from.
 
 | Skill | Use it for |
 |---|---|
-| `plan` | Start here: pick the recipe from the prompt, set the project's outputs and review profile, plan hook, sections and shot list |
+| `plan` | Start here: pick the recipe from the prompt, survey, choose the review profile and outputs from the recipe's ranges, plan hook, sections and shot list |
 | `hook-script` | Hook line and title (a number or a question), voiceover or talking script at a speakable pace, on-screen text, CTA |
 | `publish` | One export per output platform, a separate cut for another shape, cover frame, post caption and hashtags |
 | `travel` | Travel vlog / guide: cost or time hook, numbered place sections, cost recap |
@@ -27,17 +30,20 @@ licensed ones (`bc:audio-mix`).
 
 ## Recipes and numbers
 
-A recipe's numbers are the ones a review can check: shot lengths, hook window, severities, output platforms. It never
-fixes colour values or loudness: a look is an intent the agent grades to after measuring the footage
-(`bc:color-grade`), and loudness is the platform's target (-14 LUFS) that normalization reaches from the real mix.
+A recipe ships ranges, not settings: no recipe has a profile block to copy. Each range cites where it comes from (the
+analysis notes T06, T07, T09, T11 and T17, e.g. "(T07 §3)") and says what makes it move. It never fixes colour values
+or loudness: a look is an intent the agent grades to after measuring the footage (`bc:color-grade`), and each export
+is normalized to its own output's target (`bashcut platforms list`), never one number for every platform.
 
 ## Adding a recipe
 
 Copy a topic skill to `skills/<topic>/SKILL.md` (front matter `name` = folder name, `description` with "Use when …"
-and `Triggers:`), keep its sections (Profile, Structure, Cuts and motion, Shots, Text, sound, look, Review notes),
-add a row to the table in `plan` and above, and list it in `plugin.json` › `contributes.skills` (at most 16). Profile
-keys are `minShotSeconds`, `maxShotSeconds`, `maxStillSeconds`, `hookSeconds` and `severities` (review check ID or
-prefix → `error`, `warning`, `info` or `off`); outputs are export preset names.
+and `Triggers:`), keep its sections (Ranges, Structure, Cuts and motion, Shots, Text, sound, look), add a row to the
+table in `plan` and above, and list it in `plugin.json` › `contributes.skills` (at most 16). Ranges rows are
+check → sample range (with its source) → why it varies → what to measure, using only commands in BashCut's command
+reference. Review keys are listed in `plan` (core has no defaults: an unset key means no check, or info only);
+`severities` maps a check ID or prefix, or `provider:`, to `error`, `warning`, `info` or `off`; outputs are export
+preset names.
 
 ## Sources and licenses
 
