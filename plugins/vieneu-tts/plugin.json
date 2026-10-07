@@ -17,7 +17,210 @@
       "id": "bashcut.vieneu-tts.local",
       "capability": "voice.synthesize",
       "name": "VieNeu TTS (local)",
-      "priority": 10
+      "priority": 10,
+      "clones": true,
+      "voices": [
+        {
+          "id": "Hải Đăng",
+          "language": "vi",
+          "region": "North",
+          "style": "natural",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Adam bựa",
+          "language": "vi",
+          "region": "North",
+          "style": "natural",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Trúc Ly",
+          "language": "vi",
+          "region": "North",
+          "style": "natural",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Thiện Minh",
+          "language": "vi",
+          "region": "North",
+          "style": "storytelling",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Mai Anh",
+          "language": "vi",
+          "region": "North",
+          "style": "news",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Thùy Dung",
+          "language": "vi",
+          "region": "South",
+          "style": "news",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Thiền Tâm Đức",
+          "language": "vi",
+          "region": "North",
+          "style": "storytelling",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Ngọc Huyền",
+          "language": "vi",
+          "region": "North",
+          "style": "natural",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Quang Sơn",
+          "language": "vi",
+          "region": "Central",
+          "style": "natural",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Ngọc Trân",
+          "language": "vi",
+          "region": "Central",
+          "style": "natural",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Minh Đức",
+          "language": "vi",
+          "region": "North",
+          "style": "news",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Phạm Tuyên",
+          "language": "vi",
+          "region": "North",
+          "style": "natural",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Thái Sơn",
+          "language": "vi",
+          "region": "South",
+          "style": "storytelling",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Xuân Vĩnh",
+          "language": "vi",
+          "region": "North",
+          "style": "natural",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Thanh Bình",
+          "language": "vi",
+          "region": "North",
+          "style": "storytelling",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Ngọc Linh",
+          "language": "vi",
+          "region": "North",
+          "style": "storytelling",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Đoan Trang",
+          "language": "vi",
+          "region": "North",
+          "style": "natural",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Thục Đoan",
+          "language": "vi",
+          "region": "South",
+          "style": "storytelling",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Minh Triết",
+          "language": "vi",
+          "region": "South",
+          "style": "news",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Mỹ Duyên",
+          "language": "vi",
+          "region": "South",
+          "style": "audiobook",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Quỳnh Anh",
+          "language": "vi",
+          "region": "North",
+          "style": "audiobook",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Đức Trí",
+          "language": "vi",
+          "region": "South",
+          "style": "audiobook",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Kim Thanh",
+          "language": "vi",
+          "region": "South",
+          "style": "audiobook",
+          "gender": "female",
+          "supportsRate": false
+        },
+        {
+          "id": "Adam",
+          "language": "vi",
+          "region": "South",
+          "style": "natural",
+          "gender": "male",
+          "supportsRate": false
+        },
+        {
+          "id": "Quốc Tuấn",
+          "language": "vi",
+          "region": "North",
+          "style": "natural",
+          "gender": "male",
+          "supportsRate": false
+        }
+      ]
     }
   ],
   "dependencies": [
@@ -102,7 +305,7 @@
           "vi": "Hải Đăng — Nam · Bắc · Tự nhiên"
         },
         "Thùy Dung": {
-          "en": "Thùy Dung — female · male · news",
+          "en": "Thùy Dung — female · South · news",
           "vi": "Thùy Dung — Nữ · Nam · Tin tức"
         },
         "Thiền Tâm Đức": {
@@ -130,7 +333,7 @@
           "vi": "Phạm Tuyên — Nam · Bắc · Tự nhiên"
         },
         "Thái Sơn": {
-          "en": "Thái Sơn — male · male · storytelling",
+          "en": "Thái Sơn — male · South · storytelling",
           "vi": "Thái Sơn — Nam · Nam · Kể chuyện"
         },
         "Xuân Vĩnh": {
@@ -150,15 +353,15 @@
           "vi": "Đoan Trang — Nữ · Bắc · Tự nhiên"
         },
         "Thục Đoan": {
-          "en": "Thục Đoan — female · male · storytelling",
+          "en": "Thục Đoan — female · South · storytelling",
           "vi": "Thục Đoan — Nữ · Nam · Kể chuyện"
         },
         "Minh Triết": {
-          "en": "Minh Triết — male · male · news",
+          "en": "Minh Triết — male · South · news",
           "vi": "Minh Triết — Nam · Nam · Tin tức"
         },
         "Mỹ Duyên": {
-          "en": "Mỹ Duyên — female · male · audiobook",
+          "en": "Mỹ Duyên — female · South · audiobook",
           "vi": "Mỹ Duyên — Nữ · Nam · Đọc truyện"
         },
         "Quỳnh Anh": {
@@ -166,15 +369,15 @@
           "vi": "Quỳnh Anh — Nữ · Bắc · Đọc truyện"
         },
         "Đức Trí": {
-          "en": "Đức Trí — male · male · audiobook",
+          "en": "Đức Trí — male · South · audiobook",
           "vi": "Đức Trí — Nam · Nam · Đọc truyện"
         },
         "Kim Thanh": {
-          "en": "Kim Thanh — female · male · audiobook",
+          "en": "Kim Thanh — female · South · audiobook",
           "vi": "Kim Thanh — Nữ · Nam · Đọc truyện"
         },
         "Adam": {
-          "en": "Adam — male · male · natural",
+          "en": "Adam — male · South · natural",
           "vi": "Adam — Nam · Nam · Tự nhiên"
         },
         "Quốc Tuấn": {

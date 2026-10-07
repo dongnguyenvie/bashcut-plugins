@@ -37,6 +37,20 @@ class ProviderTests(unittest.TestCase):
             with wave.open(os.path.join(self.output, take["audioPath"])) as audio:
                 self.assertGreater(audio.getnframes(), 0)
 
+    def test_cloning_without_consent_is_refused(self):
+        reference = os.path.join(self.output, "ref.wav")
+        with wave.open(reference, "wb") as audio:
+            audio.setnchannels(1)
+            audio.setsampwidth(2)
+            audio.setframerate(16000)
+            audio.writeframes(b"\x00\x00" * 16000)
+        options = {"voice": "Hải Đăng", "referenceAudio": reference}
+        refused = session(self.synth(options=options, cloneConsent=False))
+        error = next(m for m in refused if m.get("id") == "r0" and "error" in m)["error"]
+        self.assertIn("consent", error["message"])
+        allowed = session(self.synth(options=options, cloneConsent=True))
+        self.assertTrue(any(m.get("id") == "r0" and "result" in m for m in allowed))
+
     def test_progress_comes_before_the_reply(self):
         messages = session(self.synth())
         kinds = [m.get("type", "reply") for m in messages[1:]]
