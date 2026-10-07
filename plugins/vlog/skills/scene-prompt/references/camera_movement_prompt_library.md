@@ -1,119 +1,119 @@
 # Camera Movement Prompt Library
 
-本库基于 [AI Camera Movements](https://aicameramovements.com/) 的 46 种分类重新整理，用于把剧情功能转译成可执行的中文镜头运动提示词。它不是逐条照抄源站文本，也不是要求每条视频使用复杂运镜。
+This library reorganizes the 46 categories from [AI Camera Movements](https://aicameramovements.com/) to translate story functions into executable camera-movement prompts. It does not copy the source site's text entry by entry, and it does not require every video to use complex camera movement.
 
-## 调用原则
+## Usage principles
 
-仅在镜头运动会改变情绪距离、揭示信息、跟随动作、表现权力变化、建立空间或完成转场时读取本库。
+Read this library only when camera movement changes emotional distance, reveals information, follows action, shows a shift in power, establishes space, or completes a transition.
 
-1. 先确定剧情功能，再选镜头运动；不能先挑“酷炫运镜”再硬套剧情。
-2. 每个镜头通常只用一个主要运动；6–15秒视频通常全片使用0–3种主要运动。
-3. 每次调用必须写清：起始主体/景别、摄影机实际路径或镜头变化、方向、速度、画面产生的新信息、结束主体/构图。
-4. `Pan/Tilt/Zoom` 是机位不动时的镜头方向或焦距变化；`Dolly/Truck/Tracking/Crane` 是摄影机实际位移，不得混写。
-5. 以下模块应结合人物、场景和时间点改写，不得原样堆叠。最终提示词以中文为主，只保留摄影专业术语及常用英文简写。
-6. 若参考图没有展示新角度所需的空间，先补场景/关键帧参考，或改用当前空间可支持的运动。
+1. Decide the story function first, then choose the camera movement; never pick a "cool camera move" first and force the story to fit it.
+2. Each shot usually uses only one main movement; a 6–15s video usually uses 0–3 main movements in total.
+3. Every use must state clearly: the starting subject/shot size, the camera's actual path or lens change, direction, speed, the new information the frame reveals, and the ending subject/composition.
+4. `Pan/Tilt/Zoom` are changes of lens direction or focal length while the camera position stays put; `Dolly/Truck/Tracking/Crane` are actual camera displacement. Do not mix them up.
+5. Rewrite the modules below to fit the characters, setting and moment; never stack them verbatim. Write the final prompt in the chosen output language, keeping only cinematography terms and common English abbreviations as-is.
+6. If the reference images do not show the space a new angle needs, first add a scene/keyframe reference, or switch to a movement the current space can support.
 
-## A. 固定、摇摄与俯仰（7）
+## A. Static, pan and tilt (7)
 
-| # | 镜头运动 | 适用剧情功能 | 中文提示词模块 |
+| # | Camera movement | Story function | Prompt module |
 |---|---|---|---|
-| 01 | `Static` 固定镜头 | 克制表演、等待、尴尬、威压、喜剧停顿 | `Static`，摄影机全程锁定在同一高度、角度和距离；让人物动作与画内变化承担节奏，结尾保持稳定构图。 |
-| 02 | `Pan Right` 向右摇 | 顺着视线或声音揭示右侧人物/空间 | 从当前主体开始 `Pan Right`，机位不移动，水平向右平稳转动；沿视线或声源逐步带出目标，最后停在可读构图。 |
-| 03 | `Pan Left` 向左摇 | 顺着视线或声音揭示左侧人物/空间 | 从当前主体开始 `Pan Left`，机位不移动，水平向左平稳转动；让左侧新信息进入画面，最后在目标上稳定停住。 |
-| 04 | `Whip Pan Right` 快速右甩 | 突发注意转移、惊讶、动作衔接 | 由清晰起始主体触发 `Whip Pan Right`，快速甩向右侧新目标，中段允许短暂运动模糊，落点立即恢复清晰。 |
-| 05 | `Whip Pan Left` 快速左甩 | 突发注意转移、惊讶、动作衔接 | 由清晰起始主体触发 `Whip Pan Left`，快速甩向左侧新目标，中段短暂模糊，结尾准确落在第二主体。 |
-| 06 | `Tilt Up` 向上摇 | 从局部揭示人物、建筑高度、站起或威胁 | 机位不动执行 `Tilt Up`，从下方细节沿垂直结构向上移动视线，保持主体轴线清楚，最终落在上方关键目标。 |
-| 07 | `Tilt Down` 向下摇 | 从脸转向手/道具、坠落后果、低处线索 | 机位不动执行 `Tilt Down`，从上方主体沿动作或结构向下摇，最终落在手、道具、脚步或地面结果上。 |
+| 01 | `Static` | Restrained performance, waiting, awkwardness, intimidation, comic pause | `Static`: the camera stays locked at the same height, angle and distance throughout; let the character's actions and changes within the frame carry the rhythm, and end on a stable composition. |
+| 02 | `Pan Right` | Following an eyeline or sound to reveal a character/space on the right | Start on the current subject and `Pan Right`; the camera position does not move and turns smoothly to the right horizontally; follow the eyeline or sound source to gradually bring in the target, and stop on a readable composition. |
+| 03 | `Pan Left` | Following an eyeline or sound to reveal a character/space on the left | Start on the current subject and `Pan Left`; the camera position does not move and turns smoothly to the left horizontally; let the new information on the left enter the frame, and settle steadily on the target. |
+| 04 | `Whip Pan Right` | Sudden shift of attention, surprise, action link | A clear starting subject triggers a `Whip Pan Right` that whips quickly to a new target on the right; brief motion blur is allowed mid-move, and the landing point is immediately sharp again. |
+| 05 | `Whip Pan Left` | Sudden shift of attention, surprise, action link | A clear starting subject triggers a `Whip Pan Left` that whips quickly to a new target on the left; brief blur mid-move, ending precisely on the second subject. |
+| 06 | `Tilt Up` | Revealing a character from a detail, building height, standing up or a threat | With the camera position fixed, `Tilt Up`: move the view upward from a low detail along a vertical structure, keep the subject's axis clear, and land on the key target above. |
+| 07 | `Tilt Down` | Moving from the face to hands/props, the aftermath of a fall, a clue down low | With the camera position fixed, `Tilt Down`: tilt down from the subject above along the action or structure, and land on the hands, a prop, footsteps or the result on the ground. |
 
-## B. 焦距变化（6）
+## B. Focal-length changes (6)
 
-| # | 镜头运动 | 适用剧情功能 | 中文提示词模块 |
+| # | Camera movement | Story function | Prompt module |
 |---|---|---|---|
-| 08 | `Slow Zoom In` 慢速变焦推进 | 观察感、缓慢聚焦、轻度心理逼近 | 摄影机位置不动，使用 `Slow Zoom In` 缓慢收紧景别；主体始终清晰，结尾形成更紧但稳定的构图。 |
-| 09 | `Slow Zoom Out` 慢速变焦拉远 | 显露环境、孤独或隐藏关系 | 摄影机位置不动，使用 `Slow Zoom Out` 缓慢扩大视野；主体仍可辨认，周围空间逐渐揭示，结尾稳定。 |
-| 10 | `Fast Zoom In` 快速变焦推进 | 快速强调线索、反应或喜剧落点 | 使用 `Fast Zoom In` 迅速收紧到关键脸部或物件；变化果断但目标持续可读，落点不晃动。 |
-| 11 | `Fast Zoom Out` 快速变焦拉远 | 突然揭示处境、关系或荒诞反差 | 使用 `Fast Zoom Out` 快速从主体扩展到环境或群体关系；保持中心线索可辨，结尾落在完整空间结果。 |
-| 12 | `Crash Zoom In` 猛烈推近变焦 | 强烈发现、动作冲击、风格化强调 | 在关键触发点执行一次 `Crash Zoom In`，镜头瞬间压向核心目标；只保留一次强落点，随后稳定持住。 |
-| 13 | `Crash Zoom Out` 猛烈拉远变焦 | 强烈反转、突然暴露整体后果 | 在反转或冲击点执行一次 `Crash Zoom Out`，瞬间显露更大处境；保持主体与新环境关系清楚，结尾稳定。 |
+| 08 | `Slow Zoom In` | A sense of observation, slow focusing, mild psychological closing-in | The camera position does not move; use a `Slow Zoom In` to tighten the shot size slowly; the subject stays sharp throughout, ending on a tighter but stable composition. |
+| 09 | `Slow Zoom Out` | Revealing the environment, loneliness or a hidden relationship | The camera position does not move; use a `Slow Zoom Out` to widen the view slowly; the subject stays recognizable as the surrounding space is gradually revealed, ending stable. |
+| 10 | `Fast Zoom In` | Quickly emphasizing a clue, a reaction or a comic beat | Use a `Fast Zoom In` to tighten quickly onto the key face or object; the change is decisive but the target stays readable, and the landing does not shake. |
+| 11 | `Fast Zoom Out` | Suddenly revealing a situation, a relationship or an absurd contrast | Use a `Fast Zoom Out` to expand quickly from the subject to the environment or group relationship; keep the central clue recognizable, ending on the full spatial result. |
+| 12 | `Crash Zoom In` | Strong discovery, action impact, stylized emphasis | At the key trigger point, do one `Crash Zoom In` that slams instantly toward the core target; keep only one strong landing, then hold steady. |
+| 13 | `Crash Zoom Out` | Strong reversal, suddenly exposing the full consequence | At the reversal or impact point, do one `Crash Zoom Out` that instantly reveals the larger situation; keep the relationship between the subject and the new environment clear, ending stable. |
 
-## C. 推拉与跟随（9）
+## C. Push, pull and follow (9)
 
-| # | 镜头运动 | 适用剧情功能 | 中文提示词模块 |
+| # | Camera movement | Story function | Prompt module |
 |---|---|---|---|
-| 14 | `Dolly In` 轨道推进 | 情绪靠近、压迫、认知落点 | 摄影机沿直线 `Dolly In` 实际向主体靠近，高度与观察方向稳定；随着距离缩短收紧情绪，最后停在关键表情或物件。 |
-| 15 | `Dolly Out` 轨道后退 | 孤立、告别、揭示后果或环境 | 摄影机沿直线 `Dolly Out` 实际远离主体；人物逐渐被空间包围，结尾让新显露的环境或关系承担含义。 |
-| 16 | `Tracking Shot` 同步跟拍 | 人物穿行、动作连续、空间经历 | 摄影机随主体沿路线移动，速度与人物行动匹配；保持人物可读，同时让环境层次从旁移动，结尾维持方向。 |
-| 17 | `Follow Shot / OTS` 后方跟拍 | 跟随人物进入未知空间、保持目的地 | 摄影机从人物后方肩部高度跟随，以背部或肩部作前景引导；前方路径和目的地保持清楚。 |
-| 18 | `Reverse Tracking` 正面后退跟拍 | 行走对话、逼近、追问 | 摄影机位于行进人物正前方并同步后退；保持面部与上半身稳定可读，背景沿人物身后展开。 |
-| 19 | `Side Tracking` 侧向平行跟拍 | 并肩关系、奔跑、队列或旅程感 | 摄影机与主体保持平行距离进行 `Side Tracking`；保留侧面或三分之二侧面轮廓，运动方向始终一致。 |
-| 20 | `Low Tracking` 低机位跟拍 | 脚步、车轮、逃跑、力量与速度 | 摄影机在地面或腰部以下沿运动路线跟随；突出脚步、轮子或地面反馈，同时保留前进方向和障碍。 |
-| 21 | `Vehicle Tracking` 车辆跟拍 | 行驶、追逐、旅行和速度环境 | 摄影机与车辆同向匹配速度，让车辆在画面中相对稳定，路面与背景持续掠过；结尾保持清晰行进关系。 |
-| 22 | `Chase Shot` 追逐跟拍 | 紧迫追赶、逃跑和不稳定现场感 | 摄影机快速贴近追随运动主体，允许有控制的响应式调整；主体不能丢失，路径、障碍和前进目标保持可读。 |
+| 14 | `Dolly In` | Emotional closeness, pressure, a moment of realization | The camera actually moves toward the subject in a straight-line `Dolly In`, with stable height and viewing direction; as the distance shrinks the emotion tightens, and it stops on the key expression or object. |
+| 15 | `Dolly Out` | Isolation, farewell, revealing consequences or the environment | The camera actually moves away from the subject in a straight-line `Dolly Out`; the character is gradually surrounded by space, and at the end the newly revealed environment or relationship carries the meaning. |
+| 16 | `Tracking Shot` | A character moving through space, continuous action, experiencing a place | The camera moves with the subject along the route, matching the character's pace; keep the character readable while layers of the environment slide past, and keep the direction at the end. |
+| 17 | `Follow Shot / OTS` | Following a character into an unknown space, keeping the destination | The camera follows from behind the character at shoulder height, using the back or shoulder as a foreground guide; the path and destination ahead stay clear. |
+| 18 | `Reverse Tracking` | Walk-and-talk, closing in, pressing questions | The camera is directly in front of the moving character and backs up in sync; keep the face and upper body stable and readable, with the background unfolding behind the character. |
+| 19 | `Side Tracking` | Side-by-side relationships, running, a procession or a sense of journey | The camera keeps a parallel distance from the subject in a `Side Tracking` move; keep the profile or three-quarter profile, with the direction of motion consistent throughout. |
+| 20 | `Low Tracking` | Footsteps, wheels, escape, power and speed | The camera follows along the route at ground level or below the waist; emphasize footsteps, wheels or ground feedback while keeping the direction of travel and obstacles visible. |
+| 21 | `Vehicle Tracking` | Driving, chases, travel and a sense of speed | The camera moves in the same direction as the vehicle at matching speed, keeping the vehicle relatively stable in frame while the road and background keep streaming past; end on a clear relationship of motion. |
+| 22 | `Chase Shot` | Urgent pursuit, escape and an unstable on-the-ground feel | The camera follows the moving subject quickly and closely, with controlled responsive adjustments allowed; never lose the subject, and keep the path, obstacles and goal ahead readable. |
 
-## D. 横移、升降与环绕（11）
+## D. Lateral moves, vertical moves and circling (11)
 
-| # | 镜头运动 | 适用剧情功能 | 中文提示词模块 |
+| # | Camera movement | Story function | Prompt module |
 |---|---|---|---|
-| 23 | `Truck Right` 机位右移 | 横向揭示关系、制造视差或绕开遮挡 | 摄影机整体沿水平直线向右 `Truck Right`，镜头朝向基本不变；利用前中后景视差显露新的空间关系。 |
-| 24 | `Truck Left` 机位左移 | 横向揭示关系、制造视差或绕开遮挡 | 摄影机整体沿水平直线向左 `Truck Left`，镜头朝向基本不变；让遮挡移开并形成新的横向构图。 |
-| 25 | `Pedestal Up` 垂直升机位 | 身份抬升、从遮挡后显露、纵向重构 | 摄影机保持水平朝向并整体垂直上升 `Pedestal Up`；不仰摇，结尾以更高视点重新组织主体关系。 |
-| 26 | `Pedestal Down` 垂直降机位 | 落到人物/物件高度、压低权力感 | 摄影机保持水平朝向并整体垂直下降 `Pedestal Down`；不俯摇，最终在较低高度稳定呈现目标。 |
-| 27 | `Slider Right` 小幅右滑 | 安静空间中的精细视差、窥见或关系变化 | 摄影机小幅缓慢向右 `Slider Right`；前景、人物和背景产生细腻视差，最终显露新的右侧角度。 |
-| 28 | `Slider Left` 小幅左滑 | 安静空间中的精细视差、窥见或关系变化 | 摄影机小幅缓慢向左 `Slider Left`；利用前景遮挡的变化重排画面，最终稳定在新角度。 |
-| 29 | `Push Past / Pass-by` 穿过前景推进 | 进入空间、越过门框/人物肩部、揭示深处 | 摄影机向前推进并贴近掠过一个明确前景边缘或开口；前景从镜头旁滑过，终点进入其后的空间。 |
-| 30 | `Arc Right` 向右弧移 | 关系权力变化、从正面转到侧面 | 摄影机围绕主体沿浅弧向右移动，距离和高度相对稳定；背景随角度变化，结尾落在新的右侧观察位。 |
-| 31 | `Arc Left` 向左弧移 | 关系权力变化、从正面转到侧面 | 摄影机围绕主体沿浅弧向左移动，距离和高度相对稳定；保持主体清楚，结尾形成新的左侧角度。 |
-| 32 | `Orbit Clockwise` 顺时针环绕 | 仪式、对峙、空间旋转感、完整观察 | 摄影机以稳定半径顺时针 `Orbit` 主体；主体保持视觉中心，背景产生连续旋转视差，在预定角度停稳。 |
-| 33 | `Orbit Counterclockwise` 逆时针环绕 | 仪式、对峙、空间旋转感、完整观察 | 摄影机以稳定半径逆时针 `Orbit` 主体；维持主体尺度和可读性，结尾在明确的新方位停稳。 |
+| 23 | `Truck Right` | Revealing relationships sideways, creating parallax or getting around an obstruction | The whole camera moves right along a horizontal straight line in a `Truck Right`, with the lens direction basically unchanged; use parallax between foreground, midground and background to reveal new spatial relationships. |
+| 24 | `Truck Left` | Revealing relationships sideways, creating parallax or getting around an obstruction | The whole camera moves left along a horizontal straight line in a `Truck Left`, with the lens direction basically unchanged; let the obstruction move away and form a new lateral composition. |
+| 25 | `Pedestal Up` | Elevated status, emerging from behind an obstruction, vertical restructuring | The camera keeps a level orientation and rises vertically as a whole in a `Pedestal Up`; no tilting up, ending by reorganizing the subject relationships from a higher viewpoint. |
+| 26 | `Pedestal Down` | Dropping to the height of a character/object, lowering the sense of power | The camera keeps a level orientation and descends vertically as a whole in a `Pedestal Down`; no tilting down, ending with the target shown steadily from a lower height. |
+| 27 | `Slider Right` | Subtle parallax in a quiet space, a glimpse or a shift in a relationship | The camera slides slightly and slowly to the right in a `Slider Right`; the foreground, characters and background produce delicate parallax, finally revealing a new angle on the right. |
+| 28 | `Slider Left` | Subtle parallax in a quiet space, a glimpse or a shift in a relationship | The camera slides slightly and slowly to the left in a `Slider Left`; use the change in foreground obstruction to rearrange the frame, finally settling on a new angle. |
+| 29 | `Push Past / Pass-by` | Entering a space, passing a doorframe/a character's shoulder, revealing depth | The camera pushes forward and skims closely past a clear foreground edge or opening; the foreground slides past the lens, and the move ends inside the space behind it. |
+| 30 | `Arc Right` | A shift in relationship power, turning from front-on to profile | The camera moves right around the subject along a shallow arc, with relatively stable distance and height; the background changes with the angle, ending at a new observation point on the right. |
+| 31 | `Arc Left` | A shift in relationship power, turning from front-on to profile | The camera moves left around the subject along a shallow arc, with relatively stable distance and height; keep the subject clear, ending on a new angle on the left. |
+| 32 | `Orbit Clockwise` | Ritual, standoff, a sense of rotating space, complete observation | The camera does a clockwise `Orbit` around the subject at a steady radius; the subject stays the visual center while the background produces continuous rotational parallax, stopping steadily at the planned angle. |
+| 33 | `Orbit Counterclockwise` | Ritual, standoff, a sense of rotating space, complete observation | The camera does a counterclockwise `Orbit` around the subject at a steady radius; keep the subject's scale and readability, stopping steadily at a clear new position. |
 
-## E. 人体摄影机（2）
+## E. Body-mounted camera (2)
 
-| # | 镜头运动 | 适用剧情功能 | 中文提示词模块 |
+| # | Camera movement | Story function | Prompt module |
 |---|---|---|---|
-| 34 | `Handheld` 手持 | 现场感、紧张、纪录片质感、轻度失衡 | 使用克制的 `Handheld`，机位保持在人类摄影师可操作的高度；只有细微呼吸式晃动和跟随修正，主体持续清楚。 |
-| 35 | `Snorricam` 身体固定机位 | 身体绑定的行动体验、奔跑、主观失衡或心理封闭 | 摄影机固定在人物躯干前方并朝向人物；躯干相对画面稳定，头部和四肢仍可自然活动，身体转向与位移带动背景变化，停步后背景随之稳定。机位不能独立环绕、推拉或变焦，支架不入画；构图预留关键手部与道具动作轨迹。按剧情选时长，用户明确要求时可贯穿整段，不限于短暂心理效果。 |
+| 34 | `Handheld` | On-the-ground feel, tension, documentary texture, slight imbalance | Use a restrained `Handheld`, with the camera at a height a human operator could manage; only subtle breathing-like sway and follow corrections, with the subject clear throughout. |
+| 35 | `Snorricam` | Body-bound action experience, running, subjective imbalance or psychological confinement | The camera is fixed in front of the character's torso, facing the character; the torso stays relatively stable in frame while the head and limbs still move naturally, and body turns and displacement drive the background changes; when the character stops, the background settles too. The camera cannot independently circle, push/pull or zoom, and the rig stays out of frame; leave room in the composition for the paths of key hand and prop actions. Choose the duration by the story; when the user explicitly asks, it can run through the whole segment, not just as a brief psychological effect. |
 
-## F. 升降与航拍（5）
+## F. Crane and aerial (5)
 
-| # | 镜头运动 | 适用剧情功能 | 中文提示词模块 |
+| # | Camera movement | Story function | Prompt module |
 |---|---|---|---|
-| 36 | `Crane Up` 摇臂上升 | 从人物揭示环境规模、孤独或仪式全貌 | 摄影机通过 `Crane Up` 平稳升高，同时保持人物或地点可辨；随高度增加揭示更大空间，结尾强调尺度关系。 |
-| 37 | `Crane Down` 摇臂下降 | 从环境进入人物、到达事件中心 | 摄影机通过 `Crane Down` 从较高视点平稳下降；逐步把注意力压向地面人物或目标，结尾落在事件核心。 |
-| 38 | `Drone Push In` 航拍推进 | 接近地点、建立宏观路线和目的地 | 无人机在开放空间中平稳前飞 `Drone Push In`；路线与目的地始终清晰，结尾到达更近的航拍构图。 |
-| 39 | `Drone Pull Back` 航拍后撤 | 从人物/建筑扩大到地貌和整体后果 | 无人机平稳后撤 `Drone Pull Back`，主体逐渐缩小但不丢失；更大地貌依次显露，结尾强调环境规模。 |
-| 40 | `Helicopter Shot` 高空广域移动 | 城市、山河、车队、战争或追踪全局 | 采用高空 `Helicopter Shot` 沿宽阔缓弧路线移动；保持地貌或远处运动主体可读，结尾形成稳定的大尺度构图。 |
+| 36 | `Crane Up` | Revealing the scale of the environment from a character, loneliness or the full view of a ritual | The camera rises smoothly in a `Crane Up` while keeping the character or location recognizable; as height increases a larger space is revealed, ending by emphasizing the relationship of scale. |
+| 37 | `Crane Down` | Entering a character from the environment, arriving at the center of the event | The camera descends smoothly from a higher viewpoint in a `Crane Down`; gradually press attention down onto the character or target on the ground, ending at the core of the event. |
+| 38 | `Drone Push In` | Approaching a location, establishing a large-scale route and destination | The drone flies smoothly forward through open space in a `Drone Push In`; the route and destination stay clear throughout, ending on a closer aerial composition. |
+| 39 | `Drone Pull Back` | Expanding from a character/building to the landscape and overall consequences | The drone pulls back smoothly in a `Drone Pull Back`; the subject gradually shrinks but is never lost, larger landscape is revealed layer by layer, ending by emphasizing the scale of the environment. |
+| 40 | `Helicopter Shot` | Cities, mountains and rivers, convoys, war or tracking the big picture | Use a high-altitude `Helicopter Shot` moving along a wide, gentle arc; keep the landscape or distant moving subject readable, ending on a stable large-scale composition. |
 
-## G. 特殊摄影与时空运动（6）
+## G. Special photography and time-space movement (6)
 
-| # | 镜头运动 | 适用剧情功能 | 中文提示词模块 |
+| # | Camera movement | Story function | Prompt module |
 |---|---|---|---|
-| 41 | `First-Person View / POV` 第一人称 | 沉浸式进入、观察、伸手和身体体验 | 使用 `POV`，摄影机位于角色眼睛高度并随行进或伸手自然移动；画面边缘保留手臂或身体作为空间参照。 |
-| 42 | `Tilt-Shift` 移轴微缩视角 | 城市/人群的模型感、时间压缩或疏离 | 采用高位斜视 `Tilt-Shift`，只让主体区域形成狭窄清晰带，上下逐渐虚化；机位固定或仅做小幅平滑移动。 |
-| 43 | `Infinite Zoom` 无限推进 | 进入图像内部、递归世界、梦境层级转场 | 围绕唯一中心目标持续 `Infinite Zoom`，每一层内容填满画面后自然成为下一层空间；中心与运动方向不能漂移。 |
-| 44 | `Earth Zoom Out` 地球尺度拉远 | 从个人地点上升到城市、地貌、星球尺度 | 从明确地点快速向上连续拉远，依次显露街区、城市、地貌与地球；原始地点始终维持为隐含中心。 |
-| 45 | `Time-Lapse` 延时摄影 | 时间流逝、天气/人群/施工/光线变化 | 使用固定机位 `Time-Lapse`，摄影机角度和地平线不变；环境运动被压缩加速，结尾保留同一构图中的时间结果。 |
-| 46 | `Pass-Through Objects` 穿越物体 | 通过门、镜面、墙面、孔洞完成空间转场 | 摄影机向明确表面或开口推进并穿入另一侧空间；转场点保持居中，前后运动方向、速度、光线或形状关系形成连续桥接。 |
+| 41 | `First-Person View / POV` | Immersive entry, observing, reaching out and bodily experience | Use `POV`, with the camera at the character's eye height moving naturally with walking or reaching; keep an arm or body at the edge of the frame as a spatial reference. |
+| 42 | `Tilt-Shift` | A miniature-model feel for cities/crowds, compressed time or detachment | Use a high, oblique `Tilt-Shift` view, with only the subject area forming a narrow sharp band and the top and bottom gradually blurring; the camera is fixed or makes only small smooth moves. |
+| 43 | `Infinite Zoom` | Entering inside an image, recursive worlds, dream-layer transitions | Keep doing an `Infinite Zoom` around a single central target; each layer fills the frame and then naturally becomes the next layer's space; the center and direction of motion must not drift. |
+| 44 | `Earth Zoom Out` | Rising from a personal location to city, landscape and planetary scale | Pull back upward quickly and continuously from a clear location, revealing in turn the neighborhood, the city, the landscape and the Earth; the original location always remains the implied center. |
+| 45 | `Time-Lapse` | The passage of time, changes in weather/crowds/construction/light | Use a fixed-camera `Time-Lapse`, with the camera angle and horizon unchanged; environmental motion is compressed and sped up, ending with the result of time in the same composition. |
+| 46 | `Pass-Through Objects` | Completing a spatial transition through doors, mirrors, walls or holes | The camera pushes toward a clear surface or opening and passes through into the space on the other side; keep the transition point centered, with the direction, speed, light or shape relationships before and after forming a continuous bridge. |
 
-## 快速剧情索引
+## Quick story index
 
-- 克制表演、停顿、威压：`Static`、极慢 `Dolly In`
-- 视线/声音揭示：`Pan`、`Tilt`、`Rack Focus`
-- 关系靠近或压迫：`Dolly In`、`Arc`
-- 离开、孤独、后果：`Dolly Out`、`Crane Up`
-- 行走对话：`Reverse Tracking`、`Side Tracking`
-- 进入未知空间：`Follow Shot / OTS`、`Push Past`
-- 追逐与逃跑：`Chase Shot`、`Low Tracking`、克制 `Handheld`
-- 权力或站位变化：`Arc`、`Truck`、`Pedestal`
-- 突发注意转移：一次 `Whip Pan` 或 `Crash Zoom`
-- 宏观规模：`Crane`、`Drone`、`Helicopter Shot`
-- 身体绑定的行动体验或主观失衡：`Snorricam`，按动作与用户要求决定持续时间；极少数重大认知转折可用 `Dolly Zoom`
-- 时空/物理转场：`Pass-Through Objects`、`Infinite Zoom`、`Time-Lapse`
+- Restrained performance, pauses, intimidation: `Static`, a very slow `Dolly In`
+- Eyeline/sound reveals: `Pan`, `Tilt`, `Rack Focus`
+- Closeness or pressure in a relationship: `Dolly In`, `Arc`
+- Leaving, loneliness, consequences: `Dolly Out`, `Crane Up`
+- Walk-and-talk: `Reverse Tracking`, `Side Tracking`
+- Entering an unknown space: `Follow Shot / OTS`, `Push Past`
+- Chases and escapes: `Chase Shot`, `Low Tracking`, restrained `Handheld`
+- Shifts in power or positioning: `Arc`, `Truck`, `Pedestal`
+- Sudden shift of attention: one `Whip Pan` or `Crash Zoom`
+- Large-scale scope: `Crane`, `Drone`, `Helicopter Shot`
+- Body-bound action experience or subjective imbalance: `Snorricam`, with the duration decided by the action and the user's request; for very rare major turning points of realization, `Dolly Zoom` can be used
+- Time-space/physical transitions: `Pass-Through Objects`, `Infinite Zoom`, `Time-Lapse`
 
-## 输出检查
+## Output check
 
-- 镜头运动是否由具体动作、声音、视线、信息或情绪变化触发？
-- 起点、方向、速度、运动路径和落点是否都可见？
-- 摄影机是否能在实际场景中移动，是否穿过人物、墙体或家具？
-- 运镜是否抢占了对白、动作、表演和结尾余味的时间？
-- 多镜头是否保持180度轴线、视线、左右位置、行进方向和道具状态？
-- 删除该运镜后如果剧情没有任何损失，应改为 `Static` 或更简单的镜头。
+- Is the camera movement triggered by a specific action, sound, eyeline, piece of information or change in emotion?
+- Are the starting point, direction, speed, movement path and landing point all visible?
+- Can the camera actually move in this setting, or does it pass through characters, walls or furniture?
+- Does the camera movement steal time from the dialogue, action, performance and the lingering ending?
+- Across multiple shots, are the 180-degree axis, eyelines, left/right positions, direction of travel and prop states maintained?
+- If removing the camera move costs the story nothing, change it to `Static` or a simpler shot.

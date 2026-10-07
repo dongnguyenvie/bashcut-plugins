@@ -31,7 +31,7 @@ Use time only when it improves generation clarity.
 - A short synopsis can still exceed 30s if it contains multiple beats that need to be shown clearly.
 - If the full content cannot breathe within 30s, split by emotional turning point, action phase, location change, or reveal/aftermath boundary. Do not compress by simply speeding up action or removing reaction time.
 - For one continuous emotional beat: `0-3s / 3-8s / 8-12s`.
-- For multi-shot prompts: `镜头 01`, `镜头 02`, etc.
+- For multi-shot prompts: `Shot 01`, `Shot 02`, etc.
 - Each time block should contain a visible change: action, gaze, light, spatial relation, or sound.
 - Avoid stuffing unrelated story events into a single 30s prompt.
 - Do not end important dialogue or peak action exactly at the final second. Reserve 1-2 seconds for reaction, breath, silence, sound tail, or visual continuation.
@@ -42,28 +42,28 @@ Use time only when it improves generation clarity.
 
 Use these principles before writing the final prompt and again during compression. Their purpose is to narrow the model's guessing range into a smaller, cleaner set of possible videos.
 
-1. **具体性原则 / Observable Specificity**
+1. **Specificity Principle / Observable Specificity**
    - Convert abstract intent into what the camera can see or hear: action, object, light source, texture, reflection, sound, body reaction, and timed transition.
-   - Do not stop at labels such as `破碎记忆闪回`, `高级感`, `压迫感`, `命运感`, or `电影感`; translate them into visible fragments. Example: `破碎记忆闪回` can become rain on glass, a red umbrella in puddle reflection, a phone vibration, headlight flare, glass shards catching light, and a face losing focus.
+   - Do not stop at labels such as `shattered memory flashback`, `premium feel`, `oppressive feel`, `sense of fate`, or `cinematic feel`; translate them into visible fragments. Example: `shattered memory flashback` can become rain on glass, a red umbrella in puddle reflection, a phone vibration, headlight flare, glass shards catching light, and a face losing focus.
 
-2. **非矛盾性原则 / Non-Contradiction**
+2. **Non-Contradiction Principle / Non-Contradiction**
    - Remove instructions that cannot physically, spatially, emotionally, or temporally coexist.
    - Check object behavior, light source, camera path, costume/prop state, and action causality. Example: cloth can tear into fragments, but it should not also form a perfect blade-like arc unless it is an intentional visible VFX object.
    - If two instructions conflict, keep the one that serves the story function and rewrite the other as a compatible visual detail.
 
-3. **正面描述优先 / Positive Target Description**
-   - Say the desired path first: `小球直接滚进蓝色框`, `车从路口左转`, `角色沿走廊尽头的亮门跑去`.
+3. **Positive Description First / Positive Target Description**
+   - Say the desired path first: `the ball rolls straight into the blue box`, `the car turns left at the intersection`, `the character runs toward the bright door at the end of the corridor`.
    - Use negative constraints only as a small fallback for likely model failures, especially subtitles, watermarks, background music, face/body distortion, unwanted genre drift, or unsafe escalation.
-   - When the scene outcome matters, do not rely on `不要...` alone. Replace `不要进红框` with `直接进蓝框`; replace `不要突然亲吻` with `两人保持半步距离，只用眼神和呼吸拉近`.
+   - When the scene outcome matters, do not rely on `don't...` alone. Replace `don't go into the red box` with `go straight into the blue box`; replace `don't suddenly kiss` with `the two keep half a step apart, closing the distance only through their eyes and breathing`.
 
-4. **避免过度指定 / Avoid Over-Specification**
+4. **Avoid Over-Specification / Avoid Over-Specification**
    - Details should reduce ambiguity, not try to control every pixel.
    - Limit one short clip to the necessary visible targets: the main action path, emotional turn, key props, space, light source, and sound anchors. If a prompt names too many small targets, remove decorative or redundant details before adding more.
    - When quality drops or action becomes unnatural, reduce goals: fewer fragments, fewer camera moves, fewer micro-actions, fewer props, or split into another clip.
 
 ## Camera Language
 
-Resolve the aspect-ratio route before choosing composition-sensitive camera grammar. Ordinary low-risk work defaults to `16:9横屏` when no ratio is given; vertical/portrait/`9:16` work must read `vertical_9x16_adaptation.md`. Do not ask routinely—ask once only when an unresolved ratio materially changes production references, complex blocking, full-body action, groups, scale, or multi-platform delivery.
+Resolve the aspect-ratio route before choosing composition-sensitive camera grammar. Ordinary low-risk work defaults to `16:9 landscape` when no ratio is given; vertical/portrait/`9:16` work must read `vertical_9x16_adaptation.md`. Do not ask routinely—ask once only when an unresolved ratio materially changes production references, complex blocking, full-body action, groups, scale, or multi-platform delivery.
 
 Prefer specific but generation-friendly terms:
 
@@ -71,8 +71,8 @@ Prefer specific but generation-friendly terms:
 - Character shot sizes: `ECU` Detail Shot (only a facial detail), `VCU` Face Shot (forehead to chin), `BCU` Big Close-Up (full head including face), `CU` Close-Up (head and shoulders), `MCU` Chest Shot (head to below chest), `WS` Waist Shot (head to waist), `KS` Knee Shot (head to knees), `FLS` Full Length Shot (full body with head/foot room), `LS` Long Shot (person occupies about 3/4 of frame), `ELS` Extra Long Shot (person far away).
 - Object/scenery shot sizes: `CU` Close-Up (local detail), `MCU` Medium Close-Up (about 1/4 of subject), `MS` Medium Shot (about 1/2 of subject), `MLS` Medium Long Shot (whole subject plus some surroundings), `LS` Long Shot (subject occupies about 3/4 to 1/3 of frame), `ELS` Extra Long Shot (farther than long shot).
 - Camera movement and focus: `Dolly In/Out` or `Track In/Out` for camera physically moving forward/backward; `Pan Right/Left` for horizontal lens/head rotation; `Tilt Up/Down` for vertical lens/head rotation; `Track Right/Left`, `Truck Right/Left`, or `Crab Right/Left` for camera moving sideways; `Ped Up/Down` for vertical camera movement; `Crane Up/Down` or `Jib Up/Down` for vertical/diagonal camera movement with a crane/jib feel; `Arc/Orbit` for a curved path around the subject; `Zoom In/Out` for focal length change while camera stays physically still; `Dolly Zoom` / `Vertigo effect` for dollying one way while zooming the opposite way; `Whip Pan` or `Crash Zoom` for fast transition/emphasis; `Rack Focus` / `Focus Pull` for changing focus between foreground/background or person/object while the shot continues; `Handheld` for controlled human shake; `Static` for no camera movement.
-- 焦段: `24mm`, `35mm`, `50mm`, `85mm`, `100mm macro`, `200mm`.
-- 运镜: prefer the standardized movement terms above; phrases such as `Slow Push in`, `Handheld Backward Tracking`, or `Snap Pull Back` are allowed when they describe the desired feel more clearly.
+- Focal length: `24mm`, `35mm`, `50mm`, `85mm`, `100mm macro`, `200mm`.
+- Camera movement: prefer the standardized movement terms above; phrases such as `Slow Push in`, `Handheld Backward Tracking`, or `Snap Pull Back` are allowed when they describe the desired feel more clearly.
 - Lens texture: shallow depth of field, anamorphic flare, bokeh, Chiaroscuro, hard side light, backlight, practical light.
 
 Do not pile up terms. Use the terms that directly serve the scene's emotion.
@@ -103,15 +103,15 @@ Choose camera movement by narrative function, not as decoration. Most 6-15s prom
 #### Selection by Drama Beat
 
 ```text
-情绪靠近：Push-In / Dolly-In, or Static CU if the face already carries enough pressure
-孤独与后果：Dolly-Out / Pull-Back, Crane Up, ELS reveal
-发现与期待：Pan, Tilt, Slow Push-In
-并行移动：Tracking / Truck / Crab, Handheld following
-权力变化：Low Angle Static, High Angle Static, Tilt Up/Down, Arc/Orbit
-心理失衡：Dolly Zoom, Dutch Angle Static, brief Handheld instability
-快速转场或惊讶：Whip Pan / Crash Zoom, but end on a readable subject
-宏大空间：Crane/Jib, ELS, controlled Pull-Back
-微表情表演：Static ECU/CU or extremely slow Push-In; avoid restless camera
+Emotional closeness: Push-In / Dolly-In, or Static CU if the face already carries enough pressure
+Loneliness and consequence: Dolly-Out / Pull-Back, Crane Up, ELS reveal
+Discovery and anticipation: Pan, Tilt, Slow Push-In
+Parallel movement: Tracking / Truck / Crab, Handheld following
+Power shift: Low Angle Static, High Angle Static, Tilt Up/Down, Arc/Orbit
+Psychological imbalance: Dolly Zoom, Dutch Angle Static, brief Handheld instability
+Quick transition or surprise: Whip Pan / Crash Zoom, but end on a readable subject
+Grand space: Crane/Jib, ELS, controlled Pull-Back
+Micro-expression performance: Static ECU/CU or extremely slow Push-In; avoid restless camera
 ```
 
 #### Combination Rules
@@ -124,7 +124,7 @@ Choose camera movement by narrative function, not as decoration. Most 6-15s prom
 
 ## Cinematic Lighting as Dramatic Design
 
-Do not use `电影感布光` as a vague magic phrase. Cinematic lighting should create dramatic tension, emotional direction, visual hierarchy, and story meaning. It is not only illumination.
+Do not use `cinematic lighting` as a vague magic phrase. Cinematic lighting should create dramatic tension, emotional direction, visual hierarchy, and story meaning. It is not only illumination.
 
 Do not over-describe lighting by default. Lighting language should be proportional to the scene: it must support performance, action, and story, not replace them. If the scene is mainly about dialogue, suspense movement, a fight, or a micro-expression, keep lighting concise unless the light itself is the dramatic engine.
 
@@ -132,7 +132,7 @@ Do not over-describe lighting by default. Lighting language should be proportion
 
 Choose one level before writing the final prompt:
 
-1. **Minimal / one phrase**: use for ordinary rooms, fast action, phone calls, domestic suspense, short emotional beats. Example: `低照度小黑屋，门缝冷光和手机屏光只勾出脸部轮廓，背景保留暗部细节。`
+1. **Minimal / one phrase**: use for ordinary rooms, fast action, phone calls, domestic suspense, short emotional beats. Example: `A dim small dark room; cold light from the door crack and the phone screen only traces the outline of the face, while the background keeps detail in the shadows.`
 2. **Standard / one compact sentence**: use when light helps mood but is not the main subject. Mention source, direction, what is readable, and shadow mood in one sentence.
 3. **Detailed / lighting design paragraph**: use only when lighting is the core test, the user asks to check lighting, or the scene is built around authority, ritual, judgment, noir pressure, product texture, stage-like composition, or a strong visual concept.
 
@@ -149,7 +149,7 @@ Match the light quality to the source:
 - volumetric beams need dust, smoke, mist, rain, steam, or haze.
 - rim light and strong edge highlights should not appear without a credible back/side source.
 
-If the location does not support `Hard side-top Key Light` or `右上方硬质侧顶光`, do not force it. In a small black room, domestic interior, cramped apartment, or ordinary office, prefer motivated practical light such as a door crack, exposed bulb, desk lamp, phone screen, TV spill, window slit, corridor light, or weak ambient bounce. Hard side-top light is a specialty pattern, not the default cinematic look.
+If the location does not support `Hard side-top Key Light` or `hard side-top light from upper right`, do not force it. In a small black room, domestic interior, cramped apartment, or ordinary office, prefer motivated practical light such as a door crack, exposed bulb, desk lamp, phone screen, TV spill, window slit, corridor light, or weak ambient bounce. Hard side-top light is a specialty pattern, not the default cinematic look.
 
 ### Realistic Night Exterior and Courtyard Light
 
@@ -160,7 +160,7 @@ Core rule: moonlight can shape the overall cool ambience and edges, but it shoul
 Good night-courtyard phrasing:
 
 ```text
-夜间府邸庭院，冷月光作为柔弱环境底色落在屋檐、石地和花木边缘；廊下灯笼与桌边烛火给人物脸部提供很弱的暖色反光，眼睛和颧骨保留可读细节，肩线、发冠和衣料边缘有自然的冷色轮廓高光。整体暗部有层次，不是硬切舞台光。
+A mansion courtyard at night. Cold moonlight falls as a soft ambient base on the eaves, stone ground and the edges of flowers and trees; lanterns under the veranda and candlelight by the table give the characters' faces a very faint warm reflection, keeping readable detail in the eyes and cheekbones, while shoulder lines, hair crowns and fabric edges carry natural cool rim highlights. The shadows overall have gradation; it is not hard-cut stage lighting.
 ```
 
 Use artistic processing with restraint:
@@ -173,7 +173,7 @@ Use artistic processing with restraint:
 
 Avoid:
 
-- `冷月光切亮脸部一侧` if there is no believable angle or reflector.
+- `cold moonlight cutting across one side of the face` if there is no believable angle or reflector.
 - mixing every light type in one sentence: moonlight, Rembrandt, spotlight, blinds, candle, window, golden hour, and volumetric beams all at once.
 - making night exteriors look like an indoor studio portrait unless the user asks for stylization.
 
@@ -195,11 +195,11 @@ Good dynamic lighting links:
 Prompt phrases:
 
 ```text
-动态光影：人物向车门/窗边/走廊尽头移动时，实景光源保持固定，身体穿过一段段明暗交替；光斑掠过脸、手、衣料和地面，阴影被拉长、压缩、再向前跃动，光影节奏与脚步和呼吸同步。
+Dynamic light and shadow: as the character moves toward the car door / window / end of the corridor, the practical light sources stay fixed and the body passes through alternating bands of light and dark; light patches sweep across the face, hands, fabric and floor, shadows stretch, compress and leap forward again, and the rhythm of light and shadow syncs with footsteps and breathing.
 ```
 
 ```text
-环境颗粒：逆光只照出空气中的尘埃、雨雾、草屑、衣料纤维或呼出的白气，让空间有真实厚度；不要无来源的泛光或装饰性光晕。
+Environmental particles: backlight only reveals dust, rain mist, grass bits, fabric fibers or exhaled white breath in the air, giving the space real depth; no unsourced bloom or decorative halos.
 ```
 
 Use dynamic light sparingly. One strong interaction is usually enough for a 15s prompt.
@@ -220,11 +220,11 @@ Keep the description concrete: name the source, where it falls, what it hides, a
 
 When lighting is truly important, describe the lighting system in this order:
 
-1. **Key Light / 主光**: direction, height, hardness/softness, color temperature, beam shape, and what it actually hits.
-2. **Fill Light / 辅光**: strength and purpose. Often very weak, only keeping minimum texture instead of flattening the face.
-3. **Rim Light / 轮廓光**: where it catches shoulders, ears, hair, objects, statues, weapons, or furniture edges to separate subject from darkness.
-4. **Background / Volumetric Light / 背景光 / 体积光**: light hitting dust, smoke, mist, rain, curtains, windows, statues, walls, or architectural depth.
-5. **Narrative meaning / 布光意图**: what the light/shadow relationship says about power, secrecy, guilt, judgment, hope, danger, intimacy, or ambiguity.
+1. **Key Light / key light**: direction, height, hardness/softness, color temperature, beam shape, and what it actually hits.
+2. **Fill Light / fill light**: strength and purpose. Often very weak, only keeping minimum texture instead of flattening the face.
+3. **Rim Light / rim light**: where it catches shoulders, ears, hair, objects, statues, weapons, or furniture edges to separate subject from darkness.
+4. **Background / Volumetric Light / background light / volumetric light**: light hitting dust, smoke, mist, rain, curtains, windows, statues, walls, or architectural depth.
+5. **Narrative meaning / lighting intent**: what the light/shadow relationship says about power, secrecy, guilt, judgment, hope, danger, intimacy, or ambiguity.
 
 ### Light Must Touch Concrete Surfaces
 
@@ -242,7 +242,7 @@ Avoid generic phrases like `dramatic lighting` or `cinematic lighting`. Write wh
 Use this for courtrooms, interrogations, offices of power, temples, throne rooms, police rooms, confession spaces, or any scene where authority and moral ambiguity matter.
 
 ```text
-布光设计：强方向性 Key Light 来自画面右后方，偏硬，形成清晰光束，不均匀照亮人物，只切到脸的一侧、手、桌面和背景雕像/权力物件；左侧空间大面积沉入暗部，形成 Chiaroscuro 明暗秩序。Fill Light 极弱，只保留衣料和面部少量暗部层次，不把阴影填平。Rim Light 擦过右肩、耳朵、发缘和雕像边缘，把人物从黑色背景中分离。背景有尘埃/薄雾中的 Volumetric Light，光束本身成为画面的一部分。布光意图：人物处在光与暗的交界处，表达权力、法律、秘密或道德判断并不纯粹，庄严中带暧昧和压迫。
+Lighting design: a strongly directional Key Light comes from the right rear of the frame, fairly hard, forming a clear beam that lights the character unevenly, catching only one side of the face, the hands, the tabletop and a background statue/symbol of power; the left side of the space sinks into large areas of shadow, forming a Chiaroscuro order of light and dark. The Fill Light is extremely weak, only preserving a little shadow gradation in the fabric and face without filling the shadows in. A Rim Light grazes the right shoulder, ear, hairline and statue edges, separating the character from the black background. The background has Volumetric Light through dust/thin haze, and the beam itself becomes part of the image. Lighting intent: the character stands at the boundary of light and dark, expressing that power, law, secrets or moral judgment are not pure—solemn, yet tinged with ambiguity and pressure.
 ```
 
 ### Lighting Prompt Template
@@ -250,14 +250,14 @@ Use this for courtrooms, interrogations, offices of power, temples, throne rooms
 Use a compact version inside final prompts:
 
 ```text
-光影：Key Light 从{方向}以{硬/软}光切入，只照到{脸/手/桌面/道具/背景物}；Fill Light 极弱，保留{衣料/暗部轮廓}，不填平阴影；Rim Light 勾出{肩膀/耳朵/发缘/道具边缘}；背景{烟雾/尘埃/雨雾/窗帘}里有 Volumetric Light，形成可见光束。整体明暗关系服务{审判/秘密/压迫/孤独/暧昧/希望}。
+Light and shadow: the Key Light cuts in from {direction} as {hard/soft} light, hitting only {face/hands/tabletop/prop/background object}; the Fill Light is extremely weak, preserving {fabric/shadow contours} without filling in the shadows; a Rim Light traces {shoulders/ears/hairline/prop edges}; Volumetric Light in the background {smoke/dust/rain mist/curtains} forms visible beams. The overall light-dark relationship serves {judgment/secrecy/oppression/loneliness/ambiguity/hope}.
 ```
 
 ### Common Lighting Failures
 
-- Only writing `电影感布光`, `高级光影`, or `氛围感强` without direction, object, shadow, or meaning.
+- Only writing `cinematic lighting`, `premium light and shadow`, or `strong atmosphere` without direction, object, shadow, or meaning.
 - Turning every shot into a full lighting lecture when the scene only needs a compact practical-light cue.
-- Forcing `Hard side-top Key Light` or `右上方硬质侧顶光` into environments where no believable high hard source exists.
+- Forcing `Hard side-top Key Light` or `hard side-top light from upper right` into environments where no believable high hard source exists.
 - Lighting everything evenly so the image loses visual hierarchy.
 - Adding too many light sources with no motivation.
 - Using rim light, fog, lens flare, and glow everywhere without story reason.
@@ -271,7 +271,7 @@ Use this for courtrooms, public hearings, institutional interiors, ceremonial ha
 Core pattern:
 
 ```text
-Off-frame high side-back light 从人物身后偏高处斜射进入画面，通常来自画面外窗光、天窗、门缝或高处实景光。光线穿过烟雾、尘埃、雨雾或薄雾形成 Volumetric Beams，把背景人群、空间纵深和前景主体分层。人物脸部不做强烈阴影切割，而用 Soft Front Fill 或桌面/地面/墙面反弹的弱环境光轻轻补亮，让表情清楚，情绪不变成恐怖阴森，而是可以更坦然、荒诞、克制或自嘲。
+Off-frame high side-back light slants into the frame from high behind the character, usually from an off-frame window, skylight, door crack or high practical light. The light passes through smoke, dust, rain mist or thin haze to form Volumetric Beams, layering the background crowd, spatial depth and foreground subject. The character's face is not carved by hard shadows; instead Soft Front Fill or weak ambient light bounced off a table, floor or wall gently lifts it, keeping the expression clear so the emotion does not turn horror-dark but can be more candid, absurd, restrained or self-mocking.
 ```
 
 Use this distinction:
@@ -282,7 +282,7 @@ Use this distinction:
 Prompt phrase:
 
 ```text
-光影：画面外高位侧逆光 Off-frame high side-back light 从左上/右上斜射进来，穿过薄雾形成大面积 Volumetric Beams，拉开前景人物、背景人群和空间深度；人物脸部由 Soft Front Fill 或桌面反弹光轻轻补亮，保留表情可读性；头发顶部、耳朵和肩膀只有 Soft edge highlight，不是强商业 Rim Light。
+Light and shadow: an Off-frame high side-back light slants in from upper left/upper right, passing through thin haze to form large Volumetric Beams that separate the foreground character, the background crowd and the depth of the space; the character's face is gently lifted by Soft Front Fill or light bounced off the table, keeping the expression readable; the top of the hair, ears and shoulders carry only a Soft edge highlight, not a strong commercial Rim Light.
 ```
 
 ### Color Temperature as Story
@@ -296,7 +296,7 @@ Color temperature contrast should express story, not decorate the frame.
 Prompt phrase:
 
 ```text
-中心对称构图带来秩序和平衡感；左侧冷白光代表制度、理性和距离，右侧暖白光代表人性、温度和命运，两种色温在人物周围并置，让画面同时有公平感和复杂情绪。
+The centered symmetrical composition brings order and balance; the cold white light on the left stands for institution, reason and distance, the warm white light on the right for humanity, warmth and fate. The two color temperatures sit side by side around the character, giving the image both a sense of fairness and complex emotion.
 ```
 
 ### Low-key High Contrast Tonal Structure
@@ -319,13 +319,13 @@ Characteristics:
 Prompt phrase for crime/interrogation:
 
 ```text
-影调：Low-key High Contrast，暗部作为画面基底，黑位干净但保留暗部细节；审讯室桌面一盏台灯形成小面积硬质光池，只照亮人物脸部一侧、双手和桌面文件，背景压入深阴影但不是死黑，人物从黑暗中被局部光切出来。
+Tonality: Low-key High Contrast, with shadow as the base of the image; blacks are clean but keep shadow detail. A desk lamp on the interrogation table forms a small hard pool of light that lights only one side of the character's face, the hands and the documents on the table; the background is pressed into deep shadow but not crushed black, and the character is carved out of the darkness by local light.
 ```
 
 Prompt phrase for product/luxury:
 
 ```text
-影调：Low-key High Contrast，高端广告质感，深色极简背景压暗但保留层次；产品边缘有精致窄轮廓光，玻璃/金属表面出现可控镜面高光，主体被局部光切出，暗部不脏不死黑。
+Tonality: Low-key High Contrast with a high-end commercial texture; the dark minimalist background is pressed down but keeps gradation. The product edges have a refined narrow rim light, glass/metal surfaces show controlled specular highlights, the subject is carved out by local light, and the shadows are neither dirty nor crushed black.
 ```
 
 Common tonal failures:
@@ -353,7 +353,7 @@ Core logic:
 Prompt phrase:
 
 ```text
-光影：右上方硬质侧顶 Key Light 斜切人物，强高光落在额头皱纹、鼻梁、鼻头、左侧脸颊、拳头和旧皮衣边缘；眼窝、右脸、胡须深处和颈部压入浓重阴影，形成 Low-key High Contrast 的压迫感。Soft Front Fill 极弱，只保留右侧脸、拳头和衣服暗部的最低细节，避免死黑但不削弱阴影。高位侧后光在头发、肩膀、手臂和皮衣边缘形成粗糙 Soft edge highlight，使人物从昏暗背景里分离，突出脏、硬、粗粝、危险的质感。
+Light and shadow: a hard side-top Key Light from the upper right slices across the character; strong highlights fall on the forehead wrinkles, bridge and tip of the nose, left cheek, fist and the edges of the old leather jacket; the eye sockets, right side of the face, the depths of the beard and the neck sink into heavy shadow, creating the oppressive feel of Low-key High Contrast. Soft Front Fill is extremely weak, keeping only the minimum detail in the right side of the face, the fist and the shadows of the clothing, avoiding crushed black without weakening the shadows. A high side-back light forms a rough Soft edge highlight on the hair, shoulders, arms and jacket edges, separating the character from the dim background and emphasizing a dirty, hard, rugged, dangerous texture.
 ```
 
 Avoid:
@@ -370,19 +370,19 @@ For a named emotion or a performance transition that needs more concrete observa
 Strong performance prompts use this sequence:
 
 ```text
-内在逻辑：角色因...而...
-显性动机：他/她表面上想...
-微反应：眼睑、咬肌、嘴角、视线、手指...
-生理反应：呼吸、吞咽、鼻翼、汗、颤抖、身体僵硬...
-动作结果：最终做出一个清晰可见的动作。
+Inner logic: the character ... because of ...
+Visible motive: on the surface he/she wants to ...
+Micro-reactions: eyelids, jaw muscles, corners of the mouth, gaze, fingers...
+Physiological reactions: breathing, swallowing, nostrils, sweat, trembling, body stiffening...
+Action result: finally performs one clearly visible action.
 ```
 
 Write emotions as body evidence:
 
-- 压抑: jaw locked, lips pressed flat, shallow breath, hands clenching fabric, gaze avoiding contact.
-- 崩塌: breath breaks, fingers release, eyes wet but fixed, smile appearing against the character's will.
-- 决绝: still gaze, no blinking, body leans forward before action, breath stops then releases.
-- 自由: posture opens, hair and clothes catch wind, eyes lock onto distant light, a small fearless smile.
+- Repressed: jaw locked, lips pressed flat, shallow breath, hands clenching fabric, gaze avoiding contact.
+- Collapse: breath breaks, fingers release, eyes wet but fixed, smile appearing against the character's will.
+- Resolute: still gaze, no blinking, body leans forward before action, breath stops then releases.
+- Freedom: posture opens, hair and clothes catch wind, eyes lock onto distant light, a small fearless smile.
 
 ## Character Knowledge and Evidence Control
 
@@ -446,7 +446,7 @@ If physical mechanics matter, show the action. If realization matters more, keep
 Useful pattern:
 
 ```text
-他先准确说出她下一秒会做的习惯动作；镜头不切手部，只保留在她脸上。画外传来两次细小接触声，第二次之后她的视线极短下移，呼吸停住，再重新抬眼看他。观众通过声音与反应完成确认。
+He first states exactly the habitual gesture she will make in the next second; the camera does not cut to her hands and stays on her face. Two small contact sounds come from off-screen; after the second, her gaze drops very briefly, her breath stops, and then she raises her eyes to him again. The audience completes the confirmation through sound and reaction.
 ```
 
 Do not cut to a phone, handle, hand, key, footprint, or object merely to prove every noun. Use an insert only when the object's physical state, readable information, or later continuity depends on seeing it.
@@ -569,7 +569,7 @@ Avoid:
 - continuous heavy handheld movement with no stability progression
 - explaining every correspondence through narration after the audience can already see it
 
-## Live Performance Realism System / 活人感表演真实系统
+## Live Performance Realism System / Lived-in Performance Realism System
 
 Use this system when the scene depends on human presence rather than plot mechanics alone: close human drama, dialogue, everyday realism, intimacy, hesitation, concealment, explanation, lying, regret, memory, restrained grief, soft refusal, or any prompt where the viewer should feel the character is thinking in real time.
 
@@ -587,12 +587,12 @@ Then align:
 - breath and small recovery after key words
 - whether the smile reaches the eyes
 
-An expression need not finish. When new evidence or a competing task redirects attention, show the forming expression being interrupted and its residue changing gradually; do not reset to neutral at every line. Example: 笑意尚未成形，门内动静先吸走他的视线，呼吸轻变，嘴角随后回落。Use only when the interruption has a scene cause, not as a mandatory almost-smile or facial sequence.
+An expression need not finish. When new evidence or a competing task redirects attention, show the forming expression being interrupted and its residue changing gradually; do not reset to neutral at every line. Example: Before the smile has fully formed, a sound from behind the door pulls his gaze away first; his breathing shifts slightly, and the corners of his mouth then fall back. Use only when the interruption has a scene cause, not as a mandatory almost-smile or facial sequence.
 
 Positive pattern:
 
 ```text
-她不是直接表现悲伤，而是在努力保持平静。说话前短暂低头，像在组织语言；抬眼时眼神没有完全对准镜头；说到关键处停顿半拍，嘴角轻微收紧；最后轻轻笑一下，但笑意没有完全到眼底。眼神、表情、语气和停顿都服务于“克制地解释一件自己在意的事”这个心理状态。
+She does not show sadness directly; she is trying to stay calm. Before speaking she briefly lowers her head, as if organizing her words; when she looks up, her gaze does not fully meet the lens; at the key point she pauses half a beat and the corners of her mouth tighten slightly; at the end she gives a small smile, but it does not quite reach her eyes. Gaze, expression, tone and pauses all serve the mental state of "explaining, with restraint, something she cares about."
 ```
 
 Avoid:
@@ -625,7 +625,7 @@ For serious explanation, hesitation, restraint, or concern, use low-amplitude mo
 Positive pattern:
 
 ```text
-动作动机要求：不要为了让画面丰富而加入明显动作。她正在克制地表达一件自己在意的事，因此肢体动作保持低幅度、低姿态、靠近桌面，主要表现为轻微点头、短暂停顿、身体小幅重心变化、手指与杯子的细微接触、整理袖口或碎发。动作像边说边想时自然流露出来的无意识反应。
+Action motivation: do not add obvious movement just to make the image busier. She is expressing, with restraint, something she cares about, so her body movement stays small, low-key and close to the table, mainly slight nods, brief pauses, small shifts of weight, subtle contact between fingers and cup, straightening a cuff or a stray strand of hair. The movements look like unconscious reactions that slip out naturally while she thinks and talks.
 ```
 
 Avoid:
@@ -652,7 +652,7 @@ Useful linked-motion logic:
 Positive pattern:
 
 ```text
-她抬眼看向镜头前，眼睛先从桌面移开，随后下巴轻轻抬起，颈部自然跟随。说话时肩膀随呼吸有轻微起伏，身体重心有很小的前后变化。左手扶住杯子时，手腕、前臂和袖口产生细微联动，不要让手像独立物体一样移动。
+Before she looks up at the lens, her eyes first leave the tabletop, then her chin lifts slightly and her neck follows naturally. While she talks, her shoulders rise and fall slightly with her breath and her weight shifts a little forward and back. When her left hand steadies the cup, the wrist, forearm and cuff move together subtly; do not let the hand move like a separate object.
 ```
 
 Avoid:
@@ -672,7 +672,7 @@ When the character touches an object, write contact as a physical process: befor
 For example, gripping a cup:
 
 ```text
-左手指尖先轻轻靠近杯沿，短暂停住，随后拇指和食指扶住杯壁。杯子保持稳定，只出现极轻微的受力变化。手指在杯壁上小幅摩擦时有停留和阻力感。袖口靠近桌面时产生轻微褶皱变化，手臂移动不要穿过杯子或纸袋。
+Her left fingertips first approach the rim of the cup, pause briefly, then her thumb and index finger steady the side of the cup. The cup stays stable, showing only an extremely slight change under pressure. When the fingers rub the side of the cup slightly, there is a sense of lingering and resistance. As the cuff nears the table it creases slightly; the arm does not pass through the cup or the paper bag.
 ```
 
 Use contact cues for:
@@ -706,7 +706,7 @@ Use subtle feedback:
 Positive pattern:
 
 ```text
-她轻微前倾说话时，脸上的暖光和阴影有细小变化，额前碎发随头部移动轻微晃动后慢慢停住。左手靠近杯子时，杯壁反光随手的位置发生细微变化。袖口贴近桌面产生轻微褶皱，纸袋保持稳定但有真实纸张质感。
+As she leans forward slightly to speak, the warm light and shadow on her face shift subtly, and the loose strands on her forehead sway a little with her head and then slowly settle. As her left hand nears the cup, the reflection on the cup changes subtly with the hand's position. The cuff creases slightly against the table, and the paper bag stays stable but has a real paper texture.
 ```
 
 Avoid:
@@ -728,7 +728,7 @@ Phone/live-action realism is one option, not the default for all cinematic promp
 Phone realism pattern:
 
 ```text
-画面像手机在晚上室内自然拍摄，半身近景，镜头略高于桌面，轻微手持晃动但不影响观看。暖色顶灯是主要光源，脸部和手部阴影方向一致。背景轻微虚化但仍能看出家庭空间，画面保留轻微噪点、压缩感和真实皮肤纹理。焦点稳定，但有非常轻微的自然呼吸感。
+The image looks like a phone shooting naturally indoors at night: a medium close-up, the lens slightly above the tabletop, a slight handheld sway that does not hurt viewing. A warm ceiling light is the main source, and the shadows on the face and hands fall in the same direction. The background is slightly blurred but still reads as a home; the image keeps slight noise, compression and real skin texture. Focus is stable, with a very slight natural breathing feel.
 ```
 
 Avoid:
@@ -807,7 +807,7 @@ Preserve the relationship axis even when subjects are at different heights. Lowe
 Compact pattern:
 
 ```text
-狗位于画面左侧向右上方看人，人物位于右侧向左下方看狗；拍狗时用人物手臂、腰侧或衣摆作为右侧柔焦前景，拍人时用狗耳朵和背部轮廓作为左侧低位前景。保持同一轴线，不强行把肩膀塞入低机位画面。
+The dog is on the left of the frame looking up and right at the person; the person is on the right looking down and left at the dog. When shooting the dog, use the person's arm, waist or hem as a soft-focus foreground on the right; when shooting the person, use the dog's ear and back outline as a low foreground on the left. Keep the same axis, and do not force a shoulder into the low-angle frame.
 ```
 
 ## Intense Emotional Scene Director Chain
@@ -819,13 +819,13 @@ Use this for emotional confrontation, restraint breaking, confession, betrayal, 
 Build the scene in this order:
 
 ```text
-内在冲突 -> 生理反应 -> 微表情 -> 贯穿动作锚点 -> 决定性行为
+Inner conflict -> physiological reaction -> micro-expression -> through-line action anchor -> decisive act
 ```
 
 Example logic:
 
 ```text
-角色内心渴望靠近，却表面死守边界；因此眼睑颤动、咬肌绷紧、喉结干咽；手指持续绞紧衣料；当防线崩塌时，手先松开、悬停，最后才完成靠近或触碰。
+The character longs inwardly to get closer but outwardly guards the boundary; so the eyelids flutter, the jaw muscles tighten, the Adam's apple swallows dryly; the fingers keep twisting the fabric; when the defense collapses, the hand first lets go, hovers, and only then completes the approach or touch.
 ```
 
 ### Recurring Action Anchor
@@ -844,7 +844,7 @@ The anchor must evolve with the emotion. Do not reset the hand, prop, or posture
 If the scene moves from ECU/CU into a large body action, prepare the frame first:
 
 ```text
-大动作前 -> 镜头拉开或快速后撤 -> 留出身体运动空间 -> 跟随动作改变机位/构图
+Before the big action -> camera widens or pulls back fast -> leaves room for body movement -> follows the action by changing camera position/composition
 ```
 
 Use this before:
@@ -884,7 +884,7 @@ This creates one readable event instead of three unrelated descriptions.
 A one-take scene still needs internal dramatic sections. Use 2-4 beats such as:
 
 ```text
-压抑建立 -> 关系刺激 -> 防线松动 -> 决定性行为 -> 余韵
+Repression established -> relationship trigger -> defenses loosen -> decisive act -> afterglow
 ```
 
 Keep camera continuity, but let framing, distance, gaze, action anchor, light, and sound evolve at each beat.
@@ -921,7 +921,7 @@ The payoff must remain physically continuous and readable. Do not introduce a ne
 Useful pattern:
 
 ```text
-开场她每次紧张都会抓住门框；中段手指逐渐松开；结尾听见真相后，她没有再次抓门框，而是主动跨过门槛。人物状态变化由行为完成，不再追加解释台词。
+At the start, every time she is nervous she grabs the door frame; in the middle her fingers gradually loosen; at the end, after hearing the truth, she does not grab the door frame again but steps over the threshold herself. The character's change of state is completed through behavior, with no extra explanatory dialogue.
 ```
 
 ### Ending State Reversal
@@ -940,7 +940,7 @@ Reserve enough time for the viewer to read the changed behavior and its sound. T
 
 When an action recurs, show its visible completion, withdrawal or recovery before the next attempt. Give the restart a new stimulus or changed circumstance; vary timing or amplitude only when that change motivates it. Do not force a fixed cycle count, equal intervals, or a pause into deliberately continuous action. Recovery is physical continuity, not a reset of fatigue, emotion or prop state.
 
-Example: 她把信递出，对方没有接；手停住后收回胸前。听见对方叫她名字，她才再次伸手，这次不再躲开目光。保留递出与收回的轨迹，不用切镜或模糊掩盖。
+Example: She holds out the letter; the other person does not take it; her hand stops and then pulls back to her chest. Only when she hears the other person say her name does she reach out again, and this time she no longer avoids their eyes. Keep the path of the offer and the retreat; do not cover it with a cut or blur.
 
 ### Understated Comic Aftermath
 
@@ -955,7 +955,7 @@ Use this for ordinary drama, suspense, romance, family conflict, intimate tensio
 Design the shot as one continuous camera sentence:
 
 ```text
-起幅 establishing start -> 行进/靠近 movement or emotional drift -> 关系转折 turning beat -> 焦点/前后景切换 focus or blocking shift -> 落幅 held ending
+Opening frame (establishing start) -> moving/approaching (movement or emotional drift) -> relationship turn (turning beat) -> focus/foreground-background shift (focus or blocking shift) -> closing frame (held ending)
 ```
 
 Each part must change something visible: distance, eyeline, body position, foreground/background relation, light crossing the face, object contact, sound, or emotional pressure.
@@ -1009,25 +1009,25 @@ Rules:
 - Use the first character's shoulder, back, hair crown, sleeve, chair, or pillar as a foreground mask while the camera moves. This gives the reveal depth and prevents a random cut feeling.
 - Reveal the next character from a motivated direction: slide past the first character's shoulder, pass a column, move around a table edge, or shift focus from foreground back to background.
 - After the reveal, pull back or widen only when the spatial hierarchy matters: who stands, who sits, who is foreground/background, who occupies the main seat, who is visually suppressed.
-- Keep every revealed character visually distinct: face shape, hairstyle, headdress, costume color, fabric texture, posture, status, and emotional baseline. Use compact identity tags such as `嫡长子-深青锦袍高冠`, `嫡长女-朱红织金长裙`, rather than repeating full paragraphs in every beat.
+- Keep every revealed character visually distinct: face shape, hairstyle, headdress, costume color, fabric texture, posture, status, and emotional baseline. Use compact identity tags such as `eldest legitimate son - deep teal brocade robe, tall crown`, `eldest legitimate daughter - vermilion gold-woven long dress`, rather than repeating full paragraphs in every beat.
 - Do not reveal more than 2-4 key characters in a 10-15s one-take. If the scene needs more people, make extras background silhouettes or split into multiple clips.
 - In final prompts, avoid long lighting/style ingredient lists. Put stable atmosphere once, then use reveal beats to describe what changes: face -> back silhouette -> second face -> widened courtyard/table hierarchy.
 
 Useful compact phrase:
 
 ```text
-一镜到底人物揭示：先以{角色A} ECU建立身份与压迫感，镜头绕到其肩背形成前景遮挡，再沿其右肩/桌沿缓慢横移揭示{角色B}，最后 Pull-Back 展开{庭院/厅堂/桌面}的主次站位；每个角色用不同脸型、发型、服色、姿态和眼神锁定身份，不出现重复脸或多余人物。
+One-take character reveal: first establish {character A}'s identity and pressure with an ECU, the camera circles to their shoulder and back to form a foreground occlusion, then slowly trucks along their right shoulder/table edge to reveal {character B}, and finally a Pull-Back opens up the primary and secondary positions in the {courtyard/hall/tabletop}; each character's identity is locked by distinct face shape, hairstyle, costume color, posture and gaze, with no duplicate faces or extra people.
 ```
 
 #### One-Take Prompt Template
 
 ```text
-基础概括：{时长}单场景一镜到底长镜头，{地点}，{人物关系/情绪冲突}。镜头从{起幅空间锚点}开始，沿{明确路径}连续移动，不切镜头；通过人物走位、焦点转移、前景遮挡、光线变化和声音变化完成情绪推进。
+Overview: a {duration} single-scene one-take long shot, {location}, {relationship/emotional conflict}. The camera starts from {opening spatial anchor} and moves continuously along {a clear path} without cutting; the emotion advances through character blocking, focus shifts, foreground occlusion, light changes and sound changes.
 
-0-{a}s：{起幅与空间关系}，{主角初始动作/心理状态}，镜头{Static / Slow Dolly-In / Track}，建立{出口/关键物/另一人位置}。
-{a}-{b}s：{人物行进或关系压力上升}，镜头随{脚步/视线/手部动作}调整，必要时 `Rack Focus` 从{前景/物件/监听者}转到{说话者/反应者}。
-{b}-{c}s：{转折动作或台词}，人物走位改变权力关系，前景{门框/桌沿/玻璃/布帘}短暂遮挡但不切断空间连续性。
-{c}-结尾：镜头落在{最终面孔/物件/空间后果}，保留1-2秒沉默、呼吸、环境声或动作余韵。
+0-{a}s: {opening frame and spatial relationship}, {protagonist's initial action/mental state}, camera {Static / Slow Dolly-In / Track}, establishing {the exit/key object/the other person's position}.
+{a}-{b}s: {character moves forward or relationship pressure rises}, the camera adjusts with {footsteps/gaze/hand movement}, using `Rack Focus` when needed from {foreground/object/listener} to {speaker/reactor}.
+{b}-{c}s: {turning action or line}, character blocking changes the power relationship, the foreground {door frame/table edge/glass/fabric curtain} briefly occludes without breaking spatial continuity.
+{c}-end: the camera lands on {final face/object/spatial consequence}, holding 1-2 seconds of silence, breathing, ambient sound or the afterglow of the action.
 ```
 
 #### One-Take Failure Warnings
@@ -1037,7 +1037,7 @@ Useful compact phrase:
 - Do not overload the shot with every camera move. One main path plus one motivated focus or framing change is usually enough.
 - Do not end at the exact moment of a line, kiss, slap, reveal, or door opening; hold the consequence.
 
-## Dialogue-Driven Performance Control System / 台词驱动表演控制
+## Dialogue-Driven Performance Control System / Dialogue-Driven Performance Control
 
 Use this when the scene depends on spoken performance: accusation, rebuttal, confession, breakup, apology, interrogation, courtroom pressure, family confrontation, voice message, phone call, or a line that breaks the character's emotional defense.
 
@@ -1067,7 +1067,7 @@ It should answer:
 Useful pattern:
 
 ```text
-这不是舞台式展示悲伤。她越说越快，不是为了攻击对方，而是害怕一停下来就再也说不完；他保持礼貌和低声，不是冷漠，而是用照顾她来阻止自己当场瓦解。后续台词、眼神、呼吸和动作都服务于这组心理机制。
+This is not a stage display of sadness. She speaks faster and faster, not to attack him, but because she fears that if she stops she will never get it all out; he stays polite and quiet, not out of coldness, but because taking care of her is how he stops himself from falling apart on the spot. The following lines, gazes, breathing and actions all serve this psychological mechanism.
 ```
 
 Do not repeat this explanation under every beat. State the contract once, then express it through observable behavior.
@@ -1100,10 +1100,10 @@ Build the shot-level timeline first. Subdivide only the shot that carries dense 
 - Make all nested time ranges fit the parent shot and the dialogue delivery budget.
 
 ```text
-SHOT 2（3.5-18.0s）：女方越肩近景，承担主要反击与防线破裂。
-3.5-7.0s【反击】：...
-7.0-12.0s【自证】：...
-12.0-18.0s【裂缝】：...
+SHOT 2 (3.5-18.0s): over-the-shoulder close shot on the woman, carrying the main pushback and the breaking of her defenses.
+3.5-7.0s【Pushback】: ...
+7.0-12.0s【Self-justification】: ...
+12.0-18.0s【Crack】: ...
 ```
 
 ### Speaker and Listener Acting Tracks
@@ -1115,7 +1115,7 @@ Treat a dialogue scene as two linked performance tracks:
 - When a non-speaker already has a task, choose one compatible ongoing activity and let the line enter, interrupt or coexist with it; preserve hand/prop ownership and finish or suspend the activity visibly. Do not freeze them in anticipation of their turn or invent busywork for every listener. Their eyes may register speech while the hand finishes its prior action; listening does not require staring continuously at the speaker.
 - For several people receiving the same event, derive different reaction paths from each person's preceding state, knowledge and role: residual amusement fades for one, ongoing work stops for another, a third needs time to process. Use modest onset/order/amplitude differences when useful, not arbitrary staggered timers or a universal eyes-breath-mouth-body sequence. A common stimulus may legitimately cause simultaneous reactions; avoid only unmotivated identical choreography. Keep one clear reaction focus rather than giving every face equal detail.
 - Give the listener a reaction shot when their internal change advances the story. Keep it restrained when the speaker still owns the dramatic center.
-- Do not write generic reactions such as `他沉默` when a visible sequence can show defense -> attempted reply -> swallow -> gaze avoidance -> realization.
+- Do not write generic reactions such as `he falls silent` when a visible sequence can show defense -> attempted reply -> swallow -> gaze avoidance -> realization.
 
 Use three different trigger types when useful:
 
@@ -1141,7 +1141,7 @@ For every important interruption or overlap, define only what controls the perfo
 Useful pattern:
 
 ```text
-她听见他说到“我已经决—”便意识到他要结束关系，未等尾音完成就低声抢入：“你先听我说。”两人声音自然重叠约半拍；他的声音不会突然静音，而是在她台词下方失去力度后停住，嘴仍保持未完成口型。她不是提高音量压过他，而是因害怕失去表达机会而加快；随后他退让，目光落下。
+When she hears him say "I've already decid—" she realizes he is ending the relationship and, before the last syllable finishes, cuts in quietly: "Hear me out first." Their voices overlap naturally for about half a beat; his voice is not suddenly muted but loses force under her line and then stops, his mouth still holding the unfinished shape. She does not raise her volume to drown him out; she speeds up because she is afraid of losing her chance to speak; then he yields and his gaze drops.
 ```
 
 Rules:
@@ -1167,7 +1167,7 @@ When used, name the psychological cause and the visible/acoustic evidence. Prote
 Positive pattern:
 
 ```text
-他说“我—我本来……”时并非喜剧口吃：第一个“我”有声音，第二次只形成口型并伴随失败吸气，喉结轻动后吞咽；他放弃原句，改成更安全的“你别担心”。不要补全被放弃的句子，不要机械等间隔重复。
+When he says "I—I was going to..." it is not a comedic stutter: the first "I" is voiced, the second is only a mouth shape with a failed inhale, his Adam's apple moves slightly and he swallows; he abandons the original sentence and switches to the safer "Don't worry." Do not complete the abandoned sentence, and do not repeat it at mechanical, evenly spaced intervals.
 ```
 
 Avoid:
@@ -1206,9 +1206,9 @@ Do not silently delete plot-changing or character-defining lines. Conversely, do
 For a complex prompt, state a short priority ladder only when it helps resolve competing instructions.
 
 ```text
-对白主导：台词顺序、说话者身份、口型、抢话与声音表演 > 听者反应 > 连续手势与视线 > 镜头装饰与环境细节。
-动作主导：动作因果、空间方向、接触和重量 > 身体反应 > 镜头跟随 > 台词与环境装饰。
-情绪特写：心理变化、微表情和呼吸 > 声音与泪水时机 > 光影连续 > 背景运动。
+Dialogue-led: line order, speaker identity, mouth shapes, interruptions and vocal performance > listener reactions > continuous gestures and gaze > camera decoration and environmental detail.
+Action-led: action cause and effect, spatial direction, contact and weight > body reactions > camera following > dialogue and environmental decoration.
+Emotional close-up: psychological change, micro-expressions and breathing > voice and tear timing > lighting continuity > background motion.
 ```
 
 When two instructions conflict, simplify the lower-priority instruction. A priority ladder is not permission to ignore continuity, safety, or the user's explicit must-have elements.
@@ -1218,7 +1218,7 @@ When two instructions conflict, simplify the lower-priority instruction. A prior
 Use one recurring hand, prop, posture, or distance change as a continuous acting line when it carries the relationship.
 
 ```text
-他的右手跨三个镜头完成“抬起 -> 悬停 -> 失去力量 -> 落下”，切镜后不得重新抬手。两人始终相距约一米；不触碰不是普通禁令，而是当前关系无法靠近的可见边界。
+His right hand completes "raise -> hover -> lose strength -> fall" across three shots, and must not be raised again after a cut. The two stay about one meter apart throughout; not touching is not an ordinary prohibition but the visible boundary of a relationship that cannot close the distance right now.
 ```
 
 Lock who may enter whose space, whether touch is allowed, and what approach, retreat, or withheld contact means. Do not let the model add an automatic embrace, hand-hold, kiss, or reconciliation that changes the scene's relationship state.
@@ -1256,7 +1256,7 @@ Let framing tighten as the character's psychological defense opens.
 - Do not start at the tightest possible framing when the scene needs later visual escalation.
 - Tie every push-in or tighter cut to a specific emotional access point, not to generic intensity.
 
-### Emotion Barrier / 情绪保护层
+### Emotion Barrier / Emotional Protective Layer
 
 Do not jump directly from anger to crying, confidence to collapse, or sarcasm to confession. Real characters often use a protective emotion before the vulnerable emotion appears.
 
@@ -1272,7 +1272,7 @@ politeness protects resentment -> pauses sharpen -> mouth tightens -> direct acc
 Prompt rule:
 
 ```text
-先写保护性情绪，再写保护层出现裂缝，最后写真实情绪暴露。不要让愤怒、悲伤和落泪同时从第一秒出现。
+Write the protective emotion first, then the protective layer cracking, and finally the true emotion exposed. Do not let anger, sadness and tears all appear from the first second.
 ```
 
 An optional return to defense can follow vulnerability when the relationship and story support it: a familiar name interrupts anger; the character briefly exposes hurt through a broken phrase, released jaw or avoided gaze; recognizing that exposure, they tighten again and redirect it into accusation or refusal. Bind the renewed defense to that trigger and changed intention, not simply a louder repetition. Do not require re-escalation in scenes that resolve through trust, acceptance or sustained vulnerability.
@@ -1296,13 +1296,13 @@ For every crucial line, write:
 Positive pattern:
 
 ```text
-说话前她先压住呼吸，目光没有立刻看向对方。第一句“你一直都知道”音量较低，嘴唇几乎不张开，像还在维持体面；说到“知道”时短暂停顿半拍，眼神从对方脸上滑到桌面。第二句“那我算什么？”明显更轻更慢，重新抬眼时攻击性已经消失，眼眶开始湿润，但第一滴眼泪仍不能落下。
+Before speaking she first holds down her breath, and her gaze does not go to the other person right away. The first line, "You knew all along," is low in volume, her lips barely parting, as if she is still keeping up appearances; on "knew" she pauses half a beat and her gaze slides from his face to the table. The second line, "Then what am I?", is clearly softer and slower; when she looks up again the aggression is gone and her eyes start to well up, but the first tear still must not fall.
 ```
 
 Bad pattern:
 
 ```text
-她非常悲伤地哭着说：“你一直都知道，那我算什么？”
+She cries very sadly and says: "You knew all along, then what am I?"
 ```
 
 ### Trigger Words and Delay
@@ -1319,7 +1319,7 @@ Examples:
 Useful instruction:
 
 ```text
-不要让落泪提前发生。泪水只在说完关键词后开始聚在下睫毛处，下一次吸气失败时才落下第一滴。
+Do not let the tears come early. Tears only begin to gather on the lower lashes after the key word is spoken, and the first drop falls only on the next failed inhale.
 ```
 
 ### AU/FACS Auxiliary Calibration
@@ -1349,7 +1349,7 @@ Useful AU references:
 Positive pattern:
 
 ```text
-自然语言先行：眉毛内侧缓慢抬起，嘴角轻微下沉，下巴开始绷紧；她张开嘴想继续说话，却没有力气发声。辅助表情校准：AU1 + AU15 + AU17，强度从 B 增至 C，眼泪暂时不能落下。
+Natural language first: the inner brows rise slowly, the corners of the mouth sink slightly, the chin begins to tighten; she opens her mouth to keep speaking but has no strength to make a sound. Supporting expression calibration: AU1 + AU15 + AU17, intensity rising from B to C, tears not yet allowed to fall.
 ```
 
 Avoid:
@@ -1370,7 +1370,7 @@ onset -> peak -> release / transform
 Example anger burst:
 
 ```text
-说话前他先压紧嘴唇，咬住下颚，眉毛向内下压。前半句保持低沉；说到“现在”时 AU25 和 AU26 突然增强，嘴唇分开、下巴绷紧，音量短促抬高。最后一个词结束后立刻闭嘴，面部肌肉快速收回，只剩呼吸变重。
+Before speaking he presses his lips together, clenches his jaw, and pulls his brows inward and down. The first half of the line stays low; on "now" AU25 and AU26 suddenly strengthen, the lips part, the chin tightens, and the volume rises sharply and briefly. Right after the last word he shuts his mouth, the facial muscles retract quickly, and only heavier breathing remains.
 ```
 
 ### Eight-Dimension Acting Formula
@@ -1378,13 +1378,13 @@ Example anger burst:
 Use this as an internal planning formula for dialogue-led acting. Do not print all labels unless the user asks for a table.
 
 ```text
-时间段 -> 人物目的 -> 情绪保护层/变化 -> 台词与触发词 -> 面部动作 -> 目光与身体 -> 声音/呼吸/停顿 -> 说完后的状态与对手反应
+Time block -> character's goal -> emotional protective layer/change -> line and trigger word -> facial action -> gaze and body -> voice/breath/pause -> state after speaking and the other character's reaction
 ```
 
 Compact final-prompt pattern:
 
 ```text
-{a}-{b}s：{人物}表面想{目的}，其实在用{保护性情绪}挡住{真实情绪}。说“{台词}”前先{呼吸/停顿/眼神}；说到“{触发词}”时{面部动作、目光、身体或AU辅助}，声音{音量/速度/质感}；说完后{余韵状态}，{对手反应}。
+{a}-{b}s: on the surface {character} wants to {goal}, but is actually using {protective emotion} to hold back {true emotion}. Before saying "{line}" they first {breathe/pause/look}; on "{trigger word}" {facial action, gaze, body or AU support}, voice {volume/speed/texture}; after speaking {afterglow state}, {other character's reaction}.
 ```
 
 ### Dialogue Performance Conditions
@@ -1409,9 +1409,9 @@ Do not divide a 30s scene by clock time alone. Divide it by psychological tasks:
 Good stage names are small verbs or emotional tasks:
 
 ```text
-追问 -> 认命 -> 记住 -> 惋惜 -> 放手
-试探 -> 防御 -> 被击中 -> 坦白 -> 余震
-克制 -> 反击 -> 裂缝 -> 承认 -> 沉默
+Pressing -> Resignation -> Remember -> Regret -> Letting go
+Probing -> Defense -> Struck -> Confession -> Aftershock
+Restraint -> Pushback -> Crack -> Admission -> Silence
 ```
 
 Each stage should contain:
@@ -1424,24 +1424,24 @@ Each stage should contain:
 
 ### Action + Meaning Workflow
 
-In `电影化改写策略`, you may briefly explain why an action matters. In the copy-ready final prompt, keep the visible behavior and only a compact meaning note when it prevents ambiguity.
+In `Cinematic adaptation strategy`, you may briefly explain why an action matters. In the copy-ready final prompt, keep the visible behavior and only a compact meaning note when it prevents ambiguity.
 
 Good workshop reasoning:
 
 ```text
-“短促苦笑”不是开心，而是自嘲和认命；“重新看回对方”不是挽留，而是想最后记住他的样子。
+The "brief bitter smile" is not happiness but self-mockery and resignation; "looking back at him" is not an attempt to hold on but a wish to remember his face one last time.
 ```
 
 Good final-prompt compression:
 
 ```text
-3-10s【认命】：她的视线从他脸上慢慢移开，望向旁边空地；眼睑低垂，嘴角牵起一抹很短的苦笑又落下，鼻翼轻收，胸口轻轻起伏一次，像把委屈咽回去。
+3-10s【Resignation】: her gaze slowly leaves his face and drifts to the empty ground beside them; her eyelids lower, a very brief bitter smile tugs at the corner of her mouth and falls, her nostrils tighten slightly, her chest rises and falls once, as if swallowing back the hurt.
 ```
 
 Avoid turning the final prompt into long prose analysis:
 
 ```text
-情感解析：这个动作象征她内心的命运感、遗憾、回忆和复杂人生……
+Emotional analysis: this action symbolizes her inner sense of fate, regret, memories and a complicated life...
 ```
 
 ### Difference Between Similar Expressions
@@ -1456,7 +1456,7 @@ When the same visible expression appears twice, define the emotional difference.
 Useful instruction:
 
 ```text
-前一个笑是自嘲和认命，最后一个笑是温柔放手；不要把两个笑都生成成同一种甜笑或假笑。
+The earlier smile is self-mockery and resignation, the last smile is a tender letting go; do not generate both smiles as the same sweet or fake smile.
 ```
 
 ### Tear Timing and Delay
@@ -1466,7 +1466,7 @@ Control tears as timed events, not generic sadness.
 Common sequence:
 
 ```text
-眼眶泛红但不落泪 -> 眼泪被屏住 -> 第一滴泪在保护层松开后落下 -> 第二滴泪在最终台词或微笑中滑落 -> 结尾保留泪痕和呼吸
+Eyes reddening without tears -> tears held back -> the first tear falls after the protective layer loosens -> the second tear slides down during the final line or smile -> the ending keeps the tear tracks and the breathing
 ```
 
 Rules:
@@ -1492,13 +1492,13 @@ Do not add push-in, orbit, handheld shake, and rack focus together for a quiet e
 Use as a structure reference, not as a fixed story:
 
 ```text
-基础概括：29秒写实电影情绪长镜头，{人物}面对镜头前的“他/她”，以{关系危机}为核心；固定 CU 起幅，后段极慢 Push-In 至 ECU。全片靠眼神、呼吸、短句、停顿和两次明确落泪完成情绪曲线，不大哭，不崩溃。
+Overview: a 29-second realistic cinematic emotional long take; {character} faces "him/her" in front of the lens, centered on {relationship crisis}; it opens on a fixed CU and in the later part pushes in extremely slowly to an ECU. The whole piece completes its emotional curve through gaze, breathing, short lines, pauses and two clear falling tears—no loud crying, no breakdown.
 
-0-3s【追问】：她直视镜头，眼神还干净没有泪，眉心轻蹙，嘴唇微启，轻声说：“真的要走吗？”说完不追问，停在等待里。
-3-10s【认命】：视线慢慢移开，眼睑低垂；嘴角牵出一抹短促苦笑又落下，鼻翼轻收，胸口小幅起伏一次，像把酸楚咽回去。
-10-17s【记住】：镜头极慢推进；她重新看回镜头，目光在对方脸上缓慢扫过，眼眶泛红但眼泪被屏住，嘴唇轻动又抿住，下巴收紧，喉间轻轻滚动，留 0.5s 死寂。
-17-23s【惋惜】：她垂眼，第一滴泪无声落在衣襟上；没有擦泪，没有抽泣。再抬眼时，目光从挽留变成深深惋惜，眉心一点点松开，极轻地摇头，像无声叹息。
-23-29s【放手】：镜头推至更近 ECU；她努力牵起一个很轻、很柔的微笑，第二滴泪从眼角滑过鼻翼停在唇边。她用几乎听不见但稳住的声音说：“你走吧。”说到“走”字时声音极轻颤一下又压住。说完后笑停在脸上，眼神不移开，最后 1-2s 留给含泪微笑和安静呼吸。
+0-3s【Pressing】: she looks straight into the lens, her eyes still clear with no tears, brows slightly knit, lips slightly parted, and says softly: "Do you really have to go?" After speaking she does not press further and stays in the waiting.
+3-10s【Resignation】: her gaze slowly moves away and her eyelids lower; a brief bitter smile tugs at the corner of her mouth and falls, her nostrils tighten slightly, her chest rises and falls once, as if swallowing back the ache.
+10-17s【Remember】: the camera pushes in extremely slowly; she looks back at the lens, her gaze slowly moving across the other person's face, her eyes red but the tears held back; her lips move slightly and then press together, her chin tightens, her throat moves gently, holding 0.5s of dead silence.
+17-23s【Regret】: she lowers her eyes and the first tear falls silently onto her collar; she does not wipe it and does not sob. When she looks up again her gaze has changed from holding on to deep regret; her brows slowly relax and she shakes her head very slightly, like a silent sigh.
+23-29s【Letting go】: the camera pushes to a tighter ECU; she makes an effort to raise a very light, very soft smile, and the second tear slides from the corner of her eye past her nostril and stops at her lips. In an almost inaudible but steadied voice she says: "Go." On "go" her voice trembles very slightly and is held down again. After speaking the smile stays on her face, her gaze does not move away, and the final 1-2s are left for the tearful smile and quiet breathing.
 ```
 
 Compression rule: for 20-24s, reduce to 4 stages. For 10-15s, do not force this full pattern; use a shorter micro-expression timeline instead.
@@ -1510,11 +1510,11 @@ Use this pattern when a long head or face close-up must carry the emotion. It is
 Template:
 
 ```text
-0-2s：人物保持平静的表情，眼神轻轻低垂，嘴唇自然放松。
-2-4s：情绪开始轻微变化，嘴唇慢慢轻轻抿住，嘴角开始一点点下压，眼神变得失落。
-4-6s：难过逐渐明显但仍然克制，眉头轻轻皱起，嘴唇保持轻抿，眼神带着委屈和隐忍，眼眶微微湿润。
-6-8s：人物稳定在隐忍难过的表情中，像在努力忍住眼泪。脸颊出现一两滴细小自然的泪滴或泪痕，但没有大哭，没有抽泣，情绪安静克制。
-全过程表情自然过渡，微表情细腻，没有突然变化，没有夸张哭泣。
+0-2s: the character keeps a calm expression, eyes gently lowered, lips naturally relaxed.
+2-4s: the emotion begins to shift slightly; the lips slowly press together, the corners of the mouth start to drop little by little, and the eyes turn disappointed.
+4-6s: the sadness becomes gradually clearer but stays restrained; the brows knit slightly, the lips stay lightly pressed, the eyes carry hurt and forbearance, and the eyes are slightly moist.
+6-8s: the character settles into a forbearing, sad expression, as if trying hard to hold back tears. One or two small, natural tears or tear tracks appear on the cheek, but there is no loud crying and no sobbing; the emotion is quiet and restrained.
+Throughout, the expression transitions naturally, the micro-expressions are delicate, with no sudden changes and no exaggerated crying.
 ```
 
 Adapt the emotion words to the scene:
@@ -1533,12 +1533,12 @@ Use this when the entire scene is an ultra-close face performance and the user w
 Core setup:
 
 ```text
-电影级超近面部特写，固定镜头或极慢 Push in，柔和自然窗光或烛光在脸上投下淡淡阴影。人物服装与发丝保持简洁真实。前半段尽量无肢体动作，所有表演凝聚在眼神、瞳孔、下眼睑、嘴角、双唇、泪水和呼吸里。全段无台词。
+Cinematic extreme facial close-up, fixed camera or extremely slow Push in; soft natural window light or candlelight casts faint shadows on the face. The character's costume and hair stay simple and real. In the first half there is as little body movement as possible; all of the performance is concentrated in the gaze, pupils, lower eyelids, corners of the mouth, lips, tears and breathing. No dialogue throughout.
 ```
 
 General rules:
 
-- The camera may represent another person if the scene is subjective, e.g. `镜头即她的心上人，她像正在与心上人面对面交流一样看向镜头`.
+- The camera may represent another person if the scene is subjective, e.g. `the camera is her beloved; she looks into the lens as if talking face to face with her beloved`.
 - Keep camera stable: fixed ECU/CU, no shake, no complex blocking.
 - Use a clear emotional waveform, not a flat mood: recognition -> reaction -> concealment -> leak -> recovery or collapse.
 - For beauty/identity-heavy close-ups, define hair, makeup, clothing, accessories, light, and face stability, but avoid turning it into a fashion poster.
@@ -1552,19 +1552,19 @@ Use for ancient costume tragedy, betrayal, lost love, fate, grief after realizat
 Emotional waveform:
 
 ```text
-0-1.5s：失焦的双眼骤然聚拢，瞳孔微微扩散，下眼睑轻轻颤动，表现纯粹震惊与不敢相信。
-1.5-2.5s：震惊凝固成冷意，嘴角一侧挑起极淡的、近乎嘲讽的冷笑，笑意不到眼底；目光下垂又抬起，带自嘲与疲惫的了然。
-2.5-4s：冷笑渐渐加深成安静而微颤的微笑，像努力维持最后体面；眼眶泛红，泪水在下睫毛处聚满却不落。
-4-6s：微笑彻底瓦解，双唇紧抿后开始轻颤；眼神彻底失焦，泪水终于大颗滚落，垂下眼帘，下巴微微抖动，无声哽咽。
-6-7s：抽息余韵未散，缓缓低头，下巴轻收，胸腔里逸出极轻的叹息，肩膀微微塌下，像卸下最后的硬撑。
-7-8s：深吸一口气，重新抬头，双唇奋力弯起一抹颤巍巍的温柔微笑；泪痕未干，眼底强撑出清透释然。
-8-9s：抬手用指背小心擦泪，手触碰泪水瞬间，压抑的抽泣反扑，肩膀不受控抽动，微笑在泪水里失真，新的泪水顺着指缝滑落。
+0-1.5s: the unfocused eyes suddenly snap into focus, the pupils dilate slightly, the lower eyelids tremble slightly, showing pure shock and disbelief.
+1.5-2.5s: the shock freezes into coldness; one corner of the mouth lifts into a very faint, almost mocking cold smile that does not reach the eyes; the gaze drops and lifts again, with a self-mocking, weary understanding.
+2.5-4s: the cold smile gradually deepens into a quiet, slightly trembling smile, as if struggling to keep the last of her dignity; her eyes redden and tears fill the lower lashes but do not fall.
+4-6s: the smile completely collapses; the lips press tight and then begin to tremble; the gaze completely loses focus, tears finally roll down in large drops, she lowers her eyelids, her chin quivers slightly, a silent choke.
+6-7s: the aftermath of the sob has not faded; she slowly lowers her head, chin tucking slightly, an extremely light sigh escapes her chest, her shoulders sag slightly, as if dropping the last of her forced composure.
+7-8s: she takes a deep breath and lifts her head again, her lips straining to curve into a trembling, tender smile; the tear tracks are not yet dry, and her eyes force out a clear sense of release.
+8-9s: she raises a hand and carefully wipes the tears with the back of her fingers; the moment her hand touches the tears, the suppressed sobbing surges back, her shoulders jerk uncontrollably, the smile distorts in the tears, and new tears slide down between her fingers.
 ```
 
 Use only when the prompt has enough time, usually 8-10 seconds. For shorter clips, compress to 4 beats:
 
 ```text
-震惊聚焦 -> 冷笑自嘲 -> 微笑瓦解落泪 -> 强撑释然又被抽泣反扑。
+Shock snapping into focus -> cold self-mocking smile -> smile collapsing into tears -> forced release overwhelmed again by sobbing.
 ```
 
 Avoid:
@@ -1582,16 +1582,16 @@ Use when a character sees the person they secretly love, especially in ancient c
 Core setup:
 
 ```text
-写实电影摄影质感，柔和午后自然窗光，固定机位，超近面部特写，镜头完全静止。角色为古代大户人家的闺中小姐，发型、发饰、妆容、服装精致但真实。全程无台词，无第二人。镜头即女子的心上人，她的眼神、微表情和情感变化都像正在与心上人面对面交流。
+Realistic cinematic photographic texture, soft natural afternoon window light, fixed camera position, extreme facial close-up, camera completely still. The character is a young lady secluded in her chambers in a wealthy ancient household; her hairstyle, hair ornaments, makeup and costume are refined but real. No dialogue and no second person throughout. The camera is the woman's beloved; her gaze, micro-expressions and emotional changes all look as if she is talking face to face with her beloved.
 ```
 
 Emotional waveform:
 
 ```text
-0-3s：她猛地停住，呼吸骤然一屏，眼眸因突然看见心上人而微微圆睁，瞳孔轻轻扩散；认出眼前人后，眼眸瞬间柔弯，压抑不住的欢喜从眼底暖暖漾开。
-3-5s：羞意漫上心头，两颊泛起淡淡霞色。她慌忙垂下眼帘，睫毛乱颤，却又忍不住抬眼看向镜头；嘴角不受控制地上翘，又拼命往下压，最终凝成羞怯、甜中带怯的浅笑，下巴微微内收。
-5-8s：笑意忽然在唇边僵住，眼神惊慌地从镜头上弹开，左右飘忽，不敢再看。她将脸偏向一侧，耳根与脖颈因极度害羞泛红，嘴唇紧抿，喉间极轻滚动，头微微低垂，只剩乱颤睫毛与微促鼻息泄露慌乱。
-8-10s：克制许久后，她终于鼓起勇气怯怯抬眼，绵长温柔地直视镜头，像要把心上人的样子印进心里。睫毛狂颤，鼻翼微翕，无声深吸又缓缓呼出；双唇放松，隐秘甜蜜与忐忑期待在一抹恍惚动人的微笑中晕开。
+0-3s: she stops abruptly, her breath catching; her eyes widen slightly at the sudden sight of her beloved and her pupils dilate gently; once she recognizes the person before her, her eyes instantly curve softly and an irrepressible joy spreads warmly from deep within them.
+3-5s: shyness rises in her, a faint rosy flush spreading across her cheeks. She hurriedly lowers her eyelids, lashes fluttering, yet cannot help looking up at the lens again; the corners of her mouth curl up uncontrollably and she tries hard to press them down, finally settling into a shy, sweet-but-timid small smile, her chin tucked in slightly.
+5-8s: the smile suddenly freezes on her lips; her gaze darts away from the lens in panic, drifting left and right, not daring to look again. She turns her face to one side, the roots of her ears and her neck flushing from extreme shyness, lips pressed tight, her throat moving very slightly, her head lowered a little; only her fluttering lashes and slightly quickened breath betray her flusterment.
+8-10s: after holding back for a long time, she finally summons the courage to look up timidly, gazing straight into the lens long and tenderly, as if to imprint her beloved's face on her heart. Her lashes flutter wildly, her nostrils flare slightly, she takes a silent deep breath and slowly lets it out; her lips relax, and secret sweetness and nervous anticipation bloom in a dazed, captivating smile.
 ```
 
 Use this arc carefully:
@@ -1603,38 +1603,38 @@ Use this arc carefully:
 
 #### Coquettish Soft Refusal Arc
 
-Use for safe, non-explicit intimacy, playful sulking, shy protest, or a character saying something like `我不要` while the real emotion is closer to softness, trust, affection, and tiny willfulness. It must not read as real fear, coercion, or serious rejection.
+Use for safe, non-explicit intimacy, playful sulking, shy protest, or a character saying something like `I don't want to` while the real emotion is closer to softness, trust, affection, and tiny willfulness. It must not read as real fear, coercion, or serious rejection.
 
 Core setup:
 
 ```text
-固定 ECU/CU 或极轻微 Push in，人物正对镜头或面对近处对方，表演强度控制在三分；没有夸张撒娇动作，没有性感化挑逗，重点是眼神、嘴角、呼吸、手指小动作和台词气声。
+Fixed ECU/CU or an extremely slight Push in; the character faces the lens or the person close by, performance intensity kept at about thirty percent; no exaggerated cutesy gestures, no sexualized teasing; the focus is on the gaze, corners of the mouth, breathing, small finger movements and the breathy voice of the line.
 ```
 
 Emotional logic:
 
 ```text
-整体不是真正的反感拒绝，而是带着亲近关系中的小任性、软萌娇憨和被宠爱的安全感。台词可以是“我不要”，但眼神、笑意和身体并没有真正推远对方。
+Overall this is not real dislike or refusal, but the small willfulness, soft endearing silliness and safe feeling of being doted on within a close relationship. The line can be "I don't want to," but the gaze, smile and body do not actually push the other person away.
 ```
 
 Emotional waveform:
 
 ```text
-0-1s：人物先看向镜头/对方，手时轻时重，指尖带着犹豫又亲近的小动作；脑袋微微偏向一侧，眼神带点软乎乎的不情愿，嘴角轻轻抿出一点别扭弧度。
-1-2s：眼尾微微弯起，眼底藏着顽皮和被纵容的安全感，嘴唇轻轻开合，用很轻、很软、带鼻音的气声说：“我不要。”语气更像撒娇式推拒，而不是生硬拒绝。
-2-4s：说完后视线轻轻躲开半秒又偷偷回到对方身上，嘴角忍不住漫上一点浅笑；因不好意思微微垂眼，睫毛颤动，肩颈放松，身体没有后退。
-4-6s：轻笑被压回唇边，嘴角抿住又泄出一点笑意，眼神变得更柔；最后保持近距离、软软的别扭感，像仍在嘴硬，但心里已经被哄软。
+0-1s: the character first looks at the lens/the other person, her hand alternating light and firm, her fingertips making small hesitant yet affectionate movements; her head tilts slightly to one side, her eyes carry a soft, cuddly reluctance, and the corners of her mouth press into a slightly awkward curve.
+1-2s: the outer corners of her eyes curve slightly, hiding playfulness and the security of being indulged; her lips open and close gently and, in a very light, very soft, nasal breathy voice, she says: "I don't want to." The tone is more a coquettish push-back than a blunt refusal.
+2-4s: after speaking, her gaze slips away for half a second and then sneaks back to the other person, and a faint smile creeps onto her lips despite herself; embarrassed, she lowers her eyes slightly, lashes fluttering, shoulders and neck relaxed, her body not pulling back.
+4-6s: the light laugh is pressed back to her lips; the corners of her mouth press together and then let a little smile leak out, and her gaze softens further; at the end she keeps the close distance and soft awkwardness, as if still stubbornly arguing while already won over inside.
 ```
 
 Compression phrase:
 
 ```text
-她轻轻偏头，眼神软乎乎地躲了一下，嘴角抿出别扭弧度，用很轻的气声说“我不要”；说完又偷偷看回对方，忍不住压出一点浅笑，身体没有后退，情绪是娇嗔式软拒绝而不是真正抗拒。
+She tilts her head slightly, her eyes dodging softly for a moment, the corners of her mouth pressing into an awkward curve, and says "I don't want to" in a very light breathy voice; then she sneaks a look back at the other person and cannot help a faint smile; her body does not pull back, and the emotion is a coquettish soft refusal rather than real resistance.
 ```
 
 Avoid:
 
-- turning `我不要` into fear, panic, disgust, or real refusal unless the story asks for it
+- turning `I don't want to` into fear, panic, disgust, or real refusal unless the story asks for it
 - overt seduction, exposed body emphasis, or sexualized camera language
 - exaggerated pout, cartoon acting, childish baby voice, or idol-drama overacting
 - strong physical pushing, struggling, or coercive blocking
@@ -1646,22 +1646,22 @@ Use when a character has already endured too much and finally collapses inward w
 Core setup:
 
 ```text
-竖屏近景/超近面部特写，固定镜头或极轻微慢推，电影感真实人物表演。人物脸部占画面主体，头上被柔和半透明白纱或浅色衣料轻轻遮挡，服饰有真实褶皱和湿润质感，皮肤带自然油光与细小泪痕，眼眶泛红，睫毛被泪水打湿。下眼睑有明显泪光。整段无夸张动作，无台词，靠眼神、嘴唇、呼吸、眼泪和头部下垂表达情绪耗尽。
+Vertical close shot / extreme facial close-up, fixed camera or an extremely slight slow push, cinematic real-person performance. The character's face fills most of the frame, the head lightly covered by a soft translucent white veil or light-colored fabric; the clothing has real creases and a damp texture, the skin has a natural sheen and small tear tracks, the eyes are red-rimmed, the lashes wet with tears. The lower eyelids show a clear glint of tears. No exaggerated movement and no dialogue throughout; emotional exhaustion is expressed through gaze, lips, breathing, tears and the drooping head.
 ```
 
 Emotional logic:
 
 ```text
-不是嚎啕大哭，而是压抑、无声、心碎、委屈、失望、逐渐失力的哭泣。人物像刚经历了极大的伤害，心理还有一丝硬撑，情绪从无力、深度悲伤、命运感到空洞崩溃。最终不是爆发，而是安静地垮下来。
+This is not wailing but repressed, silent, heartbroken, wronged, disappointed crying that gradually loses strength. The character seems to have just suffered a great hurt, still holding on a little inside; the emotion moves from helplessness and deep sorrow to a sense of fate and a hollow collapse. In the end it is not an outburst but a quiet falling apart.
 ```
 
 Emotional waveform:
 
 ```text
-0-1s：人物微微抬着脸，三分之一侧脸靠近镜头，眼睛湿润发红，眼神空洞又受伤，像在看着某个人。下眼睑含满泪水，嘴唇轻轻抿住，肩颈轻微绷紧，呼吸很轻。
-1-3s：视线慢慢从前方垂落到下方，眼皮变沉，眼神从看向某人变成向内坠落。泪水沿脸颊无声滑落，嘴角轻轻下压，唇部放松，表情从委屈转成失望，像心里最后一点希望正在慢慢熄灭。
-3-5s：她缓缓低头，静默和肩膀失力增加，头部一点点垂下，眼睛不再看镜头。眼神藏到下方，眉头从紧绷变成疲惫，嘴唇轻轻闭合又微微松开，仿佛把哭声吞回去。脸上的泪痕持续变亮，但没有大哭、没有喊叫，只有无声崩溃。
-5-8/9s：头彻底低下，自然和旁边衣料靠近，眼睛几乎看不见。整个人安静下来，情绪不是爆发，而是耗尽后的空白。肩膀轻微下沉，呼吸很浅，最后保持微垂姿态，像已经没有力气再哭。
+0-1s: the character's face is tilted slightly up, a three-quarter profile close to the lens, the eyes moist and red, the gaze empty and hurt, as if looking at someone. The lower eyelids are brimming with tears, the lips lightly pressed, the shoulders and neck slightly tense, the breathing very light.
+1-3s: the gaze slowly falls from the front to below, the eyelids grow heavy, and the gaze shifts from looking at someone to sinking inward. Tears slide silently down the cheeks, the corners of the mouth press down slightly, the lips relax, and the expression turns from hurt to disappointment, as if the last bit of hope inside is slowly going out.
+3-5s: she slowly lowers her head; the stillness and the loss of strength in the shoulders increase, the head droops little by little, and the eyes no longer look at the lens. The gaze hides below, the brows go from tense to weary, the lips close lightly and then part slightly, as if swallowing the crying back. The tear tracks on her face keep getting brighter, but there is no loud crying and no screaming, only a silent collapse.
+5-8/9s: the head is fully lowered, naturally coming close to the fabric beside it, the eyes almost invisible. The whole person goes quiet; the emotion is not an outburst but the blankness after exhaustion. The shoulders sink slightly, the breathing is very shallow, and at the end she holds a slightly bowed posture, as if she no longer has the strength to cry.
 ```
 
 Negative requirements:
@@ -1686,59 +1686,59 @@ Use these as modular facial-performance beats. Select only the beats that fit th
 
 ### Grief, Shock, and Emotional Freeze
 
-- **失焦转呆滞**: 原本有焦点的双眼骤然紧紧撑住，随后瞳孔轻微扩散，视线像停在空处。
-- **眼睑颤动**: 下眼睑轻轻颤动，像身体正在强行承受冲击。
-- **笑容冻结**: 嘴角停在半笑的位置，笑意没有抵达眼底，随后嘴角一点点失去弧度。
-- **目光回避再抬起**: 角色目光向下一垂，随后又抬起，眼中多了一份自嘲、疲惫或恍然。
-- **泪水悬住**: 眼眶开始泛红，泪水在下睫毛处晶莹闪动，聚满却不落下。
-- **泪水滚落**: 蓄满的泪水终于大颗滚落，沿着面颊自然流淌。
-- **嘴部失控**: 微笑彻底瓦解，双唇紧抿，随后开始抑制不住地轻颤。
-- **眼神失焦**: 眼神彻底失焦，空洞地望向前方，仿佛所有光都灭了。
+- **Unfocused to dazed**: eyes that had focus suddenly strain wide, then the pupils dilate slightly and the gaze seems to stop on empty space.
+- **Eyelid tremor**: the lower eyelids tremble slightly, as if the body is forcibly absorbing a blow.
+- **Frozen smile**: the corners of the mouth stop in a half-smile that does not reach the eyes, then gradually lose their curve.
+- **Gaze averted then raised**: the character's gaze drops, then lifts again, now carrying a touch of self-mockery, weariness or sudden understanding.
+- **Tears suspended**: the eyes begin to redden, tears glisten on the lower lashes, brimming but not falling.
+- **Tears rolling down**: the brimming tears finally roll down in large drops, flowing naturally along the cheeks.
+- **Mouth losing control**: the smile completely collapses, the lips press tight, then begin to tremble uncontrollably.
+- **Gaze losing focus**: the gaze completely loses focus, staring emptily ahead, as if all the light has gone out.
 
 ### Numbness, Exhaustion, and Forced Calm
 
-- **瞳孔恐惧涣散**: 瞳孔轻微扩散，视线无法凝聚，像是在回避某种不敢直视的处境。
-- **眼睑高频颤动**: 下眼睑高频颤动，是强行压住情绪的本能反应。
-- **闭眼滞停**: 角色忽然闭上眼，停留一秒，像在把情绪压回身体里。
-- **情绪转平静**: 缓缓吐出一口长气，嘴唇慢慢松开，重心沉下来，眼神从慌乱变成疲惫平静。
-- **轻蔑冷笑**: 嘴角缓慢地、不对称地向一侧挑起，笑意不过眼底，眼神依旧锐利。
-- **扬起下巴斜睨**: 下巴扬起，目光向下斜睨前方，带轻微俯视感。
-- **冷哼鼻息**: 发出一声极轻极冷的鼻息，幅度小但态度明确。
-- **情绪转坚定**: 视线向下垂落，随后聚焦在眼前某一点，睫毛停止颤动，再抬眼时眼神变成一种沉静的炽热。
+- **Pupils scattered in fear**: the pupils dilate slightly and the gaze cannot settle, as if avoiding a situation too frightening to face directly.
+- **Rapid eyelid tremor**: the lower eyelids tremble rapidly, an instinctive reaction to forcibly holding down emotion.
+- **Eyes closed, held**: the character suddenly closes their eyes and holds for a second, as if pressing the emotion back into the body.
+- **Settling into calm**: slowly lets out a long breath, the lips gradually loosen, the weight sinks, and the gaze changes from panic to weary calm.
+- **Contemptuous sneer**: one corner of the mouth slowly and asymmetrically lifts to one side; the smile does not reach the eyes, and the gaze stays sharp.
+- **Chin raised, sidelong glance**: the chin lifts and the gaze slants down at what is ahead, with a slight sense of looking down on it.
+- **Cold scoff**: an extremely light, extremely cold exhale through the nose, small in size but clear in attitude.
+- **Turning resolute**: the gaze drops, then focuses on a point ahead, the lashes stop fluttering, and when the eyes lift again the gaze has become a calm intensity.
 
 ### Surprise, Shyness, and Soft Vulnerability
 
-- **惊讶**: 呼吸骤然一屏，眼睛微微圆睁，瞳孔轻轻扩散。
-- **眼神柔弯**: 眼睛瞬间柔弯，一抹压抑不住的欢喜从眼底深处暖暖漾开。
-- **羞怯含羞**: 忍不住抬起眼，又含蓄地直接望向镜头或对方，嘴角不受控制地上翘。
-- **脸红**: 两颊飞起淡淡霞色。
-- **压笑成浅笑**: 拼命想把笑意往下压，最终却藏成一个羞怯、甜中带怯的浅笑，下巴微微内收。
-- **被发现心事的娇羞**: 眼神偷偷从镜头上弹开，左右飘忽，不敢看对方，颧骨微红，耳根与脖颈因极度害羞泛起潮红。
-- **抿唇咽口水**: 嘴唇紧张抿住，喉间极轻地滚动一下，头微微低垂。
-- **羞怯抬头**: 怯怯地再次抬眼，给出柔软而温热的直视，睫毛轻颤，鼻翼微微翕动。
-- **娇嗔偏头**: 脑袋微微偏向一侧，眼神带点软乎乎的不情愿，嘴角抿出一点别扭弧度。
-- **气声软拒绝**: 嘴唇轻轻开合，用很轻、很软、带鼻音的气声说短句，例如“我不要”，语气像撒娇式推拒，不是真正反感。
-- **躲开又偷看**: 视线轻轻躲开半秒，又偷偷回到对方身上，眼底仍有亲近和安全感。
-- **压住笑意**: 轻笑被压回唇边，嘴角抿住又泄出一点浅笑，身体没有后退。
+- **Surprise**: the breath suddenly catches, the eyes widen slightly, the pupils dilate gently.
+- **Eyes curving softly**: the eyes instantly curve softly, and an irrepressible joy spreads warmly from deep within them.
+- **Shy and bashful**: cannot help lifting the eyes, then looks straight at the lens or the other person with restraint, the corners of the mouth curling up uncontrollably.
+- **Blushing**: a faint rosy flush rises on both cheeks.
+- **Smile pressed into a small smile**: tries hard to press the smile down, but it ends up hidden in a shy, sweet-but-timid small smile, chin tucked in slightly.
+- **Bashfulness at being found out**: the gaze sneaks away from the lens, drifting left and right, not daring to look at the other person; the cheekbones are slightly pink, and the roots of the ears and the neck flush deeply from extreme shyness.
+- **Pressing lips, swallowing**: the lips press together nervously, the throat moves very slightly once, the head lowers a little.
+- **Shyly looking up**: timidly lifts the eyes again, giving a soft, warm direct gaze, lashes fluttering slightly, nostrils flaring a little.
+- **Coquettish head tilt**: the head tilts slightly to one side, the eyes carry a soft, cuddly reluctance, the corners of the mouth press into a slightly awkward curve.
+- **Breathy soft refusal**: the lips open and close gently, saying a short line in a very light, very soft, nasal breathy voice, for example "I don't want to," the tone like a coquettish push-back, not real dislike.
+- **Dodging, then peeking**: the gaze slips away for half a second, then sneaks back to the other person, the eyes still holding closeness and security.
+- **Holding back a smile**: the light laugh is pressed back to the lips, the corners of the mouth press together and then let a faint smile leak out, the body not pulling back.
 
 ### Calculation, Cruelty, and Dark Resolve
 
-- **笑意褪去**: 笑意从脸上一丝丝抽走，上扬嘴角慢慢拉平，眼里的笑意好像被污水淹没。
-- **审视盘算**: 目光聚焦，带着审视与盘算，像在估量对方的利用价值。
-- **眼神变阴厉**: 眼神骤然变得阴厉，瞳孔微微收缩，眉头轻压，眉尾挑起不易察觉的弧度。
-- **嘴角阴冷勾起**: 嘴角不再平坦，而是向一侧缓慢、极细微地勾起，不是笑，而是一种阴冷的了然。
-- **本性毕露**: 整张脸如同面具剥离，露出冷硬骨骼感。
-- **眼神凶狠**: 双眼如鹰隼般半眯，眼白在强光下透着冷光，目光像刀一样直刺过来。
-- **面部绷紧**: 面颊肌肉绷紧，下颌轻咬合，额头青筋隐隐跳动。
-- **阴毒**: 阴毒与恨意从眼底慢慢涌出，眼白泛起淡淡血色，目光像毒蛇亮出尖牙，牢牢锁住对方。
+- **Smile draining away**: the smile is pulled from the face bit by bit, the raised corners of the mouth slowly flatten, and the laughter in the eyes seems drowned in dirty water.
+- **Appraising and calculating**: the gaze focuses with scrutiny and calculation, as if weighing how useful the other person is.
+- **Gaze turning sinister**: the gaze suddenly turns grim and fierce, the pupils contract slightly, the brows press down slightly, and the tail of the brow lifts in a barely noticeable curve.
+- **Cold hook of the mouth**: the corner of the mouth is no longer flat but slowly, very subtly hooks up on one side—not a smile, but a cold understanding.
+- **True nature revealed**: the whole face is like a mask peeling away, revealing a cold, hard bone structure.
+- **Fierce gaze**: the eyes half-narrow like a hawk's, the whites of the eyes glint coldly under the hard light, and the gaze stabs straight in like a knife.
+- **Face tightening**: the cheek muscles tighten, the jaw clenches lightly, and a vein on the forehead faintly pulses.
+- **Venomous**: venom and hatred slowly well up from the depths of the eyes, the whites take on a faint bloodshot tint, and the gaze is like a viper baring its fangs, locked firmly on the other person.
 
 ### Tenderness, Disguise, and Controlled Performance
 
-- **宠溺**: 直视镜头，目光缱绻而专注，像在看极珍视的人；眼中没有防备，嘴角带着一缕极淡、跟随融化的笑意。
-- **笑意抽离**: 眼睛忽然轻轻一凝，眼底深处有什么东西被悄然抽走，瞳孔极其细微地收缩；目光从绵软缓缓变得沉稳、沉黑，笑意仍浮在表面。
-- **伪装剥落**: 眼神向下微微一沉，再抬起时眼中已无半点温度，只剩精光内敛的审视；嘴角笑意缓慢地、一点点地抹平。
-- **阴冷笑起**: 嘴角仅挑起一侧，弧度阴冷而刻薄，像冷刃在唇边绽开；眼脸微微眯起，眼神彻底下沉。
-- **本性暴露**: 微微抬了抬下巴，眼底残存的玩味与轻蔑被无限放大。整张脸全然陌生，画面定格。
+- **Doting**: looks straight into the lens, the gaze tender and focused, as if looking at someone deeply cherished; there is no guard in the eyes, and the corners of the mouth carry a very faint, melting smile.
+- **Smile withdrawing**: the eyes suddenly go still for a moment, something deep within them is quietly drawn away, the pupils contract very subtly; the gaze slowly turns from soft to steady and dark, while the smile still floats on the surface.
+- **Disguise peeling off**: the gaze sinks slightly downward, and when it lifts again there is no warmth left in the eyes, only a sharp, contained scrutiny; the smile at the corners of the mouth is slowly smoothed away, bit by bit.
+- **Cold smile rising**: only one corner of the mouth lifts, the curve cold and cutting, like a cold blade opening at the lips; the eyelids narrow slightly and the gaze sinks completely.
+- **True nature exposed**: the chin lifts slightly, and the lingering amusement and contempt in the eyes are magnified without limit. The whole face is utterly unfamiliar; the image freezes.
 
 ### Timing Guidance
 
@@ -1753,7 +1753,7 @@ Always preserve natural transition: no sudden expression jumps, no exaggerated c
 
 When the user names an abstract emotion, translate it into visible beats. Choose 3-5 beats that fit the character, scene, and duration. Do not use every beat.
 
-### 悲伤 / Grief
+### Sorrow / Grief
 
 - Eyes lose focus before tears appear.
 - Lower eyelids tremble; blinking slows.
@@ -1764,10 +1764,10 @@ When the user names an abstract emotion, translate it into visible beats. Choose
 Typical phrase:
 
 ```text
-眼神先失焦，随后下眼睑细微颤动；嘴唇慢慢抿住，呼吸变浅，泪水悬在下睫毛处却迟迟不落。
+The gaze first loses focus, then the lower eyelids tremble subtly; the lips slowly press together, the breathing becomes shallow, and the tears hang on the lower lashes without falling for a long time.
 ```
 
-### 震惊 / Shock
+### Astonishment / Shock
 
 - Breath stops for a beat.
 - Eyes widen slightly, then freeze.
@@ -1778,10 +1778,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她的呼吸骤然停住，手停在半空，眼睛微微睁大后彻底僵住，瞳孔轻微扩散，像还没有理解这句话。
+Her breath suddenly stops, her hand halts in midair, her eyes widen slightly and then freeze completely, her pupils dilate slightly, as if she has not yet understood what was said.
 ```
 
-### 强忍哭泣 / Suppressed Crying
+### Holding Back Tears / Suppressed Crying
 
 - Gaze drops to avoid being seen.
 - Lips press hard, mouth corners pull down.
@@ -1792,10 +1792,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-他迅速低下头，嘴唇死死抿住，喉结艰难滚动一次，鼻息破碎地颤了一下，却没有发出哭声。
+He quickly lowers his head, his lips pressed hard together, his Adam's apple moves once with difficulty, his breath trembles brokenly through his nose, but he makes no crying sound.
 ```
 
-### 愤怒克制 / Restrained Anger
+### Controlled Anger / Restrained Anger
 
 - Stare becomes still and sharp.
 - Jaw hardens; molars press.
@@ -1806,10 +1806,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-他的目光突然静下来，眨眼变少，下颌线绷紧，鼻翼轻轻扩张，手指无声扣紧杯沿。
+His gaze suddenly goes still, he blinks less, his jawline tightens, his nostrils flare slightly, and his fingers silently tighten on the rim of the cup.
 ```
 
-### 悔恨 / Regret
+### Remorse / Regret
 
 - Eyes avoid the other person's face.
 - Brow folds inward, not upward.
@@ -1820,10 +1820,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-他看向对方又迅速移开视线，眉心向内收紧，嘴唇张开却说不出话，伸出的手停在半空。
+He looks at the other person and then quickly looks away, his brows draw inward, his lips part but he cannot speak, and his outstretched hand stops in midair.
 ```
 
-### 愧疚 / Guilt
+### Remorse and Shame / Guilt
 
 - Eyes flick down and sideways.
 - Blink becomes slow and heavy.
@@ -1834,10 +1834,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她的视线向下躲开，眨眼变慢，嘴角不对称地绷住，肩膀轻轻缩回，像不敢承受对方的目光。
+Her gaze drops away, her blinking slows, the corners of her mouth tighten asymmetrically, and her shoulders draw back slightly, as if she cannot bear the other person's gaze.
 ```
 
-### 羞耻 / Shame
+### Humiliation / Shame
 
 - Head lowers more than gaze.
 - Ears, neck, or cheeks redden if visually appropriate.
@@ -1848,10 +1848,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她低下头，眼睛不敢停在对方脸上，耳根和脖颈慢慢泛红，嘴唇收紧成很小的线。
+She lowers her head, her eyes not daring to rest on the other person's face; the roots of her ears and her neck slowly flush, and her lips tighten into a very thin line.
 ```
 
-### 羞怯 / Shyness
+### Timidity / Shyness
 
 - Gaze lifts briefly, then escapes.
 - Lips press, then a tiny smile leaks out.
@@ -1862,13 +1862,13 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她怯怯抬眼看了一瞬又移开，睫毛轻颤，嘴角压不住地漏出一点笑意，手指无意识捏住袖口。
+She timidly looks up for an instant and then away, lashes fluttering slightly; a little smile leaks from the corners of her mouth despite herself, and her fingers unconsciously pinch her cuff.
 ```
 
-### 娇嗔软拒绝 / Coquettish Soft Refusal
+### Coquettish Soft Refusal
 
 - Emotional intensity stays low, around three out of ten.
-- The spoken refusal is soft and brief, often a breathy line such as `我不要`.
+- The spoken refusal is soft and brief, often a breathy line such as `I don't want to`.
 - Eyes and mouth contradict the literal words: gaze dodges but returns, smile is hidden but leaks out.
 - The body does not truly retreat; hands, shoulders, and distance remain relaxed or intimate.
 - The tone is safe, trusting, and playful, not fear, coercion, disgust, or explicit seduction.
@@ -1876,10 +1876,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她轻轻偏头，嘴角抿出一点别扭弧度，用带鼻音的气声小声说“我不要”；视线躲开半秒又偷偷看回去，眼底仍是软的，身体没有后退，像嘴上拒绝、心里已经被哄软。
+She tilts her head slightly, the corners of her mouth pressing into an awkward curve, and in a nasal breathy voice says quietly "I don't want to"; her gaze slips away for half a second and then sneaks back, her eyes still soft, her body not pulling back—refusing in words while already won over inside.
 ```
 
-### 爱意克制 / Restrained Love
+### Held-back Love / Restrained Love
 
 - Eyes soften before the mouth moves.
 - Gaze lingers half a beat too long.
@@ -1890,10 +1890,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-他的眼神先软下来，目光在她脸上多停了半秒，嘴角几乎要抬起又被压住，伸出的手停在距离她很近的位置。
+His gaze softens first, lingering on her face half a second longer; the corners of his mouth almost lift but are held down, and his outstretched hand stops very close to her.
 ```
 
-### 嫉妒 / Jealousy
+### Envy / Jealousy
 
 - Gaze fixes on the rival/object first, not the loved person.
 - Mouth corners tighten.
@@ -1904,10 +1904,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她先看向那只搭在对方手臂上的手，嘴角轻轻收紧，随后才抬眼看他，笑意很薄，眼神却变得锋利。
+She first looks at the hand resting on the other person's arm, the corners of her mouth tightening slightly, and only then looks up at him; her smile is thin, but her gaze turns sharp.
 ```
 
-### 失望 / Disappointment
+### Letdown / Disappointment
 
 - Gaze lowers slowly, not suddenly.
 - Tiny exhale through nose.
@@ -1918,10 +1918,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她的目光慢慢垂下，鼻息很轻地泄出一口气，嘴角疲惫地落下，眼神不再追问。
+Her gaze slowly lowers, a very light breath escapes through her nose, the corners of her mouth fall wearily, and her eyes stop asking.
 ```
 
-### 释然 / Relief or Release
+### Release / Relief or Release
 
 - Long exhale.
 - Jaw and brow release.
@@ -1932,10 +1932,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-他缓慢吐出一口长气，下颌和眉心终于松开，眼眶仍湿，却不再紧绷，肩膀轻轻落下。
+He slowly lets out a long breath; his jaw and brows finally loosen; his eyes are still wet but no longer tense, and his shoulders drop gently.
 ```
 
-### 决绝 / Resolve
+### Determination / Resolve
 
 - Breath stops, then steadies.
 - Eyes lock on a target.
@@ -1946,10 +1946,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她先屏住呼吸，随后眼神锁定前方，下巴轻轻抬起，眨眼停止一拍，手上的动作终于落定。
+She first holds her breath, then her gaze locks on what is ahead, her chin lifts slightly, her blinking stops for a beat, and the action in her hands finally settles.
 ```
 
-### 麻木 / Numbness
+### Emotional Numbness / Numbness
 
 - Face becomes quiet, almost too still.
 - Eyes stay open but unfocused.
@@ -1960,10 +1960,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-他的脸安静得近乎空白，眼睛睁着却没有焦点，嘴唇松开，所有反应都慢了半拍。
+His face is quiet almost to the point of blankness, his eyes open but unfocused, his lips loose, every reaction half a beat slow.
 ```
 
-### 恐惧 / Fear
+### Dread / Fear
 
 - Listening precedes looking.
 - Pupils dilate; eyes widen but avoid full scream expression.
@@ -1974,10 +1974,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她先停住侧耳听，随后眼睛轻轻睁大，瞳孔扩散，嘴唇微微分开，手指无声抓紧衣角。
+She first stops and turns her ear to listen, then her eyes widen slightly, her pupils dilate, her lips part slightly, and her fingers silently clutch the hem of her clothes.
 ```
 
-### 复仇 / Revenge Resolve
+### Vengeance / Revenge Resolve
 
 - Expression becomes calm, not wild.
 - Tears or pain recede behind still eyes.
@@ -1988,10 +1988,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她眼底的泪意慢慢退到更深处，嘴角拉平，目光重新聚焦，身体一点点站直，脸上只剩冷静的决意。
+The tears in her eyes slowly retreat deeper, the corners of her mouth flatten, her gaze refocuses, her body straightens bit by bit, and only cold resolve remains on her face.
 ```
 
-### 阴冷 / Cold Cruelty
+### Icy Menace / Cold Cruelty
 
 - Smile stays on mouth only, not eyes.
 - Eyes narrow slightly.
@@ -2002,10 +2002,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-他的嘴角只向一侧极轻地挑起，笑意不到眼底，眼睛微微眯起，下巴抬了一点，声音反而更轻。
+Only one corner of his mouth lifts, extremely slightly, the smile not reaching his eyes; his eyes narrow slightly, his chin lifts a little, and his voice becomes even softer.
 ```
 
-### 喜悦克制 / Restrained Joy
+### Contained Joy / Restrained Joy
 
 - Eyes brighten first.
 - Lips press to hide smile.
@@ -2016,10 +2016,10 @@ Typical phrase:
 Typical phrase:
 
 ```text
-她的眼睛先亮了一下，随后立刻抿住嘴，笑意还是从一侧嘴角漏出来，身体不自觉向前倾了半寸。
+Her eyes light up first, then she immediately presses her lips together, but the smile still leaks out from one corner of her mouth, and her body unconsciously leans forward half an inch.
 ```
 
-### 尴尬 / Awkwardness
+### Embarrassment / Awkwardness
 
 - Smile freezes too long.
 - Eyes flick sideways seeking escape.
@@ -2030,7 +2030,7 @@ Typical phrase:
 Typical phrase:
 
 ```text
-他的职业假笑僵在脸上，眼神飞快向旁边求救，喉结滚动一下，手指徒劳地按灭手机。
+His professional fake smile freezes on his face, his eyes dart sideways for help, his Adam's apple moves once, and his fingers uselessly press the phone screen off.
 ```
 
 ## Global Sound and Lighting Baseline
@@ -2041,11 +2041,11 @@ Sound and light are minimum production controls, but they should stay proportion
 
 1. **Opening/global baseline**: state the motivated main light source, direction or color-temperature relationship, broad contrast, sound bed, and music policy once.
 2. **Shot-local change**: inside a shot, mention only changes caused by movement, screens, doors, weather, silence, impact, distance, or emotional focus.
-3. **Closing continuity block**: for multi-shot dialogue, suspense, action, continuation, or sound/light-led scenes, add a compact `整体声音与光影` block that unifies voice trajectory, sound tail, source direction, skin tone, shadow continuity, and the ending state.
+3. **Closing continuity block**: for multi-shot dialogue, suspense, action, continuation, or sound/light-led scenes, add a compact `Overall sound and light` block that unifies voice trajectory, sound tail, source direction, skin tone, shadow continuity, and the ending state.
 
 ### Minimum Description Standard
 
-- Give every final prompt at least one motivated light sentence. Name a believable source and what it does to the visible subject or space; avoid empty labels such as `电影感光影`.
+- Give every final prompt at least one motivated light sentence. Name a believable source and what it does to the visible subject or space; avoid empty labels such as `cinematic light and shadow`.
 - Use 2-4 concrete sound anchors for most scenes. Even a quiet scene needs a room tone, environmental bed, breath, object sound, or deliberate silence.
 - For dialogue, specify the important voice trajectory, pauses/breath, speaker separation, and lip-sync expectation when the model supports generated speech.
 - For suspense or shock, design sound narrowing, muffling, interruption, or one isolated sound when it serves the turn.
@@ -2056,9 +2056,9 @@ Sound and light are minimum production controls, but they should stay proportion
 Compact ending block:
 
 ```text
-【整体声音与光影】
-声音：无配乐，只保留{2-4个场景声音锚点}；{关键台词/情绪转折}时{声场变化}，结尾保留{呼吸/环境声/物体声}自然衰减。
-光影：{可信主光源}从{方向}照入，{冷暖/明暗关系}保持连续；只在{人物移动/门窗/屏幕/天气变化}时产生合理变化，肤色、眼部高光和阴影方向不跳变。
+【Overall sound and light】
+Sound: no music, keeping only {2-4 scene sound anchors}; at {key line/emotional turn} {the sound field changes}, and at the end {breathing/ambient sound/object sound} decays naturally.
+Light and shadow: {a believable main light source} comes in from {direction}, and {the warm-cool/light-dark relationship} stays continuous; it changes plausibly only when {characters move/doors and windows/screens/weather change}, and skin tone, eye highlights and shadow direction do not jump.
 ```
 
 Do not repeat the full block when the same information is already stated clearly in a short single-shot prompt. Compress it into the opening summary instead.
@@ -2069,7 +2069,7 @@ Sound should shape emotion and structure. Prefer concrete diegetic sound over ge
 
 ### General Sound Rules
 
-- Default to no background music unless the user explicitly asks for music or the scene specifically requires source music. Write `无配乐/不要背景音乐，只保留必要台词人声、环境声、动作音效和物体声`.
+- Default to no background music unless the user explicitly asks for music or the scene specifically requires source music. Write `No music / no background music; keep only the necessary spoken dialogue, ambient sound, action sound effects and object sounds`.
 - Keep sound grounded in the scene: dialogue/voice, breath, footsteps, cloth, props, impacts, machinery, room tone, weather, crowd texture, and environmental sound.
 - Avoid generic score words such as `dramatic music`, `epic BGM`, `sad piano`, or `tense soundtrack` unless music is explicitly requested.
 - Use sound to mark turns: a phone vibration, cup click, door lock, monitor beep, thunder, or engine start can carry the story beat.
@@ -2077,7 +2077,7 @@ Sound should shape emotion and structure. Prefer concrete diegetic sound over ge
 - Use sound reduction when shock happens: environment becomes muffled, then one small sound becomes sharp.
 - Use sound tail for endings: rain continues, engine fades, room tone returns, music box stops, breath remains.
 - Avoid generic phrases like `dramatic music`. If music is needed, describe its role: low cello drone, distant radio song, muted festival TV, single sustained note.
-- If no music fits, explicitly say `无配乐，只保留环境声`.
+- If no music fits, explicitly say `No music, keep only ambient sound`.
 
 ### Subjective Sound-Perspective Arc
 
@@ -2098,7 +2098,7 @@ The sound shift must be motivated by attention or an on-screen event. Avoid arbi
 Compact pattern:
 
 ```text
-前段车站广播、脚步和轮轨声保持正常纵深；角色认出对方后，远景声退后一层但仍存在，呼吸、衣料和脚步触地成为近景；列车遮挡时低频与风压短暂扩大；遮挡结束后车站声场恢复，只留下最后一次身体落地或物体放下的细响。
+In the first part, station announcements, footsteps and wheel-on-rail sounds keep their normal depth; once the character recognizes the other person, the distant sounds step back one layer but remain, and breathing, fabric and footfalls become the close layer; while the train blocks the view, the low frequencies and wind pressure briefly swell; when the blocking ends the station soundscape returns, leaving only the small sound of a last body landing or an object being set down.
 ```
 
 ### Hospital / Medical Corridor
@@ -2116,7 +2116,7 @@ Use for death notices, waiting, diagnosis, restrained grief.
 Typical phrase:
 
 ```text
-环境声只有医院空调低鸣、远处心电监护仪规律滴声、护士鞋底掠过地面的轻响；噩耗落下后，走廊声场瞬间发闷，只剩他的呼吸。
+The only ambient sounds are the low hum of the hospital air conditioning, the regular beeping of a heart monitor in the distance, and the light brush of a nurse's soles across the floor; after the bad news lands, the corridor's soundscape instantly goes muffled, leaving only his breathing.
 ```
 
 ### Rainy Night / Car Interior
@@ -2134,7 +2134,7 @@ Use for breakup, confession, pressure, loneliness.
 Typical phrase:
 
 ```text
-声音以雨刷刮过挡风玻璃的低哑摩擦声为节拍，发动机怠速在车厢里低频震动，台词间隙只剩雨水敲打车顶。
+The sound takes the low, hoarse scrape of the wipers across the windshield as its beat; the idling engine vibrates at low frequency in the cabin, and between lines there is only rain drumming on the roof.
 ```
 
 ### Home / Apartment at Night
@@ -2152,7 +2152,7 @@ Use for phone calls, grief, suspense, isolation.
 Typical phrase:
 
 ```text
-电话里的声音带着轻微电流底噪，房间里只有冰箱低频声和远处电梯运行声；挂断后，空间忽然空下来，只剩她压在掌心里的破碎鼻息。
+The voice on the phone carries a faint electrical hiss; in the room there is only the low hum of the fridge and the distant sound of an elevator running; after hanging up, the space suddenly goes empty, leaving only her broken breaths pressed into her palm.
 ```
 
 ### Kitchen / Domestic Intimacy
@@ -2170,7 +2170,7 @@ Use for awkward intimacy, family tension, quiet breakup.
 Typical phrase:
 
 ```text
-无配乐，只有咖啡机一滴一滴落下、陶瓷杯轻碰台面的细响，以及两人刻意压轻的呼吸。
+No music, only the coffee machine dripping drop by drop, the small clink of a ceramic cup touching the counter, and the two people's deliberately softened breathing.
 ```
 
 ### Old Room / Memory Object
@@ -2187,7 +2187,7 @@ Use for nostalgia, memory, identity, past/present montage.
 Typical phrase:
 
 ```text
-发条干涩地咔哒转动，音乐盒旋律断断续续响起，随后混入极远的儿童笑声；回到现实时旋律卡住，只剩房间空调低鸣。
+The clockwork turns with a dry click, the music box melody starts up haltingly, then mixes with very distant children's laughter; on returning to reality the melody jams, leaving only the low hum of the room's air conditioning.
 ```
 
 ### Train Station / Public Waiting Space
@@ -2204,7 +2204,7 @@ Use for reunion, departure, missed chances.
 Typical phrase:
 
 ```text
-旧行李箱轮子在水泥地上拖出空旷回声，远处广播含糊不清，铁轨风穿过站台，把两人的沉默拉得很长。
+The wheels of an old suitcase drag a hollow echo across the concrete floor, a distant announcement is muffled and unclear, and wind off the tracks sweeps across the platform, stretching the two people's silence out long.
 ```
 
 ### Office / Elevator / Light Comedy
@@ -2222,7 +2222,7 @@ Use for social embarrassment and timing jokes.
 Typical phrase:
 
 ```text
-手机外放的录音在电梯里显得干硬刺耳，话音落下后所有人安静半秒，只剩电梯提示音叮的一声。
+The recording played on the phone's speaker sounds dry and harsh in the elevator; after the words end everyone is silent for half a second, leaving only the elevator's ding.
 ```
 
 ### Palace / Period Drama Interior
@@ -2240,7 +2240,7 @@ Use for ancient costume grief, power, restraint.
 Typical phrase:
 
 ```text
-无配乐，只保留烛火轻响、远处更鼓和衣袖摩擦声；传话结束后，偏殿安静得像被规矩压住。
+No music, keeping only the soft crackle of candle flames, distant night-watch drums and the rustle of sleeves; after the message is delivered, the side hall is as quiet as if pressed down by protocol.
 ```
 
 ### Disaster / Large Crowd
@@ -2258,7 +2258,7 @@ Use for crowd pressure, panic, public crisis.
 Typical phrase:
 
 ```text
-警报和广播交叠，金属船体发出低沉扭曲声，盘子沿倾斜地面滑落摔碎；当母亲看见孩子时，人群声短暂发闷，只剩她的呼吸和舱门警报。
+Alarms and announcements overlap, the metal hull lets out a low twisting groan, and plates slide down the tilted floor and shatter; when the mother sees the child, the crowd noise briefly goes muffled, leaving only her breathing and the hatch alarm.
 ```
 
 ### Product / Car / Premium Object
@@ -2276,7 +2276,7 @@ Use for brand-like texture without becoming an ad.
 Typical phrase:
 
 ```text
-车门关闭声厚重而干净，外界风声被瞬间切断；点火时机械启动声由短促转为稳定低吼，皮革座椅发出细微摩擦。
+The car door closes with a heavy, clean thud and the wind outside is cut off instantly; at ignition the mechanical start-up sound goes from a short burst to a steady low roar, and the leather seats make a faint rubbing sound.
 ```
 
 ### Suspense Without Monster
@@ -2294,7 +2294,7 @@ Use for fear from space and implication.
 Typical phrase:
 
 ```text
-门锁落下后楼道声被切断，屋里只剩冰箱低频声；卧室深处忽然传来极轻的手机震动，嗡的一声后又停住。
+After the lock clicks shut, the stairwell sounds are cut off and only the low hum of the fridge remains in the apartment; from deep in the bedroom a phone suddenly vibrates very faintly, one buzz, then stops.
 ```
 
 ### Wuxia / Action
@@ -2312,7 +2312,7 @@ Use carefully; current action rules need more reference refinement.
 Typical phrase:
 
 ```text
-雨打竹叶声铺满背景，每一次金属碰撞都对应清晰接触点；剑锋出鞘半寸时只有一声干净鞘响，雷声延迟半秒炸开。
+The sound of rain on bamboo leaves fills the background, and every metal clash corresponds to a clear point of contact; when the blade is drawn half an inch from its sheath there is only one clean sheath sound, and the thunder breaks half a second late.
 ```
 
 ## Fight Choreography Prompt Pattern
@@ -2353,7 +2353,7 @@ Use this for heightened 1v2 or 1v3 action in which speed, acrobatics, simultaneo
 
 - Each beat has one readable focal exchange. Every other active fighter must remain in a purposeful visible state such as pursuing, re-angling, blocking an escape lane, recovering balance, retrieving the weapon line, changing height, or re-entering from a blind side.
 - Do not write turn-taking combat. The non-focal attacker should shape the protagonist's next decision without launching a competing limb-heavy contact at the same instant.
-- Use a short `Threat-Handoff Overlap / 威胁交接重叠` when focal pressure transfers: `当前攻防尚未完全结束 -> 下一名攻击者已入画、举械预备、封住退路、投下逼近影子，或以清晰脚步/兵器声施压 -> 两股威胁短暂重叠 -> 主攻关系完成交接`. The next attacker must begin a readable pressure state before the current attacker fully exits or settles.
+- Use a short `Threat-Handoff Overlap / threat handoff overlap` when focal pressure transfers: `the current attack and defense have not fully ended -> the next attacker has already entered frame, raised a weapon in readiness, blocked the escape route, cast an approaching shadow, or applies pressure with clear footsteps/weapon sounds -> the two threats briefly overlap -> the main attacking relationship completes the handoff`. The next attacker must begin a readable pressure state before the current attacker fully exits or settles.
 - Keeping all fighters fully visible is not mandatory. When the frame cannot hold three readable bodies, prove the off-screen attacker's continuing pressure with one precise cue—weapon entering the edge of frame, blocked escape space, moving shadow, approaching footfall, or a forced eyeline—then bring that attacker back on the next causal beat.
 - Avoid long unopposed solo runs unless temporary separation is the intended story beat. Prefer one focal contact plus one preloaded or constraining threat over three simultaneous limb-heavy contacts.
 - Carry the end state of one beat into the next: stance, travel direction, weapon line, height, balance, and distance become the next action's cause. Do not use `attack -> stop -> reset -> attack`.
@@ -2381,7 +2381,7 @@ If instructions compete, preserve hard invariants and phase anchors before exact
 
 ### Fight Prompt Length Budget
 
-The copy-ready fight prompt must follow the duration-based ceiling: under 2000 Chinese characters for 1-15s, under 3200 Chinese characters for 16-24s, and under 4000 Chinese characters for 25-30s. This excludes `剧情诊断`, `电影化改写策略`, and optional reference-image prompts.
+The copy-ready fight prompt must follow the duration-based ceiling (in English about 0.6 words per Chinese character): under 2000 Chinese characters for 1-15s, under 3200 Chinese characters for 16-24s, and under 4000 Chinese characters for 25-30s. This excludes `Story diagnosis`, `Cinematic adaptation strategy`, and optional reference-image prompts.
 
 Recommended budget for a 10-15s fight:
 
@@ -2409,14 +2409,14 @@ Compression rules:
 - State character appearance and wardrobe once; do not repeat them in every shot.
 - State the location and overall light once; each shot only mentions new environmental reactions.
 - Combine attack route, defense, and contact point into one concise beat.
-- Do not repeat `真实重量感`, `手持摄影`, `无血腥`, or continuity constraints under every shot.
+- Do not repeat `real sense of weight`, `handheld camera`, `no gore`, or continuity constraints under every shot.
 - Keep only action details that affect readability, physics, continuity, camera response, or model stability.
 - For 1-15s fights, more than 10 distinct action beats normally signals overload and should be simplified or split. For 16-30s fights, do not apply a universal ten-beat cutoff: first compress named moves into functional chains and test whether each phase preserves fighter state, weapon ownership, spatial direction, contact, and recovery. Split only if those relationships remain unreadable. Choose a natural bridge such as a different angle/shot-size continuation, match-on-action, or a new completed action phase; use the first segment's tail frame only when exact body position is essential.
 
 Compact action beat example:
 
 ```text
--00:03：A右直拳攻向面门；B左脚后撤侧闪，以前臂向外格开拳腕，顺势横移出拳线。
+-00:03: A throws a right straight punch at the face; B steps back with the left foot and slips sideways, parrying the punching wrist outward with the forearm, and moves laterally off the punch line.
 ```
 
 Avoid expanding one beat into separate lines for intention, movement, contact, and result unless the action would otherwise be ambiguous.
@@ -2424,47 +2424,47 @@ Avoid expanding one beat into separate lines for intention, movement, contact, a
 ### Recommended Structure
 
 ```text
-时长：
-画幅比例：
-类型：
+Duration:
+Aspect ratio:
+Genre:
 
-角色参考：
-角色A：...
-角色B：...
+Character references:
+Character A: ...
+Character B: ...
 
-整体风格：
-地点、地面材质、光源、人群位置、摄影风格、动作质感、安全边界。
+Overall style:
+Location, ground material, light source, crowd position, camera style, action texture, safety limits.
 
 SHOT 1（00:00-00:05）
 Subject:
-两名角色的站位、距离、周围环境。
+The two characters' positions, distance and surroundings.
 
 Action:
--00:01：攻击方做出明确攻击，写清攻击路线和目标。
--00:02：防守方捕捉路线，写清闪避方向、重心变化。
--00:03：防守方格挡/拨开/反制，写清接触点。
--00:05：对手调整防线或人群反应，形成下一镜头动机。
+-00:01: the attacker makes a clear attack; state the attack path and target.
+-00:02: the defender reads the path; state the evasion direction and weight shift.
+-00:03: the defender blocks/deflects/counters; state the point of contact.
+-00:05: the opponent adjusts their guard or the crowd reacts, motivating the next shot.
 
 Environment:
-地面、障碍物、人群、灰尘、可破坏物。
+Ground, obstacles, crowd, dust, breakable objects.
 
 Camera:
-机位、焦段、跟随方式、何时震动/上仰/下摇。
+Camera position, focal length, how it follows, when it shakes/tilts up/tilts down.
 
 Style:
-速度、重量、真实感、类型片质感。
+Speed, weight, realism, genre-film texture.
 
 Constraints:
-角色一致性、围观者不冲入、无血腥、无真实伤害。
+Character consistency, onlookers do not rush in, no gore, no real injury.
 ```
 
 ### Useful Action Verbs
 
-- attack: 后手直拳刺出, 横踢扫向肋部, 顶膝攻击中线, 低扫小腿, 肘击压进, 刀线横切, 剑锋斜挑
-- evade: 微后撤, 侧闪, 下潜, 俯身切入, 后仰避开, 横移出拳线, 转髋卸力
-- defend: 横向掌板格开, 前臂格挡, 收肘下压, 双臂护头, 肩膀顶住, 剑鞘横挡, 刀背压住
-- counter: 顺势抢进内线, 反手扣腕, 鞘尾击腕, 肩撞破开, 抱腰锁住, 借前冲力量抛摔
-- impact: 木板炸开灰尘, 脚步在水泥地刹出灰痕, 围观者惊呼后退半步, 金属声短促清脆
+- attack: rear straight punch thrown, roundhouse kick sweeping at the ribs, knee driving into the centerline, low sweep at the shin, elbow strike pressing in, knife slashing across, sword tip flicking up diagonally
+- evade: small step back, side slip, duck, dip and cut in, lean back to avoid, step laterally off the punch line, turn the hips to absorb force
+- defend: horizontal palm parry, forearm block, elbow tucked and pressing down, both arms covering the head, shoulder bracing, sheath held crosswise to block, blade spine pressing down
+- counter: ride the momentum into the inside line, backhand wrist grab, sheath butt strikes the wrist, shoulder charge breaks through, waist lock, throw using the forward momentum
+- impact: wooden board bursts into dust, feet skid leaving dust marks on concrete, onlookers gasp and step back half a step, short crisp metallic sound
 
 ### Camera for Fight Scenes
 
@@ -2488,10 +2488,10 @@ Use action-film camera techniques to create immediacy, but apply them at specifi
 Useful phrase:
 
 ```text
-手持摄影带轻微物理呼吸感，击中瞬间产生短促震动，随后迅速稳住，让动作接触点保持清晰。
+Handheld camera with a slight physical breathing feel; a short shake at the moment of impact, then it quickly steadies, keeping the action's contact points clear.
 ```
 
-**Dutch angle / 荷兰角**
+**Dutch angle**
 
 - Use for imbalance, panic, losing footing, being surrounded, or a power shift.
 - Best in brief shots, not as the default framing.
@@ -2500,10 +2500,10 @@ Useful phrase:
 Useful phrase:
 
 ```text
-镜头短暂转为轻微荷兰角，强化角色失衡和空间压迫；反击成功后构图重新回正。
+The camera briefly goes to a slight Dutch angle, reinforcing the character's imbalance and the spatial pressure; after the successful counter the composition returns to level.
 ```
 
-**Overcranking / 升格慢动作**
+**Overcranking / overcranked slow motion**
 
 - Use for one key moment only: flying kick, weapon crossing near the face, body lifted, glass/wood dust exploding, a decisive dodge.
 - Keep the setup and recovery at normal speed, so the slow motion feels earned.
@@ -2512,10 +2512,10 @@ Useful phrase:
 Useful phrase:
 
 ```text
-关键击中瞬间进入短暂升格慢动作，灰尘和衣料在逆光中展开；落地后立刻回到实时速度，声音猛地恢复。
+At the key moment of impact, it drops into a brief overcranked slow motion, with dust and fabric spreading out in the backlight; after landing it returns to real-time speed immediately and the sound snaps back.
 ```
 
-**Speed ramp / 快慢结合**
+**Speed ramp / mixing fast and slow**
 
 - Good rhythm: real-time rush -> brief slow-motion impact -> snap back to fast recovery.
 - Use for sprint-then-kick, dodge-then-counter, leap-then-land, throw-then-ground impact.
@@ -2524,7 +2524,7 @@ Useful phrase:
 Useful phrase:
 
 ```text
-动作节奏采用快慢结合：助跑与抢进保持实时高速，击中瞬间短暂升格，落地和反应立即切回实时速度。
+The action rhythm mixes fast and slow: the run-up and the charge stay at high real-time speed, the moment of impact is briefly overcranked, and the landing and reaction cut straight back to real-time speed.
 ```
 
 **Special composition**
@@ -2540,32 +2540,32 @@ Choose camera movement from the action's dramatic need. Do not treat the followi
 
 | Camera method | Best use | Writing rule |
 |---|---|---|
-| **Tracking Follow / 跟拍跟镜** | pursuit, retreat, lateral exchange, fighters moving through a room | Follow the dominant movement direction and keep the next obstacle or destination visible; do not let the camera overtake the action without motivation. |
-| **Visible Orbit / 环绕运镜** | face-off, circling footwork, power reversal, showing a 180/360-degree arena | Orbit only while both fighters remain readable and the changing background explains the rotation. Preserve the axis through a visible move; avoid full orbits during limb-heavy grappling. |
-| **Rapid Dolly In / 急速推镜** | a fighter commits, a guard breaks, a decisive strike begins | Push toward the intended contact point immediately before or during one major impact, then stabilize. Do not use repeated push-ins for every hit. |
-| **Rapid Dolly Out / 急速拉镜** | reveal a fall, throw, environmental landing, new threat, or spatial consequence | Pull back to create physical room and show where the body/object lands. Use before or during large movement, not after the result has become unclear. |
-| **Low-Angle Upward Shot / 低角度仰拍** | forward drive, dominant stance, lift, leap, weapon rise | Keep feet or the force-generating body line visible; use briefly to magnify force without hiding contact or turning the move into a pose. |
-| **Overhead / High-Angle Geography / 高空俯拍** | group fight geography, encirclement, escape path, bodies changing formation | Use as an orientation beat, not the main impact view. Show lanes, spacing, exits, and who is surrounded. |
-| **Slow-Motion Tracking / 慢动作跟镜** | airborne movement, decisive dodge, weapon crossing, debris burst | Reserve for one peak beat. Track the complete motion path, then return to real time for landing, recoil, and recovery. |
-| **Whip Pan / 摇镜横移** | sudden attack from the side, opponent crossing frame, thrown object, fast defensive turn | Pan along the real action direction. End on a readable subject or landing point; do not use as random blur between unrelated actions. |
-| **Whip-Pan Flash Cut / 甩镜闪切** | hide a cut at the instant of a strike, accelerate a direction change, join two matching motions | Cut inside the motion blur while preserving direction, speed, body pose, weapon hand, and screen position. Use once at a major acceleration beat. |
-| **Micro-Montage Inserts / 特写切镜** | fists, feet, grip, eyes, weapon edge, impact preparation | Use 2-3 very short inserts only when they clarify cause and effect. Return to a wider readable shot before the main body action. |
-| **Ped Up/Down or Crane Rise/Fall / 升降运镜** | stair pursuit, jump/drop, stand-up recovery, changing vertical advantage | Move vertically with the action and reveal the new level or destination. Do not substitute a tilt when the camera itself must change height. |
-| **Foreground Occlusion Wipe / 穿墙过物穿梭** | move between adjacent fight zones, disguise a cut, reveal a new attacker or room | Let a pillar, wall edge, vehicle, hanging cloth, or foreground body fully wipe the frame; emerge with matching movement direction and preserved spatial logic. |
-| **Shot/Reverse Shot / 反打镜头** | clarify attack-defense alternation, reaction, feint, stare-down | Keep eyelines and screen sides stable. Change horizontal angle by at least 30 degrees within the same scene and avoid adjacent near-identical shot sizes. |
-| **Rotating Pan/Orbit / 旋转摇镜** | circling duel, clinch rotation, chained attacks that revolve around one center | Let fighter rotation motivate the camera rotation. Keep a stable visual anchor in the environment so the viewer does not lose orientation. |
-| **Impact Hold / 定格定镜** | one decisive non-graphic hit, block, collision, or near-miss | Use an ultra-brief impact hold, near-freeze, or speed-ramp plateau rather than a long literal freeze. Preserve recoil, sound, and immediate recovery so the strike retains physical continuity. |
+| **Tracking Follow / follow shot** | pursuit, retreat, lateral exchange, fighters moving through a room | Follow the dominant movement direction and keep the next obstacle or destination visible; do not let the camera overtake the action without motivation. |
+| **Visible Orbit / orbiting camera** | face-off, circling footwork, power reversal, showing a 180/360-degree arena | Orbit only while both fighters remain readable and the changing background explains the rotation. Preserve the axis through a visible move; avoid full orbits during limb-heavy grappling. |
+| **Rapid Dolly In / rapid push-in** | a fighter commits, a guard breaks, a decisive strike begins | Push toward the intended contact point immediately before or during one major impact, then stabilize. Do not use repeated push-ins for every hit. |
+| **Rapid Dolly Out / rapid pull-back** | reveal a fall, throw, environmental landing, new threat, or spatial consequence | Pull back to create physical room and show where the body/object lands. Use before or during large movement, not after the result has become unclear. |
+| **Low-Angle Upward Shot / low-angle upshot** | forward drive, dominant stance, lift, leap, weapon rise | Keep feet or the force-generating body line visible; use briefly to magnify force without hiding contact or turning the move into a pose. |
+| **Overhead / High-Angle Geography / high overhead shot** | group fight geography, encirclement, escape path, bodies changing formation | Use as an orientation beat, not the main impact view. Show lanes, spacing, exits, and who is surrounded. |
+| **Slow-Motion Tracking / slow-motion follow** | airborne movement, decisive dodge, weapon crossing, debris burst | Reserve for one peak beat. Track the complete motion path, then return to real time for landing, recoil, and recovery. |
+| **Whip Pan / panning sweep** | sudden attack from the side, opponent crossing frame, thrown object, fast defensive turn | Pan along the real action direction. End on a readable subject or landing point; do not use as random blur between unrelated actions. |
+| **Whip-Pan Flash Cut / whip flash cut** | hide a cut at the instant of a strike, accelerate a direction change, join two matching motions | Cut inside the motion blur while preserving direction, speed, body pose, weapon hand, and screen position. Use once at a major acceleration beat. |
+| **Micro-Montage Inserts / close-up inserts** | fists, feet, grip, eyes, weapon edge, impact preparation | Use 2-3 very short inserts only when they clarify cause and effect. Return to a wider readable shot before the main body action. |
+| **Ped Up/Down or Crane Rise/Fall / vertical camera move** | stair pursuit, jump/drop, stand-up recovery, changing vertical advantage | Move vertically with the action and reveal the new level or destination. Do not substitute a tilt when the camera itself must change height. |
+| **Foreground Occlusion Wipe / passing through walls and objects** | move between adjacent fight zones, disguise a cut, reveal a new attacker or room | Let a pillar, wall edge, vehicle, hanging cloth, or foreground body fully wipe the frame; emerge with matching movement direction and preserved spatial logic. |
+| **Shot/Reverse Shot / reverse shots** | clarify attack-defense alternation, reaction, feint, stare-down | Keep eyelines and screen sides stable. Change horizontal angle by at least 30 degrees within the same scene and avoid adjacent near-identical shot sizes. |
+| **Rotating Pan/Orbit / rotating pan** | circling duel, clinch rotation, chained attacks that revolve around one center | Let fighter rotation motivate the camera rotation. Keep a stable visual anchor in the environment so the viewer does not lose orientation. |
+| **Impact Hold / frozen hold** | one decisive non-graphic hit, block, collision, or near-miss | Use an ultra-brief impact hold, near-freeze, or speed-ramp plateau rather than a long literal freeze. Preserve recoil, sound, and immediate recovery so the strike retains physical continuity. |
 
 #### Selection by Fight Beat
 
 ```text
-空间建立：Overhead/High Angle, Visible Orbit, FLS/LS establishing shot
-追逐与位移：Tracking Follow, Whip Pan, Ped/Crane movement
-攻防可读：Shot/Reverse Shot, Micro-Montage Inserts, medium handheld tracking
-力量升级：Rapid Dolly In, Low-Angle Upward Shot, Rotating Pan/Orbit
-摔投与落点：Rapid Dolly Out, Ped Down, overhead geography
-高潮命中：Slow-Motion Tracking or Impact Hold, choose one dominant emphasis
-隐藏剪辑：Whip-Pan Flash Cut or Foreground Occlusion Wipe, only with matched direction/action
+Establishing space: Overhead/High Angle, Visible Orbit, FLS/LS establishing shot
+Chases and displacement: Tracking Follow, Whip Pan, Ped/Crane movement
+Readable attack and defense: Shot/Reverse Shot, Micro-Montage Inserts, medium handheld tracking
+Escalating force: Rapid Dolly In, Low-Angle Upward Shot, Rotating Pan/Orbit
+Throws and landing points: Rapid Dolly Out, Ped Down, overhead geography
+Climactic hit: Slow-Motion Tracking or Impact Hold, choose one dominant emphasis
+Hidden cut: Whip-Pan Flash Cut or Foreground Occlusion Wipe, only with matched direction/action
 ```
 
 #### Combination Rules
@@ -2581,7 +2581,7 @@ Choose camera movement from the action's dramatic need. Do not treat the followi
 Useful compact phrase:
 
 ```text
-运镜按动作功能分配：FLS跟拍建立追逐方向，攻防转折用反打保持轴线，摔投前Rapid Dolly Out留出落点空间，决定性命中仅使用一次短暂Impact Hold，随后立即恢复实时速度并交代后坐、喘息与环境反馈；不堆叠无动机甩镜、环绕和慢动作。
+Camera movement is assigned by action function: an FLS follow shot establishes the chase direction, reverse shots keep the axis at attack-defense turns, a Rapid Dolly Out before a throw leaves room for the landing point, the decisive hit uses only one brief Impact Hold, then immediately returns to real-time speed and shows the recoil, panting and environmental feedback; do not pile up unmotivated whip pans, orbits and slow motion.
 ```
 
 ### Fight Rhythm Planning
@@ -2589,11 +2589,11 @@ Useful compact phrase:
 A strong 10-15s fight should usually have a rhythm arc:
 
 ```text
-0-3s：建立站位与第一击，实时速度，空间清楚。
-3-7s：连续攻防，手持近身，短促震动，动作接触点明确。
-7-10s：短暂停顿或失衡，荷兰角/呼吸/对视制造节奏变化。
-10-13s：爆发动作，冲刺、腾空、摔投或武器反击。
-13-15s：升格冲击后回到实时，留半秒到一秒余韵。
+0-3s: establish positions and the first strike, real-time speed, clear space.
+3-7s: continuous attack and defense, close handheld, short shakes, clear points of contact.
+7-10s: a brief pause or loss of balance; a Dutch angle/breathing/a stare-down creates a change of rhythm.
+10-13s: explosive action—a sprint, a leap, a throw or a weapon counter.
+13-15s: back to real time after the overcranked impact, leaving half a second to a second of afterglow.
 ```
 
 For 30s split into two 15s prompts:
@@ -2606,20 +2606,20 @@ For 30s split into two 15s prompts:
 Choose outcome-specific constraints. When no fatal result is requested, use:
 
 ```text
-电影特技打斗，非致命，无血腥，无真实伤害；保持角色脸部、发色、服装一致；不要肢体穿模，不要多余手脚，不要武器变形，不要动作方向混乱；围观者只作为背景反应，不冲入打斗。
+Cinematic stunt fight, non-lethal, no gore, no real injury; keep the characters' faces, hair color and costumes consistent; no limbs clipping through bodies, no extra hands or feet, no weapon deformation, no confused action direction; onlookers only react in the background and do not rush into the fight.
 ```
 
 When the user explicitly requires a fatal result, preserve the narrative outcome without graphic injury:
 
 ```text
-电影特技打斗，非血腥；死亡仅通过决定性动作、失去行动能力、倒地状态和幸存者关系表达，不展示开放伤口、肢解、喷溅或伤害猎奇；保持角色身份、武器归属和倒地位置连续。
+Cinematic stunt fight, non-gory; death is expressed only through the decisive action, loss of ability to act, the state of being down, and the survivors' relationships, with no open wounds, dismemberment, spray or injury voyeurism; keep character identities, weapon ownership and where the bodies fall continuous.
 ```
 
 ### Common Failure Fixes
 
 - If the fight becomes chaotic, reduce active actions to 2-3 clear exchanges.
 - If bodies deform, reduce grappling complexity and avoid simultaneous limb-heavy actions.
-- If spatial direction is unclear, anchor the fighters: `A在画面左侧，B在画面右侧`, then maintain screen direction.
+- If spatial direction is unclear, anchor the fighters: `A on the left of the frame, B on the right of the frame`, then maintain screen direction.
 - If impact lacks weight, add stance, momentum transfer, floor reaction, dust, cloth movement, and a short camera shake.
 - If the crowd distracts, describe them as dark silhouettes forming a fixed semicircle.
 
@@ -2683,16 +2683,16 @@ Use diegetic sound only: rain, footsteps splashing, metal impact, cloth friction
 ### Prompt Template
 
 ```text
-基础概括：10-15秒一镜到底港式犯罪动作长镜头，{地点与时代氛围}，两名成年角色近身缠斗。手持摄影连续跟随，全程保持空间连续性和全身动作可读性，无配乐。
+Overview: a 10-15 second one-take Hong Kong-style crime action long shot, {location and period atmosphere}, two adult characters fighting at close quarters. A handheld camera follows continuously, keeping spatial continuity and full-body action readable throughout, no music.
 
-动作链：
-0-2s：{空间锚点}，对手从{方向}抓起{物件}横扫，攻击线指向{头部/上身非致命区域}；主角{俯身/侧闪/后撤}避开，镜头侧向跟进。
-2-5s：主角压低重心切入，{抱腰/肩撞/双腿控制}，借前冲惯性把对手撞向{汽车/墙/卷帘门}，环境产生{金属声/水花/震动}。
-5-8s：两人在{车旁/地面/墙边}翻滚或缠斗，主角短促控制，对手{格挡/桥翻/锁颈/反抱}完成反转，镜头贴近身体但保持肢体关系清楚。
-8-12s：主角通过{手部解锁/转髋/膝撞/反肘}挣脱并反击，雨水、汗水和少量非血腥擦伤痕迹飞散；摄影机随两人旋转半圈或180度可见环绕。
-12-15s：主角完成一个受控终结动作，把对手撞向{可承受表面}，环境明确变形或震动；最后留1-2秒喘息，镜头缓慢推进到雨水覆盖的面部特写。
+Action chain:
+0-2s: {spatial anchor}; the opponent grabs {object} from {direction} and swings it horizontally, the attack line aimed at {the head/upper body, non-lethal areas}; the protagonist {ducks/slips sideways/steps back} to avoid it, and the camera follows from the side.
+2-5s: the protagonist lowers their center of gravity and cuts in, {waist grab/shoulder charge/leg control}, using the forward momentum to drive the opponent into {a car/a wall/a roller shutter}, and the environment produces {a metallic sound/a splash/a vibration}.
+5-8s: the two roll or grapple {beside the car/on the ground/by the wall}; the protagonist gains brief control, and the opponent completes a reversal with {a block/a bridge roll/a neck lock/a counter-clinch}; the camera stays close to the bodies but keeps the limb relationships clear.
+8-12s: the protagonist breaks free and counters with {a hand release/a hip turn/a knee strike/a reverse elbow}; rain, sweat and a few non-gory scrape marks fly; the camera rotates half a turn around the two, or a visible 180-degree orbit.
+12-15s: the protagonist completes one controlled finishing move, driving the opponent into {a surface that can take it}, and the environment clearly deforms or shakes; the last 1-2 seconds are left for panting, the camera slowly pushing in to a rain-covered facial close-up.
 
-约束：成年演员，电影特技打斗，非血腥；真实人体力学，动作链连续，没有摆拍，没有飞天或夸张武术，不遮挡关键接触点，不要肢体穿模，不要过度动态模糊，不要背景音乐和字幕。
+Constraints: adult performers, cinematic stunt fight, non-gory; real human body mechanics, continuous action chain, no posing, no flying or exaggerated martial arts, key contact points not blocked, no limbs clipping through bodies, no excessive motion blur, no background music and no subtitles.
 ```
 
 ### Compression Notes
@@ -2710,7 +2710,7 @@ Use this for messy but readable fights in taverns, inns, warehouses, gambling ro
 - Use objects as temporary obstacles, shields, or impact surfaces, not random decoration.
 - Keep one active action per beat. If a fighter kicks a stool, the stool's path and effect should be clear.
 - Write the cause-and-effect chain: body movement -> object contact -> object reaction -> opponent reaction -> camera reaction.
-- When wind, waves, a moving vehicle/platform or a slippery surface actually changes the action, also use the reverse chain: environment change -> lost support or blocked route -> body adjustment -> new action/result. Establish the forcing direction and available support, and keep loose objects responding consistently. Example: 甲板倾斜，散落木桶滑向低侧；人物随之失衡，扶住栏杆重新站稳，再继续原来的行动。Use only the environment changes needed for the beat; do not add a disaster to an ordinary scene.
+- When wind, waves, a moving vehicle/platform or a slippery surface actually changes the action, also use the reverse chain: environment change -> lost support or blocked route -> body adjustment -> new action/result. Establish the forcing direction and available support, and keep loose objects responding consistently. Example: The deck tilts, and loose wooden barrels slide toward the low side; the character loses balance with it, grabs the railing to steady himself, then continues the original action. Use only the environment changes needed for the beat; do not add a disaster to an ordinary scene.
 - Use short environmental aftermath to sell weight: broken wood settles, liquid spreads, dust hangs in light, bystanders freeze or step back.
 
 ### Body and Object Contact Points
@@ -2730,7 +2730,7 @@ Useful contact points:
 Typical phrase:
 
 ```text
-他右肩压低撞进对手胸口，对手后背重重撞上木柱，柱上的油灯剧烈晃动，桌边酒碗被震得跳起半寸，镜头跟着冲击短促一震。
+He drops his right shoulder and rams into the opponent's chest; the opponent's back slams hard into a wooden pillar, the oil lamp on the pillar swings wildly, the wine bowls at the edge of the table jump half an inch, and the camera gives a short shake with the impact.
 ```
 
 ### Camera Switching for Environmental Fights
@@ -2749,22 +2749,22 @@ Typical phrase:
 ```text
 SHOT X（00:00-00:04）
 Subject:
-A在木桌左侧，B在柜台前，围观者贴墙后退，桌椅形成狭窄通道。
+A is on the left side of the wooden table, B is in front of the counter, onlookers back against the walls, and the tables and chairs form a narrow passage.
 
 Action:
--00:01：A侧身避开B挥来的酒坛，酒坛擦过肩侧砸上木柱。
--00:02：A左手按住桌沿，右脚勾起地上的木凳踢向B膝前，迫使B后撤。
--00:03：B抬臂挡开木凳，碎木和灰尘飞起；A借遮挡抢进半步，用肩膀顶向B胸口。
--00:04：B后背撞上柜台，柜台上的酒碗连串震落，围观者惊呼散开。
+-00:01: A turns sideways to dodge the wine jar B swings, and the jar grazes past his shoulder and smashes into a wooden pillar.
+-00:02: A presses the table edge with his left hand and hooks a wooden stool off the floor with his right foot, kicking it at B's knees and forcing B back.
+-00:03: B raises an arm to knock the stool away, splinters and dust fly; using the cover, A charges in half a step and drives his shoulder into B's chest.
+-00:04: B's back slams into the counter, the wine bowls on the counter fall off one after another, and the onlookers scatter with cries.
 
 Camera:
-手持中景横移跟拍，木凳飞过镜头前方时短促模糊；撞上柜台瞬间镜头轻震，随后停半拍确认结果。
+Handheld medium shot trucking alongside; a brief blur as the stool flies past in front of the lens; the camera shakes lightly at the moment of impact with the counter, then holds half a beat to confirm the result.
 ```
 
 ### Tavern Brawl Negative Constraints
 
 ```text
-不要人群冲入打斗，不要道具随机漂浮，不要桌椅位置跳变，不要动作穿模，不要多余肢体，不要过度动态模糊，不要血腥伤害。
+No crowd rushing into the fight, no props floating randomly, no tables and chairs jumping position, no clipping, no extra limbs, no excessive motion blur, no gory injuries.
 ```
 
 ### Suppression Burst -> Dead Pause -> Finishing Stunt Rhythm
@@ -2773,36 +2773,36 @@ Use this pattern for an intense staged fight where one character overwhelms anot
 
 This pattern is different from exchange-based choreography. It has three dramatic phases:
 
-1. **压制连击 / Suppression burst**: one fighter pins or restricts the other and delivers rapid close-range stunt strikes.
-2. **死寂停顿 / Dead pause**: the aggressor releases, steps back, both breathe, and the space becomes tense.
-3. **终结式特技冲击 / Finishing stunt impact**: the aggressor sprints, jumps, kicks, throws, tackles, or slams the opponent into a controlled breakaway environment.
+1. **Suppression combo / Suppression burst**: one fighter pins or restricts the other and delivers rapid close-range stunt strikes.
+2. **Dead silence pause / Dead pause**: the aggressor releases, steps back, both breathe, and the space becomes tense.
+3. **Finishing stunt impact / Finishing stunt impact**: the aggressor sprints, jumps, kicks, throws, tackles, or slams the opponent into a controlled breakaway environment.
 
 Recommended structure:
 
 ```text
-镜头一（00:00-00:05）
-主体：A在画面左侧，B在画面右侧，B被压制在{家具/墙面/擂台边/车厢座椅}前。
-动作：
-00:00-00:01：A用{手/前臂/衣领抓握/肩膀顶压}限制B的移动。
-00:01-00:04：A连续打出近距离快速电影特技拳击/肘击/膝击；B后仰、防守、承受冲击，身体被环境限制。
-00:04-00:05：连击节奏达到顶点，镜头随每次击打产生短促震动。
-摄影机：中景手持，机位基本固定，每次打击短促剧烈震动，可使用轻微鱼眼暗角制造幽闭压迫。
+Shot 1 (00:00-00:05)
+Subject: A on the left of the frame, B on the right of the frame, B pinned against {furniture/a wall/the ring edge/a train seat}.
+Action:
+00:00-00:01: A restricts B's movement with {hand/forearm/collar grab/shoulder pressure}.
+00:01-00:04: A throws a rapid series of close-range cinematic stunt punches/elbows/knees; B leans back, defends and absorbs the impacts, his body hemmed in by the environment.
+00:04-00:05: the combo's rhythm reaches its peak, and the camera gives a short shake with each strike.
+Camera: handheld medium shot, camera position basically fixed, a short violent shake on each strike; a slight fisheye vignette can be used to create claustrophobic pressure.
 
-镜头二（00:05-00:08）
-主体：A松开B，B靠在即将倒塌的支撑物旁。
-动作：
-00:05-00:06：A后退半步或一步，双臂下垂，急促喘息，眼神仍锁定B。
-00:06-00:08：B失去支撑，靠住{椅背/墙面/栏杆/桌沿}，神情涣散但仍努力站立。
-摄影机：中景轻微拉远，手持微动，节奏从剧烈转为压抑停顿。
+Shot 2 (00:05-00:08)
+Subject: A releases B, and B leans beside a support that is about to collapse.
+Action:
+00:05-00:06: A steps back half a step or a step, arms hanging, breathing hard, eyes still locked on B.
+00:06-00:08: B loses support and leans on {the chair back/the wall/the railing/the table edge}, dazed but still struggling to stand.
+Camera: medium shot pulling back slightly, slight handheld movement, the rhythm shifting from violent to a tense pause.
 
-镜头三（00:08-00:15）
-主体：A从一侧快速冲刺，B在破败环境前摇晃站立。
-动作：
-00:08-00:10：A突然助跑，头发、衣摆、外套随动作扬起。
-00:10-00:12：A腾空跃起或爆发前冲，做出高位特技飞踢/肩撞/膝撞/过肩摔，攻击目标为上胸、肩部、躯干等非致命区域；动作可进入明显慢镜头。
-00:12-00:13：击中瞬间摄影机几乎定格，环境道具爆裂倒塌，木屑、灰尘、碎片在逆光中扬起；B以受控特技动作向后倒飞或摔落。
-00:13-00:15：B落地后昏沉失力但仍存活，A落地停在前景急促喘息，最终画面停在一片狼藉的全景。
-摄影机：全景快速平移跟随助跑；飞踢或撞击瞬间切入动作特写和慢动作；随后镜头下摇或横移跟随倒飞/落地，最终停在环境破坏后的全景。
+Shot 3 (00:08-00:15)
+Subject: A sprints in fast from one side, B stands swaying in front of the wrecked environment.
+Action:
+00:08-00:10: A suddenly takes a run-up, hair, hem and jacket flying with the movement.
+00:10-00:12: A leaps into the air or bursts forward, delivering a high stunt flying kick/shoulder charge/knee strike/over-the-shoulder throw aimed at non-lethal areas such as the upper chest, shoulder or torso; the action can go into clear slow motion.
+00:12-00:13: at the moment of impact the camera almost freezes, the environmental props burst and collapse, splinters, dust and debris rise in the backlight; B flies backward or falls in a controlled stunt move.
+00:13-00:15: B lands dazed and drained but still alive; A lands and stops in the foreground breathing hard, and the final image holds on a wide shot of the wreckage.
+Camera: a wide shot pans quickly to follow the run-up; at the moment of the flying kick or impact it cuts to an action close-up and slow motion; then the camera tilts down or trucks to follow the backward flight/landing, finally resting on a wide shot of the environmental damage.
 ```
 
 Key writing points:
@@ -2817,16 +2817,16 @@ Key writing points:
 
 Useful style phrases:
 
-- `压迫、暴烈、幽闭，冷灰蓝色调，高频打击震动`
-- `爆发前的短暂死寂，窒息般的对峙感`
-- `高冲击电影动作特技，强烈光影反差，高潮后归于残酷死寂`
-- `鱼眼镜头暗角与轻微畸变，手持摄影的物理震动感`
-- `百叶窗强烈侧逆光，光柱中漂浮灰尘颗粒`
+- `oppressive, violent, claustrophobic, cold grey-blue tones, high-frequency strike shakes`
+- `a brief dead silence before the outburst, a suffocating sense of standoff`
+- `high-impact cinematic action stunts, strong light-shadow contrast, falling into brutal dead silence after the climax`
+- `fisheye lens vignette and slight distortion, the physical shake of handheld camera`
+- `strong side backlight through venetian blinds, dust particles floating in the light beams`
 
 Safety constraints for this rhythm:
 
 ```text
-仅表现电影特技打斗，非致命，无血腥、无死亡、无骨折、无颈部折断、无开放伤口、无明确重伤；角色落地为受控特技动作，仍然存活；保持角色脸部、发色、身材、服装一致。
+Only a cinematic stunt fight: non-lethal, no gore, no death, no broken bones, no broken necks, no open wounds, no clear serious injury; characters land in controlled stunt moves and are still alive; keep the characters' faces, hair color, build and costumes consistent.
 ```
 
 ### Epic Crowd Fight / Protector Entrance
@@ -2838,7 +2838,7 @@ This pattern is about action staging, character hierarchy, continuity, and camer
 Core cinematic intent:
 
 ```text
-电影感史诗群战，主角被层层包围，护卫/将军/英雄作为动作锚点强势入场，利用长兵器横扫、飞踢、冲刺、慢动作冲击和高速跟拍打破围困。画面强调人物站位、群体压力、角色连续性、空间层级和强烈冲击感。
+A cinematic epic group battle: the protagonist is surrounded layer upon layer, and a guard/general/hero makes a forceful entrance as the action anchor, breaking the siege with sweeping long-weapon strikes, flying kicks, charges, slow-motion impacts and high-speed follow shots. The image emphasizes character positions, crowd pressure, character continuity, spatial layering and a strong sense of impact.
 ```
 
 Continuity rules:
@@ -2846,34 +2846,34 @@ Continuity rules:
 - Preserve the same visual style across all segments, but let the style follow the user's requested medium: live-action cinematic, realistic period drama, stylized fantasy, 3D animation, etc.
 - State that character faces, costumes, hairstyles, weapons, soldier designs, and location remain consistent with previous segment/reference material.
 - If continuing, do not default to copying the previous tail frame as the next first frame. Choose a bridge: different shot size/angle for continuous danger, match-on-action for unfinished movement, or a new 15s shot group for the next completed action phase.
-- Use material references explicitly when present, e.g. `公主和古代士兵们站位参考素材1`, `上个视频最后一帧参考素材2`.
-- Keep the location name consistent, such as `金銮殿`, `废弃教室`, `地下擂台`, `宫门台阶`, or the user's exact scene label.
+- Use material references explicitly when present, e.g. `positions of the princess and the ancient soldiers per reference material 1`, `last frame of the previous video per reference material 2`.
+- Keep the location name consistent, such as `Golden Throne Hall`, `abandoned classroom`, `underground fight ring`, `palace gate steps`, or the user's exact scene label.
 
 Recommended segment structures:
 
 **1. Encirclement setup, 5-8s**
 
 ```text
-画面一：低角度侧面跟拍核心人物走向权力中心或空间中心，镜头缓慢上移推进到侧脸特写；人物眼神一横，单臂发力甩袖/拔剑/抬手，衣袍或武器在空中划出巨大弧度。动作同步瞬间镜头拉远至全景，核心人物被士兵/敌人近距离团团围住。
-画面二：切到多位敌人面部近景，敌人高举武器准备进攻，齐声怒喝关键台词。禁止背景音乐，仅保留环境音效和人声，禁止字幕。
+Image 1: a low-angle side follow shot of the central character walking toward the center of power or the center of the space; the camera slowly rises and pushes in to a profile close-up; the character's gaze snaps sideways and with one arm they flick a sleeve/draw a sword/raise a hand, the robe or weapon tracing a huge arc in the air. At the instant of the action the camera pulls back to a wide shot, and the central character is tightly surrounded at close range by soldiers/enemies.
+Image 2: cut to close shots of several enemies' faces; the enemies raise their weapons high, ready to attack, and roar the key line in unison. No background music, keep only ambient sound effects and voices, no subtitles.
 ```
 
 **2. Protector entrance and crowd fight, 12-15s**
 
 ```text
-画面一：保护者从高处落下或从人群外高速切入，落在被保护者正前方，挥动长枪/长刀/剑鞘/盾牌横扫重击击倒前排数名敌人；如有台词，语气冰冷狠厉。随后切到对角线构图，左右分别为保护者与被保护者面部特写，表情贴合身份。
-画面二：镜头紧跟保护者继续在人群中打斗，长兵器横扫、短促飞踢、肩撞、转身回击，多段分镜切换，环绕高速跟拍、慢动作、面部特写、高速摄影跟拍交替使用。敌人密集簇拥、层层包围，保护者重击多个敌人，动作一气呵成，画面冲击力强。
+Image 1: the protector drops from above or cuts in at high speed from outside the crowd, landing directly in front of the person being protected, and swings a long spear/long saber/sword sheath/shield in a sweeping heavy blow that knocks down several enemies in the front row; if there is a line, the tone is cold and ruthless. Then cut to a diagonal composition with facial close-ups of the protector and the protected on the left and right, expressions fitting their identities.
+Image 2: the camera stays close on the protector continuing to fight through the crowd—long-weapon sweeps, short flying kicks, shoulder charges, turning counterattacks—with multiple shot changes, alternating high-speed orbiting follow shots, slow motion, facial close-ups and high-speed tracking. Enemies crowd in densely, surrounding layer upon layer; the protector lands heavy blows on many enemies, the action flowing in one go, with strong visual impact.
 ```
 
 **3. Clip bridge continuation, 5-8s**
 
 ```text
-画面一：接续上一段危险状态，但不复刻上一段尾帧；开头换为中远景侧后方角度，保护者与被保护者相互靠近或并肩站立，合力御敌。无台词，仅生成打斗音效和环境音效，不配背景音乐，禁止字幕。
+Image 1: continue from the danger state of the previous segment, but do not copy the previous segment's last frame; open on a medium-long rear-side angle instead, with the protector and the protected moving closer or standing shoulder to shoulder, fighting off the enemy together. No dialogue, only fight sound effects and ambient sound effects, no background music, no subtitles.
 ```
 
 Action design rules:
 
-- For mass fights, do not ask every enemy to perform unique actions. Use `前排数名敌人`, `叛军层层包围`, `敌人密集簇拥`, and keep one hero action as the visual anchor.
+- For mass fights, do not ask every enemy to perform unique actions. Use `several enemies in the front row`, `rebels surrounding layer upon layer`, `enemies crowding in densely`, and keep one hero action as the visual anchor.
 - Hero action can be heightened but should match the requested tone: falling from above, spear sweep, flying kick, shield charge, high-speed tracking, slow motion impact.
 - Maintain readable hierarchy: protected character as emotional center, protector as action anchor, soldiers/enemies as surrounding pressure.
 - Combine fast action with one or two hero close-ups to preserve character emotion and identity.
@@ -2882,13 +2882,13 @@ Action design rules:
 Sound and text constraints:
 
 ```text
-禁止配背景音乐，仅生成打斗音效、环境音效、怒喝声、兵器碰撞声、脚步声、衣袍破风声。禁止画面生成字幕。
+No background music; generate only fight sound effects, ambient sound effects, roars, weapon clashes, footsteps and robes cutting the air. No subtitles in the image.
 ```
 
 Negative constraints:
 
 ```text
-保持角色外貌、服装、发型、武器和敌方造型一致，不要风格漂移，不要字幕水印，不要角色脸部变形，不要服装发型跳变，不要敌人数量失控导致主体丢失，不要武器变形，不要动作穿模。
+Keep the characters' appearance, costumes, hairstyles, weapons and the enemies' look consistent; no style drift, no subtitles or watermarks, no facial deformation, no costume or hairstyle jumps, no runaway enemy count that loses the main subject, no weapon deformation, no clipping.
 ```
 
 ## Dialogue and Offscreen Lines
@@ -2897,19 +2897,19 @@ When dialogue carries the plot turn, write the actual line. Avoid vague placehol
 
 - Phone call: include the caller's key sentence, even if muffled or offscreen.
 - Doctor, police, family notice: include the exact notice line in plain speech.
-- Inner monologue or voiceover: mark it as `内心OS` or `画外音`, and place it on the time axis.
+- Inner monologue or voiceover: mark it as `inner monologue (OS)` or `voiceover`, and place it on the time axis.
 - Keep lines short enough for the shot duration.
 
 Examples:
 
 ```text
-电话中传来压低的男声："I'm sorry... there was a crash. He didn't make it."
-医生摘下口罩，低声说："我们尽力了，但她没能撑过来。"
+A lowered male voice comes through the phone: "I'm sorry... there was a crash. He didn't make it."
+The doctor takes off his mask and says quietly: "We did everything we could, but she didn't make it."
 ```
 
 ### Dialogue Timing Budget
 
-Estimate delivery time before assigning dialogue to a shot. Count Chinese characters without punctuation as a practical approximation.
+Estimate delivery time before assigning dialogue to a shot. For Mandarin lines count Chinese characters without punctuation; for English lines count words.
 
 Suggested Mandarin delivery rates:
 
@@ -2933,19 +2933,19 @@ Add time beyond spoken words:
 Practical formula:
 
 ```text
-镜头所需时长 = 台词口播时间 + 说话前动作/停顿 + 对方反应 + 运镜完成时间
+Required shot duration = spoken line time + pre-line action/pause + the other person's reaction + time to complete the camera move
 ```
 
 Examples:
 
 ```text
-“我们尽力了，但她没能撑过来。”约14个汉字。
-克制、缓慢通知按2.5字/秒估算，纯口播约5.5秒；若镜头只有4秒，应缩短台词或拆分反应，不应强塞。
+"We did everything we could, but she didn't make it." 10 words.
+For a restrained, slow announcement estimated at 2 words/second, pure speech is about 5 seconds; if the shot is only 4 seconds, shorten the line or split off the reaction rather than cramming it in.
 ```
 
 ```text
-“所以你们只是通知我。”约10个汉字。
-自然压抑语速按3字/秒约3.3秒，再留1秒沉默反应，镜头至少约4.3秒。
+"So you're just notifying me." 5 words.
+At a slow, repressed pace of 1.5 words/second it is about 3.3 seconds; leave another 1 second of silent reaction, so the shot needs at least about 4.3 seconds.
 ```
 
 Rules:
@@ -2973,14 +2973,14 @@ Prefer dynamic light over static adjectives. Say what the light does to the face
 
 Select the lightest mode that satisfies the user's workflow.
 
-### 精简模式 / Compact Mode
+### Concise mode / Compact Mode
 
-Trigger examples: `直接给提示词`, `不要分析`, `只要成品`, `精简版`.
+Trigger examples: `just give me the prompt`, `no analysis`, `only the finished result`, `concise version` (users may write these in any language).
 
 Output:
 
 ```text
-【最终视频提示词】
+【Final video prompt】
 ...
 ```
 
@@ -2991,17 +2991,17 @@ Rules:
 - Keep the final prompt compact and copy-ready.
 - Still run all diagnosis, timing, continuity, compression, and safety checks internally.
 
-### 打磨模式 / Workshop Mode
+### Workshop mode / Workshop Mode
 
 Default for ordinary requests and iterative revision.
 
 Output:
 
 ```text
-【剧情诊断】
-【电影化改写策略】
-【建议先生成的参考图】
-【最终视频提示词】
+【Story diagnosis】
+【Cinematic adaptation strategy】
+【Reference images to generate first】
+【Final video prompt】
 ```
 
 Rules:
@@ -3010,32 +3010,32 @@ Rules:
 - Treat the output blocks above as conditional: follow the selected production path and actual asset state in `../SKILL.md`. Direct-video work omits full reference prompts by default; reference-first work delivers only the current required stage and continues when assets/approvals permit.
 - The duration-based character ceiling applies only to the final video prompt.
 
-### 连续短片模式 / Continuous Short-Film Mode
+### Continuous short-film mode / Continuous Short-Film Mode
 
-Use for long-story splits, repeated `继续`, multi-part episodes, or projects requiring stable recurring characters and locations.
+Use for long-story splits, repeated `continue` (in any language), multi-part episodes, or projects requiring stable recurring characters and locations.
 
 Output:
 
 ```text
-【连续性摘要】
-角色档案：
-场景档案：
-上一段结尾剧情状态：
-本段衔接方式：
-本段推进：
+【Continuity summary】
+Character profiles:
+Scene profiles:
+Story state at the end of the previous segment:
+How this segment connects:
+What this segment advances:
 
-【参考资产】
-沿用：
-新增：
-更新状态：
+【Reference assets】
+Reused:
+New:
+Updated state:
 
-【本段最终视频提示词】
+【Final video prompt for this segment】
 ...
 
-【下一段衔接锚点】
-结尾剧情状态：
-可衔接动作/情绪/道具：
-人物/道具状态：
+【Anchors for the next segment】
+Ending story state:
+Actions/emotions/props to connect from:
+Character/prop state:
 ```
 
 Rules:
@@ -3056,25 +3056,25 @@ Do not activate it merely because a video is short. Skip or greatly reduce it fo
 
 | Function | Diagnostic question | Playable screen evidence |
 |---|---|---|
-| **异常事件 / Anomaly** | What is visibly wrong, impossible, misplaced, or unexpectedly changed? | a future-dated parcel, a second key, a familiar voice from an empty room, an impossible name on a screen |
-| **即时目标 / Immediate Goal** | What must the protagonist obtain, prevent, open, reach, prove, hide, or escape right now? | hand reaching for the parcel before someone returns, running toward a closing lift, hiding evidence before a knock |
-| **规则或代价 / Rule or Cost** | What constraint changes behavior, and what is lost if the character fails? | a deadline, one forbidden action, limited attempts, exposure, separation, arrest, loss of trust; it need not be literally deadly |
-| **现实阻力 / Active Obstacle** | Who, what, or which physical condition actively blocks the immediate goal? | security stops entry, a jammed door, a witness approaches, power fails, time expires |
-| **身份或信息反转 / Information Reversal** | What new evidence changes the meaning of what the viewer just saw? | the helper owns the missing phone, the victim sent the warning, the apparent exit is the trap |
-| **未完成答案 / Unresolved Question** | Which specific story question remains open after the visible beat completes? | who sent it, why the voice is hers, what waits behind the door, whether the warning is truthful |
+| **Anomalous event / Anomaly** | What is visibly wrong, impossible, misplaced, or unexpectedly changed? | a future-dated parcel, a second key, a familiar voice from an empty room, an impossible name on a screen |
+| **Immediate goal / Immediate Goal** | What must the protagonist obtain, prevent, open, reach, prove, hide, or escape right now? | hand reaching for the parcel before someone returns, running toward a closing lift, hiding evidence before a knock |
+| **Rule or cost / Rule or Cost** | What constraint changes behavior, and what is lost if the character fails? | a deadline, one forbidden action, limited attempts, exposure, separation, arrest, loss of trust; it need not be literally deadly |
+| **Real-world resistance / Active Obstacle** | Who, what, or which physical condition actively blocks the immediate goal? | security stops entry, a jammed door, a witness approaches, power fails, time expires |
+| **Identity or information reversal / Information Reversal** | What new evidence changes the meaning of what the viewer just saw? | the helper owns the missing phone, the victim sent the warning, the apparent exit is the trap |
+| **Unfinished answer / Unresolved Question** | Which specific story question remains open after the visible beat completes? | who sent it, why the voice is hers, what waits behind the door, whether the warning is truthful |
 
 These are functions, not six compulsory plot points. A 15-30s video often needs only 3-4. Combine compatible functions instead of overloading the scene:
 
 ```text
-异常出现 -> 即时目标与规则/代价建立 -> 阻力升级 -> 信息反转并留下具体未完成问题
+Anomaly appears -> immediate goal and rule/cost established -> resistance escalates -> information reversal that leaves a specific unanswered question
 ```
 
-Do not force a separate `致命规则` when ordinary stakes are stronger or more believable. Use `规则或代价` as the broader category. Do not add an identity reversal merely to create surprise; an object, message, behavior, or changed interpretation can carry the reversal.
+Do not force a separate `deadly rule` when ordinary stakes are stronger or more believable. Use `rule or cost` as the broader category. Do not add an identity reversal merely to create surprise; an object, message, behavior, or changed interpretation can carry the reversal.
 
 ### Responsibility Boundary
 
 - **Complete plot supplied**: diagnose only. Preserve its causality, tone, and ending unless the user asks for a stronger hook or rewrite.
-- **One function is weak or missing**: state the gap in `剧情诊断`; propose one minimal repair in `电影化改写策略`.
+- **One function is weak or missing**: state the gap in `Story diagnosis`; propose one minimal repair in `Cinematic adaptation strategy`.
 - **The repair changes identity, motive, world rules, culprit, relationship, or ending**: use direction-confirmation mode before writing reference images or the final prompt, unless the user explicitly delegates creative control.
 - **The user asks for breakout/strong-hook creation or delegates freely**: add only the smallest number of functions needed to create propulsion, then continue to cinematic translation.
 - **Performance-led scene**: do not import anomaly, countdown, reversal, or cliffhanger unless the supplied story already contains them.
@@ -3086,7 +3086,7 @@ A beat is a change in the viewer's question, the character's tactic, the perceiv
 Useful emotional-information progression:
 
 ```text
-疑问 -> 紧张 -> 短暂希望 -> 更高代价 -> 新问题
+Question -> tension -> brief hope -> higher cost -> new question
 ```
 
 Choose only the changes the selected duration can play. If dialogue, physical action, reaction, and ending residue cannot fit, remove a function or split the story instead of accelerating everything.
@@ -3098,13 +3098,13 @@ Do not print abstract screenplay labels inside the copy-ready prompt. Convert ea
 Bad:
 
 ```text
-这里发生身份反转，结尾留下悬念。
+An identity reversal happens here, and the ending leaves suspense.
 ```
 
 Better:
 
 ```text
-门禁屏幕亮起，女孩的证件照旁显示“已于三年前注销”；她的手停在感应区上方，身后的保安同时抬头。走廊尽头传来她自己的声音：“别回头。”
+The access-control screen lights up, and beside the girl's ID photo it shows "Deregistered three years ago"; her hand stops above the sensor, and the security guard behind her looks up at the same moment. From the end of the corridor comes her own voice: "Don't look back."
 ```
 
 ### Open Answer, Completed Screen Beat
@@ -3112,7 +3112,7 @@ Better:
 Do not confuse a cliffhanger with an unfinished generation. Complete the immediate action, reveal the evidence, then hold the consequence for 1-2 seconds while the larger answer remains open.
 
 ```text
-门被推开一条缝，里面传来她自己的声音；她立刻停手，指节仍压在门沿，门缝冷光落在湿润的眼睛里。声音继续一秒，画面停在她不敢推开也不敢后退的状态。谁在里面仍未回答。
+The door is pushed open a crack and her own voice comes from inside; she stops at once, her knuckles still pressed against the door edge, the cold light from the crack falling into her wet eyes. The voice continues for one second, and the image holds on her neither daring to push the door open nor to step back. Who is inside remains unanswered.
 ```
 
 Avoid:
@@ -3131,39 +3131,39 @@ Choose structure before writing shot details. Always state the chosen structure 
 
 | Structure | Use When | Best For | Avoid When | Prompt Strategy |
 |---|---|---|---|---|
-| **单场景一镜到底 / Single Take** | One space, one continuous emotional shift, few actions, no major time jump | restrained grief, confrontation pause, ritual, waiting, subtle intimacy | many locations, action complexity, multiple plot turns | Use the Ordinary Drama One-Take Blocking System: one camera path, start frame, blocking shift, motivated focus change, foreground depth, sound continuity, held ending |
-| **单场景连续剪辑 / Multi-Shot Sequence** | One location but several physical beats or reaction angles are needed | kitchen tension, hospital corridor, car interior conflict, interrogation | very abstract memory, large time span | Use 3-5 shots: establish space, key object/action, face reaction, ending breath |
-| **跳剪压缩 / Jump Cuts** | Time needs compression while staying in one emotional thread | preparation, decision, panic escalation, ritual, product/person process | scene requires smooth emotional realism | Use repeated visual anchor; each cut advances state clearly |
-| **蒙太奇 / Montage** | Memory, dream, symbolic contrast, parallel images, theme rather than linear action | childhood recall, grief objects, identity transformation, longing | direct dialogue scene, precise physical action | Use sound or object as transition anchor; keep fragments sensory and partial |
-| **连续动作剪辑 / Continuous Action Editing** | Character moves through space under pressure | chase, escape, crossing rooms, storm/rain movement | tiny emotional beats, complex multi-person combat without reference | Keep direction consistent; define start/end spatial goal; limit actions |
-| **格斗动作编排 / Fight Choreography** | 1v1 or limited multi-person staged combat with clear attack-defense beats | boxing, close combat, controlled stunt throw, wuxia exchange, underground ring | many attackers, unclear character references, gore, lethal injury emphasis | Define roles, attack line, defense, counter, footwork, contact point, camera response, safety constraints |
-| **多人对话交叉剪辑 / Dialogue Cross-Cutting** | 2-4 people in one scene, power shifts through speech and silence | family dinner, office confrontation, breakup, negotiation | no meaningful dialogue or no relationship tension | Define seating/standing positions, who holds power, key lines, reaction shots |
-| **长特写微表情 / Close-Up Micro-Expression** | Emotion is carried mainly by face/head with minimal action | shock, suppressed crying, shame, hidden love, inner collapse | plot needs many events or spatial movement | Use ECU/CU, stable or slow push, timed facial-muscle progression |
-| **产品/人物质感片 / Product-Person Texture Film** | Product, place, or persona matters as much as plot | car, watch, founder, artist, venue, premium object | story requires many dramatic turns | Use tactile details, material, light, sound, controlled gesture, brand-like restraint |
-| **大场面压缩 / Large-Scene Compression** | Crowd, disaster, ceremony, battlefield, launch, courtroom, banquet | chaos with one human anchor, public pressure, group reaction | no clear protagonist or visual anchor | Pick one visual anchor; show crowd as pressure; use 4-5 clear nodes |
-| **长剧情拆分 / Sequential Prompt Split** | Playable content exceeds 30s or final prompt would exceed the duration-based character ceiling, even if the user's text is short | reunion, investigation, travel, multi-stage emotional arc, multiple actions or location changes | one small moment already fits under 30s | Split by emotional turning points; make each segment a complete 15-30s mini-arc and define a bridge type for the next segment |
-| **剧情续写 / Continuation Segment** | User approves a segment and asks to continue | short-film sequences, clip bridges, multi-part emotional arcs | no prior segment context exists | Continue from previous story state, preserve identity/scene/props, choose a bridge type, add only one new event |
-| **主观镜头 / POV or Subjective Camera** | User needs immersion into a character's perception | fear, dizziness, memory trigger, entering unknown space | multi-character dialogue needs facial reactions | Use breath, hand edges, focus shifts, sound distortion; keep POV coherent |
-| **匹配剪辑 / Match Cut Structure** | Two times/places/actions mirror each other | past vs present, childhood/adulthood, before/after identity | simple linear action is clearer | Match hand, object, gaze, light, or sound across cuts |
+| **Single-scene one-take / Single Take** | One space, one continuous emotional shift, few actions, no major time jump | restrained grief, confrontation pause, ritual, waiting, subtle intimacy | many locations, action complexity, multiple plot turns | Use the Ordinary Drama One-Take Blocking System: one camera path, start frame, blocking shift, motivated focus change, foreground depth, sound continuity, held ending |
+| **Single-scene continuity editing / Multi-Shot Sequence** | One location but several physical beats or reaction angles are needed | kitchen tension, hospital corridor, car interior conflict, interrogation | very abstract memory, large time span | Use 3-5 shots: establish space, key object/action, face reaction, ending breath |
+| **Jump-cut compression / Jump Cuts** | Time needs compression while staying in one emotional thread | preparation, decision, panic escalation, ritual, product/person process | scene requires smooth emotional realism | Use repeated visual anchor; each cut advances state clearly |
+| **Montage sequence / Montage** | Memory, dream, symbolic contrast, parallel images, theme rather than linear action | childhood recall, grief objects, identity transformation, longing | direct dialogue scene, precise physical action | Use sound or object as transition anchor; keep fragments sensory and partial |
+| **Continuous action cutting / Continuous Action Editing** | Character moves through space under pressure | chase, escape, crossing rooms, storm/rain movement | tiny emotional beats, complex multi-person combat without reference | Keep direction consistent; define start/end spatial goal; limit actions |
+| **Fight action design / Fight Choreography** | 1v1 or limited multi-person staged combat with clear attack-defense beats | boxing, close combat, controlled stunt throw, wuxia exchange, underground ring | many attackers, unclear character references, gore, lethal injury emphasis | Define roles, attack line, defense, counter, footwork, contact point, camera response, safety constraints |
+| **Multi-person dialogue cross-cutting / Dialogue Cross-Cutting** | 2-4 people in one scene, power shifts through speech and silence | family dinner, office confrontation, breakup, negotiation | no meaningful dialogue or no relationship tension | Define seating/standing positions, who holds power, key lines, reaction shots |
+| **Long close-up micro-expression / Close-Up Micro-Expression** | Emotion is carried mainly by face/head with minimal action | shock, suppressed crying, shame, hidden love, inner collapse | plot needs many events or spatial movement | Use ECU/CU, stable or slow push, timed facial-muscle progression |
+| **Product/person texture film / Product-Person Texture Film** | Product, place, or persona matters as much as plot | car, watch, founder, artist, venue, premium object | story requires many dramatic turns | Use tactile details, material, light, sound, controlled gesture, brand-like restraint |
+| **Large-scene compression / Large-Scene Compression** | Crowd, disaster, ceremony, battlefield, launch, courtroom, banquet | chaos with one human anchor, public pressure, group reaction | no clear protagonist or visual anchor | Pick one visual anchor; show crowd as pressure; use 4-5 clear nodes |
+| **Long-story split / Sequential Prompt Split** | Playable content exceeds 30s or final prompt would exceed the duration-based character ceiling, even if the user's text is short | reunion, investigation, travel, multi-stage emotional arc, multiple actions or location changes | one small moment already fits under 30s | Split by emotional turning points; make each segment a complete 15-30s mini-arc and define a bridge type for the next segment |
+| **Story continuation / Continuation Segment** | User approves a segment and asks to continue | short-film sequences, clip bridges, multi-part emotional arcs | no prior segment context exists | Continue from previous story state, preserve identity/scene/props, choose a bridge type, add only one new event |
+| **Subjective shot / POV or Subjective Camera** | User needs immersion into a character's perception | fear, dizziness, memory trigger, entering unknown space | multi-character dialogue needs facial reactions | Use breath, hand edges, focus shifts, sound distortion; keep POV coherent |
+| **Match cut / Match Cut Structure** | Two times/places/actions mirror each other | past vs present, childhood/adulthood, before/after identity | simple linear action is clearer | Match hand, object, gaze, light, or sound across cuts |
 
 ### Cross-Time or Cross-Space Match Cut
 
 When choosing a match cut across time or place, specify the few visual invariants needed to connect the cut (object screen position/size, camera height/angle, or motion phase), then the intentional changes (location, light, costume, age or injury state). A hard cut is not a gradual morph. Distinguish it from match-on-action within one continuous event. Preserve the user's intended memory, imagination, reality shift or ambiguity; do not invent a resurrection or other story mechanism to explain the edit.
 
-Example: 低机位看球停在犬爪前；硬切，保持球的位置与机位，地面换成阳光下的球场，健康的同一只犬上前叼球。球是转场锚点，不要求整个场景保持原样，也不让病伤在同一连续时空中无故消失。
+Example: a low angle sees the ball stop in front of the dog's paw; hard cut, keeping the ball's position and the camera position, the ground changes to a sunlit field, and the same dog, now healthy, steps up and picks up the ball in its mouth. The ball is the transition anchor; the whole scene is not required to stay the same, and the illness or injury does not vanish without reason within the same continuous time and space.
 
 ### Quick Decision Rules
 
-- If the core is **one emotion changing inside one body**, choose `长特写微表情` or `单场景一镜到底`.
-- If the core is **relationship pressure through words**, choose `多人对话交叉剪辑`.
-- If the core is **a body moving toward a goal**, choose `连续动作剪辑`.
-- If the core is **a staged fight**, choose `格斗动作编排`; keep fighters few and action beats explicit.
-- If the core is **time, memory, or symbolism**, choose `蒙太奇` or `匹配剪辑`.
-- If the core is **a process compressed into moments**, choose `跳剪压缩`.
-- If the core is **a product/person/place aura**, choose `产品/人物质感片`.
-- If the core is **large chaos but one person matters most**, choose `大场面压缩`.
-- If the playable content cannot breathe within 30s, choose `长剧情拆分` even when the user's written description is short.
-- If the user asks to continue from an approved prompt, choose `剧情续写`.
+- If the core is **one emotion changing inside one body**, choose `Long close-up micro-expression` or `Single-scene one-take`.
+- If the core is **relationship pressure through words**, choose `Multi-person dialogue cross-cutting`.
+- If the core is **a body moving toward a goal**, choose `Continuous action cutting`.
+- If the core is **a staged fight**, choose `Fight action design`; keep fighters few and action beats explicit.
+- If the core is **time, memory, or symbolism**, choose `Montage sequence` or `Match cut`.
+- If the core is **a process compressed into moments**, choose `Jump-cut compression`.
+- If the core is **a product/person/place aura**, choose `Product/person texture film`.
+- If the core is **large chaos but one person matters most**, choose `Large-scene compression`.
+- If the playable content cannot breathe within 30s, choose `Long-story split` even when the user's written description is short.
+- If the user asks to continue from an approved prompt, choose `Story continuation`.
 
 ### Hybrid Structures
 
@@ -3171,12 +3171,12 @@ Use hybrid labels when useful, but do not overcomplicate the final prompt.
 
 Examples:
 
-- `主结构：多人对话交叉剪辑；辅助：长特写微表情`
-- `主结构：连续动作剪辑；辅助：主观镜头`
-- `主结构：格斗动作编排；辅助：手持近身冲击感`
-- `主结构：蒙太奇；辅助：匹配剪辑`
-- `主结构：大场面压缩；辅助：单人物视觉锚点`
-- `主结构：剧情续写；辅助：动作中衔接`
+- `Main structure: Multi-person dialogue cross-cutting; support: Long close-up micro-expression`
+- `Main structure: Continuous action cutting; support: Subjective shot`
+- `Main structure: Fight action design; support: close handheld impact feel`
+- `Main structure: Montage sequence; support: Match cut`
+- `Main structure: Large-scene compression; support: single-character visual anchor`
+- `Main structure: Story continuation; support: match-on-action bridge`
 
 ### Structure Failure Warnings
 
@@ -3225,7 +3225,7 @@ If a prop changes owner, position, orientation, damage, wetness, light state, sc
 
 **No optional branches in final prompts**
 
-The final prompt should not contain unresolved options such as `或`, `或者`, `A/B`, `二选一`, `可选`, `可以...也可以...`, or `任选`. Make one director choice before delivery. Variants are allowed only when the user explicitly asks for multiple versions.
+The final prompt should not contain unresolved options such as `or`, `or else`, `A/B`, `pick one of two`, `optional`, `could... or could...`, or `any of`. Make one director choice before delivery. Variants are allowed only when the user explicitly asks for multiple versions.
 
 ### Shot Size Progression
 
@@ -3233,17 +3233,17 @@ Avoid cutting between two adjacent shot sizes that are too close, because it can
 
 Avoid:
 
-- 全景 -> 中景
-- 中景 -> 近景
-- 近景 -> 特写
-- 特写 -> 大特写
+- Wide shot -> medium shot
+- Medium shot -> close shot
+- Close shot -> close-up
+- Close-up -> extreme close-up
 
 Prefer stronger size contrast or a motivated bridge:
 
-- 全景 -> 近景 / 特写
-- 中景 -> 特写 / 大特写
-- 特写 -> 中景 / 全景
-- 全景 -> 环境道具插入 -> 特写
+- Wide shot -> close shot / close-up
+- Medium shot -> close-up / extreme close-up
+- Close-up -> medium shot / wide shot
+- Wide shot -> environmental prop insert -> close-up
 
 Do not use adjacent shot sizes when the user has explicitly prohibited them. Otherwise an exceptional adjacent-size cut requires a specific editorial reason; do not use action or sound as a blanket exemption.
 
@@ -3328,12 +3328,12 @@ If a continuity state changes, show the action that changes it.
 For dialogue, action, continuation, or multi-part scenes, internally track:
 
 ```text
-人物A：画面位置 / 朝向 / 持物手 / 姿态
-人物B：画面位置 / 朝向 / 持物手 / 姿态
-关键道具：位置 / 状态
-主光源：方向 / 色温
-出入口：位置
-运动方向：左至右 / 右至左 / 向镜头 / 远离镜头
+Character A: screen position / facing / hand holding the object / posture
+Character B: screen position / facing / hand holding the object / posture
+Key prop: position / state
+Main light source: direction / color temperature
+Entrances/exits: position
+Direction of movement: left to right / right to left / toward camera / away from camera
 ```
 
 Do not print this record unless the user asks for a continuity sheet, but use it when writing the prompt.
@@ -3383,8 +3383,8 @@ When one action is important, split it across two different shot sizes or angles
 Pattern:
 
 ```text
-镜头01：中景，角色抬手伸向门把手，动作开始。
-镜头02：特写，手指握住门把手并缓慢转动，延续同一动作。
+Shot 01: medium shot, the character raises a hand toward the door handle, the action begins.
+Shot 02: close-up, fingers grip the door handle and slowly turn it, continuing the same action.
 ```
 
 Good match actions:
@@ -3421,11 +3421,13 @@ Priority order:
 
 ### Novel Text-Length Tiers
 
+Character counts below are for Chinese source text; for English text use about 0.6 words per character.
+
 Use length as a workload estimate, subordinate to `Execution Decisions and Agent Capabilities` and the adaptation-scope rule in `../SKILL.md`.
 
 - Under roughly 1500 Chinese characters: one clear 6-30s event may suffice; check playable content rather than assuming the whole passage fits.
 - Roughly 1500-3000 Chinese characters: identify the strongest scene for a highlight request, or preserve the full causal spine across clips for full coverage.
-- Over roughly 3000 Chinese characters or a full chapter: establish a scene-selection or continuous structure before detailed prompts. Full coverage is already selected by `完整改编` / `完整覆盖` / `连续短片`; do not ask the user to choose highlights instead. If scope is genuinely unresolved and changes the deliverable materially, ask one scope question.
+- Over roughly 3000 Chinese characters or a full chapter: establish a scene-selection or continuous structure before detailed prompts. Full coverage is already selected by `full adaptation` / `full coverage` / `continuous short film`; do not ask the user to choose highlights instead. If scope is genuinely unresolved and changes the deliverable materially, ask one scope question.
 
 Do not mechanically split prose into one prompt per 30 seconds. Use filmable scene units, continuity, and requested coverage. A structure table is preparation for requested final prompts, not an automatic approval gate; respect structure-only and explicit approval-first requests.
 
@@ -3434,15 +3436,15 @@ Do not mechanically split prose into one prompt per 30 seconds. Use filmable sce
 When a long novel input arrives, decide the entry path before writing final prompts:
 
 ```text
-如果用户想要单条爆点视频：选定或按要求列出片段，再交付所要求的提示词
-如果用户想要完整改写/覆盖全文/连续视频：先建立【连续短片总结构表】，再继续所要求的完整提示词
-如果用户只要结构或要求先确认：交付结构后停止或等待对应确认
-如果范围仍无法推断且影响交付：只询问这个范围问题
+If the user wants a single standout video: pick or list the segments as asked, then deliver the requested prompt
+If the user wants a full adaptation / coverage of the whole text / a continuous video: first build the 【Series structure table】, then continue with the full prompts requested
+If the user only wants the structure or asks to confirm first: deliver the structure, then stop or wait for the corresponding confirmation
+If the scope still cannot be inferred and it affects the deliverable: ask only this scope question
 ```
 
-`影视化片段拆选表` is for choosing the strongest filmable moments. It is selective and does not guarantee full coverage.
+`Filmable segment selection table` is for choosing the strongest filmable moments. It is selective and does not guarantee full coverage.
 
-`连续短片总结构表` is for full-story adaptation. It should include:
+`Series structure table` is for full-story adaptation. It should include:
 
 - segment number and suggested duration
 - covered plot beat
@@ -3459,12 +3461,12 @@ After establishing the continuous structure, continue the requested final prompt
 Use these fields in workshop mode when they help the user see the adaptation decision:
 
 ```text
-原文核心冲突：
-可视化主事件：
-不可直接拍摄的心理描写：
-建议保留：
-建议压缩或外化：
-本条提示词覆盖范围：
+Core conflict of the source text:
+Main visualizable event:
+Inner-life description that cannot be filmed directly:
+Suggested to keep:
+Suggested to compress or externalize:
+Scope covered by this prompt:
 ```
 
 Keep this section concise. It is for adaptation clarity, not literary analysis.
@@ -3493,7 +3495,7 @@ Keep this section concise. It is for adaptation clarity, not literary analysis.
 
 - The final prompt must read like a shootable scene, not a synopsis.
 - Include concrete time allocation, physical action, camera behavior, performance detail, sound, and ending breath.
-- Do not include literary commentary such as "象征着", "暗示了", or "表现了" unless immediately tied to a visible action.
+- Do not include literary commentary such as "symbolizes", "hints at", or "expresses" unless immediately tied to a visible action.
 - When preserving prose language as voiceover, keep it short and timed; avoid turning the whole scene into narration.
 - If the scene is part of a longer chapter, mention what this prompt covers and what should continue in later segments.
 
@@ -3501,7 +3503,7 @@ Keep this section concise. It is for adaptation clarity, not literary analysis.
 
 When adapting a novel into multiple consecutive video prompts, keep a compact continuity record and avoid redundant restatement.
 
-- If two consecutive segments use the same characters, same costumes, same location, same lighting, and same key props, do not repeat the full character and scene descriptions. Use phrases such as `接续上一段剧情状态`, `沿用苏敏的同一服装与疲惫妆容`, or `保持同一书房夜晚冷暖光`.
+- If two consecutive segments use the same characters, same costumes, same location, same lighting, and same key props, do not repeat the full character and scene descriptions. Use phrases such as `continuing from the previous segment's story state`, `Su Min keeps the same outfit and tired makeup`, or `keep the same warm-cool night light in the study`.
 - Still repeat the minimum anchors needed for model stability: character name, approximate age, current emotional residue, current costume state, location, and the key prop currently in hand or in frame.
 - If a new character appears, add a concise character description and optional new character reference prompt.
 - If the story enters a new location, add a concise scene layout and optional clean scene plate prompt.
@@ -3514,7 +3516,7 @@ When adapting a novel into multiple consecutive video prompts, keep a compact co
 
 Apply `continuity_director_contract.md` first: prior tail frames are state references by default, not bound opening compositions. Audit the inter-clip cut as well as internal cuts, and check reference coverage before compiling unseen angles.
 
-Use when the user says `继续`, `接着往下写`, `下一段`, `下一镜`, `延续上一条`, or when a long story is split into adjacent clips.
+Use when the user says `continue`, `keep writing`, `next segment`, `next shot`, `pick up from the last one` (in any language), or when a long story is split into adjacent clips.
 
 ### Continuation Principles
 
@@ -3531,9 +3533,9 @@ Use when the user says `继续`, `接着往下写`, `下一段`, `下一镜`, `�
 
 Choose one bridge before writing the next prompt:
 
-1. **Continuous Drama Bridge / 换景别换角度接续**: use when the previous ending must continue immediately, but the next video should not copy the same frame. Start the next clip from the same story moment with a different shot size and camera angle, such as CU -> WS, MS -> BCU, over-shoulder -> reverse angle, or side angle -> frontal angle. Preserve axis, eyeline, body direction, prop state, and emotional residue.
-2. **Match-on-Action Bridge / 动作中衔接**: use when the previous clip ends on an unfinished action. End segment 1 as the hand begins to open the door, body starts to turn, sword begins to draw, person starts to fall, lips begin to speak, or fist begins to swing; start segment 2 from a new angle/shot size continuing the same action, not restarting it.
-3. **Shot-Group Bridge / 分镜组衔接**: use when each clip is a complete small scene or emotional beat. Segment 2 does not need to start from segment 1's tail frame. It should start with a strong new shot that belongs to the next mini-arc while preserving character, scene, prop, costume, light, sound, and emotional continuity.
+1. **Continuous Drama Bridge / bridge by changing shot size and angle**: use when the previous ending must continue immediately, but the next video should not copy the same frame. Start the next clip from the same story moment with a different shot size and camera angle, such as CU -> WS, MS -> BCU, over-shoulder -> reverse angle, or side angle -> frontal angle. Preserve axis, eyeline, body direction, prop state, and emotional residue.
+2. **Match-on-Action Bridge / bridge mid-action**: use when the previous clip ends on an unfinished action. End segment 1 as the hand begins to open the door, body starts to turn, sword begins to draw, person starts to fall, lips begin to speak, or fist begins to swing; start segment 2 from a new angle/shot size continuing the same action, not restarting it.
+3. **Shot-Group Bridge / bridge by shot group**: use when each clip is a complete small scene or emotional beat. Segment 2 does not need to start from segment 1's tail frame. It should start with a strong new shot that belongs to the next mini-arc while preserving character, scene, prop, costume, light, sound, and emotional continuity.
 
 Use the previous tail frame only when exact body position, blocking, injury/damage state, or object position is critical. Otherwise, treat it as one reference asset among others, not as a required first-frame instruction.
 
@@ -3542,20 +3544,20 @@ Use the previous tail frame only when exact body position, blocking, injury/dama
 Use this compact form:
 
 ```text
-【接续判断】
-上一段结尾状态：...
-下一段情绪推进：...
-衔接方式：换景别换角度接续 / 动作中衔接 / 分镜组衔接
-连续性注意：人物服装、场景光线、关键道具、动作方向、情绪残留需要沿用...
+【Continuation check】
+Ending state of the previous segment: ...
+Emotional progression of the next segment: ...
+Bridge type: bridge by changing shot size and angle / bridge mid-action / bridge by shot group
+Continuity notes: character costumes, scene lighting, key props, action direction and emotional residue need to carry over...
 ```
 
 ### Reference Image Rules for Continuation
 
-- If the next segment uses the same character, same scene, and same key props, say: `沿用已有角色/场景/道具参考，不新增参考图。`
-- If exact continuity is needed, optionally add: `可参考上一段尾帧的身体姿态/道具位置，但下一段开头不必复刻同一帧。`
-- If a new character appears, add `新增人物参考图`.
-- If a new location appears, add `新增场景参考图`.
-- If a new key prop appears, add `新增关键道具参考图`.
+- If the next segment uses the same character, same scene, and same key props, say: `Reuse the existing character/scene/prop references; no new reference images.`
+- If exact continuity is needed, optionally add: `You may refer to the body posture/prop positions in the previous segment's last frame, but the next segment's opening does not need to copy the same frame.`
+- If a new character appears, add `new character reference image`.
+- If a new location appears, add `new scene reference image`.
+- If a new key prop appears, add `new key prop reference image`.
 - If a costume, injury, makeup, or emotional state visibly changes and must remain stable later, add an updated character reference.
 
 ### Continuation Opening Phrases
@@ -3563,17 +3565,17 @@ Use this compact form:
 Use clear continuity phrases in the final prompt:
 
 ```text
-接续上一段剧情状态，但开头换为新的景别与角度：...
-保持同一人物、同一服装、同一场景光线和同一道具位置。
-上一段结尾的情绪不重置，继续从...推进到...
+Continue from the previous segment's story state, but open with a new shot size and angle: ...
+Keep the same character, the same costume, the same scene lighting and the same prop positions.
+The emotion at the end of the previous segment is not reset; it keeps moving from ... to ...
 ```
 
 ```text
-动作中衔接：上一段结尾人物刚开始...，本段开头用...景别从...角度继续同一动作，动作不重来，只完成未做完的部分。
+Bridge mid-action: at the end of the previous segment the character has just begun to ...; this segment opens with a ... shot from a ... angle continuing the same action; the action does not restart, only the unfinished part is completed.
 ```
 
 ```text
-分镜组衔接：本段是下一组15秒小剧情，不复刻上一段尾帧；沿用人物、场景、道具和情绪余波，从新的有效开场镜头进入下一事件。
+Bridge by shot group: this segment is the next 15-second mini-story and does not copy the previous segment's last frame; carry over the characters, scene, props and emotional aftermath, and enter the next event from a new, effective opening shot.
 ```
 
 ### Good Continuation Moves
@@ -3626,11 +3628,11 @@ Do not add more style words or a longer negative list when the real cause is mis
 Before revising, internally separate:
 
 ```text
-锁定保留：已经成功且用户未要求改变的人物、服装、场景、时间天气、空间拓扑、道具状态、动作顺序、机位轴线、光源方向、对白、声音或结尾状态
-本轮只改：用户指定的变量，或能够解释主要失败的最小控制项
+Locked: the characters, costumes, scene, time and weather, spatial topology, prop states, action order, camera axis, light direction, dialogue, sound or ending state that already worked and that the user did not ask to change
+Change only this round: the variable the user specified, or the smallest control item that explains the main failure
 ```
 
-If the user says `只改运镜`, `只修动作`, `人物不要变`, `保留这版光线`, or gives another single-variable instruction, change only that axis. Update dependent physical consequences only when necessary; for example, a new camera position may require compatible framing and occlusion, but it does not authorize rewriting dialogue, wardrobe, lighting, or story. Do not turn a physical camera-position change into a new narrative viewpoint or mood such as voyeurism, surveillance, horror, threat, or intimacy unless the user requested that meaning.
+If the user says `only change the camera movement`, `only fix the action`, `don't change the character`, `keep this version's lighting`, or gives another single-variable instruction, change only that axis. Update dependent physical consequences only when necessary; for example, a new camera position may require compatible framing and occlusion, but it does not authorize rewriting dialogue, wardrobe, lighting, or story. Do not turn a physical camera-position change into a new narrative viewpoint or mood such as voyeurism, surveillance, horror, threat, or intimacy unless the user requested that meaning.
 
 If the requested single change cannot coexist with a locked fact, identify the exact conflict instead of silently changing additional variables.
 
@@ -3639,14 +3641,14 @@ If the requested single change cannot coexist with a locked fact, identify the e
 In workshop mode, keep the repair response compact:
 
 ```text
-【生成结果诊断】
-主要失败：
-可能原因：
+【Generation result diagnosis】
+Main failure:
+Likely cause:
 
-【锁定保留】
+【Locked】
 ...
 
-【最小修复提示词】
+【Minimal repair prompt】
 ...
 ```
 
@@ -3658,7 +3660,7 @@ Method inspiration: `zy-cinematic-realism` result-repair and invariant-lock work
 
 Final prompts should be direct and proportionate to scene complexity. The character ceiling is duration-based and is not a target. It applies only to the copy-ready final prompt, not to the diagnosis or strategy sections in workshop mode.
 
-Length targets:
+Length targets (counted in Chinese characters; an English prompt needs about 0.6 words per character, so 1000 characters ≈ 600 words):
 
 - 500-800 Chinese characters: simple one-person, one-action, one-emotion scenes.
 - 800-1300 Chinese characters: default range for most 8-15s cinematic prompts.
@@ -3669,11 +3671,11 @@ Length targets:
 
 If the prompt exceeds 1300 characters for <=15s, 2400 characters for 16-24s, or 3000 characters for 25-30s, each extra detail must improve generation stability, emotional clarity, spatial continuity, sound/performance timing, or failure prevention. Treat 3000 characters as a soft threshold for 25-30s prompts and 4000 as the absolute ceiling. If an added detail does not help the render, cut it.
 
-- Do not include empty boilerplate such as `视频模型：通用 AI 视频模型`. If no model is specified, omit it.
+- Do not include empty boilerplate such as `Video model: general AI video model`. If no model is specified, omit it.
 - Put duration and structure into the first summary line.
 - Merge repeated labels.
 - Keep only the strongest sensory details.
-- Remove generic praise words like "高级", "震撼", "大片感" unless replaced by concrete light, motion, sound, or performance.
+- Remove generic praise words like "premium", "stunning", "blockbuster feel" unless replaced by concrete light, motion, sound, or performance.
 - If more detail is required, split into multiple prompts instead of overloading one.
 
 ### Automatic Compression Ladder
@@ -3704,7 +3706,7 @@ Compressed formatting rules:
 
 - Prefer semicolon-separated action chains over repeated labels.
 - State lens/camera only when it changes or materially affects the shot.
-- Do not repeat `无配乐、无字幕、角色一致` under every shot; place them once in the summary or final constraints.
+- Do not repeat `no music, no subtitles, consistent characters` under every shot; place them once in the summary or final constraints.
 - Replace long literary metaphors with visible behavior.
 
 ### Compression Audit
@@ -3724,22 +3726,22 @@ Use for recurring characters, reference-image workflows, long-story splits, and 
 ### Canonical Character Record
 
 ```text
-角色ID/姓名：
-身份与时代：
-成年年龄：
-身高与体型：
-脸型与骨相：
-眼睛/眉毛/鼻唇特征：
-肤色与皮肤质感：
-发型/发色/发饰：
-基础妆容：
-主服装与材质：
-鞋履/配饰：
-习惯动作或姿态：
-声音基线：
-性格与情绪基线：
-不可变化项：
-可随剧情变化项：汗、泪、灰尘、伤痕、衣物状态等
+Character ID/name:
+Identity and era:
+Adult age:
+Height and build:
+Face shape and bone structure:
+Eye/eyebrow/nose and lip features:
+Skin tone and skin texture:
+Hairstyle/hair color/hair accessories:
+Base makeup:
+Main costume and materials:
+Footwear/accessories:
+Habitual gestures or posture:
+Voice baseline:
+Personality and emotional baseline:
+Must not change:
+May change with the story: sweat, tears, dust, wounds, clothing state, etc.
 ```
 
 Rules:
@@ -3754,14 +3756,14 @@ Rules:
 ### Multi-Character Relationship Record
 
 ```text
-人物关系：
-身高/体型对比：
-权力关系：
-彼此称呼：
-基础距离感：
-谁主动/谁回避：
-对视与触碰边界：
-当前未解决冲突：
+Relationship:
+Height/build contrast:
+Power relationship:
+How they address each other:
+Baseline sense of distance:
+Who initiates / who avoids:
+Eye-contact and touch boundaries:
+Current unresolved conflict:
 ```
 
 Use this to keep dialogue, blocking, intimacy, and confrontation consistent.
@@ -3773,23 +3775,23 @@ Use for multi-shot dialogue, action, continuation, and any location revisited ac
 ### Canonical Scene Record
 
 ```text
-场景ID/地点：
-时代与时间：
-天气：
-空间形状与尺度：
-前景：
-中景：
-背景：
-门窗/出入口位置：
-关键家具/障碍物：
-关键道具初始位置：
-主光源方向/色温：
-辅助光与实景光源：
-环境声床：
-主运动轴线：
-安全活动区/动作路径：
-不可变化项：
-可变化项：破损、烟尘、积水、灯光状态等
+Scene ID/location:
+Era and time:
+Weather:
+Spatial shape and scale:
+Foreground:
+Midground:
+Background:
+Door/window/entrance and exit positions:
+Key furniture/obstacles:
+Initial positions of key props:
+Main light source direction/color temperature:
+Secondary light and practical light sources:
+Ambient sound bed:
+Main axis of movement:
+Safe activity zone/action path:
+Must not change:
+May change: damage, smoke and dust, standing water, lighting state, etc.
 ```
 
 ### Per-Shot Continuity Delta
@@ -3797,9 +3799,9 @@ Use for multi-shot dialogue, action, continuation, and any location revisited ac
 Do not rewrite the whole scene for every shot. Track only changes:
 
 ```text
-镜头前状态：人物与道具位置
-本镜头动作：谁移动/拿起/放下/破坏什么
-镜头后状态：新的位置、朝向、持物手、物体状态
+State before the shot: character and prop positions
+Action in this shot: who moves/picks up/puts down/breaks what
+State after the shot: new positions, facing, hand holding the object, object state
 ```
 
 Rules:
@@ -3832,7 +3834,7 @@ Use this standard whenever reference prompts are output:
 
 - **Character reference**: identity/role, age range, ethnicity/era when relevant, face shape and temperament, hairstyle, body type or posture, clothing and costume state, visible dirt/wetness/injury/makeup, emotional baseline, shot size, background/light, film texture, and constraints such as non-fashion, non-glamour, non-monsterized, natural performance.
 - **Single-character isolation**: a character reference for one person must describe only that person. Do not include other visible characters, relationship blocking, another person's hands/shoulders, hugging, holding, protecting, chasing, fighting, or looking at another named person. These details can cause image generation to create extra inconsistent characters.
-- **Scene reference**: exact location type, spatial layout, foreground/midground/background, entrances/exits, action path, obstacles, key furniture/vehicles/architecture, practical light source and color mood, materials, weather/atmosphere, era, and whether it should be `无人物`.
+- **Scene reference**: exact location type, spatial layout, foreground/midground/background, entrances/exits, action path, obstacles, key furniture/vehicles/architecture, practical light source and color mood, materials, weather/atmosphere, era, and whether it should be `no people`.
 - **Key prop/product reference**: object type, era, material, color, scale, wear marks, story-specific identifiers, current state, owner/placement if important, light/background, and detail clarity.
 - **Relationship/two-shot reference**: both identities, screen-left/screen-right positions, height/distance, eye lines, body tension, costume state, shared environment, and power relationship.
 
@@ -3879,7 +3881,7 @@ Include:
 - both adult characters' identity anchors
 - screen-left/screen-right positions
 - body distance and eyelines
-- costume and height/体型 contrast
+- costume and height/build contrast
 - scene light and camera height
 - no complex action; this is a blocking reference
 
@@ -3902,31 +3904,31 @@ Single-character rule:
 Template:
 
 ```text
-人物参考图：单人角色图，只出现{身份/角色}一人，{年龄范围/民族或时代}，{脸型与气质}，{发型与身体姿态}，{服装与当前状态：干净/破损/湿透/沾灰/血迹但不血腥/妆容变化}，{情绪基线与眼神状态，用单人可见表演表达}，{镜头距离}，{光线与背景}，真实电影质感，低饱和色调，细腻自然皮肤纹理，非写真摆拍，非时尚大片，表演自然，不出现其他人物。
+Character reference image: single-character image, only {identity/character} appears, {age range/ethnicity or era}, {face shape and presence}, {hairstyle and body posture}, {costume and current state: clean/torn/soaked/dusty/bloodstained but not gory/makeup changes}, {emotional baseline and eye state, expressed through visible single-person performance}, {camera distance}, {light and background}, realistic cinematic texture, desaturated tones, fine natural skin texture, not a glamour pose, not a fashion editorial, natural performance, no other people.
 ```
 
 Example:
 
 ```text
-人物参考图：中国古风女子，二十七岁左右，清瘦克制，鹅蛋脸，眉眼柔和但带疲惫感，黑发盘成低髻，素雅青灰色宫装，少量银色发簪，表情平静但眼眶微湿，头部特写，烛光侧照，深色宫殿背景，真实古装电影质感，低饱和色调。
+Character reference image: a woman in classical Chinese style, around twenty-seven, slender and restrained, oval face, gentle features but with a sense of fatigue, black hair in a low bun, a plain blue-grey palace dress, a few silver hairpins, a calm expression but slightly moist eyes, head close-up, candlelight from the side, a dark palace background, realistic period-film texture, desaturated tones.
 ```
 
 ### Scene Reference
 
 Purpose: stabilize layout, light source, materials, and action space.
 
-Include location, spatial layout, foreground/midground/background, entrances/exits, light source, color temperature, key objects, usable action path, obstacles, atmosphere/weather, era, and materials. Use `无人物` when the scene reference should be clean.
+Include location, spatial layout, foreground/midground/background, entrances/exits, light source, color temperature, key objects, usable action path, obstacles, atmosphere/weather, era, and materials. Use `no people` when the scene reference should be clean.
 
 Template:
 
 ```text
-场景参考图：{地点与时代/类型}，{空间结构与镜头方向}，前景{...}，中景{...}，背景{...}，入口/出口{...}，可行动线{...}，障碍物/关键物件{...}，{主要光源与色调}，{天气/烟尘/雾气/材质与氛围}，真实电影场景质感，空间纵深清晰，无人物。
+Scene reference image: {location and era/genre}, {spatial structure and camera direction}, foreground {...}, midground {...}, background {...}, entrance/exit {...}, usable movement line {...}, obstacles/key objects {...}, {main light source and color tone}, {weather/smoke/haze/materials and atmosphere}, realistic cinematic set texture, clear spatial depth, no people.
 ```
 
 Example:
 
 ```text
-场景参考图：深夜独居女性公寓玄关到客厅的连续空间，前景左侧是玄关鞋柜，中景是半暗客厅，背景右侧卧室门半掩，玄关暖黄小灯与窗外冷蓝城市光混合，低照度现实主义电影质感，空间纵深清晰，无人物。
+Scene reference image: a late-night apartment of a woman living alone, one continuous space from the entryway to the living room; in the left foreground the entryway shoe cabinet, in the midground a half-dark living room, in the right background a half-open bedroom door; a small warm-yellow entryway light mixes with cold blue city light from the window; low-light realist cinematic texture, clear spatial depth, no people.
 ```
 
 ### Key Prop Reference
@@ -3938,13 +3940,13 @@ Use only for important props: old sweater, music box, rejection letter, phone, r
 Template:
 
 ```text
-关键道具参考图：{道具名称与用途}，{年代/材质/颜色/尺寸}，{磨损、污渍、破损或使用痕迹}，{与剧情有关的标记或可读特征}，{当前状态与摆放位置/持有人}，{光线与背景}，真实电影道具质感，微距或近景，细节清晰。
+Key prop reference image: {prop name and purpose}, {era/material/color/size}, {wear, stains, damage or signs of use}, {story-relevant marks or readable features}, {current state and placement/holder}, {light and background}, realistic cinematic prop texture, macro or close shot, clear detail.
 ```
 
 Example:
 
 ```text
-关键道具参考图：一只生锈的旧音乐盒，暗红木质外壳，边角磨损，金属发条氧化，盒盖有细小划痕，放在旧木桌上，月光侧照，微距近景，真实电影道具质感，细节清晰。
+Key prop reference image: a rusty old music box, dark red wooden case, worn corners, oxidized metal clockwork, fine scratches on the lid, sitting on an old wooden table, moonlight from the side, macro close shot, realistic cinematic prop texture, clear detail.
 ```
 
 ### Product or Vehicle Reference
@@ -3954,7 +3956,7 @@ Purpose: stabilize premium object structure and material.
 Template:
 
 ```text
-产品参考图：{产品/车辆}，{颜色与材质}，{角度}，{环境与光线}，真实品牌片电影质感，结构准确，材质自然，不要错误文字标识。
+Product reference image: {product/vehicle}, {color and material}, {angle}, {environment and light}, realistic brand-film cinematic texture, accurate structure, natural materials, no incorrect text or logos.
 ```
 
 ### Reference Image Count
@@ -3965,7 +3967,7 @@ Template:
 - Avoid giving separate reference prompts for every minor object.
 - In compact mode, omit reference prompts unless explicitly requested or essential for control.
 - In workshop mode, follow the chosen production path: reference recommendations are optional for direct-video work, while required assets in reference-first work remain explicit dependencies. Do not describe a required production reference as optional.
-- In continuous-short-film mode, maintain references as a reusable asset list and mark each as `沿用`, `新增`, or `更新状态`.
+- In continuous-short-film mode, maintain references as a reusable asset list and mark each as `Reused`, `New`, or `Updated state`.
 
 ### Continuation References
 
@@ -3994,11 +3996,11 @@ Use negative constraints only when they prevent likely generation failure:
 
 Write the desired content and action path positively first. Negative constraints are not the main steering wheel; they are a small guardrail after the positive target is clear. If a model does not handle negative language well, replace outcome-critical negatives with positive instructions.
 
-- 不要卡通感，不要塑料皮肤，不要过度磨皮。
-- 不要错误文字、水印、字幕。
-- 不要背景音乐，不要额外配乐；只保留必要台词人声、环境声、动作音效、物体声。
-- 不要多余肢体、脸部畸变、动作穿模。
-- 不要过度快剪 if continuity matters.
+- No cartoon look, no plastic skin, no excessive skin smoothing.
+- No incorrect text, watermarks or subtitles.
+- No background music, no extra score; keep only the necessary spoken dialogue, ambient sound, action sound effects and object sounds.
+- No extra limbs, facial distortion or clipping.
+- No excessive fast cutting if continuity matters.
 
 ### Negative Constraint Library
 
@@ -4007,7 +4009,7 @@ Pick the smallest useful set for the scene. Avoid bloated lists that repeat ever
 **Universal core**
 
 ```text
-负面约束：不要字幕水印，不要背景音乐，不要脸部畸变，不要多余手指或肢体，不要卡通感。
+Negative constraints: no subtitles or watermarks, no background music, no facial distortion, no extra fingers or limbs, no cartoon look.
 ```
 
 When the scene has no visible hands or full body, omit hand/body constraints.
@@ -4017,7 +4019,7 @@ When the scene has no visible hands or full body, omit hand/body constraints.
 Risks: overacting, sudden emotion jump, plastic skin, beauty filter.
 
 ```text
-不要夸张哭喊，不要突然表情变化，不要过度磨皮，不要塑料皮肤，不要脸部畸变。
+No exaggerated wailing, no sudden expression changes, no excessive skin smoothing, no plastic skin, no facial distortion.
 ```
 
 **Dialogue scene**
@@ -4025,7 +4027,7 @@ Risks: overacting, sudden emotion jump, plastic skin, beauty filter.
 Risks: theatrical acting, messy mouth movement, bad eye lines, subtitles.
 
 ```text
-不要舞台剧式表演，不要夸张争吵，不要嘴型持续乱动，不要视线方向混乱，不要字幕水印。
+No stage-play acting, no exaggerated arguing, no constantly flapping mouth shapes, no confused eyeline directions, no subtitles or watermarks.
 ```
 
 **Romance or intimacy but non-explicit**
@@ -4033,7 +4035,7 @@ Risks: theatrical acting, messy mouth movement, bad eye lines, subtitles.
 Risks: sexualization, melodrama, unwanted physical escalation.
 
 ```text
-不要露骨性暗示，不要突然拥抱亲吻，不要偶像剧式夸张表演，不要过度柔光磨皮。
+No explicit sexual suggestion, no sudden hugging or kissing, no exaggerated idol-drama acting, no excessive soft-focus smoothing.
 ```
 
 **Suspense without monster**
@@ -4041,7 +4043,7 @@ Risks: sexualization, melodrama, unwanted physical escalation.
 Risks: horror clichés, jump scare, supernatural insertion.
 
 ```text
-不要鬼怪，不要血腥，不要突脸惊吓，不要尖叫，不要夸张恐怖音乐。
+No ghosts or monsters, no gore, no jump-scare faces, no screaming, no exaggerated horror music.
 ```
 
 **Action, chase, or physical movement**
@@ -4049,7 +4051,7 @@ Risks: horror clichés, jump scare, supernatural insertion.
 Risks: motion confusion, duplicated bodies, impossible direction, warped limbs.
 
 ```text
-不要动作穿模，不要空间方向混乱，不要多余肢体，不要人物瞬移，不要过度动态模糊。
+No clipping, no confused spatial direction, no extra limbs, no characters teleporting, no excessive motion blur.
 ```
 
 **Wuxia or combat**
@@ -4057,7 +4059,7 @@ Risks: motion confusion, duplicated bodies, impossible direction, warped limbs.
 Risks: fantasy overextension, weapon deformation, messy multi-person fights.
 
 ```text
-不要飞天玄幻，不要夸张光效，不要血腥，不要武器变形，不要肢体穿模，不要多人动作混乱。
+No flying fantasy, no exaggerated light effects, no gore, no weapon deformation, no clipping limbs, no chaotic multi-person action.
 ```
 
 This area still needs stronger reference examples before heavy use.
@@ -4067,7 +4069,7 @@ This area still needs stronger reference examples before heavy use.
 Risks: uncontrolled crowd, protagonist lost, disaster becoming monster/fantasy.
 
 ```text
-不要人物数量失控，不要主角丢失，不要海怪或超自然，不要过度血腥，不要场景结构变形。
+No runaway number of people, no losing the protagonist, no sea monsters or supernatural, no excessive gore, no deformation of the scene structure.
 ```
 
 **Product, vehicle, or premium object**
@@ -4075,7 +4077,7 @@ Risks: uncontrolled crowd, protagonist lost, disaster becoming monster/fantasy.
 Risks: ad-like exaggeration, fake material, object deformation.
 
 ```text
-不要广告式夸张炫技，不要塑料质感，不要车身或产品结构变形，不要过度慢动作，不要错误文字标识。
+No ad-style showy flourishes, no plastic texture, no deformation of car body or product structure, no excessive slow motion, no incorrect text or logos.
 ```
 
 **Period drama or ancient costume**
@@ -4083,7 +4085,7 @@ Risks: ad-like exaggeration, fake material, object deformation.
 Risks: modern styling, fantasy game look, costume inconsistency.
 
 ```text
-不要现代妆容，不要现代饰品，不要廉价影楼古风，不要游戏CG感，不要服装发饰跳变。
+No modern makeup, no modern jewelry, no cheap photo-studio period style, no game-CG look, no costume or hair-ornament jumps.
 ```
 
 **Memory, dream, or montage**
@@ -4091,7 +4093,7 @@ Risks: modern styling, fantasy game look, costume inconsistency.
 Risks: too clear, too literal, over-glowy fantasy.
 
 ```text
-不要过度梦幻发光，不要恐怖化，不要记忆画面过于完整清晰，不要场景无逻辑跳变。
+No excessive dreamy glow, no turning it into horror, no memory images that are too complete and clear, no illogical scene jumps.
 ```
 
 **Phone, screen, or text**
@@ -4099,7 +4101,7 @@ Risks: too clear, too literal, over-glowy fantasy.
 Risks: unreadable text, random letters, fake UI, subtitle pollution.
 
 ```text
-不要生成错误文字，不要乱码界面，不要过多手机屏幕文字，不要字幕水印。
+No incorrect generated text, no garbled interfaces, no excessive phone-screen text, no subtitles or watermarks.
 ```
 
 If key information is on a phone, prefer offscreen voice or a simple visible notification rather than relying on readable screen text.
@@ -4109,7 +4111,7 @@ If key information is on a phone, prefer offscreen voice or a simple visible not
 Risks: hand/finger errors, object warping, continuity issues.
 
 ```text
-不要手指畸形，不要餐具穿模，不要筷子变形，不要杯子或盘子数量跳变。
+No deformed fingers, no tableware clipping, no deformed chopsticks, no jumps in the number of cups or plates.
 ```
 
 ### When to Omit Negative Constraints
@@ -4123,7 +4125,7 @@ Omit or shorten them when:
 Minimum fallback:
 
 ```text
-负面约束：不要字幕水印，不要背景音乐，不要脸部畸变，不要风格跑偏。
+Negative constraints: no subtitles or watermarks, no background music, no facial distortion, no style drift.
 ```
 
 ## Quality Self-Check
@@ -4155,24 +4157,24 @@ Run this silently before giving the final answer. Do not print it unless the use
 - Is the chosen output mode appropriate to the user's request: compact, workshop, or continuous-short-film?
 - If the draft was too long, was the automatic compression ladder applied before splitting?
 - For fight prompts, has the copy-ready final prompt stayed within the duration-based ceiling, with action beats limited to what the selected duration can clearly show?
-- Is there no empty boilerplate such as `视频模型：通用 AI 视频模型`?
+- Is there no empty boilerplate such as `Video model: general AI video model`?
 - Does the first summary line include duration and structure?
 - Are technical terms useful rather than decorative?
 - Can the first frame be reconstructed from the final prompt? If character-led, are visible subject, start state, screen position/depth, facing direction, gaze, prop contact, shot size, camera angle/axis, and motivated light source clear? If empty or object-led, are location layout, foreground/midground/background, key object/environment state, sound cue, shot size, camera angle/axis, and motivated light source clear?
 - Does each shot have one core action path and one core camera behavior, with multiple camera phases serialized only when necessary?
 - If the prompt requires continuation, split clips, first/last frames, complex blocking, repair, or a product/prop endpoint, is the final visible ending state clearly locked inside the last shot, whether it is character-led, empty, or object-led?
 - Are story-critical props described with holder/hand, grip or support point, orientation, contact relationship, visible change, and final location/state?
-- Has the copy-ready final prompt removed unresolved options such as `或`, `或者`, `A/B`, `二选一`, or `可选`, unless the user explicitly requested variants?
+- Has the copy-ready final prompt removed unresolved options such as `or`, `or else`, `A/B`, `pick one of two`, or `optional`, unless the user explicitly requested variants?
 - Are professional shot-size, camera-movement, and focus terms written with standardized English abbreviations where appropriate, such as `ECU`, `VCU`, `BCU`, `CU`, `MCU`, `WS`, `KS`, `FLS`, `LS`, `ELS`, `MS`, `MLS`, `Dolly In/Out`, `Pan Right/Left`, `Tilt Up/Down`, `Track Right/Left`, `Crane/Jib`, `Arc/Orbit`, `Zoom In/Out`, `Dolly Zoom`, `Whip Pan`, `Rack Focus`, `Focus Pull`, `Handheld`, and `Static`?
 - Does each named camera movement have a clear dramatic function: intimacy, context reveal, gaze/action following, scale, power shift, disorientation, transition, urgency, or deliberate stillness?
 - If the prompt uses cinematic lighting, is the amount of lighting detail proportional to the scene? For ordinary scenes, is lighting kept to one compact motivated phrase instead of a full breakdown?
 - If the prompt uses detailed cinematic lighting, does it specify Key Light, Fill Light, Rim Light or Soft edge highlight, Background/Volumetric Light, concrete surfaces touched or hidden by light, tonal structure such as `Low-key High Contrast` when relevant, color-temperature meaning when relevant, and the emotional/story meaning of the light-shadow design?
-- If `Hard side-top Key Light` or `右上方硬质侧顶光` appears, is there a believable source in the environment and a story reason for such hard light?
+- If `Hard side-top Key Light` or `hard side-top light from upper right` appears, is there a believable source in the environment and a story reason for such hard light?
 - If the scene has movement, does light interact with the movement through passing windows, doors, headlights, screens, weather, dust, fabric, breath, or moving shadows instead of remaining a static adjective?
 - Are abstract words translated into visible action, light, sound, object, or performance?
 - Has every abstract effect or theme been converted into eye-observable screen evidence instead of left as a label?
 - Have physically, spatially, emotionally, or temporally contradictory instructions been removed or rewritten?
-- Is the desired action path written positively before using any `不要...` constraints?
+- Is the desired action path written positively before using any `don't...` constraints?
 - Are details limited to what reduces ambiguity, supports continuity, clarifies emotion, or prevents likely failure, rather than over-specifying every pixel?
 - If reference-image prompts are included, are they optional, concise, and consistent with the final video prompt?
 - Are reference types selected by production need rather than outputting character, scene, and prop prompts mechanically?
@@ -4249,7 +4251,7 @@ Run this silently before giving the final answer. Do not print it unless the use
 ### Camera and Visual Logic
 
 - Was the aspect ratio explicit, inherited from an actual production frame/continuation, or safely defaulted without unnecessary questioning?
-- If `9:16竖屏` is active, was the scene deliberately recomposed for a narrow canvas rather than side-cropped from horizontal grammar?
+- If `9:16 vertical` is active, was the scene deliberately recomposed for a narrow canvas rather than side-cropped from horizontal grammar?
 - In vertical output, are faces, eyes, hands, key props, head/foot room, entry/exit paths, and final action endpoints protected inside a readable action corridor?
 - Are two-person/group relationships expressed through depth, `OTS`, height, focus, reflection, masking, or motivated coverage rather than several subjects squeezed against the side edges?
 - Are horizontal moves short enough to retain the subject and land on a visible target, and are vertical moves motivated by real height/depth/action information?

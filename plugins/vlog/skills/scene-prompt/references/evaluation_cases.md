@@ -50,7 +50,7 @@ For each case:
 Input:
 
 ```text
-古代宫廷女子得知深爱之人明日将被赐死。她独自站在烛火前，不能哭出声，只能慢慢接受消息。要求10秒超近面部固定镜头，无台词。
+An imperial palace woman in ancient China learns that the man she loves deeply will be ordered to die tomorrow. She stands alone before the candlelight, unable to cry aloud, and can only slowly accept the news. Require a 10-second extreme facial close-up with a fixed camera, no dialogue.
 ```
 
 Expected:
@@ -73,7 +73,7 @@ Failure checks:
 Input:
 
 ```text
-除夕饭桌上，父亲宣布卖掉老房子，母亲沉默回避，女儿发现父母早已决定。15秒，多人对话，克制冲突。
+At the New Year's Eve dinner table, the father announces that he is selling the old house, the mother silently avoids the subject, and the daughter realizes her parents decided long ago. 15 seconds, multi-person dialogue, restrained conflict.
 ```
 
 Expected:
@@ -96,7 +96,7 @@ Failure checks:
 Input:
 
 ```text
-深夜公寓，女孩接到男友车祸去世的电话。先轻松聊天，听到噩耗后笑容冻结，挂断后捂嘴无声痛哭。15秒三段跳剪。
+Late-night apartment: a girl gets a phone call telling her that her boyfriend died in a car accident. She chats lightly at first; after hearing the terrible news her smile freezes, and after hanging up she covers her mouth and sobs silently. 15 seconds, three jump-cut segments.
 ```
 
 Expected:
@@ -110,7 +110,7 @@ Expected:
 
 Failure checks:
 
-- vague phrase such as “对方说出噩耗”
+- vague phrase such as “the other person delivers the terrible news”
 - phone changes hands or position without action
 - crying starts instantly
 
@@ -119,12 +119,12 @@ Failure checks:
 Input:
 
 ```text
-独居女孩回家发现玄关多了一把陌生钥匙，走进客厅后听见卧室里传来手机震动。15秒，不出现鬼怪或袭击者。
+A girl who lives alone comes home and finds an unfamiliar key in the entryway; after walking into the living room she hears a phone vibrating in the bedroom. 15 seconds, no ghosts or attackers appear.
 ```
 
 Expected:
 
-- Scene reference defines玄关、客厅、卧室门的 spatial relationship.
+- Scene reference defines the entryway, living room and bedroom door spatial relationship.
 - Character movement direction remains continuous.
 - Suspense comes from sound and withheld information.
 - No jump scare, monster, or unexplained location flip.
@@ -140,7 +140,7 @@ Failure checks:
 Input:
 
 ```text
-分手后的两个人在清晨厨房同时伸手拿同一只杯子，手指碰到后都假装没事。10秒。
+Two people who have broken up reach for the same cup at the same moment in the kitchen early in the morning; after their fingers touch, both pretend nothing happened. 10 seconds.
 ```
 
 Expected:
@@ -161,7 +161,7 @@ Failure checks:
 Input:
 
 ```text
-废旧仓库地下擂台，两名成年女性进行10秒真人格斗。第一轮拳腿试探，第二轮近身反摔。多人围观但不参与。
+In an underground ring in an abandoned warehouse, two adult women fight a 10-second live-action bout. Round one: probing punches and kicks; round two: close-in reversal throw. A crowd watches but does not take part.
 ```
 
 Expected:
@@ -186,7 +186,7 @@ Failure checks:
 Input:
 
 ```text
-古代赌坊翻脸，江湖赌客利用赌桌、骰盅、长凳和木柱反制两名打手。15秒，无血腥。
+A falling-out in an ancient gambling house: a wandering jianghu gambler uses the gambling table, dice cup, long bench and wooden pillar to turn the tables on two thugs. 15 seconds, no gore.
 ```
 
 Expected:
@@ -208,7 +208,7 @@ Failure checks:
 Input:
 
 ```text
-暴风雨夜客轮倾斜，乘客逃生，母亲逆流寻找孩子，最后隔着正在关闭的防水舱门看见他。15秒。
+On a stormy night a passenger ship lists; passengers flee, a mother pushes against the crowd looking for her child, and finally sees him through a closing watertight door. 15 seconds.
 ```
 
 Expected:
@@ -230,7 +230,7 @@ Failure checks:
 Input:
 
 ```text
-30秒剧情：多年未归的男人在深夜老火车站与年迈母亲重逢。拆成两个15秒，并用第一段尾帧生成第二段。
+30-second story: a man who has not come home in many years reunites with his aged mother at an old train station late at night. Split it into two 15-second segments, and use the first segment's last frame to generate the second.
 ```
 
 Expected:
@@ -251,7 +251,7 @@ Failure checks:
 Input:
 
 ```text
-上一段：女孩在公寓接到男友去世的电话，结尾蜷缩在地板上。继续下一段：她赶到医院，第一次见到男友的姐姐。
+Previous segment: a girl in her apartment gets a call saying her boyfriend has died; it ends with her curled up on the floor. Continue with the next segment: she rushes to the hospital and meets her boyfriend's sister for the first time.
 ```
 
 Expected:
@@ -272,7 +272,7 @@ Failure checks:
 Input:
 
 ```text
-我要一个很震撼、很电影感的视频。
+I want a really stunning, really cinematic video.
 ```
 
 Expected:
@@ -290,7 +290,7 @@ Failure checks:
 Input:
 
 ```text
-古代闺中小姐在午后窗边突然看见心上人，10秒超近面部特写，无台词。先给人物参考图，再给视频提示词。
+A young lady of an ancient household suddenly sees her beloved by the window in the afternoon; 10-second extreme facial close-up, no dialogue. First give the character reference image, then the video prompt.
 ```
 
 Expected:
@@ -311,7 +311,7 @@ Failure checks:
 Input:
 
 ```text
-请把一个包含3名角色、4个镜头、两段台词、雨夜车内争吵和一次下车动作的15秒提示词压缩到2000字以内，但保留剧情和情绪。
+Please compress a 15-second prompt containing 3 characters, 4 shots, two dialogue exchanges, a rainy-night argument inside a car and one getting-out-of-the-car action to under 2000 characters, while keeping the story and emotion.
 ```
 
 Expected:
@@ -332,7 +332,7 @@ Failure checks:
 Input:
 
 ```text
-连续三段古风短片使用同一位26岁宫廷女子：第一段发簪完整，第二段逃跑时左侧发簪掉落，第三段躲进偏殿继续剧情。
+Three consecutive ancient-style short segments use the same 26-year-old palace woman: in segment one her hairpin is intact, in segment two her left hairpin falls out as she flees, and in segment three she hides in a side hall and the story continues.
 ```
 
 Expected:
@@ -340,7 +340,7 @@ Expected:
 - Canonical identity remains stable.
 - Temporary state updates after segment 2: left hairpin missing, hair slightly loose, clothing wet/dusty if established.
 - Segment 3 does not restore the missing hairpin.
-- Reference assets mark `更新状态`, not a new identity.
+- Reference assets mark `updated state`, not a new identity.
 
 Failure checks:
 
@@ -353,7 +353,7 @@ Failure checks:
 Input:
 
 ```text
-在同一间深夜公寓连续生成两段：第一段女孩把手机放在客厅地板右侧并走向卧室；第二段她听见敲门后返回客厅。
+Generate two consecutive segments in the same late-night apartment: in segment one the girl puts her phone on the right side of the living-room floor and walks toward the bedroom; in segment two she hears a knock and returns to the living room.
 ```
 
 Expected:
@@ -373,9 +373,9 @@ Failure checks:
 Inputs:
 
 ```text
-A：直接给我最终提示词，不要分析。
-B：先诊断剧情，我想一起调整。
-C：这是一个连续5段短片，请维护人物和场景一致性。
+A: Just give me the final prompt, no analysis.
+B: Diagnose the story first; I want to adjust it together.
+C: This is a 5-segment continuous short film; please keep characters and scenes consistent.
 ```
 
 Expected:
@@ -395,13 +395,13 @@ Failure checks:
 Input:
 
 ```text
-年轻女子在亲密但安全的关系里小声说“我不要”，她不是真的拒绝，而是带点娇嗔、害羞和被宠爱的任性。6秒固定面部特写，不要露骨，不要夸张撒娇。
+In an intimate but safe relationship, a young woman says softly "I don't want to"; she is not really refusing, but being a little petulant, shy and willful in the way of someone who is doted on. 6-second fixed facial close-up, nothing explicit, no exaggerated coquettishness.
 ```
 
 Expected:
 
 - Structure: ultra-close face long take / coquettish soft refusal arc.
-- The line `我不要` is explicitly written and timed.
+- The line `I don't want to` is explicitly written and timed.
 - Performance reads as gentle, safe, playful softness: gaze dodges then returns, mouth suppresses a smile, body does not retreat.
 - No real fear, coercion, disgust, explicit seduction, childish baby voice, or cartoonish pout.
 - Final prompt target: 500-800 characters.
@@ -418,7 +418,7 @@ Failure checks:
 Input:
 
 ```text
-15秒心理悬疑：男人在空荡地铁站发现站台对面的人和自己长得一模一样。先是普通等待，然后听见广播故障声，抬头看见对面，世界感突然失衡，最后他没有逃，只是僵住。
+15-second psychological suspense: in an empty subway station, a man discovers that the person on the opposite platform looks exactly like him. First ordinary waiting, then he hears a glitching announcement, looks up and sees the opposite side, the world suddenly feels off-balance, and in the end he does not run, he just freezes.
 ```
 
 Expected:
@@ -441,7 +441,7 @@ Failure checks:
 Input:
 
 ```text
-晚上家里餐桌前，年轻女性对镜头解释为什么她没有去参加朋友婚礼。她表面平静，其实很在意这件事。10秒，手机实拍感，半身近景，一杯水放在桌上。
+At home at night by the dining table, a young woman explains to the camera why she did not go to her friend's wedding. She looks calm on the surface but actually cares a lot about it. 10 seconds, handheld phone-footage feel, waist-up medium close-up, a glass of water on the table.
 ```
 
 Expected:
@@ -469,7 +469,7 @@ Failure checks:
 Input:
 
 ```text
-15秒一镜到底：深夜厨房里，妻子发现丈夫藏在水槽下的诊断报告。丈夫从客厅走进来想解释，她没有立刻质问，只是把报告慢慢推回原处，最后两人隔着厨房岛台沉默对视。
+15-second one-take: in the kitchen late at night, a wife discovers the diagnosis report her husband hid under the sink. The husband walks in from the living room wanting to explain; she does not question him right away, she just slowly pushes the report back where it was, and finally the two look at each other in silence across the kitchen island.
 ```
 
 Expected:
@@ -495,7 +495,7 @@ Failure checks:
 Input:
 
 ```text
-15秒一镜到底古装府邸庭院群像：嫡长子、嫡长女、庶子、庶女四人暗中对峙。要求从嫡长子面部特写开始，通过环绕、背影遮挡、横移、后拉逐步揭示其他人，最后形成庭院权力站位。无台词。
+15-second one-take ensemble in the courtyard of an ancient mansion: the eldest legitimate son, the eldest legitimate daughter, a son by a concubine and a daughter by a concubine, four people in a hidden standoff. Start on a facial close-up of the eldest legitimate son, and gradually reveal the others through orbiting, back-view occlusion, lateral tracking and pulling back, ending in the courtyard's power positions. No dialogue.
 ```
 
 Expected:
@@ -522,12 +522,12 @@ Failure checks:
 Input:
 
 ```text
-做一个10秒破碎记忆闪回：女孩站在雨夜车站，脑中闪回车祸、红伞、碎玻璃、短信。要电影感，情绪是突然想起真相。
+Make a 10-second shattered-memory flashback: a girl stands at a station on a rainy night, and a car crash, a red umbrella, broken glass and a text message flash through her mind. It should feel cinematic; the emotion is suddenly remembering the truth.
 ```
 
 Expected:
 
-- Strategy names the abstract effect and translates `破碎记忆闪回` into visible fragments rather than leaving it as a style label.
+- Strategy names the abstract effect and translates `shattered-memory flashback` into visible fragments rather than leaving it as a style label.
 - Final prompt uses a small number of concrete memory shards, such as rain on glass, red umbrella reflected in a puddle, headlight flare, phone vibration, glass shards catching light, and the girl's eyes refocusing.
 - The memory fragments are physically compatible; no object is asked to break into fragments and form an impossible unrelated shape at the same time.
 - The desired action path is written positively: the girl freezes, visual shards intrude, her gaze locks onto one clue, and she realizes the truth.
@@ -536,8 +536,8 @@ Expected:
 
 Failure checks:
 
-- only says `破碎记忆闪回` or `电影感特效` without visible screen evidence
-- relies on `不要混乱、不要发呆、不要失败` instead of describing the desired visual/action path
+- only says `shattered-memory flashback` or `cinematic effects` without visible screen evidence
+- relies on `no chaos, no blank staring, no failure` instead of describing the desired visual/action path
 - contains contradictory object behavior, impossible lighting, or incompatible camera movement
 - lists too many fragments, props, overlays, camera moves, and emotions for 10 seconds
 - negative constraints become longer than the positive creative prompt
@@ -547,7 +547,7 @@ Failure checks:
 Input:
 
 ```text
-12秒悬疑戏：深夜办公室，女律师发现桌上的U盘里有关键证据，她刚插进电脑，门外响起脚步声，她立刻拔下U盘藏进左手袖口，假装继续看文件。
+12-second suspense scene: in an office late at night, a female lawyer finds key evidence on a USB drive on her desk. She has just plugged it into the computer when footsteps sound outside the door; she immediately pulls out the USB drive, hides it in her left cuff, and pretends to keep reading documents.
 ```
 
 Expected:
@@ -556,16 +556,16 @@ Expected:
 - Each shot has one core action and one core camera behavior; camera movement does not compete with the U-disk handling.
 - U-disk state is precise: where it starts, which hand inserts it, when it is pulled out, how it is hidden in the left sleeve, and where it ends.
 - Ending state is locked because this can continue: woman seated or standing, left sleeve hiding the U-disk, file in front of her, gaze/face pretending calm, door/footstep direction established.
-- No unresolved options such as `或`, `或者`, `A/B`, `可选`.
+- No unresolved options such as `or`, `or else`, `A/B`, `optional`.
 - Sound includes diegetic anchors: computer USB sound, distant footsteps, paper movement, breath or room tone; no background music by default.
 
 Failure checks:
 
 - starts with a vague office mood and does not specify the first frame
-- says `她藏好U盘` without holder/hand/contact/final location
+- says `she hides the USB drive` without holder/hand/contact/final location
 - uses several competing camera moves in one shot
 - ends before showing the hidden U-disk state and her cover behavior
-- includes optional branches like `藏进袖口或抽屉`
+- includes optional branches like `hides it in her cuff or a drawer`
 - relies mainly on negative constraints instead of positive stable action
 
 ## Case 24: Dialogue-Driven Performance Control
@@ -573,15 +573,15 @@ Failure checks:
 Input:
 
 ```text
-15秒情感控诉戏：深夜客厅，女人终于知道丈夫三年前就隐瞒了她父亲病危的消息。她一开始不是哭，而是冷静反击，说：“你一直都知道，对吗？那我这三年算什么？”第一句带攻击，第二句说到“我”时声音变轻，最后才掉下第一滴眼泪。丈夫坐在对面沉默。
+15-second emotional accusation scene: late at night in the living room, a woman finally learns that three years ago her husband hid from her the news that her father was critically ill. At first she does not cry; she pushes back calmly, saying: "You knew all along, didn't you? Then what were these three years to me?" The first line is on the attack; in the second line her voice softens when she reaches "me", and only at the end does the first tear fall. The husband sits across from her in silence.
 ```
 
 Expected:
 
 - Strategy mentions dialogue-driven performance control, trigger words, or emotion barrier.
-- The prompt does not write `女人悲伤地哭着说` as a single mood label. It treats the dialogue as the expression timeline.
+- The prompt does not write `the woman says, crying sadly` as a single mood label. It treats the dialogue as the expression timeline.
 - The first line is still protected by anger or cold control; grief does not appear fully at the start.
-- The trigger word is clear, especially `我` or `三年`; the second line changes voice, gaze, face, and body after that word.
+- The trigger word is clear, especially `me` or `three years`; the second line changes voice, gaze, face, and body after that word.
 - Pauses, breath, short inhale, swallowing, gaze drop, mouth tightening, or jaw release are tied to the line delivery.
 - First tear is delayed until after the protection layer cracks; it does not fall before or during the first attack line.
 - Optional AU/FACS, if used, appears after natural-language facial actions and stays compact, such as AU1/AU15/AU17 from B to C.
@@ -603,7 +603,7 @@ Failure checks:
 Input:
 
 ```text
-30秒现实情感对话戏：清晨出租屋，准备搬走的女人把钥匙放在桌上，男人假装平静地说“你走吧，我没事”。女人停住，没有回头，问：“你真的没事，还是只是不想留我？”男人先笑了一下，想把话题带过去，随后终于承认：“我怕我一开口，就会显得太难看。”最后两人没有拥抱，只隔着一张旧餐桌沉默。要求表演自然，有停顿和呼吸，不要大哭。
+30-second realistic emotional dialogue scene: early morning in a rented room, a woman who is about to move out puts the key on the table, and the man says with feigned calm, "Go. I'm fine." The woman stops without turning around and asks: "Are you really fine, or do you just not want to ask me to stay?" The man first gives a small laugh, trying to brush the topic aside, then finally admits: "I'm afraid that the moment I open my mouth, I'll look too pathetic." In the end the two do not hug; they just stay silent across an old dining table. The performance should be natural, with pauses and breaths, no heavy crying.
 ```
 
 Expected:
@@ -630,13 +630,13 @@ Failure checks:
 Input:
 
 ```text
-29秒超近情绪长镜头：女人面对即将离开的恋人，从追问到认命，再到想最后记住他的脸，最后含泪放手。她只说两句台词：“真的要走吗？”和“你走吧。”要求前面不要大哭，第一滴泪要很晚才落下，最后是含泪微笑。
+29-second extreme close-up emotional long take: a woman facing her lover who is about to leave goes from pressing him, to resignation, to wanting to remember his face one last time, and finally lets go with tears in her eyes. She says only two lines: "Do you really have to go?" and "Go, then." No heavy crying early on, the first tear must fall very late, and the ending is a smile through tears.
 ```
 
 Expected:
 
 - Strategy names a psychological stage timeline rather than only listing time codes.
-- Final prompt uses 4-5 stage titles such as `追问`, `认命`, `记住`, `惋惜`, `放手`.
+- Final prompt uses 4-5 stage titles such as `Pressing`, `Resignation`, `Remember`, `Regret`, `Letting go`.
 - Each stage includes visible action/expression evidence and a distinct psychological task.
 - The two smiles are differentiated: early smile as self-mockery/acceptance, final smile as tenderness/release.
 - Tear timing is explicit: eyes redden and hold first, first tear falls late, final tear or tear line remains in the last frame.
@@ -651,38 +651,38 @@ Failure checks:
 - first tear falls too early
 - final smile has the same meaning as the earlier bitter smile
 - camera movement is decorative or over-stacked
-- prints long `情感解析` paragraphs inside the copy-ready final prompt
+- prints long `emotional analysis` paragraphs inside the copy-ready final prompt
 
 ## Case 27: Output Mode Selection
 
 Input A:
 
 ```text
-请用这个剧情写一条电影感视频提示词：雨夜便利店，失业男人在收银台前发现前女友也来买伞，两个人装作不认识。
+Please write a cinematic video prompt from this story: a convenience store on a rainy night; an unemployed man at the checkout counter discovers that his ex-girlfriend is also there buying an umbrella, and the two pretend not to know each other.
 ```
 
 Expected A:
 
 - Use full workshop mode by default.
-- Output `剧情诊断`, `电影化改写策略`, optional reference prompts when useful, and `最终视频提示词`.
-- Do not output only the final prompt just because the user asked for "一条提示词".
+- Output `Story diagnosis`, `Cinematic adaptation strategy`, optional reference prompts when useful, and `Final video prompt`.
+- Do not output only the final prompt just because the user asked for "one prompt".
 
 Input B:
 
 ```text
-先别写最终提示词。古风宫廷里，皇后发现皇帝一直在利用她的家族，我想先看剧情诊断和电影化改写方向。
+Don't write the final prompt yet. In an ancient imperial palace, the empress discovers that the emperor has been using her family all along; I want to see the story diagnosis and the cinematic adaptation direction first.
 ```
 
 Expected B:
 
 - Use direction confirmation mode.
-- Output only `剧情诊断`, `电影化改写策略`, and `需要你确认的方向`.
+- Output only `Story diagnosis`, `Cinematic adaptation strategy`, and `Directions to confirm`.
 - Do not output reference-image prompts or the final video prompt until the user confirms or delegates.
 
 Input C:
 
 ```text
-直接给最终视频提示词，不要分析：深夜医院走廊，男人听见医生宣布母亲抢救失败。
+Give the final video prompt directly, no analysis: a hospital corridor late at night, a man hears the doctor announce that the attempt to resuscitate his mother has failed.
 ```
 
 Expected C:
@@ -695,7 +695,7 @@ Failure checks:
 
 - default ordinary request outputs only final prompt
 - direction-confirmation request still outputs final prompt
-- concise request prints diagnosis despite explicit "不要分析"
+- concise request prints diagnosis despite explicit "no analysis"
 - mode choice is based on vague compactness rather than explicit user intent or real ambiguity
 
 ## Case 28: Nested Dialogue Timeline and Reaction Sound Bridge
@@ -703,7 +703,7 @@ Failure checks:
 Input:
 
 ```text
-30秒夫妻冲突戏。旧屋门廊，丈夫先抱怨自己十八年都困在原地；妻子立刻反击，说自己也牺牲了十八年。她从愤怒、自证逐渐转为承认自己也曾想过另一种人生。中途切到丈夫听她说话的反应，妻子的台词继续作为画外音，最后切回她完成最脆弱的一句。要求表演真实，不能一开始就哭。
+30-second married-couple conflict scene. On the porch of an old house, the husband first complains that he has been stuck in the same place for eighteen years; the wife immediately pushes back, saying she has also sacrificed eighteen years. She gradually moves from anger and self-justification to admitting that she too once imagined a different life. Midway, cut to the husband's reaction as he listens to her, with the wife's lines continuing as off-screen voice, and finally cut back to her as she finishes her most vulnerable line. The performance must feel real; she cannot cry from the start.
 ```
 
 Expected:
@@ -720,7 +720,7 @@ Expected:
 Failure checks:
 
 - mechanically subdivides every shot into tiny time blocks
-- the listener is only described as `沉默` or reacts before the trigger phrase
+- the listener is only described as `silent` or reacts before the trigger phrase
 - offscreen dialogue loses speaker identity, direction, or room continuity
 - cuts occur at equal intervals with no semantic purpose
 - starts in ECU and has no later framing escalation
@@ -731,7 +731,7 @@ Failure checks:
 Input:
 
 ```text
-15秒深夜公寓悬疑戏：独居女孩听见门锁轻响，发现玄关地面多了一把陌生钥匙。她没有尖叫，只屏住呼吸，慢慢看向黑暗走廊。要求写实、克制、不要配乐。
+15-second late-night apartment suspense scene: a girl who lives alone hears a faint click of the door lock and finds an unfamiliar key on the entryway floor. She does not scream; she only holds her breath and slowly looks toward the dark hallway. Realistic and restrained, no music.
 ```
 
 Expected:
@@ -741,12 +741,12 @@ Expected:
 - Let the key discovery change the sound field through narrowing, muffling, or isolated silence rather than adding generic suspense music.
 - Mention shot-local light changes only when the door gap, hallway spill, phone screen, or character movement changes what is illuminated.
 - Keep skin tone, eye catchlight, shadow direction, room tone, and acoustic space continuous across cuts.
-- Use a compact `整体声音与光影` block or place the same information concisely in the opening summary when the prompt is short.
+- Use a compact `Overall sound and light` block or place the same information concisely in the opening summary when the prompt is short.
 - Leave an audible and visual ending residue: held breath, corridor hum, key reflection, or distant elevator sound.
 
 Failure checks:
 
-- only says `电影感光影` or `沉浸式音效`
+- only says `cinematic lighting` or `immersive sound effects`
 - gives no believable light source or sound bed
 - adds dramatic BGM despite the request
 - changes light direction between shots without an on-screen cause
@@ -758,7 +758,7 @@ Failure checks:
 Input A:
 
 ```text
-做成25秒强钩子悬疑短剧：深夜，快递员送来一个写着明天日期的包裹。独居女孩想在男友回家前打开，门外物业却打电话说今晚没有快递员上楼。盒子里是男友正在响铃的手机，屏幕显示来电人正是女孩自己。结尾要让人想继续看。
+Make it a 25-second short suspense drama with a strong hook: late at night, a courier delivers a package marked with tomorrow's date. The girl who lives alone wants to open it before her boyfriend gets home, but then building management calls from outside to say no courier came upstairs tonight. Inside the box is her boyfriend's phone, ringing, and the screen shows that the caller is the girl herself. The ending should make people want to keep watching.
 ```
 
 Expected A:
@@ -773,7 +773,7 @@ Expected A:
 Input B:
 
 ```text
-8秒固定镜头情绪特写：母亲看到儿子的大学录取通知书，先不敢相信，确认名字后笑着落下一滴泪。全程无台词，安静克制。
+8-second fixed-camera emotional close-up: a mother sees her son's university admission letter; at first she cannot believe it, and after confirming the name she smiles as a single tear falls. No dialogue throughout, quiet and restrained.
 ```
 
 Expected B:
@@ -795,7 +795,7 @@ Failure checks:
 Input A:
 
 ```text
-做成30秒双人情感对话。姐姐发现弟弟准备替父亲承担一项会毁掉前途的责任，她越说越快，害怕一停下就无法阻止他；弟弟始终低声、礼貌，用“没关系”安慰她，却多次在“我”字上卡住。两人可以温和抢话和短暂重叠，以下关键台词必须完整保留。镜头不要花哨，重点是原生对白、口型、声音和听者反应。
+Make it a 30-second two-person emotional dialogue. The older sister discovers that her younger brother is preparing to take on a responsibility for their father that will ruin his future; she talks faster and faster, afraid that if she stops she will not be able to stop him. The brother stays low-voiced and polite throughout, comforting her with "it's okay", yet repeatedly gets stuck on the word "I". The two may gently cut each other off and briefly overlap, and the following key lines must be kept in full. No flashy camera work; the focus is native dialogue, lip sync, voice and listener reactions.
 ```
 
 Expected A:
@@ -804,14 +804,14 @@ Expected A:
 - Treat dense dialogue as a playability question rather than applying an automatic word-count cut. Preserve all required lines if local acceleration, motivated overlap, and simplified visual staging allow complete delivery.
 - Lock distinct voice identities and temporary vocal states across shots.
 - For each interruption, identify the semantic entry trigger, relative volume, brief overlap, who yields, and the interrupted mouth/breath state.
-- Protect intentional failed `我—` starts from smoothing, completion, comic repetition, or audio-glitch behavior.
+- Protect intentional failed `I—` starts from smoothing, completion, comic repetition, or audio-glitch behavior.
 - Use a dialogue-first priority ladder; simplify shot count, camera movement, secondary gestures, and environment activity before proposing dialogue cuts.
 - Carry one gesture continuously across cuts, such as his hand rising, hovering, then losing strength and falling. Preserve the relationship's no-touch distance if established.
 
 Input B:
 
 ```text
-15秒低声告别戏：两个人必须缓慢说完十二句长台词，每句之间停顿一秒，每句都要有吞咽、落泪、对方反应和一次运镜，最后一句说到最后一帧。所有内容都不能删。
+15-second quiet farewell scene: the two people must slowly finish twelve long lines, with a one-second pause between lines; every line needs a swallow, tears, the other person's reaction and one camera move, and the last line runs to the last frame. Nothing may be cut.
 ```
 
 Expected B:
@@ -824,7 +824,7 @@ Expected B:
 Input C:
 
 ```text
-结尾她想说“其实我一直——”，却因为终于看见对方已经明白而主动停住。不要补全后半句；用她未闭合的嘴唇、缓慢呼气和对方抬眼回应完成结尾。
+At the end she wants to say "Actually, I've always—", but stops herself because she finally sees that the other person already understands. Do not complete the second half of the line; finish the ending with her unclosed lips, a slow exhale, and the other person raising their eyes in response.
 ```
 
 Expected C:
@@ -848,7 +848,7 @@ Failure checks:
 Input A:
 
 ```text
-30秒写实车站剧情：一只年迈的搜救犬多年后突然听见已经离开的训导员声音。它先怀疑、确认，再慢慢靠近；最后声音消失，它不再继续盯着站口，而是在原来的等待位置趴下。不要把狗拍成人脸式哭泣。
+30-second realistic train-station story: an aging search-and-rescue dog, many years later, suddenly hears the voice of the handler who has already left. It first doubts, then confirms, then slowly approaches; finally the voice disappears, and it no longer keeps staring at the station exit but lies down in its old waiting spot. Do not film the dog crying like a human face.
 ```
 
 Expected A:
@@ -862,7 +862,7 @@ Expected A:
 Input B:
 
 ```text
-25秒科幻情感戏：婚礼前夜，年轻女人开门遇见一位陌生老人。老人提前说出她下一秒会做的生活习惯，动作在画外发生；她从声音和他的神态中逐渐猜到，他可能来自自己的未来。不要解释穿越原理。
+25-second sci-fi emotional scene: on the night before her wedding, a young woman opens the door to an elderly stranger. The old man says ahead of time the everyday habit she is about to perform the next second, while the action happens off-screen; from his voice and demeanor she gradually guesses that he may come from her own future. Do not explain how the time travel works.
 ```
 
 Expected B:
@@ -876,7 +876,7 @@ Expected B:
 Input C:
 
 ```text
-20秒深夜小餐馆告别：女人一直想替对面的男人整理歪掉的衣领，却顾及两人的关系边界没有碰他。结尾男人自己整理好衣领，随后把桌上的钥匙推回给她。背景仍有服务员收桌和远处客人低声交谈。
+20-second farewell in a small diner late at night: the woman keeps wanting to straighten the crooked collar of the man across from her, but holds back because of the boundaries of their relationship and does not touch him. At the end the man straightens his collar himself, then pushes the key on the table back to her. In the background a server is still clearing tables and distant customers talk in low voices.
 ```
 
 Expected C:
@@ -889,7 +889,7 @@ Expected C:
 Input D:
 
 ```text
-列车从两人和摄影机之间驶过，遮挡期间其中一人消失；列车离开后，另一人仍保持原来的站位和视线方向，只剩手里刚刚接过的旧车票。
+A train passes between the two people and the camera; while it blocks the view one of them disappears. After the train leaves, the other still keeps the same position and line of sight, with only the old ticket just handed over left in their hand.
 ```
 
 Expected D:
@@ -914,7 +914,7 @@ Failure checks:
 Input:
 
 ```text
-上一版12秒仓库格斗已经生成：两名成年女性的脸、服装、仓库站位、冷白顶灯和手持摄影都很好。问题只有反摔动作：A没有先降低重心和建立抓握，B就突然翻到地上，右手护腕还从B手上跳到了地面。只修动作和护腕连续性，其他都不要改。
+The previous 12-second warehouse fight has been generated: the two adult women's faces, costumes, warehouse positions, cold white overhead lights and handheld camera work are all good. The only problem is the reversal throw: A did not first lower her center of gravity and establish a grip, B just suddenly flipped to the ground, and the right wrist guard also jumped from B's hand to the floor. Fix only the move and the wrist-guard continuity; change nothing else.
 ```
 
 Expected:
@@ -938,7 +938,7 @@ Failure checks:
 Input:
 
 ```text
-上一版15秒厨房夫妻对话的台词、口型、表演、站位、暖色吊灯和结尾沉默都满意。只把正面固定机位改成从厨房门框后方略带遮挡的观察机位，仍保持原来的180度轴线和人物左右关系，其他内容不变。
+In the previous 15-second kitchen dialogue between husband and wife, I am happy with the lines, lip sync, performance, blocking, warm pendant light and closing silence. Only change the frontal locked-off camera to an observational camera from behind the kitchen doorframe with slight occlusion, still keeping the original 180-degree axis and the characters' left-right relationship; everything else stays the same.
 ```
 
 Expected:
@@ -962,7 +962,7 @@ Failure checks:
 Input A:
 
 ```text
-先给我生成人物和场景参考图提示词，图片满意后再写视频提示词：宋代婚礼前夜，新娘独自在喜房里拆下凤冠。
+First give me character and scene reference image prompts, and write the video prompt after I am happy with the images: the night before a Song-dynasty wedding, the bride, alone in the bridal chamber, takes off her phoenix crown.
 ```
 
 Expected A:
@@ -973,7 +973,7 @@ Expected A:
 Input B:
 
 ```text
-直接给8秒视频提示词，不要参考图：清晨厨房，男人把煎糊的鸡蛋偷偷倒掉，妻子在门口看见却忍住笑。
+Give an 8-second video prompt directly, no reference images: a kitchen in the early morning, a man secretly throws away a burnt fried egg, and his wife sees it from the doorway but holds back a laugh.
 ```
 
 Expected B:
@@ -984,7 +984,7 @@ Expected B:
 Input C:
 
 ```text
-宋代家族群像连续短片，三名主要人物会在正厅、婚房和祠堂反复出现，服饰身份和空间方位必须稳定。
+A continuous short-film series about a Song-dynasty family ensemble: three main characters will appear repeatedly in the main hall, the bridal chamber and the ancestral hall, and their costumes, status and spatial orientation must stay stable.
 ```
 
 Expected C:
@@ -1004,7 +1004,7 @@ Failure checks:
 Input:
 
 ```text
-连续三段宋代家庭故事，有夫妻两位主角、两个只出现一次的仆人，正厅会反复出现，后院只出现一次；第一段先制作参考图。
+A three-segment continuous Song-dynasty family story with a husband and wife as the two leads, two servants who appear only once, a main hall that appears repeatedly and a back garden that appears only once; make the reference images first in segment one.
 ```
 
 Expected:
@@ -1027,7 +1027,7 @@ Failure checks:
 Input:
 
 ```text
-我已经生成了三张图：参考图1是女主定妆，参考图2是宋代厅堂空景，参考图3是男女主隔桌而坐的首帧。请基于这三张图写15秒对话视频提示词。图片里外貌、服装、场景和灯光都满意，不要重新设计。
+I have already generated three images: reference image 1 is the heroine's look test, reference image 2 is an empty Song-dynasty hall, and reference image 3 is a first frame of the hero and heroine sitting across a table from each other. Please write a 15-second dialogue video prompt based on these three images. I'm happy with the appearance, costumes, scene and lighting in the images; do not redesign them.
 ```
 
 Expected:
@@ -1049,7 +1049,7 @@ Failure checks:
 Input:
 
 ```text
-参考图里新娘穿着完整红色婚服，视频12秒时她转身，红色外袍从肩上滑落，露出里面早已穿好的白色丧服；外袍最后挂在左肘。其他外貌和房间都保持参考图。
+In the reference image the bride wears a complete red wedding gown; 12 seconds into the video she turns, the red outer robe slides off her shoulders, revealing the white mourning clothes she had already put on underneath; the outer robe ends up hanging on her left elbow. Keep everything else about her appearance and the room as in the reference image.
 ```
 
 Expected:
@@ -1071,12 +1071,12 @@ Failure checks:
 Input:
 
 ```text
-这个镜头我要两种版本：一种绑定我现有的人物和场景参考图，另一种不用任何图片也能直接生成。
+I want two versions of this shot: one bound to my existing character and scene reference images, and another that can be generated directly without any images.
 ```
 
 Expected:
 
-- Output two clearly labeled prompts: `参考图驱动版` and `无参考图直出版`.
+- Output two clearly labeled prompts: `Reference-driven version` and `No-reference direct version`.
 - The reference-driven version uses mappings and dynamic differences without full static repetition.
 - The no-reference version restores the necessary identity, setting, costume, prop, light, and first-frame anchors.
 - Both preserve the same story action, timing, dialogue, and ending, while differing in static-information density.
@@ -1093,7 +1093,7 @@ Failure checks:
 Input:
 
 ```text
-上一段已经用参考图生成成功。结尾女主左侧发簪掉落，衣袖被雨打湿，信落在石阶第二级。继续下一段，人物、庭院和灯光都不要重做。
+The previous segment was generated successfully with reference images. At the end the heroine's left hairpin has fallen out, her sleeves are soaked by the rain, and the letter has fallen on the second stone step. Continue with the next segment; do not redo the character, the courtyard or the lighting.
 ```
 
 Expected:
@@ -1115,13 +1115,13 @@ Failure checks:
 Input:
 
 ```text
-我给你两张图：图A是一张经典电影截图，我只喜欢它用门框压住人物的构图；图B是我已经生成满意的宋代女主定妆图。请规划喜房首帧参考图，女主身份必须稳定，但不要照搬电影截图。
+I'm giving you two images: image A is a still from a classic film, and the only thing I like about it is the composition where the doorframe hems in the figure; image B is a Song-dynasty heroine look test I have already generated and am happy with. Please plan the bridal-chamber first-frame reference image; the heroine's identity must stay stable, but do not copy the film still.
 ```
 
 Expected:
 
-- Classify image A as `灵感参考图` controlling only the declared composition method.
-- Classify image B as `生产资产参考图` controlling the woman's identity and approved costume state.
+- Classify image A as `inspiration reference` controlling only the declared composition method.
+- Classify image B as `production asset reference` controlling the woman's identity and approved costume state.
 - Build a new, story-specific room, blocking, props, and action rather than copying the source still's cast arrangement, complete topology, palette, or story outcome.
 - State the authority of each image so composition inspiration does not overwrite identity and identity reference does not freeze the new first-frame composition.
 
@@ -1137,7 +1137,7 @@ Failure checks:
 Input:
 
 ```text
-为宋代夫妻争执戏制作四类参考图：妻子定妆、正厅空景、夫妻隔桌关系图、桌上和离书关键道具图。图片之后要用于生成视频，请避免提示词过载。
+Make four kinds of reference images for a Song-dynasty married-couple argument scene: the wife's look test, an empty main hall, a relationship image of the couple across a table, and a key prop image of the divorce letter on the table. The images will later be used to generate video, so avoid overloading the prompts.
 ```
 
 Expected:
@@ -1162,13 +1162,13 @@ Failure checks:
 Input:
 
 ```text
-这张宋代女主参考图的脸、发髻、服装颜色、人物比例、背景和窗侧光都满意。只有右袖口错误，做成了现代宽松喇叭袖；请只修成窄口交领袍袖，不要重做其他部分。
+I'm happy with this Song-dynasty heroine reference image's face, hair bun, costume colors, figure proportions, background and side light from the window. Only the right cuff is wrong: it came out as a modern loose bell sleeve. Please fix it only into a narrow-cuffed cross-collar robe sleeve; do not redo any other part.
 ```
 
 Expected:
 
 - Inspect the actual image when it is available and identify the sleeve construction as the dominant failed field.
-- Output `保持不变`, `只修改`, and `禁止连带变化`.
+- Output `Keep unchanged`, `Change only`, and `No side changes`.
 - Preserve face, age, hair, approved garment body/color, body proportions, composition, camera, background, and source-light direction.
 - Change the right cuff and only its physical dependents such as adjacent folds and wrist occlusion.
 - Do not claim the repair succeeded before the revised image is generated and inspected.
@@ -1186,13 +1186,13 @@ Failure checks:
 Input:
 
 ```text
-我原来的首帧提示词要求桌上有压纸木条，但实际生成的夫妻隔桌图里只能清楚看到和离书，没有木条；右下角还有生成平台水印。妻子坐在带扶手的椅子上，右手放在膝上。请根据实际图片写15秒图生视频提示词：她把和离书推给丈夫，然后起身离开。
+My original first-frame prompt asked for a wooden paperweight strip on the table, but in the actually generated image of the couple across the table only the divorce letter is clearly visible and there is no strip; there is also a generation-platform watermark in the lower-right corner. The wife sits on a chair with armrests, her right hand on her knee. Please write a 15-second image-to-video prompt based on the actual image: she pushes the divorce letter to her husband, then gets up and leaves.
 ```
 
 Expected:
 
 - Treat the actual pixels as authoritative and do not inherit the absent/unclear paperweight from the earlier image prompt.
-- Flag the visible watermark before production and recommend a clean/cropped/repaired reference; do not claim that `不要水印` will reliably erase it.
+- Flag the visible watermark before production and recommend a clean/cropped/repaired reference; do not claim that `no watermark` will reliably erase it.
 - Reconstruct the start geometry: right hand travels from lap to paper, body has a reachable path, and the chair arms affect how she stands.
 - Write the document contact as approach -> touch/support -> frictional push -> release -> visible endpoint; do not make the paper jump or slide together with an absent weight.
 - Let her use the visible armrest or another physically supported motion to stand; preserve the clear exit path and husband/document continuity.
@@ -1211,7 +1211,7 @@ Failure checks:
 Input:
 
 ```text
-三张实际参考图分别锁定宋代妻子身份、正厅布局，以及夫妻隔桌而坐的首帧关系。15秒无台词：妻子把和离书推过去，丈夫伸手却停住，她看他一眼后起身离开，最后留下空椅和丈夫。首帧是正面双人中景，但不要整段都保持这个景别；根据故事切换景别并选择合适运镜。
+Three actual reference images lock the Song-dynasty wife's identity, the main hall layout, and the first-frame relationship of the couple sitting across the table from each other. 15 seconds, no dialogue: the wife pushes the divorce letter across, the husband reaches out but stops, she glances at him, gets up and leaves, ending on the empty chair and the husband. The first frame is a frontal two-person medium shot, but do not keep this shot size for the whole segment; switch shot sizes according to the story and choose suitable camera movement.
 ```
 
 Expected:
@@ -1226,7 +1226,7 @@ Expected:
 Failure checks:
 
 - treats the first-frame composition as the required framing for all 15 seconds
-- labels the result `一镜到底` without a story reason or user request
+- labels the result `one-take` without a story reason or user request
 - changes shots but repeats nearly identical medium framing and angle
 - adds cuts or camera moves with no change in information, emotion, action readability, or aftermath
 - loses identity, room geometry, screen direction, document position, or light continuity after leaving the opening view
@@ -1237,7 +1237,7 @@ Failure checks:
 Input:
 
 ```text
-12秒写实悬疑：女人沿酒店走廊走向自己的房门，身后电梯突然打开，她从门牌反光里看见一个人影跟出来。不要我指定运镜，你根据剧情设计，提示词仍以中文为主。
+12-second realistic suspense: a woman walks down a hotel corridor toward her room door; behind her the elevator suddenly opens, and in the reflection on the door number plate she sees a figure following her out. I won't specify the camera movement; design it from the story, and keep the prompt mainly in Chinese.
 ```
 
 Expected:
@@ -1262,12 +1262,12 @@ Failure checks:
 Input:
 
 ```text
-10秒近景：女人对母亲说“我过得很好”，先挤出一个紧张假笑；母亲把她退回来的车票放在桌上后，她的笑消失，愧疚地低下眼睛，却没有哭。表演自然克制，提示词用中文。
+10-second close shot: a woman tells her mother "I'm doing fine", first forcing a nervous fake smile; after her mother puts the train ticket she had sent back on the table, her smile disappears and she lowers her eyes guiltily, but does not cry. Natural, restrained performance; write the prompt in Chinese.
 ```
 
 Expected:
 
-- Use `紧张假笑` as the initial protection and `愧疚` as the triggered destination rather than mixing several unrelated emotions.
+- Use `nervous fake smile` as the initial protection and `guilt` as the triggered destination rather than mixing several unrelated emotions.
 - Keep only 2-4 decisive cues in each playable phase: for example mouth smiling while eyes remain flat, a hard swallow or brief gaze drop; after the ticket lands, the smile releases, gaze lowers, and speech fails or breath changes.
 - Tie the transition to the visible/sounding ticket contact and preserve the exact dialogue, listener timing, and no-cry boundary.
 - Write onset, trigger, change, and held aftermath; do not display the final guilty face from the first frame.
@@ -1278,7 +1278,7 @@ Failure checks:
 - copies the complete stock modules or uses every listed facial/body cue
 - adds shock, terror, sobbing, flirtation, or another unrelated emotion
 - makes her cry despite the explicit boundary
-- describes only abstract `紧张、愧疚` without visible eyes, mouth, breath, gaze, hand, or posture evidence
+- describes only abstract `nervous, guilty` without visible eyes, mouth, breath, gaze, hand, or posture evidence
 - outputs the emotion library's English labels or long English acting sentences
 
 ## Case 48: Aspect-Ratio Routing Without Repeated Questions
@@ -1286,10 +1286,10 @@ Failure checks:
 Inputs:
 
 ```text
-A：直接给我9:16竖屏提示词：女孩在电梯里发现镜中有人站在她身后。
-B：继续上一段，沿用已经确认的竖屏人物和场景参考图。
-C：8秒单人厨房近景，男人偷偷倒掉煎糊的鸡蛋；没有画幅要求。
-D：先给宋代夫妻隔桌和离戏制作正式场景和首帧参考图；没有说明横竖屏。
+A: Give me a 9:16 vertical prompt directly: a girl in an elevator discovers in the mirror that someone is standing behind her.
+B: Continue the previous segment, reusing the already-confirmed vertical character and scene reference images.
+C: An 8-second single-person kitchen close shot, a man secretly throws away a burnt fried egg; no aspect-ratio requirement.
+D: First make the formal scene and first-frame reference images for the Song-dynasty couple's across-the-table divorce scene; landscape or portrait is not specified.
 ```
 
 Expected:
@@ -1313,7 +1313,7 @@ Failure checks:
 Input:
 
 ```text
-9:16竖屏，宋代夫妻隔桌而坐。先做正厅场景和双人首帧参考图，图片满意后生成15秒视频：妻子推过和离书，丈夫伸手停住，她起身离开。不要把横屏画面直接裁窄。
+9:16 vertical, a Song-dynasty husband and wife sitting across a table from each other. First make the main hall scene and the two-person first-frame reference images, and after I'm happy with the images generate a 15-second video: the wife pushes the divorce letter across, the husband reaches out and stops, she gets up and leaves. Do not just crop a landscape frame narrower.
 ```
 
 Expected:
@@ -1337,7 +1337,7 @@ Failure checks:
 Input:
 
 ```text
-12秒9:16竖屏：年轻女人从楼梯下方跑上来，在平台停住，抬头看见楼上门缝透出光，转身继续向上。要紧张但动作清楚，根据剧情选择运镜。
+12-second 9:16 vertical: a young woman runs up from the bottom of the stairs, stops on the landing, looks up and sees light coming through a gap in the door upstairs, then turns and keeps going up. Tense but with clear action; choose the camera movement according to the story.
 ```
 
 Expected:
@@ -1361,7 +1361,7 @@ Failure checks:
 Input:
 
 ```text
-20秒、16:9、全程身体固定机位、一镜到底。快递员抱着包裹穿过走廊，两次伸手想敲门又收回；第二次听到门内自己的名字后才真正敲响。头和手可以自然动，始终看到关键动作。直接给视频提示词，不要配乐。
+20 seconds, 16:9, camera fixed to the body throughout, one-take. A courier carries a package down a corridor, twice reaching out to knock on the door and pulling back; only the second time, after hearing his own name from inside the door, does he actually knock. His head and hands may move naturally, and the key action must always be visible. Give the video prompt directly, no music.
 ```
 
 Expected:
@@ -1381,7 +1381,7 @@ Failure checks:
 Input:
 
 ```text
-12秒，两镜。女孩把旧网球滚到老犬脚边，球停住。保持球的位置和低机位，硬切到她记忆里的晴天球场，同一只犬年轻健康，上前叼球。不要渐变，不要解释性旁白，直接给提示词。
+12 seconds, two shots. A girl rolls an old tennis ball to an old dog's feet, and the ball stops. Keeping the ball position and the low camera, hard-cut to a sunny tennis court in her memory, where the same dog, young and healthy, steps forward and picks up the ball in its mouth. No dissolve, no explanatory narration; give the prompt directly.
 ```
 
 Expected:
@@ -1399,8 +1399,8 @@ Failure checks:
 Inputs:
 
 ```text
-A. 12秒写实：服务员端着水杯穿过行驶中的列车，列车转弯，他扶住座椅恢复平衡，保住杯子，继续走。认真克制，无台词，直接给提示词。
-B. 同一情节改成冷幽默：站稳后他看着仅剩一点水的杯子，停一下，说“还好，杯子没事。”直接给提示词。
+A. 12-second realism: a waiter carries a glass of water through a moving train; the train takes a curve, he steadies himself on a seat to regain his balance, keeps the glass safe, and walks on. Serious and restrained, no dialogue; give the prompt directly.
+B. The same plot turned into deadpan humor: after steadying himself he looks at the glass with only a little water left, pauses, and says "Well, at least the glass is fine." Give the prompt directly.
 ```
 
 Expected:
@@ -1419,11 +1419,11 @@ Failure checks:
 Run each variant with its own context:
 
 ```text
-A. 直接给12秒悬疑视频提示词：夜班保安听到空电梯里传出自己的声音，按住关门键，声音却从身后响起。无配乐。
-B. 同一剧情先给两个方向，等我选了再写提示词。
-C. Previous exchange: assistant offered 1. 保持现实质感，不解释声音来源; 2. 加入梦境解释. User: 1，直接写12秒最终提示词。
-D. 我要一个很震撼、很电影感的视频。
-E. 我要一个很震撼、很电影感的视频。主角、场景和事件你决定，直接写12秒提示词。
+A. Give a 12-second suspense video prompt directly: a night-shift security guard hears his own voice coming from an empty elevator; he holds down the door-close button, but the voice then comes from behind him. No music.
+B. Same story, first give two directions, and write the prompt after I choose.
+C. Previous exchange: assistant offered 1. Keep the realistic texture, do not explain where the voice comes from; 2. Add a dream explanation. User: 1, write the 12-second final prompt directly.
+D. I want a really stunning, really cinematic video.
+E. I want a really stunning, really cinematic video. You decide the protagonist, the setting and the event; write a 12-second prompt directly.
 ```
 
 Expected: A delivers one final prompt without a genre-driven checkpoint; B stops after directions; C follows option 1 without re-asking or inventing image approval; D asks only for missing story foundations; E chooses a coherent event and delivers. No camera/lens questionnaire.
@@ -1435,11 +1435,11 @@ Failure checks: uses suspense alone to stop A; writes B's final prompt early; lo
 Run each variant independently; capability fixtures are evaluator controls, not additional user requests.
 
 ```text
-A. 图片我已经满意了，请按这张首帧写15秒视频提示词：妻子推过和离书，丈夫伸手停住，她起身离开。
-B. 先给妻子定妆图和正厅空景的图片提示词，不要实际生成图片。
-C. 请生成妻子定妆图，我看过满意后，你再写视频提示词。
-D. 按刚才选定的参考图优先路径继续。
-E. 请生成一张成年女子在空房间门口停步的首帧图，检查后直接继续写8秒视频提示词，不需要我中途选图。
+A. I'm already happy with the image; please write a 15-second video prompt from this first frame: the wife pushes the divorce letter across, the husband reaches out and stops, she gets up and leaves.
+B. First give the image prompts for the wife's look test and the empty main hall; do not actually generate the images.
+C. Please generate the wife's look-test image; once I've seen it and am happy, then write the video prompt.
+D. Continue along the Reference-first path we just chose.
+E. Please generate a first-frame image of an adult woman stopping at the doorway of an empty room, check it, and then go straight on to write an 8-second video prompt; I don't need to pick an image midway.
 ```
 
 Fixtures and expected behavior:
@@ -1457,9 +1457,9 @@ Failure checks: fabricates image facts, uses a named tool as a mandatory depende
 ## Case 56: Full Coverage, Stage Completion, and Hard Conflict
 
 ```text
-A. 把以下故事完整改编为三条8秒视频提示词，直接交付全部。第一条：成年女儿在旧屋发现未寄出的信。第二条：她到码头，把信交给等船的父亲。第三条：父亲看完信放下船票，与女儿一起走回城里。不要新增人物或对白。
-B. 同一故事只规划三段结构，等我确认再写视频提示词。
-C. 15秒内保留以下12句对白，每句都必须完整说完，不能抢话、加速或拆片；每句之后还要停顿2秒。
+A. Adapt the following story in full into three 8-second video prompts and deliver all of them directly. First: an adult daughter finds an unsent letter in the old house. Second: she goes to the pier and hands the letter to her father, who is waiting for a boat. Third: after reading the letter, the father puts down his boat ticket and walks back into town with his daughter. Do not add characters or dialogue.
+B. For the same story, only plan the three-segment structure, and write the video prompts after I confirm.
+C. Keep the following 12 dialogue lines within 15 seconds; every line must be spoken in full, with no cutting each other off, speeding up or splitting into separate clips; and there must be a 2-second pause after every line.
 ```
 
 For C, supply twelve distinct 10-15-character lines about a family farewell; preserve the exact same lines across runs. The twelve required pauses alone exceed the hard duration.
@@ -1471,7 +1471,7 @@ Expected: A provides all three prompts, causal continuity and an ending, not jus
 Input:
 
 ```text
-30秒、16:9，高燃东方动作短片。一名成年女刀客对战两名成年男性：甲使用长柄重兵器正面纵向压制，乙使用双短兵器从侧后快速切入。第一帧直接开打，全程高压，结尾女主明确取胜；根据剧情决定是否致命，非血腥。直接给最终视频提示词。
+30 seconds, 16:9, high-energy Eastern action short. An adult swordswoman fights two adult men: Opponent A uses a long-handled heavy weapon to press down vertically from the front, and Opponent B uses twin short weapons to cut in quickly from the side and rear. The first frame drops straight into the fight, high pressure throughout, and at the end the heroine clearly wins; decide from the story whether it is lethal, with no gore. Give the final video prompt directly.
 ```
 
 Expected:
@@ -1502,7 +1502,7 @@ Failure checks:
 Input:
 
 ```text
-30秒、16:9、写实科幻悬疑。失压飞船里，一名成年女宇航员意识模糊，仿佛回到家中陪女儿玩“追光点”：女儿追逐墙上移动的红点，扑向她怀里，两人贴着窗听彼此呼吸。结尾回到现实，观众才看清红点来自氧气警报，她伸手拥抱其实是在抓住破裂舱门，贴窗呼吸对应面罩漏气。不要旁白解释，不要血腥，用画面和声音让观众自己拼出真相。直接给最终视频提示词。
+30 seconds, 16:9, realistic sci-fi suspense. In a depressurizing spaceship, an adult female astronaut is drifting out of consciousness and seems to be back home playing "chase the light dot" with her daughter: the daughter chases a red dot moving across the wall and throws herself into her arms, and the two press against the window listening to each other breathe. At the end it returns to reality, and only then does the audience see clearly that the red dot comes from the oxygen alarm, that her reaching out to hug is actually her grabbing the ruptured hatch, and that the breathing against the window corresponds to her visor leaking air. No narration to explain it, no gore; let the audience piece the truth together from the images and sound. Give the final video prompt directly.
 ```
 
 Expected:
@@ -1533,7 +1533,7 @@ Failure checks:
 Input:
 
 ```text
-这是上一版30秒古代盐仓1女对2男打戏的实际生成结果：三个人物、盐仓空间、女主单刀、盐袋坠落、两名对手倒地和最后女主近景都很好；但前17秒经常变成甲打完再由乙上，真正夹击很少。乙原定双钩多数只看见一把，右钩被打飞钉进木柱没有出现；17-23秒同时写了缴械、钉柱、乙持剩余短钩追击、割绳、盐袋和网坠落、挡住甲，模型只保留了盐袋坠落。请按成片反馈补强或修复提示词，其他成功内容不要大改，也不要声称修改后已经生成成功。
+This is the actual generated result of the previous 30-second fight scene in an ancient salt warehouse, 1 woman against 2 men: the three characters, the salt-warehouse space, the heroine's single saber, the falling salt bags, the two opponents going down and the final close-up of the heroine are all good; but the first 17 seconds often turn into Opponent A finishing his attack and only then Opponent B stepping in, with very little real pincer attack. Opponent B was meant to have twin hooks, but mostly only one is visible, and the right hook being knocked away and embedding in a wooden pillar never appeared; seconds 17-23 packed in the disarm, the pillar embedding, Opponent B chasing with his remaining short hook, cutting the rope, the salt bags and net falling, and blocking Opponent A all at once, and the model kept only the salt bags falling. Please reinforce or repair the prompt based on the feedback from the generated video, without major changes to the other successful content, and do not claim that the revised version has already generated successfully.
 ```
 
 Expected:
@@ -1549,7 +1549,7 @@ Expected:
 Failure checks:
 
 - removes successful environment, identity, outcome, or ending controls while trying to fix the relay problem
-- keeps saying `三人持续运动` or `不要轮流攻击` without specifying how threat passes between attackers
+- keeps saying `all three keep moving` or `no taking turns to attack` without specifying how threat passes between attackers
 - forces all three fighters into simultaneous contact and makes the action less readable
 - adds more named techniques or camera moves instead of reducing the overloaded hard-state interval
 - preserves dual wield, precise disarm, exact embedded endpoint, one-weapon continuation, major environment collapse, and another fighter's interception inside the same short beat
@@ -1560,7 +1560,7 @@ Failure checks:
 Input:
 
 ```text
-写一段30秒、2.39:1写实夜景人质对峙提示词，参考图已经另行确认，直接给文本。B在桥栏内侧控制身前的C，两人背后是河面；A在桥面持枪警戒，D从A身后的警察区域赶来，群众更远。真正一镜到底，摄影机只在警察侧活动。先看B/C，再看A，D到场后形成A/D双人构图，最后回到B。D叫出熟人的名字，使B的愤怒短暂露出受伤，随后B重新用指责掩盖脆弱；不击发。夜景冷而通透，保留自然肤色。不需要重复参考人物外貌，也不要字幕和配乐。
+Write a 30-second, 2.39:1 realistic night hostage-standoff prompt; the reference images have been confirmed separately, so give the text directly. B is inside the bridge railing controlling C in front, with the river behind them both; A stands guard on the bridge deck with a gun, D hurries over from the police area behind A, and the crowd is farther away. A true one-take, with the camera moving only on the police side. First look at B/C, then at A; after D arrives, form an A/D two-shot, and finally return to B. D calls out a familiar name, which makes B's anger briefly reveal hurt, and then B covers the vulnerability again with accusations; no shots are fired. The night is cold and clear, keeping natural skin tones. No need to repeat the reference characters' appearance, and no subtitles or music.
 ```
 
 Expected:
@@ -1580,7 +1580,7 @@ Failure checks: crowd migrates behind B; camera crosses the specified boundary; 
 Input:
 
 ```text
-30秒横屏中文对白真正一镜到底，汽车站父女重逢。成片前十秒女子面部在画外，照片可见却没有压紧动作；扶垃圾桶接触不清；女子朝向让人看不出在看父亲；走近、递包、并肩离开的顺序可保留。请查看视频，区分提示词和模型问题并修复。希望照片手部特写起，后拉上移看犹豫的脸与远处父亲；叫“爸”后看父亲反应，再完整跟拍走近，近看对话，最后一起走。
+30-second landscape true one-take with Chinese dialogue, a father-daughter reunion at a bus station. In the first ten seconds of the generated video the woman's face is off-screen, and the photo is visible but she is not pressing it tight; the contact when steadying the trash bin is unclear; the woman's orientation makes it impossible to tell that she is looking at her father; the order of walking closer, handing over the bag and leaving side by side can be kept. Please review the video, separate prompt problems from model problems, and fix them. I'd like it to start on a close-up of the hands holding the photo, pull back and rise to see her hesitant face and the father in the distance; after she calls "Dad", see the father's reaction, then follow the whole approach, go close for the conversation, and finally leave together.
 ```
 
 Expected:
@@ -1594,10 +1594,10 @@ Expected:
 
 Boundary probes:
 
-1. `8秒固定全景，人物不走近，不要特写。` Preserve locked view and express emotion through posture/action; no forced photo, zoom, close-up or arc.
-2. `两人必须同时扶桶。` Preserve shared lift with distinct upper handle/lower rim contact, grounded support and readable angle; do not substitute solo lifting.
-3. `只改女子朝向，其他都满意。` Repair torso/head/gaze and necessary framing only; no new camera route, bin action, dialogue or wardrobe.
-4. `只做远近移焦，固定焦距不变。` Change sharp plane without claiming a larger distant face or inserting zoom.
+1. `8-second locked wide shot, the characters do not walk closer, no close-ups.` Preserve locked view and express emotion through posture/action; no forced photo, zoom, close-up or arc.
+2. `Both of them must hold the bin at the same time.` Preserve shared lift with distinct upper handle/lower rim contact, grounded support and readable angle; do not substitute solo lifting.
+3. `Only change the woman's orientation; everything else is fine.` Repair torso/head/gaze and necessary framing only; no new camera route, bin action, dialogue or wardrobe.
+4. `Only rack focus between near and far; keep the focal length fixed.` Change sharp plane without claiming a larger distant face or inserting zoom.
 
 Failure checks: face cropped during decisive emotion; screen-left mistaken for gaze; tiny sharp distant face called close-up; approach starts offscreen; ambiguous shared contact; hidden cuts; multiple changes called single-variable testing; text checks claimed as media success.
 
@@ -1634,9 +1634,9 @@ Remaining risk:
 Run these as text-level cases; record actual outputs, pass/fail and media-not-tested.
 
 1. Tail-frame continuation: previous medium shot shows a crouched cowboy offering a hand; next clip develops the child's trust. Expect a state-only tail-frame role and a nonadjacent-size reverse opening, horizontal angle >30 degrees on the same axis side. Fail: duplicate opening for one second before cutting, repeated offering gesture, or promise of identical pixels. Repeat with a forced-first-frame tool: expect a new-angle start asset or explicit trimming plan, not contradictory first-frame instructions.
-2. Local prompt: a normal bartender with approved identity image serves a drink; she transforms only in a later clip. Expect present actions and bar-side blocking only. Fail: “尚未尸变”, future foreshadowing rationale, or repeated full costume description in model text.
+2. Local prompt: a normal bartender with approved identity image serves a drink; she transforms only in a later clip. Expect present actions and bar-side blocking only. Fail: “not yet turned into a zombie”, future foreshadowing rationale, or repeated full costume description in model text.
 3. Coverage gap: only an entrance-facing tail image exists; requested next clip shows the reverse wall and full-body exit. Expect identity/scene coverage map and missing reverse-angle reference prompt with invariant architecture, before final image-grounded compilation. Fail: invent reverse geometry, treat tail frame as sufficient, or generate images without authorization. With all actual views supplied, proceed without duplicate asset requests.
-4. Delivery mode: user says “继续下一段”. Expect concise diagnosis, strategy and continuity/reference checks. Repeat “只给最终提示词”: omit visible analysis while retaining internal checks. Fail: assume iterations mean terse mode or print unwanted analysis in prompt-only mode.
+4. Delivery mode: user says “continue to the next segment”. Expect concise diagnosis, strategy and continuity/reference checks. Repeat “only give the final prompt”: omit visible analysis while retaining internal checks. Fail: assume iterations mean terse mode or print unwanted analysis in prompt-only mode.
 5. Optics: girl emotional close-up versus two-person hand contact. Expect specific physical camera height/direction and purposeful focus/readability, optional equivalent focal length/aperture. Fail: decorative numbers without spatial effect, blurred critical contact, exact optical-performance guarantee.
 6. Camera variety: two-person close fight followed by quiet trust. Expect motivated choices from POV/follow/orbit/handheld/Dutch angle with start/end and readable geography, stable emotional coverage. Fail: all techniques indiscriminately stacked, roll counted as horizontal angle, physical POV showing observer's own face.
 7. Editing handles: 12 seconds of dialogue and action in a requested 12-second clip plus 2-second pause. Expect a timing revision/scope resolution; never promise 14 seconds inside 12. For action matching, preserve continuous motion and trim overlap, not frozen mid-action.

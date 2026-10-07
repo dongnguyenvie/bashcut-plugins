@@ -44,8 +44,9 @@ prefix → `error`, `warning`, `info` or `off`); outputs are export preset names
 - `scene-prompt` is based on
   [cinematic-video-prompt-engineer](https://github.com/CyberJ0605/cinematic-video-prompt-engineer-skill) v1.8.0
   (commit `53bdce3`) by CyberJ0605, MIT License — the license is in
-  [`skills/scene-prompt/LICENSE-upstream`](skills/scene-prompt/LICENSE-upstream). Changes: renamed to
-  `scene-prompt`, a BashCut section and description added (moved from the withdrawn Pre-production plugin), "Cinematic Translation Rules" moved to
+  [`skills/scene-prompt/LICENSE-upstream`](skills/scene-prompt/LICENSE-upstream). Changes: translated from
+  Chinese to English (`SKILL.md` and every reference), renamed to `scene-prompt`, a BashCut section and description added (moved from the withdrawn Pre-production plugin), "Cinematic Translation Rules" moved to
   `references/cinematic_translation_rules.md` so `SKILL.md` stays under BashCut's 64 KB limit, and the upstream
-  `agents/openai.yaml`, evaluation videos and README left out. To update, copy the upstream `SKILL.md` and
-  `references/` again and repeat these changes.
+  `agents/openai.yaml`, evaluation videos and README left out. To update, translate the upstream changes to
+  `SKILL.md` and `references/` into English (keeping the section labels of
+  this copy) and repeat the other changes.

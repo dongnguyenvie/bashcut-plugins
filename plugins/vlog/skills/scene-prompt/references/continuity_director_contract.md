@@ -4,13 +4,13 @@ Read this reference for continuation, multi-shot reference-driven prompts, and r
 
 ## 1. Tail-frame state is not an opening-frame command
 
-Default: a previous tail frame controls story state (identity, costume, physical layout, contact, handedness, prop state, action phase and emotional residue), not the next clip's exact composition. Start a continuation with a motivated new angle and clearly differentiated shot size. Never default to “原样接续尾帧”, “准确首帧” or one second of duplicated composition before the new angle. A same-shot extension is an explicit user choice, not a synonym for “继续”. Preserve real object locations while allowing their screen coordinates to change with camera perspective.
+Default: a previous tail frame controls story state (identity, costume, physical layout, contact, handedness, prop state, action phase and emotional residue), not the next clip's exact composition. Start a continuation with a motivated new angle and clearly differentiated shot size. Never default to “continue exactly from the tail frame”, “exact first frame” or one second of duplicated composition before the new angle. A same-shot extension is an explicit user choice, not a synonym for “continue”. Preserve real object locations while allowing their screen coordinates to change with camera perspective.
 
 Distinguish reference input from first-frame input. If the tool supports ordinary image references, assign the tail frame state-only authority. If it forces an input image to be the first frame, a text instruction cannot reliably make that first frame a different angle: prepare a compatible new-angle opening image, or explicitly plan to trim the generated opening and cut at the new view. Do not promise seamless pixels. Inspect actual media before claiming a join works.
 
 ### Cut audit (including the boundary between clips)
 
-- Default to nonadjacent shot sizes: avoid 全景→中景, 中景→近景, 近景→特写 and 特写→大特写. Prefer 全景→近景, 中景→特写, 特写→全景. Continuous reframing inside one shot is not a cut. If the user imposes a strict rule, do not silently grant an exception. Otherwise an exception needs a concrete editorial reason.
+- Default to nonadjacent shot sizes: avoid wide→medium, medium→medium close-up, medium close-up→close-up and close-up→extreme close-up. Prefer wide→medium close-up, medium→close-up, close-up→wide. Continuous reframing inside one shot is not a cut. If the user imposes a strict rule, do not silently grant an exception. Otherwise an exception needs a concrete editorial reason.
 - For a same-scene cut on the same subject/interaction, specify a horizontal camera change greater than 30 degrees, while preserving the 180-degree axis and eyelines. A Dutch roll, vertical height change or focal-length change alone does not satisfy this. A new location needs readable geography, not a fabricated relative angle.
 - Use environment, object or listener inserts only when they carry information, a reaction, elapsed time or a sound bridge. Do not hide a physically impossible reset with an insert.
 - Budget 1–2 seconds after the last key line or completed performance beat for reaction, breath, sound decay or continued movement. Include it in total duration. For match-on-action, use flowing action handles/overlap for editing instead of freezing halfway; trim overlap so the action is not repeated on screen.
@@ -18,7 +18,7 @@ Distinguish reference input from first-frame input. If the tool supports ordinar
 
 ## 2. Keep model instructions local and visible
 
-Keep plot diagnosis and directorial rationale outside the copy-ready prompt. Inside it describe this clip's visible actions, performance, camera, sound, reference roles and necessary continuity facts. Omit future events, backstory, thematic commentary and “铺垫下一段”. A normal character reference needs no “还没有尸变”; write the required reaction and position. Replace “开始信任” alone with observable gaze, breath and voluntary contact. Do not repeat static identity and costume already supplied by references. Preserve story-critical present facts such as a removed poster or an occupied hand. Negative constraints target demonstrated or likely physical failures only, not an inventory of unrelated plot events.
+Keep plot diagnosis and directorial rationale outside the copy-ready prompt. Inside it describe this clip's visible actions, performance, camera, sound, reference roles and necessary continuity facts. Omit future events, backstory, thematic commentary and “setting up the next segment”. A normal character reference needs no “has not turned into a zombie yet”; write the required reaction and position. Replace “begins to trust” alone with observable gaze, breath and voluntary contact. Do not repeat static identity and costume already supplied by references. Preserve story-critical present facts such as a removed poster or an occupied hand. Negative constraints target demonstrated or likely physical failures only, not an inventory of unrelated plot events.
 
 ## 3. Shot-first reference coverage
 
@@ -38,13 +38,13 @@ Assign image numbers by actual upload order and put narrow roles inside the fina
 
 ## 4. Delivery sections remain visible
 
-Unless the user explicitly requests prompt-only output, include concise 【剧情诊断】 and 【电影化改写策略】 in creation and continuation answers. Continuation uses a local diagnosis, not a repeat of the entire plot. Then include 【接续与参考图检查】 when applicable, missing reference prompts when needed, and the final prompt only at the authorized/asset-ready stage. A small repair may use one sentence per diagnosis/strategy section. Do not infer prompt-only mode from repeated iterations. In explicit prompt-only mode, run these checks internally without printing the sections.
+Unless the user explicitly requests prompt-only output, include concise 【Story diagnosis】 and 【Cinematic adaptation strategy】 in creation and continuation answers. Continuation uses a local diagnosis, not a repeat of the entire plot. Then include 【Continuation and reference check】 when applicable, missing reference prompts when needed, and the final prompt only at the authorized/asset-ready stage. A small repair may use one sentence per diagnosis/strategy section. Do not infer prompt-only mode from repeated iterations. In explicit prompt-only mode, run these checks internally without printing the sections.
 
 ## 5. Camera geometry before numeric decoration
 
 Specify important camera positions relative to fixed landmarks, view direction, height, subject angle and movement path. For critical cuts describe horizontal angle change and axis side. Do not overload every shot with every field.
 
-Use full-frame-equivalent focal length when perspective/subject distance matters; pair it with framing and desired spatial effect. Use aperture or a range only when depth of field serves evidence, performance or focus transfer; specify exactly which face/contact/background must be readable. Treat numeric lens/aperture values as visual intent, not guaranteed optical simulation. Do not put a critical gun hit, hand contact or route in blur merely to get a cinematic look. Skip gratuitous numeric settings for simple shots. Example: “85mm等效视角，f/2.8浅景深效果，双眼清晰，身后麻袋虚化但可辨；机位与人物眼睛等高”.
+Use full-frame-equivalent focal length when perspective/subject distance matters; pair it with framing and desired spatial effect. Use aperture or a range only when depth of field serves evidence, performance or focus transfer; specify exactly which face/contact/background must be readable. Treat numeric lens/aperture values as visual intent, not guaranteed optical simulation. Do not put a critical gun hit, hand contact or route in blur merely to get a cinematic look. Skip gratuitous numeric settings for simple shots. Example: “85mm-equivalent field of view, f/2.8 shallow depth-of-field effect, both eyes sharp, the sacks behind blurred but recognizable; camera at the character's eye level”.
 
 ## 6. Choose camera language by dramatic purpose
 
