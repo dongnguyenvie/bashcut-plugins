@@ -12,8 +12,10 @@ description: Turn a plot summary, novel excerpt, character relationship or scene
 
 ## In BashCut
 
-This skill is pre-production: it writes text for an AI video or image model; it does not edit the timeline. BashCut
-gives it to agents while the `bashcut.preproduction` plugin is trusted and turned on.
+This skill writes text for an AI video or image model; it does not edit the timeline. BashCut gives it to agents
+while the `bashcut.vlog` plugin is trusted and turned on. In a vlog it makes the shots the footage lacks (an intro
+scene, a b-roll moment, an illustration): `bashcut.vlog:plan` sends you here, and the clip, once generated and placed,
+gets the `vlog-disclosure` label ("Ảnh/Video minh hoạ tạo bằng AI").
 
 - **Language.** Talk to the user in their language. The section labels below are Chinese (【剧情诊断】…); write them
   in the user's language (for Vietnamese: 【Chẩn đoán cốt truyện】, 【Chiến lược chuyển thể điện ảnh】,
