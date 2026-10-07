@@ -24,11 +24,16 @@ The bc:captions-text skill covers caption style and placement; this one covers g
    seconds for one part, `--word-style highlight|karaoke|reveal` for words as they are spoken). It is a background
    job: poll `bashcut jobs status` until it finishes.
 3. When several transcribers are installed, `--provider bashcut.whisper-captions.local` picks this one.
+4. To read what was said before placing anything, `bashcut media transcribe --media <id>` (a job) keeps the whole
+   file's transcript, and `bashcut media transcript --media <id> --as text --format text` reads it. Each word
+   carries Whisper's `confidence` and its segment's `noSpeechProb`. `captions generate` places captions from it
+   without transcribing again; after changing `vocabulary`, add `--fresh` (or `media transcribe --force`).
 
 ## Check
 
 - Read the captions with `bashcut timeline get --format text` and look for misspelled names. Add them to
-  `vocabulary` and run again with `--replace`, rather than fixing many captions by hand.
+  `vocabulary` and run again with `--replace --fresh`, rather than fixing many captions by hand. Words with a low
+  `confidence` in `media transcript --as words` are the ones to check first.
 - Look at one frame with `bashcut ui frame <frame>` to confirm the captions fit the safe area.
 
 ## When it fails

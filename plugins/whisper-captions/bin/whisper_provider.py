@@ -64,7 +64,8 @@ def fake_segments():
              ("Đôn", 3.7, 4.0), ("chơi", 4.0, 4.4)]
     return [
         {"start": 0.5, "end": 4.4, "text": " ".join(w for w, _, _ in words), "no_speech_prob": 0.0,
-         "avg_logprob": -0.2, "words": [{"word": " " + w, "start": s, "end": e} for w, s, e in words]},
+         "avg_logprob": -0.2,
+         "words": [{"word": " " + w, "start": s, "end": e, "probability": 0.9} for w, s, e in words]},
         {"start": 9.0, "end": 11.0, "text": "Hãy subscribe cho kênh Ghiền Mì Gõ", "no_speech_prob": 0.1,
          "avg_logprob": -0.3, "words": []},
     ]
@@ -211,9 +212,11 @@ def cues_from(segments, max_characters):
     MAX_SECONDS."""
     cues = []
     for segment in filter(spoken, segments):
-        words = [w for w in segment.get("words") or [] if (w.get("word") or "").strip()]
+        # Each word keeps its segment's no-speech probability for BashCut's source transcript.
+        doubt = {"no_speech_prob": segment["no_speech_prob"]} if "no_speech_prob" in segment else {}
+        words = [dict(w, **doubt) for w in segment.get("words") or [] if (w.get("word") or "").strip()]
         if not words:
-            words = [{"word": segment["text"], "start": segment["start"], "end": segment["end"]}]
+            words = [{"word": segment["text"], "start": segment["start"], "end": segment["end"], **doubt}]
         for phrase in phrases(words):
             cues.extend(split_evenly(phrase, max_characters))
     result = []
@@ -232,7 +235,9 @@ def cues_from(segments, max_characters):
 
 def word_timings(cues):
     """Each caption word with its time, for BashCut's word-by-word captions (`wordsPath`). Words of one caption
-    stay inside its time range and in order, so they line up with the caption text word for word."""
+    stay inside its time range and in order, so they line up with the caption text word for word. A word Whisper
+    timed itself carries its `confidence` (Whisper's word probability); every word carries its segment's
+    `noSpeechProb`."""
     timed = []
     for start, end, _, words in cues:
         for word in words:
@@ -246,9 +251,14 @@ def word_timings(cues):
             parts = text.split()
             total = sum(len(part) for part in parts)
             span = finish - begin
+            facts = {}
+            if len(parts) == 1 and isinstance(word.get("probability"), (int, float)):
+                facts["confidence"] = round(float(word["probability"]), 3)
+            if isinstance(word.get("no_speech_prob"), (int, float)):
+                facts["noSpeechProb"] = round(float(word["no_speech_prob"]), 3)
             for part in parts:
                 length = span * len(part) / total
-                timed.append({"text": part, "start": round(begin, 3), "end": round(begin + length, 3)})
+                timed.append({"text": part, "start": round(begin, 3), "end": round(begin + length, 3), **facts})
                 begin += length
     return timed
 
