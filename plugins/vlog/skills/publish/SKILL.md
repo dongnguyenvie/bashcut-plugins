@@ -11,7 +11,7 @@ read them for every output, and when a fact is missing from the data, say so ins
 
 ## 1. Read the platform facts
 
-`bashcut platforms get <id>` for each output (`tiktok`, `reels`, `shorts`, `youtube`; `bashcut platforms list --facts`
+`bashcut platforms get <id>` for each output (`tiktok`, `reels`, `shorts`, `youtube`; `bashcut platforms get --facts`
 for all at once). Every field is `{value, kind hard|recommended|info, source, checked, confidence}`:
 
 | Fact | Use it for |

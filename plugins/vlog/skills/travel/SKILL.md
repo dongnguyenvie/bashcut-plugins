@@ -22,8 +22,8 @@ what it does not measure (T07 §7, T15 §7). Write each chosen range, its source
 | Shortest shot `minShotSeconds` | near the 0.6 s under which `bc:beat-cut` merges pieces (T07 §5) | a beat-cut list can go shorter on purpose (short shots are only notes) | `review shots --summary` min |
 | Photo or locked-off hold `maxStillSeconds` | 1.5–4 s, longer while a line is said over it (T07 §3: change every 1.5–3 s in short-form, calm holds 2–4 s) | photos with voiceover or text to read hold longer; a silent photo montage cannot | `review measure`, then `bashcut review picture` (frozen stretches) |
 | Frozen picture `severities.still` | `error` or `warning` | error when every still should move in this edit; warning when some holds are deliberate (a sign, a map) | `bashcut review run` |
-| Jump cut `jumpCutChange` | just above the picture change of cuts that read as a jump (same place, same framing included) | fix with a punch-in, not a note | `bashcut review cuts` → `sameFraming`; `review picture` cut `difference` |
-| Hook `hookSeconds` | 2–3 s (structure below) | later only when the number is said late and cannot move | `bashcut review hook` |
+| Jump cut `jumpCutChange` | just above the picture change of cuts that read as a jump (same place, same framing included) | fix with a punch-in, not a note | `bashcut review shots` → `cut.sameFraming`; `review picture` cut `difference` |
+| Hook `hookSeconds` | 2–3 s (structure below) | later only when the number is said late and cannot move | `bashcut review layout --to F`, `transcript words --to F` |
 | Captions `captionLineChars`, `captionMaxLines` | vertical 15–32 characters, 1–2 lines; landscape 32–42 (T09 §3) | font width and size, speech rate | `bashcut review layout` → `longestLineChars`, `wordsPerSecond` |
 | Music under the voice | toward the small end of 5–18 dB (T11 §3) in montage parts, deeper under dense voiceover | music carries a travel montage; vocals or a soft voice need more room | `bashcut audio mix-measure` → `musicUnderSpeech` |
 
@@ -57,8 +57,8 @@ Mark each section with `upsertSection` (label = place name) so review and the us
 | Tone bands | calm stretches 2–4 s a shot; urgent stretches (a rush, a list) 0.4–1 s (T07 §3) | arrival and views are calm; lists and transfers are quick | `bashcut review shots --summary` per section |
 | Pattern interrupt | a new place, number or change of pace every 10–30 s short-form; 30–90 s long-form (T07 §3) | each place section is one; a long walk needs one inside it | `review shots --summary` per section |
 | Breath before the payoff | one held moment of 0.5–2 s before the best view, once or twice a video (T07 §3, §7) | a montage to music breathes on the drop | `bashcut review window <frame>` |
-| Transitions | between places: `vlog-whip-fast` (0.2–0.4 s, same direction on both sides) or a hard cut on a beat; inside a place: hard cuts only (T08 §3, §7) | a calm landscape edit uses `vlog-soft-cut` for time passing | `bashcut review cuts` → counts per kind, runs of the same kind |
-| Transition budget | special transitions 1–3 per minute of short form; whips 1–2 per short (T08 §3) | a fast many-place montage may use more as a declared motif; say so in the plan | `review cuts` counts ÷ minutes |
+| Transitions | between places: `vlog-whip-fast` (0.2–0.4 s, same direction on both sides) or a hard cut on a beat; inside a place: hard cuts only (T08 §3, §7) | a calm landscape edit uses `vlog-soft-cut` for time passing | `bashcut review shots` → count `cut.kind` and its runs |
+| Transition budget | special transitions 1–3 per minute of short form; whips 1–2 per short (T08 §3) | a fast many-place montage may use more as a declared motif; say so in the plan | `review shots` `cut.kind` counts ÷ minutes |
 | Ken Burns drift | 0.3–1.5 % a second, alternating direction (T08 §3) | bigger for short photos in a fast edit | `bashcut timeline get` → keyframes |
 | Place card, section chip | at the section start, held for reading: about letters ÷ 15 + 1–1.5 s (T09 §3) | longer names, busier backgrounds | `bashcut review layout` → `holdSeconds` |
 | Price tag | lands on the word the price is said: its entrance (0.15–0.6 s) ends on the word, held while it is said (T13 §3) | energy of the edit | `bashcut transcript words`; `review layout` |
@@ -82,7 +82,7 @@ the user's own (`bc:stock-images`).
 ## Sound
 
 Upbeat music bed under the voice (ducked, level from the range above); natural sound of each place for the first
-second of its section; a whoosh on the whips. Loudness is each output's own target (`bashcut platforms list`); do not
+second of its section; a whoosh on the whips. Loudness is each output's own target (`bashcut platforms get`); do not
 set it here (`bc:audio-mix`).
 
 ## Look

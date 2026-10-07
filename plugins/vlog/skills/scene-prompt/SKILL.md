@@ -23,9 +23,9 @@ gets the `vlog-disclosure` label ("Ảnh/Video minh hoạ tạo bằng AI").
   language the target model reads best (Chinese or English for Seedance, Kling, Jimeng, Hailuo, Wan; English for
   Veo, Sora, Runway) and say which one you chose.
 - **Read the neighbours first (a shot for an edit plan).** When the shot fills a row of the edit plan, read
-  `bashcut plan get` → `shots`: the row itself (purpose, size, move, mustShow, targetSeconds) and the rows before and
-  after it in the same section. Read what the clips there really show: `bashcut review coverage` (which media places
-  each row), `bashcut media description --media <id>` (size, move, direction, subjects) and one frame at each edge
+  `bashcut project data plan` → `shots`: the row itself (purpose, size, move, mustShow, targetSeconds) and the rows
+  before and after it in the same section. Read what the clips there really show: `bashcut review coverage` (which
+  described shot each clip plays, and its `planShot`), `bashcut media description --media <id>` (size, move, direction, subjects) and one frame at each edge
   (`bashcut media frame --media <id> --edge last` for the shot before, `--edge first` for the shot after). Then write
   the prompt so the new shot cuts in: a size step from the shot before (not the same size and move), the screen
   direction carried over from its exit to this entry, the same subjects with the same look sentence (light, colour,
@@ -35,7 +35,7 @@ gets the `vlog-disclosure` label ("Ảnh/Video minh hoạ tạo bằng AI").
 - **Bringing the clips in.** When the user has generated clips and wants to edit them, import them with
   `bashcut media import <path> --base-rev <rev>` (rev from `bashcut timeline get`; `--place` also puts them on the
   timeline), check with `bashcut ui frame`; for a plan row, describe the clip (`bashcut media describe`) so
-  `review coverage` counts the row as found, then continue with `bc:edit-workflow` (and `bc:color-grade`,
+  you can match it with the row (set the clip's `planShot` to the row id), then continue with `bc:edit-workflow` (and `bc:color-grade`,
   `bc:audio-mix`, `bc:captions-text` as needed).
 - **Not this skill:** effects, transitions or grading on footage already in BashCut — use `bc:effects` and
   `bc:color-grade`.

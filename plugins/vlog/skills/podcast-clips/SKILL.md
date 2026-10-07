@@ -21,7 +21,7 @@ value and its reason in the plan.
 | Topic clip length | 1–6 min (T06 §3) | source length and platform | as above |
 | Yield | not a quota: sources report about 1 clip per 2–3 min of source against 1 per 5–10 min (T06 §3, a contradiction) | how dense the talk is; fewer is fine | report the count and why you kept N |
 | Candidates | about 2× the clips you need, expecting 30–45 % duds (T06 §3) | a sharp talk has fewer duds | `bashcut selects list` counts per status |
-| Hook `hookSeconds` | the strongest **complete** sentence, 1.5–3 s (T06 §7) | a long sentence needs the top of the band; a cold open (a line from later moved to the start) only when the best line is more than about 10 s into the clip (T06 §7) | `bashcut review hook` |
+| Hook `hookSeconds` | the strongest **complete** sentence, 1.5–3 s (T06 §7) | a long sentence needs the top of the band; a cold open (a line from later moved to the start) only when the best line is more than about 10 s into the clip (T06 §7) | `bashcut review layout --to F`, `transcript words --to F` |
 | Cut padding | in 50–150 ms before the first word, out 80–300 ms after the last (T06 §3) | tighter for energy, looser for a trailing reaction or laugh; never past the next word | `bashcut media resolve-range` edge facts; `bashcut review sync` |
 | Clean cut points | gaps of 400 ms or more are clean; 150–400 ms need a look; under 150 ms are unsafe (T06 §3) | music or room noise under the gap | `bashcut media speech-map --media <id>` → `gaps` |
 | Length vs target | within ±10–15 % of the planned length (T06 §3) | a clip that needs its full payoff runs over; say so | `bashcut review run` (brief length, info) |
@@ -81,9 +81,9 @@ brief and layers, the media and only that range on Main. The open project does n
 
 | What | Sample range | Why it varies | Measure with |
 |---|---|---|---|
-| Framing change | every 4–6 s (T07 §7), by punch-in or a camera switch | a dense argument changes more often | `bashcut review cuts` |
+| Framing change | every 4–6 s (T07 §7), by punch-in or a camera switch | a dense argument changes more often | `bashcut review shots` → `cut.sameFraming` |
 | Snap punch | 1.1–1.15× on a strong word; 4–6 in a 60 s reel (T08 §3) | the clip's headroom | `bashcut timeline get` → `scale.maxZoomNative` |
-| Transitions | hard cuts and punch-ins; 0–1 special transitions per clip (T08 §7) | — | `bashcut review cuts` → counts per kind |
+| Transitions | hard cuts and punch-ins; 0–1 special transitions per clip (T08 §7) | — | `bashcut review shots` → count `cut.kind` |
 | Graphics | 0–2 per clip: a keyword (`vlog-keyword`) on the claim word, a name label at the start (T13 §3: 3–8 per minute is for explainers, sparser here) | the face carries the clip | `bashcut review layout` |
 
 ## Review notes

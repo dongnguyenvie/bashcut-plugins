@@ -22,7 +22,7 @@ fills what it does not measure (T07 §7, T15 §7). Write each chosen range, its 
 | Quick sequence | about 1 s a shot for 3–4 repeated actions (getting ready, cooking), then a longer shot | how many repeated actions were filmed | `review shots --summary` per section |
 | Shortest shot `minShotSeconds` | the bottom of the quick sequence, about 1 s | a beat-cut sequence can go shorter on purpose (short shots are only notes) | `review shots --summary` min |
 | Frozen picture `maxStillSeconds`, `severities.still` | 1.5–4 s, longer while a line is said over it (T07 §3); `warning` | a window-light photo under the diary voice holds longer; a frozen screen with nothing said does not | `review measure`, then `bashcut review picture` |
-| Hook `hookSeconds` | 2–3 s (structure below) | a quiet opening needs the time-stamp text or a question early | `bashcut review hook` |
+| Hook `hookSeconds` | 2–3 s (structure below) | a quiet opening needs the time-stamp text or a question early | `bashcut review layout --to F`, `transcript words --to F` |
 | Captions `captionLineChars`, `captionMaxLines` | 3–6 words, small and low (T09 §7); vertical 15–32 characters, 1–2 lines; landscape 32–42 (T09 §3) | speech rate and frame shape | `bashcut review layout`, `bashcut speech rate` |
 | Pauses in the diary voice | keep 0.15–0.5 s breaths, scaled to the speaker's own median gap (T11 §3) | a slow, thoughtful voice keeps longer pauses than a fast one | `bashcut media speech-map --media <id>` → `gapStats` |
 | Music under the voice | 5–18 dB under (T11 §3), one calm bed | music carries the wordless parts; dense diary talk needs more room | `bashcut audio mix-measure` → `musicUnderSpeech`, `musicInGaps` |
@@ -52,8 +52,8 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 | Tone bands | calm 2–4 s a shot; a quick sequence about 1 s a shot (T07 §3) | the mood of the part of the day | `bashcut review shots --summary` per section |
 | Pattern interrupt | a new part of the day, place or activity every 10–30 s short-form; 30–90 s long-form (T07 §3) | long-form daily vlogs change less often | `review shots --summary` per section |
 | Breath | one held silence of about 2 s, once, before the close (T07 §3) | a diary voice with pauses already breathes | `bashcut audio measure --timeline` → `silences` |
-| Transitions | hard cuts as the base; a dissolve (`vlog-soft-cut`, 0.3–1.0 s) for time passing; `vlog-blink` for a jump in time (T08 §3, §7) | a documentary-style day uses dissolves; a fast routine uses hard cuts | `bashcut review cuts` → counts per kind, runs |
-| Transition budget | 0–1 special transitions per minute besides the time-passing dissolves (T08 §3: documentary and cinematic work) | a playful routine may use more; say so | `review cuts` counts ÷ minutes |
+| Transitions | hard cuts as the base; a dissolve (`vlog-soft-cut`, 0.3–1.0 s) for time passing; `vlog-blink` for a jump in time (T08 §3, §7) | a documentary-style day uses dissolves; a fast routine uses hard cuts | `bashcut review shots` → count `cut.kind` and its runs |
+| Transition budget | 0–1 special transitions per minute besides the time-passing dissolves (T08 §3: documentary and cinematic work) | a playful routine may use more; say so | `review shots` `cut.kind` counts ÷ minutes |
 | Speed | 2–4× for a commute or a task under voice; up to 4–20× for silent waiting (T19 §3) | how much of the action must still read | `bashcut timeline get` → item speed |
 | Time stamps | `vlog-time-stamp` at each new part of the day, held for reading: about letters ÷ 15 + 1–1.5 s (T09 §3) | a busy background needs longer | `bashcut review layout` → `holdSeconds` |
 | Graphic density | low: time stamps and the odd keyword; daily vlogs sit far under explainers' 3–8 per minute (T13 §3, §7) | a study-with-me adds a timer | `review layout` → text items per minute |
@@ -67,7 +67,7 @@ cue (clock, phone, sky). Missing time cues: put the time stamps on screen.
 
 - A diary voice: short sentences, first person, present tense; captions small and low.
 - Sound: one calm music bed for the whole video, ducked under speech; keep room tone and small sounds (cup, door).
-  Loudness is each output's own target (`bashcut platforms list`).
+  Loudness is each output's own target (`bashcut platforms get`).
 - Look intent: soft and bright, gentle contrast, a little warmth; consistent between indoor and outdoor. Measure first
   (`bc:color-grade`).
 

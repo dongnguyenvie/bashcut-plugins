@@ -1,6 +1,6 @@
 ---
 name: product-ad
-description: Recipe for a product ad or selling video in BashCut (paid feed cut-down, organic commerce or UGC, launch or SaaS promo) — an ad brief with a truth source, the hook and CTA written as a pair and checked with review hook, an arc chosen from a menu by what the product and footage have, beat proportions instead of fixed seconds, truth and disclosure rules for every claim, and variants that change one thing each (variants create, variants diff); ranges with sources for the review profile. Use after bashcut.vlog:plan picked product-ad, or when the user wants an ad, a product video that sells, a TVC or several ad versions to test. Triggers: "quảng cáo", "video quảng cáo", "video bán hàng", "TVC", "ads", "chạy ads", "UGC", "video ra mắt sản phẩm", "nhiều phiên bản", "A/B test".
+description: Recipe for a product ad or selling video in BashCut (paid feed cut-down, organic commerce or UGC, launch or SaaS promo) — an ad brief with a truth source, the hook and CTA written as a pair and checked over the opening and the close, an arc chosen from a menu by what the product and footage have, beat proportions instead of fixed seconds, truth and disclosure rules for every claim, and variants that change one thing each (variants create, variants diff); ranges with sources for the review profile. Use after bashcut.vlog:plan picked product-ad, or when the user wants an ad, a product video that sells, a TVC or several ad versions to test. Triggers: "quảng cáo", "video quảng cáo", "video bán hàng", "TVC", "ads", "chạy ads", "UGC", "video ra mắt sản phẩm", "nhiều phiên bản", "A/B test".
 ---
 
 # Product ad
@@ -11,7 +11,7 @@ it. Plan with `bashcut.vlog:plan` (sections, shot rows, ranges into the plan, th
 
 ## 1. Ad brief first
 
-Fill these before writing a word, and write them into the brief (`bashcut project set-brief`, each `{value, status,
+Fill these before writing a word, and write them into the brief (`bashcut project set-data brief`, each `{value, status,
 source}`; T14 §4):
 
 | Field | What | Where it lives |
@@ -31,8 +31,9 @@ Write the hook and the CTA together; the CTA pays off what the hook promises (T1
 footage and compare them (`bashcut.vlog:hook-script` §3) before locking one. The hook and the offer must read with the
 sound off.
 
-After the rough cut, read both ends with `bashcut review hook`: `opening` (first words, first title, first cut, the
-described subjects with their first seconds) and `close` (last words, last title and its hold). Check the pair: does
+After the rough cut, read both ends: the opening (`transcript words --to F` first words, `review layout --to F`
+first title, `review shots --to F` first cut and described subjects) and the close (`transcript words --from F`,
+`review layout --from F` last title and its hold). Check the pair: does
 the close answer the opening's promise, and is the product on screen when the placement needs it?
 
 ## 3. Pick an arc from what you have
@@ -55,13 +56,13 @@ each chosen value and its reason in the plan.
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
-| Promise `hookSeconds` | visual + verbal promise in 1–3 s; the full hook 2–8 s (T14 §3) | shorter for paid feed and commerce; longer for a launch film the viewer chose to watch | `bashcut review hook` → `firstWords`, `firstTitle`, `firstCut` |
-| Product first on screen | commerce with a cart link: within about 3 s; a brand or launch film: at the reveal, after the pain (T14 §3, a contradiction) | placement and arc; say which you chose | `bashcut review hook` → `described` subjects' `firstSeconds` (after `media describe`) |
+| Promise `hookSeconds` | visual + verbal promise in 1–3 s; the full hook 2–8 s (T14 §3) | shorter for paid feed and commerce; longer for a launch film the viewer chose to watch | `bashcut transcript words --to F`, `review layout --to F`, `firstCut` |
+| Product first on screen | commerce with a cart link: within about 3 s; a brand or launch film: at the reveal, after the pain (T14 §3, a contradiction) | placement and arc; say which you chose | `bashcut review shots --to F` → `described` subjects' `firstSeconds` (after `media describe`) |
 | Total length | 6–15 s paid cut-down; 15–45 s organic commerce or UGC; 30–60 s launch or SaaS promo (T14 §3) | placement, how much proof the product needs, speech density; the platform's `maxSeconds` is the only hard limit | `bashcut platforms get <id>`; the brief's `lengthSeconds` |
 | Beat proportions | hook about 10–15 %, problem or context 15–25 %, solution or demo 30–45 % (the longest), proof 15–25 %, CTA 7–15 % (T14 §3) | the arc, and how long the product action really takes on the footage | plan sections against their markers (`bashcut review run`, section off plan) |
 | Montage / demo shot | 0.6–1.2 s in a music montage; 2–3 s per demo beat; longer holds for the hero and the proof (T14 §3) | music tempo; how long the action takes | `bashcut review shots --summary` per section |
 | Longest shot `maxShotSeconds` | the top of your demo band; one hero hold at 1.5–2.5× the average (T07 §3) | a demo that must be followed holds longer | `review shots --summary` max |
-| CTA hold | 2–4 s for paid social; 5–9 s when the end card carries a URL or logo to read (T14 §3) | CTA words and reading time | `bashcut review hook` → `close.lastTitle` hold |
+| CTA hold | 2–4 s for paid social; 5–9 s when the end card carries a URL or logo to read (T14 §3) | CTA words and reading time | `bashcut review layout --from F` → the last title's `holdSeconds` |
 | Re-hook | one re-hook or open loop per about 10–20 s of runtime; a soft mid-roll CTA only past about 20 s (T14 §3) | sources disagree on closing the loop before the CTA or keeping one into it; record which | `review shots --summary` per section |
 | On-screen copy `captionLineChars`, `minTextSize` | about 6 words per frame or fewer; hook text up to about 60 characters in 9:16 (T14 §3) | font, hold, sound-off viewing | `bashcut review layout` → `longestLineChars`, `holdSeconds`, `fontShare` |
 | Speech rate | the speaker's or voice's own measured rate; never sped up to fit (T02 §4, T14 §3) | speaker, language, voice | `bashcut speech rate`, `bashcut narration windows --rate <r>` |
@@ -107,7 +108,7 @@ something known, the CTA background. Commerce: the product clearly in the first 
 
 - Every number on screen with its source in the brief; the offer readable on mute.
 - Sound: one music bed under the voice, a sized sound on the reveal; the product's own sound when it is the point.
-  Loudness is each output's own target (`bashcut platforms list`).
+  Loudness is each output's own target (`bashcut platforms get`).
 - Look intent: true-to-life product colour first; mood second. Measure first (`bc:color-grade`).
 - Transitions: hard cuts as the base; `vlog-zoom-hit` on the reveal; one or two special transitions per minute at most
   (T08 §3).

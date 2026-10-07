@@ -8,7 +8,7 @@ places a view can live:
   images, a before/after comparison and an audio preview — and how events and `state` work.
 - **Voice** (`voice`, `"location": "dock"`: a tab in the agent dock on the right): how a plugin reuses other plugins without knowing them. It generates speech with
   `voice.speak` (BashCut picks the user's `voice.synthesize` plugin, such as VieNeu TTS), measures a take's loudness
-  with `plugins.invoke` (`audio.loudness`, listed in `uses`) and places the chosen take with `media.import`.
+  with `plugins.invoke` (`audio.loudness`, listed in `uses`) and places the chosen take with `voice.place`.
 
 - **Title card** (`titleCard`, `"location": "sheet"`): a short form in a sheet. The gallery's button and the
   **New title card…** action open it with the host call `plugins.show-view`; the answer `"close": true` closes it.
@@ -28,7 +28,7 @@ Open **Plugins** in BashCut, choose **Trust**, then click the new icon under the
 command line (or an agent):
 
 ```sh
-bashcut plugins views
+bashcut plugins list --views
 bashcut plugins view bashcut.views-example --view gallery --open
 bashcut plugins view-event bashcut.views-example --view gallery --node add
 bashcut plugins view-event bashcut.views-example --view gallery --node query --type change --value coffee

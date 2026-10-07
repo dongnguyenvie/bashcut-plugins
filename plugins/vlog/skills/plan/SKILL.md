@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Start a vlog in BashCut from one prompt — read the brief, pick the topic recipe (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial), survey the footage, write the edit plan with `plan set` (sections with length ranges and reasons, shot rows, the establish-or-hook choice, the chosen review ranges), set the project's outputs and review profile from it, then hand the edit to bc:edit-workflow. Use first whenever the user asks for a vlog or a short video about a trip, a meal, a day, a product, a talk or a how-to, before cutting anything, and when footage is still to be shot or generated. Triggers: "làm vlog", "dựng vlog", "vlog du lịch", "vlog ăn uống", "review món", "review sản phẩm", "a day in my life", "video hướng dẫn", "video nói chuyện", "lên kịch bản vlog", "shot list", "cần quay những gì", "một prompt ra video".
+description: Start a vlog in BashCut from one prompt — read the brief, pick the topic recipe (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial), survey the footage, write the edit plan with `project set-data plan` (sections with length ranges and reasons, shot rows, the establish-or-hook choice, the chosen review ranges), set the project's outputs and review profile from it, then hand the edit to bc:edit-workflow. Use first whenever the user asks for a vlog or a short video about a trip, a meal, a day, a product, a talk or a how-to, before cutting anything, and when footage is still to be shot or generated. Triggers: "làm vlog", "dựng vlog", "vlog du lịch", "vlog ăn uống", "review món", "review sản phẩm", "a day in my life", "video hướng dẫn", "video nói chuyện", "lên kịch bản vlog", "shot list", "cần quay những gì", "một prompt ra video".
 ---
 
 # Plan a vlog
@@ -19,9 +19,9 @@ every key it measures; the recipe only fills the keys it does not measure. Name 
 
 ## 0. Read what already exists
 
-- `bashcut project brief` — goal, audience, outputs, angle, length, each with a status (stated, inferred, confirmed).
+- `bashcut project data brief` — goal, audience, outputs, angle, length, each with a status (stated, inferred, confirmed).
   No brief and no clear angle in the prompt: run `bashcut.vlog:ideate` first; it writes the brief.
-- `bashcut plan get` — a plan already exists: resume from its `stage`. In `revision` mode, change only the sections
+- `bashcut project data plan` — a plan already exists: resume from its `stage`. In `revision` mode, change only the sections
   the user named and leave `frozen` ones alone.
 - `bashcut workflow gates` — which gates ask the user (G1 brief, G2 strategy, G3 rough cut, G4 script, G5 draft).
   Request each with `bashcut checkpoint request`; never decide a gate is approved yourself.
@@ -59,7 +59,7 @@ Ask only what changes the result and cannot be read from the footage or the brie
    - `bashcut media list --analysis` — shape and `fps` per media;
    - `bashcut review shots --media <id> --summary` — source shot lengths and motion;
    - `bashcut media describe` (write) and `bashcut media description` (read) — shot size, move and subjects in the
-     closed vocabulary; `bashcut review coverage` matches plan rows against these;
+     closed vocabulary; you match plan rows against these (`bashcut review coverage` shows what each clip plays);
    - `bashcut media speech-map --media <id>` and `bashcut speech rate` — gaps and speaking rate, for speech;
    - `bashcut platforms get <id>` per output — shape, `maxSeconds`, safe zones, loudness target, with sources;
    - a reference video: `bashcut review shots --media <ref> --summary` (its rhythm replaces the recipe's band).
@@ -67,7 +67,7 @@ Ask only what changes the result and cannot be read from the footage or the brie
 
 ## 3. Write the edit plan
 
-The plan is project data (`plan set`); `context get` summarises it, so work can resume after a break from `plan get`
+The plan is project data (`project set-data plan`); `context get` summarises it, so work can resume after a break from `project data plan`
 alone. Write it before the rough cut and keep it current.
 
 **Sections.** One per part of the recipe's structure, each with a length *range* chosen from the recipe and the
@@ -82,15 +82,15 @@ with its marker's length, as info.
   travel arrivals and long-form where the viewer chose to watch.
 Say why ("vertical TikTok, the price is the promise → hook first with the bite"). The first shot row carries the
 choice: a hook row with the hero subject in `mustShow`, or an establishing row with size `WS` or `EWS`. After the rough
-cut, `bashcut review hook` shows what really opens the edit (first words, first text, described subjects with their
-first seconds).
+cut, read what really opens the edit over the first seconds: `bashcut transcript words --to F` (first words),
+`review layout --to F` (first text), `review shots --to F` (described subjects of the first shots).
 
 **Shot rows** (T03 §4). One row per shot the viewer must see, not per clip: `{id, section, purpose, size, move,
 mustShow, targetSeconds, source}`.
 - `purpose`: what the viewer must notice first ("the price board, readable").
 - `size` from the closed vocabulary (ECU, CU, MCU, MS, MWS, WS, EWS, insert) and `move` (static, pan, tilt, push,
   pull, track, orbit, handheld, zoom, crane), chosen by the information that must be seen.
-- `mustShow`: subject names as you wrote them in `media describe`, so `review coverage` can match them.
+- `mustShow`: subject names as you wrote them in `media describe`, so you can match them with the clips' `described` subjects.
 - `targetSeconds` from the recipe's shot-length band; `source`: `footage`, `stock` or `generated`.
 - Neighbouring rows change size, angle or subject. Two rows in a row with the same size and move need a reason; three
   or more usually mean "merge them" (T03 §3).
@@ -128,7 +128,7 @@ the recipe's source ("T07 §7") or the reference ("style-study: @creator, n=12, 
 ```
 
 ```sh
-bashcut plan set plan.json --base-rev N          # whole plan; later changes: --merge with only the changed fields
+bashcut project set-data plan plan.json --base-rev N          # whole plan; later changes: --merge with only the changed fields
 ```
 
 ## 4. Set the outputs and the review profile
@@ -166,7 +166,7 @@ zones, smallest text, longest length, frame shape.
 | `minShotSeconds`, `maxShotSeconds` | shots on Main shorter / longer (short ones are always notes) |
 | `stillMotion` | with `maxShotSeconds`: a long shot warns only when its mean picture change is under this (0–1, `review shots` motion) |
 | `maxStillSeconds` | frozen picture longer than this |
-| `hookSeconds` | speech or text inside the opening window (`review hook`) |
+| `hookSeconds` | speech or text inside the opening window (`review layout --to F`, `transcript words --to F`) |
 | `maxSilenceSeconds`, `maxMusicGapSeconds` | stretches with no audible layer; gaps inside the music bed |
 | `voiceoverMarginSeconds`, `minSpeechCoverage` | voiceover too close to real speech; share of the edit with tagged speech or voiceover (0–1) |
 | `captionLineChars`, `captionMaxLines`, `minTextSize` | caption line length and lines; smallest text (share of the short side) |
@@ -179,16 +179,16 @@ zones, smallest text, longest length, frame shape.
 
 | Check | Sample range | Why it varies | Measure with |
 |---|---|---|---|
-| Monotony | a run of 6+ shots with length variation (CV) under ~0.15 reads flat (T07 §3) | a calm run on purpose is fine; say so | `bashcut review shots --summary --run-length 6 --max-cv 0.15` |
+| Monotony | a run of 6+ shots with length variation (CV) under ~0.15 reads flat (T07 §3) | a calm run on purpose is fine; say so | `bashcut review shots --summary` → compute the cv of 6 consecutive `seconds` |
 | Pattern interrupt | a new beat every 10–30 s short-form, 30–90 s long-form (T07 §3) | sources contradict; depends on whether "change" means a cut or a new idea | `review shots --summary` per section |
-| Payoff / CTA hold | ≥1 s, up to 4–6 s for a CTA (T07 §3) | platform and CTA | `bashcut review hook` → close |
+| Payoff / CTA hold | ≥1 s, up to 4–6 s for a CTA (T07 §3) | platform and CTA | `bashcut review layout --from F` → the last title's `holdSeconds` |
 | Dead air `maxSilenceSeconds` | sources cut dead air over about 1.5 s (T11 §3) | one held silence of about 2 s before a payoff is a choice, used once (T07 §3) | `bashcut audio measure --timeline` → `silences` |
 | Music under the voice | 5–18 dB under during speech (T11 §3) | less when music carries the piece; more for dense information, a soft voice, music with vocals | `bashcut audio mix-measure` → `musicUnderSpeech` |
 | `loudnessToleranceLU` | 1–2 LU (T11 §3) | tighter when outputs are compared side by side | export receipt, `review run` |
 | Length | the platform's `maxSeconds` is a hard limit; "sweet spots" contradict between sources (T17 §3) | the moment sets the length; never trim to a sweet spot | `bashcut platforms get <id>` |
 | Section length | the plan's own range per section | — | `bashcut review run` (section off plan, info) |
 
-**Loudness is per output, never one number**: each export normalizes to its own preset's target (`platforms list` →
+**Loudness is per output, never one number**: each export normalizes to its own preset's target (`platforms get` →
 `targets`; T11 §3, T17 §3). Never set `audio.targetLUFS` from a recipe; export each output with `--normalize-audio`.
 
 ## 5. Strategy gate, then coverage
@@ -197,8 +197,9 @@ zones, smallest text, longest length, frame shape.
    their ranges, the shot rows, each chosen value with its reason, and what is missing. Request G2:
    `bashcut checkpoint request G2 --summary "<the plan in short>" --attach <contact sheet>` and poll `bashcut
    checkpoint status` until it is not `awaiting_user`. `changes`: update the plan and ask again.
-2. **Coverage**: `bashcut review coverage` lists each shot row as placed, found, missing or undescribed. Undescribed:
-   describe the media first. Missing: say it plainly and offer, in this order, a cutaway from the footage, a punch-in
+2. **Coverage**: `bashcut review coverage` says which described shot each clip plays (and its `planShot`); match
+   each shot row yourself as placed (a clip plays it), found (`media description` has a fitting shot), missing or
+   undescribed (`described` null: describe the media first). Missing: say it plainly and offer, in this order, a cutaway from the footage, a punch-in
    on a wider shot (within its headroom), a stock picture (`bc:stock-images`, row `source: stock`) or a generated shot
    (row `source: generated`).
 3. **Generated shots**: write the prompt with `bashcut.vlog:scene-prompt`, giving it the row and its neighbours (the
@@ -208,7 +209,7 @@ zones, smallest text, longest length, frame shape.
 
 ## 6. Edit, review, publish
 
-Run `bc:edit-workflow` with the plan at hand; update `stage` with `plan set --merge` as you go. Where a kit skill asks
+Run `bc:edit-workflow` with the plan at hand; update `stage` with `project set-data plan --merge` as you go. Where a kit skill asks
 for a value (cut rate, caption grouping, punch-in, music level), choose inside the plan's range and say why. The words
 (hook, script, voiceover) come from `bashcut.vlog:hook-script`. In the review loop, the severities you set turn
 deliberate choices into notes; anything still an **error** must be fixed before export. If the cut shows a chosen
