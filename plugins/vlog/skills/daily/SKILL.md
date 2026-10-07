@@ -5,13 +5,14 @@ description: Recipe for a daily-life vlog in BashCut ("a day in my life", routin
 
 # Daily vlog
 
-Reply in the user's language. Survey the footage, choose values from the ranges below and write the review profile
-with `bashcut.vlog:plan` step 2, then edit with `bc:edit-workflow`.
+Reply in the user's language. Survey the footage, choose ranges and values from the tables below, write them into the
+edit plan and the review profile with `bashcut.vlog:plan`, then edit with `bc:edit-workflow`.
 
 ## Ranges
 
 Outputs: vertical → `tiktok`, `reels`, `shorts`; long-form (YouTube, 4–10 min) → `youtube-1080`. The ranges are
-starting points; a measured reference wins (T07 §7). Write each chosen value and its reason in the plan.
+starting points: a measured reference profile (`bc:style-study`) replaces every range it measures, and the recipe only
+fills what it does not measure (T07 §7, T15 §7). Write each chosen range, its source and its reason in the plan.
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -28,6 +29,9 @@ starting points; a measured reference wins (T07 §7). Write each chosen value an
 
 ## Structure (30–90 s vertical)
 
+Sample lengths from earlier vlog practice, not slots: the plan gives each section its own range from the footage
+and says why (`bashcut.vlog:plan` §3); review compares it with the section marker.
+
 | Part | Length | What |
 |---|---|---|
 | Hook | 2–3 s | the most interesting moment of the day, or a question/number ("5H SÁNG THỨC DẬY ĐỂ LÀM GÌ?") |
@@ -39,8 +43,20 @@ starting points; a measured reference wins (T07 §7). Write each chosen value an
 
 - Pace from the ranges above: let a shot breathe when something happens in it.
 - Short sequences of quick shots for repeated actions, then a longer shot.
-- Transitions: hard cuts and `vlog-soft-cut` between parts of the day; `vlog-blink` for a time jump.
-- Speed ramp or 2–4× for commutes and long tasks.
+- Speed ramp for commutes and long tasks, at the speed below.
+
+## Rhythm, transitions and graphics
+
+| What | Sample range | Why it varies | Measure with |
+|---|---|---|---|
+| Tone bands | calm 2–4 s a shot; a quick sequence about 1 s a shot (T07 §3) | the mood of the part of the day | `bashcut review shots --summary` per section |
+| Pattern interrupt | a new part of the day, place or activity every 10–30 s short-form; 30–90 s long-form (T07 §3) | long-form daily vlogs change less often | `review shots --summary` per section |
+| Breath | one held silence of about 2 s, once, before the close (T07 §3) | a diary voice with pauses already breathes | `bashcut audio measure --timeline` → `silences` |
+| Transitions | hard cuts as the base; a dissolve (`vlog-soft-cut`, 0.3–1.0 s) for time passing; `vlog-blink` for a jump in time (T08 §3, §7) | a documentary-style day uses dissolves; a fast routine uses hard cuts | `bashcut review cuts` → counts per kind, runs |
+| Transition budget | 0–1 special transitions per minute besides the time-passing dissolves (T08 §3: documentary and cinematic work) | a playful routine may use more; say so | `review cuts` counts ÷ minutes |
+| Speed | 2–4× for a commute or a task under voice; up to 4–20× for silent waiting (T19 §3) | how much of the action must still read | `bashcut timeline get` → item speed |
+| Time stamps | `vlog-time-stamp` at each new part of the day, held for reading: about letters ÷ 15 + 1–1.5 s (T09 §3) | a busy background needs longer | `bashcut review layout` → `holdSeconds` |
+| Graphic density | low: time stamps and the odd keyword; daily vlogs sit far under explainers' 3–8 per minute (T13 §3, §7) | a study-with-me adds a timer | `review layout` → text items per minute |
 
 ## Shots
 
@@ -54,3 +70,12 @@ cue (clock, phone, sky). Missing time cues: put the time stamps on screen.
   Loudness is each output's own target (`bashcut platforms list`).
 - Look intent: soft and bright, gentle contrast, a little warmth; consistent between indoor and outdoor. Measure first
   (`bc:color-grade`).
+
+## Review notes
+
+- A viewer notices: a frozen screen with nothing said, a jump in time with no cue, the music changing mood in the
+  middle of a moment. Treat these as blockers.
+- Deliberate in a daily vlog: slow, long shots (`shot-long` at `info`), held breaths in the diary voice, the same calm
+  bed throughout.
+- `needs_user`: what is private (other people's faces, addresses, screens), the music, whether to add a diary
+  voiceover.

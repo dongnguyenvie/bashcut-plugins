@@ -5,13 +5,14 @@ description: Recipe for a food vlog or food review in BashCut, vertical by defau
 
 # Food vlog
 
-Reply in the user's language. Survey the footage, choose values from the ranges below and write the review profile
-with `bashcut.vlog:plan` step 2, then edit with `bc:edit-workflow`.
+Reply in the user's language. Survey the footage, choose ranges and values from the tables below, write them into the
+edit plan and the review profile with `bashcut.vlog:plan`, then edit with `bc:edit-workflow`.
 
 ## Ranges
 
-Outputs: vertical → `tiktok`, `reels`, `shorts`. The ranges are starting points; a measured reference wins (T07 §7).
-Write each chosen value and its reason in the plan.
+Outputs: vertical → `tiktok`, `reels`, `shorts`. The ranges are starting points: a measured reference profile
+(`bc:style-study`) replaces every range it measures, and the recipe only fills what it does not measure
+(T07 §7, T15 §7). Write each chosen range, its source and its reason in the plan.
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -29,6 +30,9 @@ Write each chosen value and its reason in the plan.
 
 ## Structure (25–45 s)
 
+Sample lengths from earlier vlog practice, not slots: the plan gives each section its own range from the footage
+and says why (`bashcut.vlog:plan` §3); review compares it with the section marker.
+
 | Part | Length | What |
 |---|---|---|
 | Hook | 1.5–2 s | the best bite, pull or pour in close-up, slowed if the source allows, with `vlog-price-tag` or a question ("45K CÓ ĐÁNG?") |
@@ -43,8 +47,19 @@ Write each chosen value and its reason in the plan.
 - The fastest recipe: inserts and bites from the ranges above.
 - Slow motion on pours, cheese pulls, steam and the first bite, at the speed the source frame rate allows (above);
   punch-in (`zoom-punch-in`) on the reaction within the clip's headroom.
-- `vlog-zoom-hit` into the dish at a section start; no transitions inside the tasting.
 - A held plate shot gets a slow push-in rather than sitting still.
+
+## Rhythm, transitions and graphics
+
+| What | Sample range | Why it varies | Measure with |
+|---|---|---|---|
+| Tone bands | process inserts 0.5–1.5 s; the tasting slower, 2–4 s a bite (T07 §3, §7) | a calm cooking video holds longer everywhere | `bashcut review shots --summary` per section |
+| Pattern interrupt | a new step, bite or verdict every 10–30 s (T07 §3) | a 30 s short changes almost every section | `review shots --summary` per section |
+| Breath before the bite | one moment of near-silence, 0.5–2 s, before the first bite's sound; once (T07 §3; real sound leads in food, T11 §7) | an ASMR-style edit uses more | `bashcut review window <frame>`; `bashcut audio measure --timeline` |
+| Transitions | `vlog-zoom-hit` into the dish at a section start; `vlog-whip-fast` between shops in a multi-shop video; none inside the tasting (T08 §3) | one shop needs almost none | `bashcut review cuts` → counts per kind, runs |
+| Transition budget | special transitions 1–3 per minute of short form (T08 §3) | a declared motif (a whip every new dish) may go over; say so | `review cuts` counts ÷ minutes |
+| Price tag | lands on the word the price is said (entrance 0.15–0.6 s ending on the word) and stays while it is said and read (T13 §3) | price read from a board needs longer | `bashcut transcript words`; `bashcut review layout` → `holdSeconds` |
+| Stickers | at most one keyword sticker per bite (`vlog-pro`, `vlog-con`, `vlog-drool`), 0.5–2 s as an accent (T13 §3) | a review-style food video uses pro/con labels on the claim word | `review layout` → text items per minute |
 
 ## Shots to look for and to shoot
 
@@ -60,3 +75,11 @@ fallback when the headroom allows it.
   price tags (`bc:audio-mix` for finding SFX). Loudness is each output's own target (`bashcut platforms list`).
 - Look intent: warm, rich colour, appetising; never green-tinted or grey; highlights on sauce kept. Measure first
   (`bc:color-grade`); no fixed numbers.
+
+## Review notes
+
+- A viewer notices: food that looks grey or green, a price never shown, a bite whose crunch is buried under music,
+  slow motion that stutters (a 30 fps source slowed). Treat these as blockers.
+- Deliberate in food: inserts under 0.6 s (short-shot notes stay info), a held plating reveal as the hero hold.
+- `needs_user`: the price, shop name and address to confirm, whether the meal was free or sponsored (disclosure), the
+  music.

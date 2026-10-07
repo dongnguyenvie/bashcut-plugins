@@ -13,6 +13,7 @@
   "capabilities": [],
   "contributes": {
     "skills": [
+      {"path": "skills/ideate"},
       {"path": "skills/plan"},
       {"path": "skills/hook-script"},
       {"path": "skills/publish"},
@@ -20,7 +21,9 @@
       {"path": "skills/food"},
       {"path": "skills/daily"},
       {"path": "skills/product-review"},
+      {"path": "skills/product-ad"},
       {"path": "skills/talking-head"},
+      {"path": "skills/podcast-clips"},
       {"path": "skills/tutorial"},
       {"path": "skills/scene-prompt"}
     ],

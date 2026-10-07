@@ -5,13 +5,14 @@ description: Recipe for a travel vlog or travel guide in BashCut, vertical by de
 
 # Travel vlog
 
-Reply in the user's language. Survey the footage, choose values from the ranges below and write the review profile
-with `bashcut.vlog:plan` step 2, then edit with `bc:edit-workflow`.
+Reply in the user's language. Survey the footage, choose ranges and values from the tables below, write them into the
+edit plan and the review profile with `bashcut.vlog:plan`, then edit with `bc:edit-workflow`.
 
 ## Ranges
 
 Outputs: vertical → `reels`, `tiktok`, `shorts`; landscape for YouTube → `youtube-1080`. The ranges are starting
-points; a measured reference wins (T07 §7). Write each chosen value and its reason in the plan.
+points: a measured reference profile (`bc:style-study`) replaces every range it measures, and the recipe only fills
+what it does not measure (T07 §7, T15 §7). Write each chosen range, its source and its reason in the plan.
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -28,6 +29,9 @@ points; a measured reference wins (T07 §7). Write each chosen value and its rea
 
 ## Structure (45–75 s vertical)
 
+Sample lengths from earlier vlog practice, not slots: the plan gives each section its own range from the footage
+and says why (`bashcut.vlog:plan` §3); review compares it with the section marker.
+
 | Part | Length | What |
 |---|---|---|
 | Hook | 2–3 s | the most striking shot plus `vlog-hook-question`: a number the viewer wants (cost, hours, days) and a question — "48H Ở ĐÀ LẠT HẾT BAO NHIÊU?" |
@@ -39,13 +43,26 @@ Mark each section with `upsertSection` (label = place name) so review and the us
 
 ## Cuts and motion
 
-- Cut rate from the range above: about 13–16 cuts a minute at 3–4.5 s a shot; faster in the hook and in lists.
-- Every still or locked-off shot moves: Ken Burns (`ken-burns-in`/`-out`, `bc:effects`); hold a photo 1.5–4 s, longer
-  while a line is said over it.
-- Between sections: `vlog-whip-fast` or a hard cut on a beat (`bc:beat-cut`); inside a section, hard cuts only.
+- Cut rate from the ranges above: about 13–16 cuts a minute at 3–4.5 s a shot; faster in the hook and in lists.
+- Every still or locked-off shot moves: Ken Burns (`ken-burns-in`/`-out`, `bc:effects`) at the drift rate below; hold
+  a photo 1.5–4 s, longer while a line is said over it.
 - Walking, driving and food shots: speed ramp through the boring middle (`speed-ramp`).
 - Punch-in on a repeated framing: as far as the clip's headroom allows (`bashcut timeline get` → `scale.maxZoomNative`;
   beyond it the picture is upscaled) and as far as the framing still shows the place.
+
+## Rhythm, transitions and graphics
+
+| What | Sample range | Why it varies | Measure with |
+|---|---|---|---|
+| Tone bands | calm stretches 2–4 s a shot; urgent stretches (a rush, a list) 0.4–1 s (T07 §3) | arrival and views are calm; lists and transfers are quick | `bashcut review shots --summary` per section |
+| Pattern interrupt | a new place, number or change of pace every 10–30 s short-form; 30–90 s long-form (T07 §3) | each place section is one; a long walk needs one inside it | `review shots --summary` per section |
+| Breath before the payoff | one held moment of 0.5–2 s before the best view, once or twice a video (T07 §3, §7) | a montage to music breathes on the drop | `bashcut review window <frame>` |
+| Transitions | between places: `vlog-whip-fast` (0.2–0.4 s, same direction on both sides) or a hard cut on a beat; inside a place: hard cuts only (T08 §3, §7) | a calm landscape edit uses `vlog-soft-cut` for time passing | `bashcut review cuts` → counts per kind, runs of the same kind |
+| Transition budget | special transitions 1–3 per minute of short form; whips 1–2 per short (T08 §3) | a fast many-place montage may use more as a declared motif; say so in the plan | `review cuts` counts ÷ minutes |
+| Ken Burns drift | 0.3–1.5 % a second, alternating direction (T08 §3) | bigger for short photos in a fast edit | `bashcut timeline get` → keyframes |
+| Place card, section chip | at the section start, held for reading: about letters ÷ 15 + 1–1.5 s (T09 §3) | longer names, busier backgrounds | `bashcut review layout` → `holdSeconds` |
+| Price tag | lands on the word the price is said: its entrance (0.15–0.6 s) ends on the word, held while it is said (T13 §3) | energy of the edit | `bashcut transcript words`; `review layout` |
+| Graphic density | about one card per section plus price tags; travel sits at the low end next to explainers' 3–8 per minute (T13 §3, §7) | a cost guide has more numbers than a mood film | `review layout` → text items per minute |
 
 ## Shots to look for (survey) and to shoot
 
@@ -58,7 +75,7 @@ the user's own (`bc:stock-images`).
 
 - Captions from the voice (`bc:captions-text`), bold-outline, 3–6 words a line; keep them above the platform's
   caption bar (the review checks it).
-- Voiceover when the footage has none: 165–235 Vietnamese syllables a minute, one fact per section
+- Voiceover when the footage has none: one fact per section, sized with the measured rate of the voice
   (`bashcut.vlog:hook-script`, `bc:voiceover`).
 - Numbers are always on screen when said (price, time, distance).
 
@@ -72,3 +89,12 @@ set it here (`bc:audio-mix`).
 
 Intent: bright, warm and clean, skies not blown out, skin natural. Measure the footage first and grade to that intent
 (`bc:color-grade`); never apply fixed numbers. One look for the whole video; night shots may stay cooler.
+
+## Review notes
+
+- A viewer notices: a place named but never labelled, a price said but not shown, a photo frozen with nothing said
+  over it, two clips of one place with the same framing back to back. Treat these as blockers.
+- Deliberate in travel: a long walking or drone take that keeps moving (`shot-long` stays a note when it is over
+  `stillMotion`), the one hero hold of the best view, quick cuts in lists.
+- `needs_user`: prices and place names to confirm, the route order when capture times are missing, whether stock or
+  generated shots may fill a missing place, the music.

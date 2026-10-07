@@ -1,27 +1,32 @@
 # Vlog
 
 Agent skills and a library pack for making vlogs in BashCut. Each **topic skill is a recipe**: what one kind of vlog
-keeps — structure, hook, text, sound and look intent — and a **Ranges** table of the checks a review can make (shot
-lengths, still holds, hook window, captions, severities), each with a sample range from published practice, why it
-varies and how to measure it. The agent surveys the footage, chooses values inside the ranges, writes the project's
-`review` profile and `output.presets` itself and says why in the plan, so two folders of the same genre can get
-different, justified profiles. The plugin runs no program; BashCut gives the skills to Claude, Codex and its other
-agents while it is trusted and turned on, as `bashcut.vlog:<name>`, and lists the pack's items in the library. How to
-cut, mix, grade and caption stays in the agent kit (`bc:`); a recipe says what to measure and which range to choose
-from.
+keeps — structure, hook, text, sound and look intent — and tables of **sample ranges** from published practice (shot
+lengths, rhythm and interrupt bands, transition vocabulary and budget, graphic holds and density, presenter presence,
+hook window, captions, severities), each with its source, why it varies and how to measure it. The agent surveys the
+footage, chooses a range and a value for each key and writes them, with the reason, into the project's **edit plan**
+(`bashcut plan set`: sections with length ranges, shot rows, decisions) and **review profile**, so two folders of the
+same genre can get different, justified plans. A measured reference profile (`bc:style-study`) replaces a recipe's
+ranges wherever it has a measurement. Each recipe ends with review notes in viewer terms and a `needs_user` list. The
+plugin runs no program; BashCut gives the skills to Claude, Codex and its other agents while it is trusted and turned
+on, as `bashcut.vlog:<name>`, and lists the pack's items in the library. How to cut, mix, grade and caption stays in
+the agent kit (`bc:`); a recipe says what to measure and which range to choose from.
 
 | Skill | Use it for |
 |---|---|
-| `plan` | Start here: pick the recipe from the prompt, survey, choose the review profile and outputs from the recipe's ranges, plan hook, sections and shot list |
-| `hook-script` | Hook line and title (a number or a question), voiceover or talking script at a speakable pace, on-screen text, CTA |
-| `publish` | One export per output platform, a separate cut for another shape, cover frame, post caption and hashtags |
+| `ideate` | No angle yet: angles from the footage with a source each, a 3-hook screen, a decision table, the project brief (`project set-brief`) |
+| `plan` | Start here: read the brief, pick the recipe, survey, write the edit plan (sections with ranges, shot rows, establish or hook first, chosen ranges with reasons) and the review profile and outputs |
+| `hook-script` | Story options, hook options checked against real shots, the script as beats (job, ON SCREEN, source per line) sized with the measured speaking rate, a counterfactual review, on-screen text, CTA |
+| `publish` | Platform facts from data (`platforms get`), one export per output, cover candidates checked at phone size (`export cover`), YouTube chapters (`export chapters`), title, caption and hashtags |
 | `travel` | Travel vlog / guide: cost or time hook, numbered place sections, cost recap |
 | `food` | Food vlog / review: the bite as the hook, price, process inserts, tasting, verdict |
 | `daily` | A day in my life, routines: time stamps, calm pace |
-| `product-review` | Review or unboxing: verdict question, three points with pros and cons, verdict card |
-| `talking-head` | One person to camera: tight speech cuts, punch-ins, word-by-word captions |
-| `tutorial` | Screen recording or tool demo: result first, step cards, zooms, waiting sped up |
-| `scene-prompt` | A scene idea → a cinematic prompt for AI video models (Seedance, Kling, Veo, Sora…) for shots the footage lacks |
+| `product-review` | Review or unboxing: verdict question, points with pros and cons, verdict card |
+| `product-ad` | An ad or selling video: ad brief with a truth source, hook and CTA as a pair, arcs, truth rules, variants that change one thing |
+| `talking-head` | One person to camera: tight speech cuts, punch-ins, word-by-word captions, presence |
+| `podcast-clips` | Shorts from a long podcast or interview: selects by quote, standalone test, blind second pass, one project per clip (`project derive`) |
+| `tutorial` | Screen recording or tool demo: result first, step cards, zooms, waiting sped up, presenter presence |
+| `scene-prompt` | A scene idea → a cinematic prompt for AI video models (Seedance, Kling, Veo, Sora…) for shots the footage lacks; reads the neighbouring plan rows so the shot cuts in |
 
 The `library/vlog` pack adds text styles (hook question, section chip, time stamp, price tag, pro/con, step, keyword,
 verdict, CTA, disclosure label), emoji stickers by topic and four transitions, all tagged by topic
@@ -31,19 +36,20 @@ licensed ones (`bc:audio-mix`).
 ## Recipes and numbers
 
 A recipe ships ranges, not settings: no recipe has a profile block to copy. Each range cites where it comes from (the
-analysis notes T06, T07, T09, T11 and T17, e.g. "(T07 §3)") and says what makes it move. It never fixes colour values
+analysis notes T00–T19, e.g. "(T07 §3)") and says what makes it move. The agent picks a range and a value and says why
+in the plan; contradictions between sources are shown, not hidden. It never fixes colour values
 or loudness: a look is an intent the agent grades to after measuring the footage (`bc:color-grade`), and each export
 is normalized to its own output's target (`bashcut platforms list`), never one number for every platform.
 
 ## Adding a recipe
 
 Copy a topic skill to `skills/<topic>/SKILL.md` (front matter `name` = folder name, `description` with "Use when …"
-and `Triggers:`), keep its sections (Ranges, Structure, Cuts and motion, Shots, Text, sound, look), add a row to the
-table in `plan` and above, and list it in `plugin.json` › `contributes.skills` (at most 16). Ranges rows are
-check → sample range (with its source) → why it varies → what to measure, using only commands in BashCut's command
-reference. Review keys are listed in `plan` (core has no defaults: an unset key means no check, or info only);
-`severities` maps a check ID or prefix, or `provider:`, to `error`, `warning`, `info` or `off`; outputs are export
-preset names.
+and `Triggers:`), keep its sections (Ranges, Structure, Cuts and motion, Rhythm, transitions and graphics, Shots,
+Text, sound, look, Review notes), add a row to the table in `plan` and above, and list it in `plugin.json` ›
+`contributes.skills` (at most 16). Ranges rows are check → sample range (with its source) → why it varies → what to
+measure, using only commands in BashCut's command reference. Review keys are listed in `plan` (core has no defaults:
+an unset key means no check, or info only); `severities` maps a check ID or prefix, or `provider:`, to `error`,
+`warning`, `info` or `off`; outputs are export preset names.
 
 ## Sources and licenses
 
