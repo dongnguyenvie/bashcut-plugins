@@ -13,7 +13,7 @@
       "version": 1,
       "params": {
         "textPreset": "hook-title",
-        "text": "48H Ở ĐÀ LẠT HẾT BAO NHIÊU?",
+        "text": "48H IN DA LAT\nHOW MUCH?",
         "animation": "pop-in"
       }
     },
@@ -30,7 +30,7 @@
       "version": 1,
       "params": {
         "textPreset": "chapter-card",
-        "text": "1/5 · CHỢ ĐÊM"
+        "text": "1/5 · NIGHT MARKET"
       }
     },
     {
@@ -44,7 +44,7 @@
       "version": 1,
       "params": {
         "textPreset": "place-card",
-        "text": "07:30 · SÁNG"
+        "text": "07:30 · MORNING"
       }
     },
     {
@@ -60,7 +60,7 @@
       "version": 1,
       "params": {
         "textPreset": "keyword-sticker",
-        "text": "45K",
+        "text": "$4",
         "animation": "pop-in"
       }
     },
@@ -75,7 +75,7 @@
       "version": 1,
       "params": {
         "textPreset": "bold-outline",
-        "text": "✓ ĐÁNG TIỀN",
+        "text": "✓ WORTH IT",
         "textStyle": {
           "fill": "#3DDC84"
         },
@@ -93,7 +93,7 @@
       "version": 1,
       "params": {
         "textPreset": "bold-outline",
-        "text": "✗ HƠI NGỌT",
+        "text": "✗ TOO SWEET",
         "textStyle": {
           "fill": "#FF5A5F"
         },
@@ -110,7 +110,7 @@
       "version": 1,
       "params": {
         "textPreset": "chapter-card",
-        "text": "BƯỚC 1"
+        "text": "STEP 1"
       }
     },
     {
@@ -124,7 +124,7 @@
       "version": 1,
       "params": {
         "textPreset": "keyword-sticker",
-        "text": "QUAN TRỌNG",
+        "text": "IMPORTANT",
         "animation": "pop-in"
       }
     },
@@ -138,8 +138,20 @@
       "version": 1,
       "params": {
         "textPreset": "hook-title",
-        "text": "8.5/10 — NÊN MUA",
-        "animation": "pop-in"
+        "text": "8.5/10\nBUY IT",
+        "animation": "pop-in",
+        "textStyle": {
+          "emphasis": {
+            "line": 0,
+            "fill": "#111111",
+            "scale": 1.6,
+            "plate": {
+              "color": "#F2F2F2",
+              "padding": 0.1,
+              "radius": 0.04
+            }
+          }
+        }
       }
     },
     {
@@ -153,7 +165,7 @@
       "version": 1,
       "params": {
         "textPreset": "hook-title",
-        "text": "LƯU LẠI ĐỂ ĐI NHÉ!",
+        "text": "SAVE THIS\nFOR YOUR TRIP",
         "animation": "pop-in"
       }
     },
@@ -168,7 +180,7 @@
       "version": 1,
       "params": {
         "textPreset": "place-card",
-        "text": "Ảnh minh hoạ tạo bằng AI",
+        "text": "AI-generated illustration",
         "textStyle": {
           "size": 0.028
         }

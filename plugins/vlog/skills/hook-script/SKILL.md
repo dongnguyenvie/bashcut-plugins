@@ -36,7 +36,7 @@ the story) write one; in `revision` mode keep the `frozen` sections' lines word 
 
 ## 3. The hook
 
-The hook is a promise in the first seconds: one line on screen (`vlog-hook-question`, hook-title preset) and, if
+The hook is a promise in the first seconds: one line on screen (`vlog-hook-question`, or the text template that suits the video, `bc:captions-text`; two short lines with the keyword alone on one) and, if
 someone speaks, the same idea said. Write **3–5 options across different kinds** (T02 §3, T02 §7) and pick against the
 best shot of the footage and the hook facts once a cut exists, over the opening frames: `bashcut transcript words
 --to F` (first words), `review layout --to F` (first text), `review shots --to F` (first cut, described subjects).

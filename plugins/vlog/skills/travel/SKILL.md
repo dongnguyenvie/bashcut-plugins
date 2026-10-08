@@ -34,7 +34,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 
 | Part | Length | What |
 |---|---|---|
-| Hook | 2–3 s | the most striking shot plus `vlog-hook-question`: a number the viewer wants (cost, hours, days) and a question — "48H Ở ĐÀ LẠT HẾT BAO NHIÊU?" |
+| Hook | 2–3 s | the most striking shot plus `vlog-hook-question`: a number the viewer wants (cost, hours, days) and a question — "48H IN DA LAT / HOW MUCH?" |
 | Sections ×4–6 | 6–8 s each | one place or one step of the route; `vlog-section-chip` ("2/5 · CHỢ ĐÊM") as it starts, `place-card` with the name, `vlog-price-tag` when money is said |
 | Recap | 4–6 s | the total (cost table as stacked lines, or the route in one map shot) |
 | CTA | 2–3 s | `vlog-cta` ("LƯU LẠI ĐỂ ĐI NHÉ!") over the nicest wide shot |
