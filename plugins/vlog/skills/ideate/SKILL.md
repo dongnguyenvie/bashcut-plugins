@@ -73,7 +73,8 @@ Show 2–3 angles as a table and recommend one, with the reason:
 | … | "48H Ở ĐÀ LẠT HẾT BAO NHIÊU?" over C0012 at 3.2 s | 6 places, prices said in 4 clips | no night shot | 45–75 s | tiktok, reels |
 
 Ask at most 1–3 questions, only for what changes the result and cannot be read from the footage: platform, length,
-audience (T01 §3). Put each question as a choice with your recommendation.
+audience (T01 §3), and for a new project the language of speech and captions when the prompt does not name it
+(there is no default; offer the language the user writes in first). Put each question as a choice with your recommendation.
 
 Length ranges are a choice for the brief, not a rule: the platform's `maxSeconds` is the only hard limit
 (`bashcut platforms get <id>`), and "sweet spots" contradict between sources (T17 §3).

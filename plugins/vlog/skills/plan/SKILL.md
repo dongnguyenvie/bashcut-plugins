@@ -48,8 +48,9 @@ one the *whole* video is about and borrow single moves from the other. None fits
 
 ## 2. Survey before choosing any number
 
-Ask only what changes the result and cannot be read from the footage or the brief: **where it will be posted** and
-**how long**. Defaults when the user does not care: vertical → TikTok, Reels and Shorts; landscape → YouTube.
+Ask only what changes the result and cannot be read from the footage or the brief: **where it will be posted**,
+**how long** and, for a new project, **the language** of speech and captions (no default: pass it as
+`project create --language <tag>`; offer the language the user writes in first). Ask them together in one round. Defaults when the user does not care: vertical → TikTok, Reels and Shorts; landscape → YouTube.
 
 1. Canvas: `bashcut project create … --canvas portrait|landscape` for a new project, or `bashcut project format
    --canvas <canvas> --base-rev N`.
