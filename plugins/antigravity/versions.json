@@ -12,6 +12,10 @@
     "publisher": "bashcut",
     "category": "agents",
     "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/antigravity",
+    "author": {
+      "name": "Luan Tran",
+      "url": "https://github.com/luantran069"
+    },
     "capabilities": [
       "agent.terminal"
     ],
@@ -34,6 +38,22 @@
       "size": 64815,
       "downloadBytes": 0,
       "releasedAt": "2026-10-04"
+    },
+    {
+      "version": "0.0.3",
+      "apiVersion": 5,
+      "minApiVersion": 5,
+      "minAppVersion": "0.0.1",
+      "platforms": [
+        "macos-arm64",
+        "macos-x86_64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/antigravity-v0.0.3/bashcut.antigravity-0.0.3.zip",
+      "sha256": "5de6bf404362d823b00727c23c23c0f480919dca5358e5b4f89f739900aff80e",
+      "signature": "ed25519:IAOW4jvu/GWHC7kyZhny1SZTTSu1Ddt743DPTuRxem8nOxZn+b9gyhElTfZkjDPBCQTZKNf8BzGr3ctofpaUBA==",
+      "size": 64954,
+      "downloadBytes": 0,
+      "releasedAt": "2026-10-09"
     }
   ]
 }
