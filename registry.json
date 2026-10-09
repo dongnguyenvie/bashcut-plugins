@@ -140,22 +140,6 @@
       "id": "bashcut.silence-markers",
       "versions": [
         {
-          "version": "0.0.2",
-          "apiVersion": 2,
-          "minApiVersion": 2,
-          "minAppVersion": "0.0.1",
-          "platforms": [
-            "macos-arm64",
-            "macos-x86_64"
-          ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/silence-markers-v0.0.2/bashcut.silence-markers-0.0.2.zip",
-          "sha256": "2d1e642e59ba28c87d131c76b09ceb438e78381b8e5f61a74c56d631f817473f",
-          "signature": "ed25519:FADUllDeIu1uqrrYB/LYvLSB3C71YsrGdWfe+Y7Hk9hwUrCodvi4W1/XK1CzBkoy41bmdPUI4DfilXW7jnnUCw==",
-          "size": 49739,
-          "downloadBytes": 0,
-          "releasedAt": "2026-10-03"
-        },
-        {
           "version": "0.0.3",
           "apiVersion": 2,
           "minApiVersion": 2,
@@ -186,6 +170,22 @@
           "size": 64216,
           "downloadBytes": 0,
           "releasedAt": "2026-10-04"
+        },
+        {
+          "version": "0.0.5",
+          "apiVersion": 8,
+          "minApiVersion": 2,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/silence-markers-v0.0.5/bashcut.silence-markers-0.0.5.zip",
+          "sha256": "0eb5c0680210f7fe2c8d50c149e5eb94da790ad81e84c4cdaab3a0e183852a57",
+          "signature": "ed25519:nQrSIGNnExx+zYmBCLCgbY9X5gWypT8vY57wOMO34PoZJK5vshGlK5BLl745jVU+9nxZ3FjQBuH5WSTKyIQHAg==",
+          "size": 86118,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-09"
         }
       ],
       "name": {
