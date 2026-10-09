@@ -86,7 +86,7 @@ For the Shorts output, make a vertical cut of the hook and one step (`bashcut.vl
 
 What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
 
-- `stages`: `{"effects": {"required": true, "why": "zoom onto the panel in use, fast-forward waiting"}, "colour": {"rules": ["leave the screen recording ungraded; grade only the presenter"]}}`
+- `stages`: `{"effects": {"required": true, "why": "zoom onto the panel in use, fast-forward waiting"}, "colour": {"rules": ["leave the screen recording ungraded; grade only the presenter"]}, "visuals": {"skill": "bc:visual-plan", "after": "voiceover", "required": true, "why": "the narration carries it; each step gets the screen, a zoom or a step card"}}`
 - `checks` (source: tutorial recipe): `result-first` the hook shows the output; `screen-readable` screen text reads
   at phone width; `zoom-on-click` each zoom lands on the click; `presenter-clear` the presenter never covers the part
   in use; `private-hidden` no email, key or name left on screen; `shortcuts-shown` every shortcut and menu path is
