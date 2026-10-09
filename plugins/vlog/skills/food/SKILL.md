@@ -40,7 +40,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 | Process | 4–8 s | 3–5 quick inserts (0.5–1.5 s): cooking, plating, sauce, steam |
 | Tasting | 8–15 s | 2–3 bites, each: close-up of the food → the bite → the face; `vlog-pro`/`vlog-con` stickers for what is said |
 | Verdict | 3–4 s | score or one-line verdict (`vlog-verdict`), price and address |
-| CTA | 2 s | `vlog-cta` ("LƯU LẠI ĐỂ ĂN THỬ") |
+| CTA | 2–3 s | `vlog-cta` ("LƯU LẠI ĐỂ ĂN THỬ") |
 
 ## Cuts and motion
 
@@ -83,3 +83,13 @@ fallback when the headroom allows it.
 - Deliberate in food: inserts under 0.6 s (short-shot notes stay info), a held plating reveal as the hero hold.
 - `needs_user`: the price, shop name and address to confirm, whether the meal was free or sponsored (disclosure), the
   music.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `stages`: `{"colour": {"required": true, "why": "food must look appetising"}, "sound": {"rules": ["real sizzle, crunch and slurp up front; music dips under them"]}}`
+- `checks` (source: food recipe): `price-shown` the price is on screen; `place-card` shop name and district on a
+  place card; `food-colour` no grey or green food; `bite-audible` the crunch is not buried under music;
+  `slowmo-smooth` no stuttering slow motion from a 30 fps source.
+- `askAtIntake`: `["sponsored", "shopAddress"]` (a free or sponsored meal needs a disclosure).

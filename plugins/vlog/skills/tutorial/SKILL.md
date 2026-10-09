@@ -81,3 +81,14 @@ For the Shorts output, make a vertical cut of the hook and one step (`bashcut.vl
   framing of one screen recording.
 - `needs_user`: private details on screen to blur or cut (emails, keys, names), the app version shown, the link and
   the next video for the CTA.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `stages`: `{"effects": {"required": true, "why": "zoom onto the panel in use, fast-forward waiting"}, "colour": {"rules": ["leave the screen recording ungraded; grade only the presenter"]}}`
+- `checks` (source: tutorial recipe): `result-first` the hook shows the output; `screen-readable` screen text reads
+  at phone width; `zoom-on-click` each zoom lands on the click; `presenter-clear` the presenter never covers the part
+  in use; `private-hidden` no email, key or name left on screen; `shortcuts-shown` every shortcut and menu path is
+  on screen as text.
+- `askAtIntake`: `["privateOnScreen", "ctaLink"]`.

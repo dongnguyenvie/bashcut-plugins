@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Start a vlog in BashCut from one prompt — read the brief, pick the topic recipe (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial), survey the footage, write the edit plan with `project set-data plan` (sections with length ranges and reasons, shot rows, the establish-or-hook choice, the chosen review ranges), set the project's outputs and review profile from it, then hand the edit to bc:edit-workflow. Use first whenever the user asks for a vlog or a short video about a trip, a meal, a day, a product, a talk or a how-to, before cutting anything, and when footage is still to be shot or generated. Triggers: "làm vlog", "dựng vlog", "vlog du lịch", "vlog ăn uống", "review món", "review sản phẩm", "a day in my life", "video hướng dẫn", "video nói chuyện", "lên kịch bản vlog", "shot list", "cần quay những gì", "một prompt ra video".
+description: Start a vlog in BashCut from one prompt — read the brief, pick the topic recipe (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial), survey the footage, write the edit plan with `project set-data plan` (the recipe's data — recipe, promise, stages, checks, askAtIntake — sections with length ranges and reasons, shot rows, the establish-or-hook choice, the chosen review ranges), set the project's outputs and review profile from it, then hand the edit to bc:edit-workflow. Use first whenever the user asks for a vlog or a short video about a trip, a meal, a day, a product, a talk or a how-to, before cutting anything, and when footage is still to be shot or generated. Triggers: "làm vlog", "dựng vlog", "vlog du lịch", "vlog ăn uống", "review món", "review sản phẩm", "a day in my life", "video hướng dẫn", "video nói chuyện", "lên kịch bản vlog", "shot list", "cần quay những gì", "một prompt ra video".
 ---
 
 # Plan a vlog
@@ -9,7 +9,9 @@ Reply in the user's language. This plugin's topic skills are **recipes**: each h
 (structure, hook, text, sound and look intent) and tables of **sample ranges** from published practice, each with its
 source, why it varies and how to measure it. The numbers are starting points, not settings. You survey the footage,
 choose a range and a value for each key, write them into the **edit plan** with a reason, and say why. Two folders of
-the same genre can and should get different plans. The editing itself is the agent kit's job (`bc:edit-workflow` and
+the same genre can and should get different plans. A recipe's structure table is one shape, not the only
+one: compare it with a shape the footage suggests (`plan.options`). Going outside a range is allowed when the footage
+or the idea earns it: write the value, the reason and `"deliberate": true` in the plan, and review keeps it as info. The editing itself is the agent kit's job (`bc:edit-workflow` and
 the skills it names).
 
 **Priority of numbers** (T15 §7): the user's instruction → what our footage can hold → a measured **reference
@@ -43,14 +45,17 @@ The brief's angle chooses the recipe; the recipe is a suggestion from the brief,
 | shorts cut from a long podcast, interview or livestream | `bashcut.vlog:podcast-clips` |
 | a screen recording, an app or tool demo, "cách làm", a step-by-step | `bashcut.vlog:tutorial` |
 
-Read the chosen skill in full (`bashcut skills get bashcut.vlog:<name>`). Two fit (a food stop inside a trip): take the
-one the *whole* video is about and borrow single moves from the other. None fits: use the nearest and say so.
+Read the chosen skill in full (`bashcut skills get bashcut.vlog:<name>`); its **Plan data** section is what you write
+into the plan (§3). Two fit (a food stop inside a trip): take the one the *whole* video is about and borrow single
+moves from the other. None fits: use the nearest and say so.
 
 ## 2. Survey before choosing any number
 
-Ask only what changes the result and cannot be read from the footage or the brief: **where it will be posted**,
-**how long** and, for a new project, **the language** of speech and captions (no default: pass it as
-`project create --language <tag>`; offer the language the user writes in first). Ask them together in one round. Defaults when the user does not care: vertical → TikTok, Reels and Shorts; landscape → YouTube.
+Ask once (`bc:edit-workflow`, intake): in one round of at most 4 questions, what the prompt and the brief do not say
+among **where it will be posted**, **how long**, for a new project **the language** of speech and captions (no
+default: `project create --language <tag>`; offer the language the user writes in first), and the recipe's
+`askAtIntake` fields. No answer: decide, write the field `inferred` with its reason; the strategy audit checks it.
+Never ask again later. Defaults when the user does not care: vertical → TikTok, Reels and Shorts; landscape → YouTube.
 
 1. Canvas: `bashcut project create … --canvas portrait|landscape` for a new project, or `bashcut project format
    --canvas <canvas> --base-rev N`.
@@ -70,6 +75,16 @@ Ask only what changes the result and cannot be read from the footage or the brie
 
 The plan is project data (`project set-data plan`); `context get` summarises it, so work can resume after a break from `project data plan`
 alone. Write it before the rough cut and keep it current.
+
+**Recipe data.** From the recipe's Plan data section, only what differs from the kit's defaults:
+- `recipe`: `{"skill": "bashcut.vlog:<name>", "version": "<the plugin version, plugins list>"}`.
+- `promise`: `{hook, payoff}`, the question the opening raises and the line that closes it (`bashcut.vlog:hook-script`
+  writes the words; set a first version here from the angle).
+- `stages`: the recipe's deviations per stage id (`required` with `why`, `skill`, `rules`); a stage the footage makes
+  pointless gets `{"required": false, "why": …}`.
+- `checks`: the recipe's checks that apply to this video, at most 8, each `{id, text, source: "bashcut.vlog:<name>"}`.
+  The kit's generic checks are added by the engine; never copy them.
+- `askAtIntake`: the recipe's list, as asked in §2.
 
 **Sections.** One per part of the recipe's structure, each with a length *range* chosen from the recipe and the
 footage, and a reason ("3 places with good footage, 1 with only two clips → 4 sections of 6–9 s"). Give each section
@@ -104,7 +119,12 @@ the recipe's source ("T07 §7") or the reference ("style-study: @creator, n=12, 
 ```json
 {
   "mode": "create",
-  "stage": "plan",
+  "stage": "story",
+  "recipe": {"skill": "bashcut.vlog:food", "version": "0.0.2"},
+  "promise": {"hook": "45K for this bowl — worth it?", "payoff": "Yes, if you come before 7 — save it for later"},
+  "stages": {"colour": {"required": true, "why": "food must look appetising"}},
+  "checks": [{"id": "price-shown", "text": "The price is on screen", "source": "bashcut.vlog:food"}],
+  "askAtIntake": ["sponsored", "shopAddress"],
   "sections": [
     {"id": "hook", "label": "Hook", "lengthSeconds": {"min": 1.5, "max": 2.5},
      "reason": "the pour is 1.8 s at 120 fps; the price is said at 1.2 s"},
@@ -192,9 +212,11 @@ zones, smallest text, longest length, frame shape.
 **Loudness is per output, never one number**: each export normalizes to its own preset's target (`platforms get` →
 `targets`; T11 §3, T17 §3). Never set `audio.targetLUFS` from a recipe; export each output with `--normalize-audio`.
 
-## 5. Strategy gate, then coverage
+## 5. Strategy audit and gate, then coverage
 
-1. Show the plan in 4–8 sentences plus the section table (T00 §3): hook and the establish-or-hook choice, sections with
+1. Run the strategy audit (`bc:edit-workflow`: `review packet --point strategy`, a fresh critic, `run append audit`);
+   fix the plan when it says two messages or a payoff that misses the hook. Show the plan in 4–8 sentences plus the
+   section table (T00 §3): hook and the establish-or-hook choice, sections with
    their ranges, the shot rows, each chosen value with its reason, and what is missing. Request G2:
    `bashcut checkpoint request G2 --summary "<the plan in short>" --attach <contact sheet>` and poll `bashcut
    checkpoint status` until it is not `awaiting_user`. `changes`: update the plan and ask again.
@@ -205,12 +227,15 @@ zones, smallest text, longest length, frame shape.
    (row `source: generated`).
 3. **Generated shots**: write the prompt with `bashcut.vlog:scene-prompt`, giving it the row and its neighbours (the
    rows before and after in the plan, with their size, move and subjects, and what the clips placed there look like),
-   so the new shot cuts in. Add the recipe's disclosure label when the clip is placed.
+   so the new shot cuts in. Never label it on the video (no "AI" or "minh hoạ" text); AI disclosure is the
+   platform's upload toggle (`bashcut.vlog:publish`).
 4. **Not shot yet**: give the missing rows as a checklist to film (what, how long, which angle).
 
 ## 6. Edit, review, publish
 
-Run `bc:edit-workflow` with the plan at hand; update `stage` with `project set-data plan --merge` as you go. Where a kit skill asks
+Survey and story are done here: record them (`bashcut run append stage --stage story --status done --evidence
+"plan;strategy audit"`), then hand over to `bc:edit-workflow` from the rough cut on. It runs the stages, the checklist
+and the audits from this plan, and `context get` › `workflow.next` names the one skill to read per stage. Where a kit skill asks
 for a value (cut rate, caption grouping, punch-in, music level), choose inside the plan's range and say why. The words
 (hook, script, voiceover) come from `bashcut.vlog:hook-script`. In the review loop, the severities you set turn
 deliberate choices into notes; anything still an **error** must be fixed before export. If the cut shows a chosen

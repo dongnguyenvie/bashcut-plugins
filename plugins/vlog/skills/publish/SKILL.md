@@ -23,7 +23,7 @@ for all at once). Every field is `{value, kind hard|recommended|info, source, ch
 | `title.maxChars`, `title.visibleChars` | the hard title cap and how much shows before it is cut (where the data has them) |
 | `cover.aspect` | the cover or thumbnail shape `export cover` writes |
 | `chapters` | the chapter rule `export chapters` checks |
-| `disclosure` | the label rule for AI-made or altered content |
+| `disclosure` | the platform's rule for AI-made or altered content (its upload toggle) |
 
 A `hard` fact is a limit; a `recommended` one is a sourced default you may leave with a reason; `info` is context.
 Quote the source when you tell the user a limit.
@@ -92,9 +92,10 @@ Write them in the video's language. Hard caps come from the data; style is a sou
 
 - Only claims with a source: prices, addresses, names and numbers the video shows or the brief sources (T01 §7). Never
   invent facts.
-- Disclosure: when generated shots or voices are placed, or the video is sponsored, follow the platform's
-  `disclosure` fact and add `vlog-disclosure` in the edit; tell the user to switch on the app's own label when it has
-  one.
+- Disclosure: never burn an AI, stock or "minh hoạ" label into the video; it makes it feel unnatural. When
+  generated shots or voices are placed, read the platform's `disclosure` fact and tell the user in the summary to
+  switch on the platform's own AI label at upload. A sponsored video says so in the first seconds with
+  `vlog-disclosure`, in the user's wording.
 - Credits: licensed music and stock as their licenses ask.
 
 Report: per output the file, length, bit rate and loudness from `export status`; the cover files and frame; the
