@@ -1,6 +1,6 @@
 ---
 name: hook-script
-description: Write the words of a vlog in BashCut — 2–3 story options, 3–5 hook options checked against real shots, the script as beats where every line has a job, an ON SCREEN note and a source for each claim, sized to each window with the measured speaking rate of the creator or the chosen voice (speech rate, narration windows), a counterfactual review that quotes the weak line, on-screen text and the CTA; the beats go into the edit plan and script check compares them with what is heard. Use when a vlog needs a hook, a story, a voiceover or talking script, titles or text written (not transcribed), or the user says the opening is boring. Triggers: "viết hook", "câu mở đầu", "mở đầu nhàm", "viết kịch bản", "viết lời thoại", "viết lời đọc", "script vlog", "kể chuyện thế nào", "tiêu đề video", "caption trên video", "CTA".
+description: Write the words of a vlog in BashCut — 2–3 story options, 3–5 hook options checked against real shots, the script as beats where every line has a job, an ON SCREEN note and a source for each claim, sized to each window with the measured speaking rate of the creator or the chosen voice (speech rate, narration windows), a counterfactual review that quotes the weak line, on-screen text and the CTA, the plan's promise (hook and payoff) checked over the opening and the close; the beats go into the edit plan and script check compares them with what is heard. Use when a vlog needs a hook, a story, a voiceover or talking script, titles or text written (not transcribed), or the user says the opening is boring. Triggers: "viết hook", "câu mở đầu", "mở đầu nhàm", "viết kịch bản", "viết lời thoại", "viết lời đọc", "script vlog", "kể chuyện thế nào", "tiêu đề video", "caption trên video", "CTA".
 ---
 
 # Hook and script
@@ -56,8 +56,14 @@ best shot of the footage and the hook facts once a cut exists, over the opening 
 | Hook text on screen | about 6 words or fewer per frame (T14 §3); about 60 characters at most in 9:16 (T14 §3) | font size, how long it holds | `bashcut review layout` → `longestLineChars`, `holdSeconds` |
 | Options compared | 3–5, show the best 2 (T02 §3) | — | — |
 
+- **Text and speech in the first 3 s say the same thing.** A title that asks one question while the voice says
+  another reads as two messages (a critic flagged it in a one-prompt ad). Write the on-screen hook from the spoken
+  line, or speak the title.
+
 The hook promises only what the body pays off, and the CTA closes that promise. Never open with a greeting or "hôm nay
-mình…". Record the chosen hook and the shot under it in `decisions`.
+mình…". Record the chosen hook and the shot under it in `decisions`, and the pair as the plan's **`promise`**:
+`{"hook": "<the opening's question or claim>", "payoff": "<the last beat or CTA that answers it>"}`. Every video has
+one, whatever the recipe; the strategy and draft audits check that the payoff answers the hook.
 
 ## 4. The budget from the measured rate
 
@@ -105,12 +111,16 @@ Before showing the script, test it (T02 §4):
 1. **Delete each beat** in your head: if the story still works without it, cut it.
 2. **Mute the voiceover**: does the picture still tell the story? Lines that only describe the picture go.
 3. **Audio only**: does it make sense without the picture?
-4. **Quote the weakest line exactly** and fix or remove it. Check the hook's promise against the last beat.
+4. **Quote the weakest line exactly** and fix or remove it. Check `promise.hook` against the last beat.
+
+After the rough cut, check the pair on the edit: the opening (`bashcut transcript words --to F`, `review layout --to
+F`) and the close (`transcript words --from F`, `review layout --from F`). The close must answer the opening; if the
+cut changed either end, update `promise` with a reason.
 
 ## 7. Into the plan, then the script gate
 
-Write the beats as `beats` [{id, section, text}] (text = the exact words to be heard) with `bashcut project set-data
-plan beats.json --merge --base-rev N`. Show the hook options, the story options and the script to the user, then request the script
+Write the beats as `beats` [{id, section, text}] (text = the exact words to be heard) and the `promise` with `bashcut
+project set-data plan beats.json --merge --base-rev N`. Show the hook options, the story options and the script to the user, then request the script
 gate before any voice is made: `bashcut checkpoint request G4 --summary "<hook, story, beats>"` and poll `bashcut
 checkpoint status`. After voiceover and editing, `bashcut script check` shows per beat how much was heard as written
 and where; fix the beats or the edit, not the measurement.
