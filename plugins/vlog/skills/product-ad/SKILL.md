@@ -1,6 +1,6 @@
 ---
 name: product-ad
-description: Recipe for a product ad or selling video in BashCut (paid feed cut-down, organic commerce or UGC, launch or SaaS promo) — an ad brief with a truth source, the hook and CTA written as a pair and checked over the opening and the close, an arc chosen from a menu by what the product and footage have, beat proportions instead of fixed seconds, truth and disclosure rules for every claim, and variants that change one thing each (variants create, variants diff); ranges with sources for the review profile. Use after bashcut.vlog:plan picked product-ad, or when the user wants an ad, a product video that sells, a TVC or several ad versions to test. Triggers: "quảng cáo", "video quảng cáo", "video bán hàng", "TVC", "ads", "chạy ads", "UGC", "video ra mắt sản phẩm", "nhiều phiên bản", "A/B test".
+description: Recipe for a product ad or selling video in BashCut (paid feed cut-down, organic commerce or UGC, launch or SaaS promo) — an ad brief with a truth source (and channel name, @handle and logo for a channel teaser), the hook and CTA written as a pair (plan.promise) and checked over the opening and the close, an arc chosen from a menu (including a channel or brand teaser) by what the product and footage have, beat proportions instead of fixed seconds, truth and disclosure rules for every claim, and variants that change one thing each (variants create, variants diff); ranges with sources for the review profile. Use after bashcut.vlog:plan or bc:edit-workflow picked product-ad, or when the user wants an ad, a channel or brand teaser, a product video that sells, a TVC or several ad versions to test. Triggers: "quảng cáo", "video quảng cáo", "video bán hàng", "TVC", "ads", "chạy ads", "UGC", "video ra mắt sản phẩm", "nhiều phiên bản", "A/B test".
 ---
 
 # Product ad
@@ -22,12 +22,17 @@ source}`; T14 §4):
 | CTA | one action: buy, visit, comment, follow | `goal` |
 | placement | paid feed, organic commerce or UGC, launch film; and the outputs | `outputs`, `notes` |
 | truth source | the product page, spec sheet or the user, for every claim | `notes` with the link |
+| channel name, @handle, logo (a channel or brand teaser) | exactly as the user spells them; the logo as a file | `channelName`, `handle`, `logo` |
 
-Ask the user for the truth source and the placement when they are not given; never fill them by guessing.
+These are the recipe's `askAtIntake` fields: they join the one round of intake questions (`bc:edit-workflow`; the
+channel's name, handle and logo as one question). No answer: decide, write the field `inferred` with its reason, and
+the strategy audit checks it. Never invent a handle or a logo: without them, the brand name as plain text.
 
 ## 2. Hook and CTA as a pair
 
-Write the hook and the CTA together; the CTA pays off what the hook promises (T14 §4). Write 2–3 openings on the real
+Write the hook and the CTA together; the CTA pays off what the hook promises (T14 §4). The pair is the plan's
+`promise`: `{"hook": "<the opening's question or claim>", "payoff": "<the CTA line that closes it>"}`, written with
+`bashcut.vlog:hook-script`. One message: an ad that also argues a second point fails the strategy audit. Write 2–3 openings on the real
 footage and compare them (`bashcut.vlog:hook-script` §3) before locking one. The hook and the offer must read with the
 sound off.
 
@@ -48,6 +53,7 @@ After"); drop a device that has no reason (T14 §4). Worked examples from publis
 | Demo loop | a product whose use is the proof (a gadget, an app) |
 | Feature cascade | several small features, each with its own shot |
 | Testimonial | a real customer or the creator's own honest use |
+| Channel or brand teaser: question → proof → reveal → open a new loop for the CTA | promoting a channel, a series or a brand, not one product: the reveal answers the opening question, and the CTA ("follow @handle for the next one") opens the next |
 
 ## Ranges
 
@@ -82,8 +88,9 @@ each chosen value and its reason in the plan.
 
 ## Variants: change one thing
 
-When the user wants versions to test, each variant changes **one** field and shares everything else, including the
-cut (T14 §3, §4):
+Variants are for a real A/B test only; a revision of the ad is made in place (`bc:edit-workflow`, revision). When the
+user wants versions to test, each variant changes **one** field and shares everything else, including the cut
+(T14 §3, §4):
 
 1. Finish, review and save the base version first.
 2. `bashcut variants create hook-b --changed "hook: price question instead of the before/after"` writes a copy next to
@@ -120,3 +127,17 @@ something known, the CTA background. Commerce: the product clearly in the first 
 - Fast montage shots under 1 s are the style here: short-shot notes stay info.
 - `needs_user`: the truth source, the placement, sponsorship wording, the exact price and offer, which variants to
   make, music choice.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `promise`: the hook and CTA pair (§2).
+- `stages`: `{"effects": {"required": true, "skill": "bc:motion-graphics", "why": "offer card, CTA card with @handle and logo"}, "colour": {"rules": ["true-to-life product colour first"]}}`
+- `checks` (source: product-ad recipe): `claims-sourced` every number and claim has a source in the brief;
+  `product-first` commerce: the product on screen within about 3 s; `offer-on-mute` the offer reads with the sound
+  off; `cta-hold` the CTA holds long enough to read (2–4 s, 5–9 s with a handle or URL); `cta-handle` @handle and
+  logo visible in the last 3 s (channel teaser); `new-loop` channel teaser: the reveal answers the opening question
+  and the CTA opens a new one; `disclosure` sponsorship or AI shots labelled.
+- `askAtIntake`: `["truthSource", "placement", "channelName", "handle", "logo"]` (the last three only for a channel or
+  brand teaser).
