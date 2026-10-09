@@ -5,7 +5,7 @@
     "en": "Silence Markers",
     "vi": "Đánh dấu im lặng"
   },
-  "version": "0.0.4",
+  "version": "0.0.5",
   "apiVersion": 8,
   "minApiVersion": 2,
   "transport": "session",
