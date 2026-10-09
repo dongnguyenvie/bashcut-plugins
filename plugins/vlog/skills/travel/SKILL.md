@@ -98,3 +98,14 @@ Intent: bright, warm and clean, skies not blown out, skin natural. Measure the f
   `stillMotion`), the one hero hold of the best view, quick cuts in lists.
 - `needs_user`: prices and place names to confirm, the route order when capture times are missing, whether stock or
   generated shots may fill a missing place, the music.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `stages`: `{"captions": {"rules": ["place card at each location change; a number said is on screen"]}}`
+- `checks` (source: travel recipe): `place-labelled` every place named is labelled on screen; `price-shown` every
+  price said is on screen; `no-silent-still` no photo held with nothing said or heard over it; `route-order` places
+  follow the route or the capture time, or the plan says why; `place-framing` no two clips of one place back to back
+  with the same framing.
+- `askAtIntake`: `["stockAllowed"]` (may stock or generated shots fill a missing place).

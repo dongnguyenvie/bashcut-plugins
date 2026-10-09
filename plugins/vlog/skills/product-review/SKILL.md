@@ -82,3 +82,13 @@ the spec as text.
 - Deliberate in a review: repeated framing in the talking parts (no `jumpCutChange` there), held spec cards.
 - `needs_user`: whether the product was sponsored or gifted and the disclosure wording, the price and where to buy,
   the user's own verdict when they have one.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `stages`: `{"colour": {"required": true, "why": "the product's true colour"}, "captions": {"rules": ["every number said is on screen"]}}`
+- `checks` (source: product-review recipe): `claim-shown` every claim has its picture; `numbers-on-screen` every
+  number said is shown; `true-colour` the product's colour matches the real one; `disclosure-early` sponsored or
+  gifted is said in the first seconds with `vlog-disclosure`; `verdict` a verdict that says who it is for.
+- `askAtIntake`: `["sponsored", "truthSource"]` (the price, where to buy, the specs).

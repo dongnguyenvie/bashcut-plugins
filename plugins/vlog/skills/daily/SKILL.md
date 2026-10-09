@@ -79,3 +79,13 @@ cue (clock, phone, sky). Missing time cues: put the time stamps on screen.
   bed throughout.
 - `needs_user`: what is private (other people's faces, addresses, screens), the music, whether to add a diary
   voiceover.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `stages`: `{"voiceover": {"required": false, "why": "a diary voice only when the user wants one"}, "sound": {"rules": ["one calm bed for the whole video, ducked under speech"]}}`
+- `checks` (source: daily recipe): `time-cues` each new part of the day has a time cue; `no-silent-freeze` no frozen
+  screen with nothing said; `music-steady` the music never changes mood inside a moment; `privacy` no face, address
+  or screen the user did not clear.
+- `askAtIntake`: `["private"]` (what must not be shown).

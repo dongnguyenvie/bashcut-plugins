@@ -73,3 +73,13 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
   vocals under speech. Treat these as blockers; a slightly long pause is not.
 - `needs_user`: the speaker's name and title for a label, which take to keep when two are equally clean, sources for
   claims made on camera, music or none.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `stages`: `{"voiceover": {"required": false, "why": "the speaker's own lines"}, "rhythm": {"rules": ["a framing change every 4–6 s; jump cuts fixed with punch-ins"]}}`
+- `checks` (source: talking-head recipe): `no-cut-in-word` no cut inside a word; `captions-on-time` captions start
+  within 0.1–0.3 s of the word; `breath-kept` no pause cut so tight the breath is gone; `no-vocal-music` no music
+  with vocals under speech.
+- `askAtIntake`: `["speakerName"]` (name and title for the label).

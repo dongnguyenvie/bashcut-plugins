@@ -83,3 +83,13 @@ fallback when the headroom allows it.
 - Deliberate in food: inserts under 0.6 s (short-shot notes stay info), a held plating reveal as the hero hold.
 - `needs_user`: the price, shop name and address to confirm, whether the meal was free or sponsored (disclosure), the
   music.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `stages`: `{"colour": {"required": true, "why": "food must look appetising"}, "sound": {"rules": ["real sizzle, crunch and slurp up front; music dips under them"]}}`
+- `checks` (source: food recipe): `price-shown` the price is on screen; `place-card` shop name and district on a
+  place card; `food-colour` no grey or green food; `bite-audible` the crunch is not buried under music;
+  `slowmo-smooth` no stuttering slow motion from a 30 fps source.
+- `askAtIntake`: `["sponsored", "shopAddress"]` (a free or sponsored meal needs a disclosure).

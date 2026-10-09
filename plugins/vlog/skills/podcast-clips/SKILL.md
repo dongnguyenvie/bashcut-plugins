@@ -22,7 +22,7 @@ value and its reason in the plan.
 | Yield | not a quota: sources report about 1 clip per 2–3 min of source against 1 per 5–10 min (T06 §3, a contradiction) | how dense the talk is; fewer is fine | report the count and why you kept N |
 | Candidates | about 2× the clips you need, expecting 30–45 % duds (T06 §3) | a sharp talk has fewer duds | `bashcut selects list` counts per status |
 | Hook `hookSeconds` | the strongest **complete** sentence, 1.5–3 s (T06 §7) | a long sentence needs the top of the band; a cold open (a line from later moved to the start) only when the best line is more than about 10 s into the clip (T06 §7) | `bashcut review layout --to F`, `transcript words --to F` |
-| Cut padding | in 50–150 ms before the first word, out 80–300 ms after the last (T06 §3) | tighter for energy, looser for a trailing reaction or laugh; never past the next word | `bashcut media resolve-range` edge facts; `bashcut review sync` |
+| Cut edges | the `resolve-range` edges as they are, no padding by hand: a 0.1 s pad pulled in the next word in connected speech (`bc:rough-cut`) | a trailing reaction or laugh: resolve a wider quote | `bashcut media resolve-range` edge facts; `timeline apply --dry-run` → `cutsInsideWord` |
 | Clean cut points | gaps of 400 ms or more are clean; 150–400 ms need a look; under 150 ms are unsafe (T06 §3) | music or room noise under the gap | `bashcut media speech-map --media <id>` → `gaps` |
 | Length vs target | within ±10–15 % of the planned length (T06 §3) | a clip that needs its full payoff runs over; say so | `bashcut review run` (brief length, info) |
 | Pauses inside a clip, framing, captions | as `bashcut.vlog:talking-head` | — | see that recipe |
@@ -93,3 +93,12 @@ brief and layers, the media and only that range on Main. The open project does n
   blockers; a slightly long pause is not.
 - `needs_user`: which clips to keep, the speakers' names and titles for labels, permission to post a guest's words,
   the outputs per clip.
+
+## Plan data
+
+What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
+
+- `stages`: `{"voiceover": {"required": false, "why": "the source's own speech"}, "rough-cut": {"rules": ["blind second pass; every clip passes the standalone test"]}}`
+- `checks` (source: podcast-clips recipe): `clean-start` no clip starts mid-thought; `standalone` the clip makes
+  sense without the source; `joke-kept` a laugh keeps its joke; `no-cut-in-word` no cut inside a word.
+- `askAtIntake`: `["guestPermission", "outputsPerClip"]`.
