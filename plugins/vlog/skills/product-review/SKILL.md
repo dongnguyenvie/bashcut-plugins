@@ -87,7 +87,7 @@ the spec as text.
 
 What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
 
-- `stages`: `{"colour": {"required": true, "why": "the product's true colour"}, "captions": {"rules": ["every number said is on screen"]}}`
+- `stages`: `{"colour": {"required": true, "why": "the product's true colour"}, "captions": {"rules": ["every number said is on screen"]}, "visuals": {"skill": "bc:visual-plan", "after": "voiceover", "required": true, "why": "the review is spoken; each claim gets a detail shot, a number card or the face"}}`
 - `checks` (source: product-review recipe): `claim-shown` every claim has its picture; `numbers-on-screen` every
   number said is shown; `true-colour` the product's colour matches the real one; `disclosure-early` sponsored or
   gifted is said in the first seconds with `vlog-disclosure`; `verdict` a verdict that says who it is for.

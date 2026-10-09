@@ -1,0 +1,53 @@
+<!doctype html>
+<!-- A checklist card over footage whose rows tick one by one (items is a JSON string array). Transparent,
+     1080×1920, 4 s. Raw material: change the card, the rows, the ticks and the timing for the video. -->
+<html lang="en" data-composition-variables='[
+  {"id":"title","type":"string","label":"Title","default":"Packing list"},
+  {"id":"items","type":"string","label":"Items (JSON array)","default":"[\"Passport\",\"Charger\",\"Rain jacket\"]"},
+  {"id":"accent","type":"color","label":"Tick colour","default":"#FFD400"}
+]'>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      #root { position: relative; width: 1080px; height: 1920px; font-family: "Helvetica Neue", Arial, sans-serif; }
+      #card { position: absolute; left: 90px; top: 520px; width: 900px; padding: 56px 64px; border-radius: 36px;
+        background: rgba(14, 16, 22, 0.82); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); color: #fff; }
+      #title { font-size: 64px; font-weight: 800; margin-bottom: 36px; letter-spacing: -0.02em; }
+      .row { display: flex; align-items: center; gap: 28px; font-size: 52px; font-weight: 600; margin: 22px 0; }
+      .box { width: 64px; height: 64px; border-radius: 16px; border: 6px solid; position: relative; flex: none; }
+      .tick { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 48px; color: #111; border-radius: 10px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="4" data-width="1080" data-height="1920">
+      <div id="card"><div id="title"></div></div>
+    </div>
+    <script>
+      const v = window.__hyperframes.getVariables();
+      document.getElementById("title").textContent = v.title;
+      const card = document.getElementById("card");
+      for (const text of JSON.parse(v.items)) {
+        const row = document.createElement("div");
+        row.className = "row";
+        row.innerHTML = '<div class="box"><div class="tick">✓</div></div><span></span>';
+        row.querySelector("span").textContent = text;
+        row.querySelector(".box").style.borderColor = v.accent;
+        row.querySelector(".tick").style.background = v.accent;
+        card.appendChild(row);
+      }
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo(card, { opacity: 0, y: 80, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo(".row", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.35, stagger: 0.25, ease: "power2.out" }, 0.35);
+      tl.fromTo(".tick", { scale: 0 }, { scale: 1, duration: 0.25, stagger: 0.45, ease: "back.out(3)" }, 1.3);
+      tl.to(card, { opacity: 0, y: -40, duration: 0.4, ease: "power2.in" }, 3.6);
+      tl.seek(0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

@@ -81,7 +81,9 @@ alone. Write it before the rough cut and keep it current.
 - `promise`: `{hook, payoff}`, the question the opening raises and the line that closes it (`bashcut.vlog:hook-script`
   writes the words; set a first version here from the angle).
 - `stages`: the recipe's deviations per stage id (`required` with `why`, `skill`, `rules`); a stage the footage makes
-  pointless gets `{"required": false, "why": …}`.
+  pointless gets `{"required": false, "why": …}`. A stage the recipe adds names its place with `after` (the
+  speech-led recipes add `visuals` after `voiceover`, read by `bc:visual-plan`); a music-only cut of such a recipe
+  sets it `{"required": false, "why": "no words carry it"}`.
 - `checks`: the recipe's checks that apply to this video, at most 8, each `{id, text, source: "bashcut.vlog:<name>"}`.
   The kit's generic checks are added by the engine; never copy them.
 - `askAtIntake`: the recipe's list, as asked in §2.
