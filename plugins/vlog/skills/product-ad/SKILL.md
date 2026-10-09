@@ -133,7 +133,7 @@ something known, the CTA background. Commerce: the product clearly in the first 
 What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
 
 - `promise`: the hook and CTA pair (§2).
-- `stages`: `{"effects": {"required": true, "skill": "bc:motion-graphics", "why": "offer card, CTA card with @handle and logo"}, "colour": {"rules": ["true-to-life product colour first"]}}`
+- `stages`: `{"effects": {"required": true, "skill": "bc:motion-graphics", "why": "offer card, CTA card with @handle and logo"}, "colour": {"rules": ["true-to-life product colour first"]}, "visuals": {"skill": "bc:visual-plan", "after": "voiceover", "required": true, "why": "the voiceover or the creator's speech carries it; each line gets the product, a proof or a card"}}`
 - `checks` (source: product-ad recipe): `claims-sourced` every number and claim has a source in the brief;
   `product-first` commerce: the product on screen within the plan's `hookSeconds` (about 2–4 s); `offer-on-mute` the offer reads with the sound
   off; `cta-hold` the CTA holds long enough to read (2–4 s, 5–9 s with a handle or URL); `cta-handle` @handle and

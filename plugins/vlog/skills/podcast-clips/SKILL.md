@@ -98,7 +98,7 @@ brief and layers, the media and only that range on Main. The open project does n
 
 What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
 
-- `stages`: `{"voiceover": {"required": false, "why": "the source's own speech"}, "rough-cut": {"rules": ["blind second pass; every clip passes the standalone test"]}}`
+- `stages`: `{"voiceover": {"required": false, "why": "the source's own speech"}, "rough-cut": {"rules": ["blind second pass; every clip passes the standalone test"]}, "visuals": {"skill": "bc:visual-plan", "after": "voiceover", "required": true, "why": "the talk carries each clip; each line gets the speaker, a keyword or a picture"}}`
 - `checks` (source: podcast-clips recipe): `clean-start` no clip starts mid-thought; `standalone` the clip makes
   sense without the source; `joke-kept` a laugh keeps its joke; `no-cut-in-word` no cut inside a word.
 - `askAtIntake`: `["guestPermission", "outputsPerClip"]`.

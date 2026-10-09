@@ -80,7 +80,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 
 What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
 
-- `stages`: `{"voiceover": {"required": false, "why": "the speaker's own lines"}, "rhythm": {"rules": ["a framing change every 4–6 s; jump cuts fixed with punch-ins"]}}`
+- `stages`: `{"voiceover": {"required": false, "why": "the speaker's own lines"}, "rhythm": {"rules": ["a framing change every 4–6 s; jump cuts fixed with punch-ins"]}, "visuals": {"skill": "bc:visual-plan", "after": "voiceover", "required": true, "why": "the speaker's words carry it; each line gets a picture, a punch-in or the face on purpose"}}`
 - `checks` (source: talking-head recipe): `no-cut-in-word` no cut inside a word; `captions-on-time` captions start
   within 0.1–0.3 s of the word; `breath-kept` no pause cut so tight the breath is gone; `no-vocal-music` no music
   with vocals under speech.
