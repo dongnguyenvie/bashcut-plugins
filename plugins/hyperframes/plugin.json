@@ -1,0 +1,52 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.hyperframes",
+  "name": {
+    "en": "HyperFrames Graphics",
+    "vi": "Đồ hoạ HyperFrames"
+  },
+  "version": "0.0.1",
+  "apiVersion": 7,
+  "minApiVersion": 7,
+  "entrypoint": "bin/provider",
+  "transport": "session",
+  "category": "effects",
+  "capabilities": [
+    "graphics.render"
+  ],
+  "providers": [
+    {
+      "id": "bashcut.hyperframes.render",
+      "capability": "graphics.render",
+      "name": "HyperFrames (local)",
+      "priority": 10,
+      "timeoutSeconds": 600
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "hyperframes",
+      "name": "HyperFrames 0.8.140, GSAP and Chrome headless shell",
+      "kind": "executable",
+      "probe": {
+        "executable": "bin/check",
+        "arguments": []
+      },
+      "install": {
+        "summary": "Install HyperFrames 0.8.140 (Apache-2.0) and GSAP 3.14.2 with npm into the plugin's data folder (about 130 MB) and download the Chrome headless shell it renders with (about 210 MB). A Node.js 22.19 or newer already on this Mac is used; otherwise the official Node.js 22 LTS is downloaded from nodejs.org and checked against its SHA-256. Telemetry stays off.",
+        "command": {
+          "executable": "bin/setup",
+          "arguments": []
+        }
+      },
+      "estimatedBytes": 400000000
+    }
+  ],
+  "contributes": {
+    "skills": [
+      {
+        "path": "skills/hyperframes"
+      }
+    ]
+  }
+}

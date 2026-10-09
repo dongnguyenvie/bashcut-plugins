@@ -1,0 +1,9 @@
+#!/bin/sh
+# Starts HyperFrames Graphics with Node.js (bin/provider rpc or bin/provider session). Users never install Node.js by hand:
+# bin/find-node looks for one, and the install recipe (bin/setup) downloads it into the plugin data folder.
+here="$(cd "$(dirname "$0")" && pwd)"
+if ! node="$("$here/find-node")"; then
+    echo "HyperFrames Graphics needs Node.js 22 or newer: choose Install Dependencies in Settings › Plugins." >&2
+    exit 1
+fi
+exec "$node" "$here/../lib/main.mjs" "$@"

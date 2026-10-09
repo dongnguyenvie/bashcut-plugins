@@ -1,0 +1,58 @@
+<!doctype html>
+<!-- A full-frame paper card that turns in like a page over the cut, then builds a phrase line by line on the words
+     (lines is a JSON string: text, at seconds, size px, weight, colour, font). Opaque, 1080×1920, 3 s. Place it on the
+     Overlay layer over the speaker, or under a shrunken speaker clip (see the skill). Raw material: change it. -->
+<html lang="en" data-composition-variables='[
+  {"id":"paper","type":"color","label":"Paper colour","default":"#F2EEE5"},
+  {"id":"lines","type":"string","label":"Lines (JSON)","default":"[{\"text\":\"to start\",\"at\":0.55,\"size\":40},{\"text\":\"getting\",\"at\":0.85,\"size\":40},{\"text\":\"more views\",\"at\":1.15,\"size\":112,\"weight\":800,\"color\":\"#1E2A44\"}]"}
+]'>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      #root { position: relative; width: 1080px; height: 1920px; perspective: 2400px; }
+      #page { position: absolute; inset: 0; transform-origin: left center; overflow: hidden;
+        box-shadow: -30px 0 80px rgba(0, 0, 0, 0.35); }
+      #shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.28)); }
+      #grain { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.06) 75%); }
+      #text { position: absolute; left: 90px; right: 90px; top: 760px; display: flex; flex-wrap: wrap;
+        align-items: baseline; justify-content: center; column-gap: 18px; color: #1E2A44;
+        font-family: "Helvetica Neue", Arial, sans-serif; letter-spacing: -0.03em; }
+      .line { display: inline-block; white-space: nowrap; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="3" data-width="1080" data-height="1920">
+      <div id="page"><div id="grain"></div><div id="text"></div><div id="shade"></div></div>
+    </div>
+    <script>
+      const v = window.__hyperframes.getVariables();
+      const page = document.getElementById("page");
+      page.style.background = v.paper;
+      const text = document.getElementById("text");
+      const lines = JSON.parse(v.lines);
+      const tl = gsap.timeline({ paused: true });
+      // The page turns in from the right edge, hinged on the left, and its shadow lifts as it lands.
+      tl.fromTo(page, { rotationY: -95, x: 40 }, { rotationY: 0, x: 0, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo("#shade", { opacity: 1 }, { opacity: 0, duration: 0.5, ease: "power2.out" }, 0);
+      lines.forEach((item, index) => {
+        const span = document.createElement("span");
+        span.className = "line";
+        span.textContent = item.text;
+        span.style.fontSize = `${item.size ?? 48}px`;
+        span.style.fontWeight = String(item.weight ?? 500);
+        if (item.color) span.style.color = item.color;
+        if (item.font) span.style.fontFamily = item.font;
+        if ((item.size ?? 48) >= 90) span.style.flexBasis = "100%", span.style.textAlign = "center";
+        text.appendChild(span);
+        tl.fromTo(span, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.22, ease: "power3.out" }, Math.max(0, item.at - 0.12));
+      });
+      tl.seek(0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

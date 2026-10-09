@@ -46,6 +46,8 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 - Alternate framing: normal → punch-in → normal (`zoom-punch-in` or a transform zoom) at the zoom you chose; a snap
   punch on the strongest words.
 - B-roll or a screenshot over any claim that can be shown (`bc:stock-images`), 1.5–3 s, voice continues under it.
+- Designed graphics (kinetic keyword type, a counter, a pointer clicking, a full-frame card, the speaker shrinking
+  into a card) come from `bc:motion-graphics` and a `graphics.render` plugin such as HyperFrames Graphics.
 - Shorts cut from a long recording: `bashcut.vlog:podcast-clips` picks them; each is then edited with this recipe.
 
 ## Rhythm, presence, transitions and graphics
@@ -56,7 +58,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 | Speaker presence | B-roll and cards cover about 30–50 % of edited reels; one explainer kit keeps the speaker on screen about 40 % (T13 §3); 25–60 % across tutorials and explainers (T19 §3). Audit it, do not cap it | an opinion or a story keeps the face (the face carries the emotion); tips with things to show cover more | `bashcut timeline get` → time covered by B-roll and full-screen cards ÷ length |
 | Transitions | hard cuts and punch-ins; 0–1 special transitions per video (T08 §7); `vlog-blink` only to hide a cut that still jumps | — | `bashcut review shots` → count `cut.kind` |
 | Keyword pops | `vlog-keyword` on the key word: entrance 0.15–0.6 s ending on the word, 0.5–2 s as an accent (T13 §3) | the word's weight | `bashcut transcript words`; `bashcut review layout` |
-| Graphic density | 3–8 graphics per minute of talking footage; leave some sentences bare so the next one lands (T13 §3, §4) | dense information high; a personal story low | `review layout` → text items per minute |
+| Graphic density | 3–8 graphics per minute of talking footage; leave some sentences bare so the next one lands (T13 §3, §4). Graphics-led tip shorts run far above: one measured reference changed the picture every ~1.6 s with about 30 graphics a minute, only keywords as text, no running captions (blycreativs before/after, 2026-10-09) | dense information high; a personal story low; a reference measured with `bc:style-study` replaces the range | `review layout` → text items per minute |
 | Caption landing | captions start within 0.1–0.3 s of the word (T16 §3) | — | `bashcut review layout` → `speech.onsetOffsetFrames` |
 
 ## Text, sound, look

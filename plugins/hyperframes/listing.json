@@ -1,0 +1,19 @@
+{
+  "name": {
+    "en": "HyperFrames Graphics",
+    "vi": "Đồ hoạ HyperFrames"
+  },
+  "summary": {
+    "en": "Animated graphics of any design for your edit: kinetic type, counters and charts, pointers, paper cards, lower thirds and 390+ catalog blocks, written as HTML/CSS + GSAP with HyperFrames (Apache-2.0) and rendered on this Mac to a .mov with alpha that sits on the timeline. Built for agents: they design, look at frames and render.",
+    "vi": "Đồ hoạ chuyển động theo bất kỳ thiết kế nào cho bản dựng: chữ động, số chạy và biểu đồ, con trỏ chuột, thẻ giấy, lower third và hơn 390 block có sẵn, viết bằng HTML/CSS + GSAP với HyperFrames (Apache-2.0) và render ngay trên máy thành .mov có kênh alpha đặt lên timeline. Làm cho AI: tự thiết kế, xem từng khung hình rồi render."
+  },
+  "publisher": "bashcut",
+  "category": "effects",
+  "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/hyperframes",
+  "minAppVersion": "0.0.1",
+  "platforms": [
+    "macos-arm64",
+    "macos-x86_64"
+  ],
+  "downloadBytes": 400000000
+}

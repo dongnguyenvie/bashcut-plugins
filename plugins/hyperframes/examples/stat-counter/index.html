@@ -1,0 +1,71 @@
+<!doctype html>
+<!-- A number that matters, counted up on a dark glass card with a line that draws as it climbs. Transparent,
+     1080×1920, 3.5 s. Raw material: change the card, the chart, the easing and the timing for the video. -->
+<html lang="en" data-composition-variables='[
+  {"id":"label","type":"string","label":"Label","default":"Average Views"},
+  {"id":"from","type":"number","label":"Count from","default":82366},
+  {"id":"to","type":"number","label":"Count to","default":100000},
+  {"id":"countSeconds","type":"number","label":"Count length (s)","default":1.4},
+  {"id":"top","type":"number","label":"Card top (px)","default":1180},
+  {"id":"accent","type":"color","label":"Line colour","default":"#3BF26A"},
+  {"id":"trend","type":"string","label":"Trend pill (empty hides it)","default":"▲ 21%"}
+]'>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      #root { position: relative; width: 1080px; height: 1920px; font-family: "Helvetica Neue", Arial, sans-serif; }
+      #card { position: absolute; left: 110px; width: 860px; height: 400px; padding: 40px 48px; border-radius: 34px;
+        background: rgba(22, 24, 30, 0.86); border: 2px solid rgba(255, 255, 255, 0.12); color: #fff;
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5); }
+      #label { font-size: 34px; font-weight: 500; color: rgba(255, 255, 255, 0.75); }
+      #value { font-size: 84px; font-weight: 800; letter-spacing: -0.03em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+      #trend { position: absolute; top: 44px; right: 48px; padding: 6px 18px; border-radius: 999px; font-size: 30px;
+        font-weight: 700; color: #0B0D12; }
+      svg { position: absolute; left: 48px; bottom: 36px; width: 764px; height: 150px; overflow: visible; }
+      #line { fill: none; stroke-width: 9; stroke-linecap: round; filter: drop-shadow(0 0 10px currentColor); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="3.5" data-width="1080" data-height="1920">
+      <div id="card">
+        <div id="label"></div><div id="value"></div><div id="trend"></div>
+        <svg viewBox="0 0 764 150"><path id="line" d="M0 120 C 90 120, 110 40, 190 60 S 300 140, 380 90 S 520 10, 600 50 S 700 40, 764 20" /></svg>
+      </div>
+    </div>
+    <script>
+      const v = window.__hyperframes.getVariables();
+      const card = document.getElementById("card");
+      card.style.top = `${v.top}px`;
+      document.getElementById("label").textContent = v.label;
+      const trend = document.getElementById("trend");
+      trend.textContent = v.trend;
+      trend.style.background = v.accent;
+      trend.style.display = v.trend ? "block" : "none";
+      const value = document.getElementById("value");
+      value.textContent = Math.round(v.from).toLocaleString("en-US");
+      const line = document.getElementById("line");
+      line.style.stroke = v.accent;
+      line.style.color = v.accent;
+      const length = line.getTotalLength();
+      line.style.strokeDasharray = `${length}`;
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo(card, { opacity: 0, y: 60, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 0);
+      tl.fromTo(line, { strokeDashoffset: length }, { strokeDashoffset: 0, duration: v.countSeconds, ease: "power2.out" }, 0.3);
+      // Text cannot be tweened: one tl.set per frame keeps every frame a pure function of time.
+      const steps = Math.round(v.countSeconds * 30);
+      for (let i = 0; i <= steps; i += 1) {
+        const t = 1 - Math.pow(1 - i / steps, 3);
+        tl.set(value, { textContent: Math.round(v.from + (v.to - v.from) * t).toLocaleString("en-US") }, 0.3 + (i / steps) * v.countSeconds);
+      }
+      tl.fromTo(value, { scale: 1 }, { scale: 1.08, duration: 0.12, yoyo: true, repeat: 1, ease: "power2.out", transformOrigin: "left center" }, 0.3 + v.countSeconds);
+      tl.to(card, { opacity: 0, y: -30, duration: 0.3, ease: "power2.in" }, 3.2);
+      tl.seek(0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

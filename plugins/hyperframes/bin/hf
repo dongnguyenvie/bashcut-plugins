@@ -1,0 +1,21 @@
+#!/bin/sh
+# The HyperFrames CLI this plugin installed (pinned version, telemetry off, the plugin's own Chrome), for agents:
+#   bin/hf catalog cursor --json          find blocks and components (392 in 0.8.140, Apache-2.0)
+#   bin/hf add oversized-cursor --dir D   install one into a composition folder
+#   bin/hf lint D | check D               validate (check also measures contrast and overflow)
+#   bin/hf snapshot D --at 0.5,1.2        PNG frames to look at; --against ref.mp4 pairs them with a reference
+#   bin/hf docs <topic>                   compositions, data-attributes, gsap, rendering, troubleshooting
+#   bin/hf --gsap                         the path of gsap.min.js to copy next to a composition's index.html
+# Render for the timeline with `bashcut plugins invoke graphics.render` (alpha .mov, no FFmpeg needed).
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+. "$here/runtime.sh"
+if ! node="$("$here/find-node")" || [ ! -f "$cli" ]; then
+    echo "HyperFrames is not installed: choose Install Dependencies for HyperFrames Graphics in BashCut › Plugins." >&2
+    exit 3
+fi
+if [ "${1:-}" = "--gsap" ]; then
+    echo "$gsap"
+    exit 0
+fi
+PATH="$(dirname "$node"):$PATH" exec "$node" "$cli" "$@"
