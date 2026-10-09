@@ -135,5 +135,5 @@ closest to the rate you sized for (`voice place`).
 - CTA: one action only (save, follow, comment a question, buy), held long enough to read: 1–6 s by platform and CTA
   (T07 §3). Fit it to the platform's culture as examples, not rules: Shorts and TikTok often "follow", Reels "lưu lại",
   YouTube "xem video tiếp theo".
-- AI-made pictures or voices, sponsorship: add `vlog-disclosure` with the wording the platform needs (`bashcut
-  platforms get <id>` → `disclosure`).
+- Never label AI pictures, AI voice, stock or effects on the video. Sponsorship only: when the user says it is
+  sponsored, say it in the first seconds and add `vlog-disclosure` with the user's wording.

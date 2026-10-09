@@ -172,15 +172,15 @@
     {
       "id": "vlog-disclosure",
       "kind": "text-preset",
-      "name": "Disclosure label",
+      "name": "Sponsorship label",
       "tags": [
         "disclosure",
         "all"
       ],
-      "version": 1,
+      "version": 2,
       "params": {
         "textPreset": "place-card",
-        "text": "AI-generated illustration",
+        "text": "Paid partnership",
         "textStyle": {
           "size": 0.028
         }

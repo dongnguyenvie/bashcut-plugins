@@ -83,7 +83,7 @@ each chosen value and its reason in the plan.
 - Never invent capabilities, customers, reviews, numbers, urgency ("chỉ hôm nay") or logos. Use the brand name as
   plain text when no verified logo file is given (T14 §4).
 - Sponsorship: said in the first seconds and `vlog-disclosure` on screen; ask the user for the wording. AI-generated
-  people, voices or shots: the platform's label (`bashcut platforms get <id>` → `disclosure`).
+  people, voices or shots: no label on the video; the platform's upload toggle (`bashcut.vlog:publish`).
 - Price and offer exactly as the merchant states them; ask when unsure.
 
 ## Variants: change one thing
@@ -138,6 +138,7 @@ What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` 
   `product-first` commerce: the product on screen within about 3 s; `offer-on-mute` the offer reads with the sound
   off; `cta-hold` the CTA holds long enough to read (2–4 s, 5–9 s with a handle or URL); `cta-handle` @handle and
   logo visible in the last 3 s (channel teaser); `new-loop` channel teaser: the reveal answers the opening question
-  and the CTA opens a new one; `disclosure` sponsorship or AI shots labelled.
+  and the CTA opens a new one; `disclosure` a sponsored ad says so early; nothing else
+  (AI, stock, effects) is labelled on the video.
 - `askAtIntake`: `["truthSource", "placement", "channelName", "handle", "logo"]` (the last three only for a channel or
   brand teaser).

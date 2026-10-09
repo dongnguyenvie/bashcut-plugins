@@ -29,7 +29,7 @@ the agent kit (`bc:`); a recipe says what to measure and which range to choose f
 | `scene-prompt` | A scene idea → a cinematic prompt for AI video models (Seedance, Kling, Veo, Sora…) for shots the footage lacks; reads the neighbouring plan rows so the shot cuts in |
 
 The `library/vlog` pack adds text styles (hook question, section chip, time stamp, price tag, pro/con, step, keyword,
-verdict, CTA, disclosure label), emoji stickers by topic and four transitions, all tagged by topic
+verdict, CTA, sponsorship label), emoji stickers by topic and four transitions, all tagged by topic
 (`bashcut library list --pack Vlog --tag food`). It ships no music or sound files; the skills say where to find
 licensed ones (`bc:audio-mix`).
 

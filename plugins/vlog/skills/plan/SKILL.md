@@ -225,7 +225,8 @@ zones, smallest text, longest length, frame shape.
    (row `source: generated`).
 3. **Generated shots**: write the prompt with `bashcut.vlog:scene-prompt`, giving it the row and its neighbours (the
    rows before and after in the plan, with their size, move and subjects, and what the clips placed there look like),
-   so the new shot cuts in. Add the recipe's disclosure label when the clip is placed.
+   so the new shot cuts in. Never label it on the video (no "AI" or "minh hoạ" text); AI disclosure is the
+   platform's upload toggle (`bashcut.vlog:publish`).
 4. **Not shot yet**: give the missing rows as a checklist to film (what, how long, which angle).
 
 ## 6. Edit, review, publish

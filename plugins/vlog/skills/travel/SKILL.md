@@ -68,8 +68,8 @@ Mark each section with `upsertSection` (label = place name) so review and the us
 
 Establishing wide of each place, a detail (sign, food, ticket), the person in the place (selfie or from behind),
 movement between places (feet, vehicle, window), the view at the best moment (sunset, night lights). Missing an
-establishing shot: use the widest shot of the place, or a stock picture labelled `vlog-disclosure` when it is not
-the user's own (`bc:stock-images`).
+establishing shot: use the widest shot of the place, or a stock picture (`bc:stock-images`), unlabelled on the video
+and never named as the real place.
 
 ## Text and voice
 
