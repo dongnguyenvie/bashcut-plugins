@@ -1,5 +1,37 @@
 {
   "id": "bashcut.vlog",
-  "listing": {},
-  "versions": []
+  "listing": {
+    "name": {
+      "en": "Vlog",
+      "vi": "Vlog"
+    },
+    "summary": {
+      "en": "Recipes for making vlogs, one skill per topic (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial): structure and sample ranges with sources for pacing, transitions, graphics, hook, text, sound and look, from which the agent writes the project's edit plan and review profile. Around them: ideate (the angle and brief from the footage), plan, hook-script (story, hook and script sized to the measured voice) and publish (platform data, cover, chapters, captions). Includes a library pack of vlog text styles, stickers and transitions, and scene-prompt for AI video prompts.",
+      "vi": "Công thức làm vlog, mỗi chủ đề một kỹ năng (du lịch, ăn uống, đời thường, review sản phẩm, quảng cáo sản phẩm, nói trước camera, cắt clip podcast, hướng dẫn): cấu trúc và các khoảng tham khảo có nguồn cho nhịp cắt, chuyển cảnh, đồ hoạ, hook, chữ, âm thanh và màu, để agent tự viết kế hoạch dựng và ngưỡng review cho project. Kèm các kỹ năng tìm ý tưởng (góc kể và brief từ footage), lên kế hoạch, viết hook và lời thoại theo tốc độ giọng đo được, đăng bài (dữ liệu nền tảng, ảnh bìa, chương, phụ đề). Có gói thư viện kiểu chữ, sticker, chuyển cảnh cho vlog và scene-prompt viết prompt video AI."
+    },
+    "publisher": "bashcut",
+    "category": "utilities",
+    "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/vlog",
+    "capabilities": [],
+    "actions": [],
+    "hooks": []
+  },
+  "versions": [
+    {
+      "version": "0.0.2",
+      "apiVersion": 7,
+      "minApiVersion": 7,
+      "minAppVersion": "0.0.1",
+      "platforms": [
+        "macos-arm64",
+        "macos-x86_64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vlog-v0.0.2/bashcut.vlog-0.0.2.zip",
+      "sha256": "e6b0716dd13e049893b5d752efaa8dec8e38a6d597d465a207b9923fb67b0ef4",
+      "signature": "ed25519:2h1f6iLXlbjR0Q/1FYbSAUH/JjydTZ/Fj+5C2OtF53MaDd6vOm/sri2sB0CEG+aFjcRUVWdPTRaPbYfGKLMtCw==",
+      "size": 259383,
+      "downloadBytes": 0,
+      "releasedAt": "2026-10-09"
+    }
+  ]
 }
