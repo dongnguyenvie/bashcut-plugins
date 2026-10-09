@@ -115,7 +115,7 @@ class TitleCardTests(unittest.TestCase):
             session.close()
 
     def test_form_checks_then_closes(self):
-        session = Session({"ui.notify": {}})
+        session = Session({"ui.action": {}})
         try:
             empty = session.view("titleCard", values={"title": ""}, event={"node": "create", "type": "click"})["result"]
             self.assertFalse(empty.get("close", False))
@@ -123,7 +123,8 @@ class TitleCardTests(unittest.TestCase):
             done = session.view("titleCard", values={"title": "Chapter 1", "style": "neon", "seconds": 4},
                                 event={"node": "create", "type": "click"})["result"]
             self.assertTrue(done["close"])
-            self.assertEqual(session.calls[-1][0], "ui.notify")
+            self.assertEqual(session.calls[-1][0], "ui.action")
+            self.assertEqual(session.calls[-1][1]["action"], "notify")
             cancelled = session.view("titleCard", event={"node": "cancel", "type": "click"})["result"]
             self.assertTrue(cancelled["close"])
         finally:
@@ -147,14 +148,13 @@ class VoiceTests(unittest.TestCase):
             "voice.speak": {"job": "j1", "state": "running"},
             "jobs.status": {"state": "completed", "result": {"takes": [{"path": take, "score": 0.8, "seconds": 1.5}]}},
             "plugins.invoke": {"plugin": "bashcut.audio-analysis", "result": {"integratedLUFS": -16.2}},
-            "context.get": {"rev": 7},
-            "media.import": {"rev": 8},
+            "voice.place": {"rev": 8, "item": "vo-1"},
         })
         try:
             spoken = session.view("voice", values={"text": "Xin chào"}, event={"node": "speak", "type": "click"})
             state = spoken["result"]["state"]
             self.assertEqual([take["path"] for take in state["takes"]], [take])
-            self.assertEqual(session.calls[0], ("voice.speak", {"text": "Xin chào", "takes": 2, "keepTakes": True}))
+            self.assertEqual(session.calls[0], ("voice.speak", {"text": "Xin chào", "takes": 2}))
             self.assertEqual(session.events[0]["kind"], "render")
             measured = session.view("voice", state=state, event={
                 "node": "takes", "type": "action", "value": {"item": take, "action": "measure"}})
@@ -163,7 +163,7 @@ class VoiceTests(unittest.TestCase):
             self.assertAlmostEqual(measured["result"]["state"]["takes"][0]["lufs"], -16.2)
             session.view("voice", state=measured["result"]["state"], event={
                 "node": "takes", "type": "action", "value": {"item": take, "action": "use"}})
-            self.assertEqual(session.calls[-1], ("media.import", {"path": take, "place": True, "baseRev": 7}))
+            self.assertEqual(session.calls[-1], ("voice.place", {"take": take}))
         finally:
             session.close()
 
@@ -186,12 +186,13 @@ class VoiceTests(unittest.TestCase):
 
 class ActionTests(unittest.TestCase):
     def test_hello_calls_back(self):
-        session = Session({"context.get": {"rev": 3}, "ui.notify": {}})
+        session = Session({"context.get": {"rev": 3}, "ui.action": {}})
         try:
             reply = session.request("plugin.action", {"action": "bashcut.views-example.hello", "params": {},
                                                       "options": {"greeting": "Chào"}, "context": {}})
             self.assertEqual(reply["result"]["message"], "Chào")
-            self.assertEqual(session.calls[-1], ("ui.notify", {"message": "Chào! The project is at revision 3."}))
+            self.assertEqual(session.calls[-1], ("ui.action", {"action": "notify",
+                                                               "target": "Chào! The project is at revision 3."}))
         finally:
             session.close()
 

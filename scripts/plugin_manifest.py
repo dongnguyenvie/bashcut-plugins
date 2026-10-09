@@ -12,7 +12,7 @@ import re
 
 SCHEMA = "bashcut.plugin/1"
 API_MINIMUM = 1
-API_CURRENT = 8
+API_CURRENT = 9
 # Capabilities BashCut wires today (docs/guides/plugins.md › Capabilities).
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")
@@ -194,6 +194,8 @@ def manifest_problems(manifest):
         problems.append("contributes.library needs apiVersion 6")
     if skills and api < 7:
         problems.append("contributes.skills needs apiVersion 7")
+    if "review.check" in capabilities and api < 9:
+        problems.append("review.check needs apiVersion 9")
     skill_paths = [s.get("path") if isinstance(s, dict) else None for s in skills]
     if len(skills) > MAX_SKILLS or len({str(p).rstrip("/") for p in skill_paths}) != len(skills):
         problems.append(f"contributes.skills lists at most {MAX_SKILLS} different skill folders")

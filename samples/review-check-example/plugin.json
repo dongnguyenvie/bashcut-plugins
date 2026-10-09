@@ -1,0 +1,21 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "example.review-check",
+  "name": {"en": "Review Check Example", "vi": "Ví dụ kiểm tra review"},
+  "version": "0.0.1",
+  "apiVersion": 9,
+  "entrypoint": "bin/provider",
+  "category": "utilities",
+  "capabilities": ["review.check"],
+  "providers": [
+    {"id": "example.review-check.rules", "capability": "review.check", "name": "Brand and call-to-action rules",
+     "timeoutSeconds": 10}
+  ],
+  "options": [
+    {"id": "fonts", "title": {"en": "Brand fonts (comma separated)", "vi": "Font thương hiệu (cách nhau bằng dấu phẩy)"},
+     "type": "string", "default": ""},
+    {"id": "ctaSeconds", "title": {"en": "Call to action in the last seconds", "vi": "Kêu gọi hành động trong mấy giây cuối"},
+     "type": "number", "default": 5}
+  ],
+  "dependencies": []
+}
