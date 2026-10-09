@@ -9,7 +9,9 @@ Reply in the user's language. This plugin's topic skills are **recipes**: each h
 (structure, hook, text, sound and look intent) and tables of **sample ranges** from published practice, each with its
 source, why it varies and how to measure it. The numbers are starting points, not settings. You survey the footage,
 choose a range and a value for each key, write them into the **edit plan** with a reason, and say why. Two folders of
-the same genre can and should get different plans. The editing itself is the agent kit's job (`bc:edit-workflow` and
+the same genre can and should get different plans. A recipe's structure table is one shape, not the only
+one: compare it with a shape the footage suggests (`plan.options`). Going outside a range is allowed when the footage
+or the idea earns it: write the value, the reason and `"deliberate": true` in the plan, and review keeps it as info. The editing itself is the agent kit's job (`bc:edit-workflow` and
 the skills it names).
 
 **Priority of numbers** (T15 §7): the user's instruction → what our footage can hold → a measured **reference

@@ -40,7 +40,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 | Process | 4–8 s | 3–5 quick inserts (0.5–1.5 s): cooking, plating, sauce, steam |
 | Tasting | 8–15 s | 2–3 bites, each: close-up of the food → the bite → the face; `vlog-pro`/`vlog-con` stickers for what is said |
 | Verdict | 3–4 s | score or one-line verdict (`vlog-verdict`), price and address |
-| CTA | 2 s | `vlog-cta` ("LƯU LẠI ĐỂ ĂN THỬ") |
+| CTA | 2–3 s | `vlog-cta` ("LƯU LẠI ĐỂ ĂN THỬ") |
 
 ## Cuts and motion
 

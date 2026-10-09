@@ -135,9 +135,9 @@ What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` 
 - `promise`: the hook and CTA pair (§2).
 - `stages`: `{"effects": {"required": true, "skill": "bc:motion-graphics", "why": "offer card, CTA card with @handle and logo"}, "colour": {"rules": ["true-to-life product colour first"]}}`
 - `checks` (source: product-ad recipe): `claims-sourced` every number and claim has a source in the brief;
-  `product-first` commerce: the product on screen within about 3 s; `offer-on-mute` the offer reads with the sound
+  `product-first` commerce: the product on screen within the plan's `hookSeconds` (about 2–4 s); `offer-on-mute` the offer reads with the sound
   off; `cta-hold` the CTA holds long enough to read (2–4 s, 5–9 s with a handle or URL); `cta-handle` @handle and
-  logo visible in the last 3 s (channel teaser); `new-loop` channel teaser: the reveal answers the opening question
+  logo visible through the CTA (channel teaser); `new-loop` channel teaser: the reveal answers the opening question
   and the CTA opens a new one; `disclosure` a sponsored ad says so early; nothing else
   (AI, stock, effects) is labelled on the video.
 - `askAtIntake`: `["truthSource", "placement", "channelName", "handle", "logo"]` (the last three only for a channel or

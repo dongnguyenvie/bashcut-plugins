@@ -56,7 +56,7 @@ best shot of the footage and the hook facts once a cut exists, over the opening 
 | Hook text on screen | about 6 words or fewer per frame (T14 §3); about 60 characters at most in 9:16 (T14 §3) | font size, how long it holds | `bashcut review layout` → `longestLineChars`, `holdSeconds` |
 | Options compared | 3–5, show the best 2 (T02 §3) | — | — |
 
-- **Text and speech in the first 3 s say the same thing.** A title that asks one question while the voice says
+- **Text and speech in the opening (the plan's `hookSeconds`) say the same thing.** A title that asks one question while the voice says
   another reads as two messages (a critic flagged it in a one-prompt ad). Write the on-screen hook from the spoken
   line, or speak the title.
 

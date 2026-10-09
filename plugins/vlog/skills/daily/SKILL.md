@@ -37,7 +37,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 | Hook | 2–3 s | the most interesting moment of the day, or a question/number ("5H SÁNG THỨC DẬY ĐỂ LÀM GÌ?") |
 | Moments ×5–10 | 4–10 s each | in time order; `vlog-time-stamp` ("07:30 · SÁNG") at each new part of the day |
 | Close | 3–5 s | the end of the day, a thought in one line |
-| CTA | 2 s | soft: "theo dõi để xem ngày mai" |
+| CTA | 1–3 s | soft: "theo dõi để xem ngày mai" |
 
 ## Cuts and motion
 
