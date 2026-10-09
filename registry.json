@@ -101,6 +101,22 @@
           "size": 447719,
           "downloadBytes": 50000000,
           "releasedAt": "2026-10-06"
+        },
+        {
+          "version": "0.0.4",
+          "apiVersion": 4,
+          "minApiVersion": 4,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/director-v0.0.4/bashcut.director-0.0.4.zip",
+          "sha256": "d6a6c167ecd8a6f5abcaf85c13201cd2ded9e257a0c4e43dc4e0c9eb8913dca5",
+          "signature": "ed25519:Xyjd/GyLOFlp0wBU03Cn4JZnf+69UxwQyQfWy1b6qZthrSyAb8Wt9IWyiSXfps9u7i3GSD5IjeQ/GKZA3j2xDw==",
+          "size": 448223,
+          "downloadBytes": 50000000,
+          "releasedAt": "2026-10-09"
         }
       ],
       "name": {
