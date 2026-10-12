@@ -3,7 +3,8 @@
 //
 //   place D [--at-frame F] [--duration N] [--track T] [--set k=v …] [--variables JSON] [--name N] [--fps N]
 //           [--codec hevc|prores] [--no-brand] [--dry-run]
-//     Renders composition folder D with graphics.render, waits, adds the .mov as a sticker and places it full canvas
+//     Renders composition folder D with graphics.render (an example of this plugin is first copied to the project's
+//     graphics/<name>-<id>/ and the copy rendered), waits, adds the .mov as a sticker and places it full canvas
 //     (size 1 at 0.5,0.5) on the Overlay layer, then records the render inputs on the placed media
 //     (media.data.graphics, setMediaData). Prints {item, media, track, atFrame, frames, path, rev, brand, …}.
 //   rerender ITEM|MEDIA|--all [--set k=v …] [--unset k …] [--variables JSON] [--fps N] [--codec C] [--name N]
@@ -35,7 +36,7 @@
 // Uses $BASHCUT_CLI, else `bashcut` on PATH.
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -436,12 +437,35 @@ function lintNote(render, out) {
     }
 }
 
+/**
+ * A composition inside this plugin (an example) is copied into the project's graphics/ folder first: rendering writes
+ * gsap.min.js, brand fonts, logos and (plan) a stretched data-duration next to the page, and the plugin's own folder
+ * must not change (its trust follows its files). The copy is also what rerender finds after a plugin update.
+ * `slot` names the copy; an existing copy is reused as it is (it may have been edited for this project). `projectRoot`
+ * is the project folder or a function that returns it (asked only for a plugin folder).
+ */
+export function ownComposition(dir, projectRoot, slot) {
+    const plugin = realpathSync(fileURLToPath(new URL("../", import.meta.url)));
+    const real = realpathSync(dir);
+    if (!real.startsWith(plugin + "/")) return dir;
+    if (typeof projectRoot === "function") projectRoot = projectRoot();
+    if (!projectRoot || projectRoot === ".") return dir;
+    const copy = join(projectRoot, "graphics", safeName(slot));
+    if (!existsSync(join(copy, "index.html"))) {
+        mkdirSync(dirname(copy), { recursive: true });
+        cpSync(real, copy, { recursive: true, filter: (from) => basename(from) !== "gsap.min.js" });
+    }
+    return copy;
+}
+
 function place(target, options) {
-    const dir = resolve(target);
-    if (!existsSync(dir) || !statSync(dir).isDirectory()) throw new UsageError(`${dir} is not a composition folder`);
-    const declared = readComposition(dir).declared;
+    const given = resolve(target);
+    if (!existsSync(given) || !statSync(given).isDirectory()) throw new UsageError(`${given} is not a composition folder`);
     const project = cli(["project", "get"]) ?? {};
-    const name = safeName(options.name ?? basename(dir));
+    const name = safeName(options.name ?? basename(given));
+    const dir = options["dry-run"] ? given
+        : ownComposition(given, () => dirname(cli(["context", "get"])?.project ?? ""), `${name}-${randomBytes(3).toString("hex")}`);
+    const declared = readComposition(dir).declared;
     const inputs = {
         composition: dir, variables: explicitVariables(declared, options.set, options.variables), name,
         fps: options.fps ?? Math.round(frameRate(project.format?.fps)), codec: options.codec ?? "hevc",
@@ -682,8 +706,9 @@ function planGraphics(options) {
         const seconds = row.short ?? row.seconds;
         const given = entry.render.composition;
         if (typeof given !== "string" || !given) throw new UsageError(`graphic ${entry.id}: render.composition is missing`);
-        const dir = resolve(root, given);
-        if (!existsSync(join(dir, "index.html"))) throw new UsageError(`graphic ${entry.id}: ${dir} has no index.html`);
+        const asGiven = resolve(root, given);
+        if (!existsSync(join(asGiven, "index.html"))) throw new UsageError(`graphic ${entry.id}: ${asGiven} has no index.html`);
+        const dir = options["dry-run"] ? asGiven : ownComposition(asGiven, root, `${entry.id}-${basename(asGiven)}`);
         const declared = readComposition(dir).declared;
         const asked = resolveWordTimes({ ...(entry.render.variables ?? {}), ...(entry.render.set ?? {}) }, row.words ?? []);
         const inputs = {

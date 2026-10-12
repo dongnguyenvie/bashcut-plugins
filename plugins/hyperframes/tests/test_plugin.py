@@ -485,6 +485,21 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertEqual({"title", "month", "accent", "items"}, set(recorded["variables"]))  # brand values stay live
         self.assertTrue(recorded["brand"])
 
+    def test_place_renders_a_copy_of_a_plugin_example_in_the_project(self):
+        project_file = self.folder / "project" / "project.bashcut.json"
+        project_file.parent.mkdir()
+        before = sorted(p.name for p in (ROOT / "examples" / "calendar").iterdir())
+        state = {"projects": [self.project(), self.project(rev=7)], "projectFile": str(project_file)}
+        out, calls = self.run_graphic(state, "place", str(ROOT / "examples" / "calendar"), "--set", "title=Tháng đẹp")
+        self.assertEqual(0, out.returncode, out.stderr)
+        rendered = pathlib.Path(next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]["composition"])
+        self.assertEqual(project_file.parent / "graphics", rendered.parent)
+        self.assertTrue(rendered.name.startswith("calendar-"))
+        self.assertTrue((rendered / "index.html").is_file())
+        self.assertEqual(before, sorted(p.name for p in (ROOT / "examples" / "calendar").iterdir()))  # plugin untouched
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        self.assertEqual(str(rendered), recorded["composition"])  # rerender finds the copy after a plugin update
+
     def test_place_refuses_an_undeclared_variable_before_rendering(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "place", str(self.composition), "--set", "colour=#fff")
         self.assertEqual(2, out.returncode)
