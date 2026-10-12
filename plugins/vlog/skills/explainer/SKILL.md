@@ -27,10 +27,20 @@ voice takes, graphics or captions one by one with `timeline apply`. `P` is the H
    numbers spelled out; `caption` what the captions show instead, with digits),
    `graphics` [{id, section, track: "main", render: {composition: "graphics/<name>", set: {…}}}] (one per section on
    Main, the picture of the video; overlays such as a chip or a counter over the map without `track`), `captions`
-   {from: "speech", preset}, `music` {media, volumeDb, duckDb}, `sfx` [{media, on: "<graphic id>", offset}],
-   `review` {limits from the ranges below}. In `set`, a value `"@words"` becomes the seconds from the graphic's
+   {from: "speech", preset, maxChars (the caption line length from the ranges below), style {positionY}}, `music`
+   {media, volumeDb, duckDb}, `sfx` [{media, on: "<graphic id>", offset}], `review` {limits from the ranges below}. In `set`, a value `"@words"` becomes the seconds from the graphic's
    start to where the voice says those words: a row `{"label": "Hồ Tây", "value": 528, "at": "@năm trăm hai mươi
-   tám"}` lands on its word.
+   tám"}` lands on its word. The shape, in short (every field: `bashcut help plan check`):
+
+   ```json
+   {"sections": [{"id": "s1", "label": "1/4 Hồ Gươm"}],
+    "cut": {"voiceover": [{"id": "l1", "text": "Hồ Gươm rộng mười một phẩy hai héc ta.", "caption": "Hồ Gươm rộng 11,2 ha.",
+                           "section": "s1", "pause": 0.3}],
+            "graphics": [{"id": "g1", "section": "s1", "track": "main",
+                          "render": {"composition": "graphics/s1-count", "set": {"to": 11.2, "label": "ha"}}}],
+            "captions": {"from": "speech", "maxChars": 26, "style": {"positionY": 0.3}},
+            "review": {"captionLineChars": 26, "maxStillSeconds": 2}}}
+   ```
 3. **The voice.** `bashcut voice lines --takes 2 --min-similarity 0.9` voices and checks every line in one job
    (`bashcut jobs wait <job> --done`). A line whose best take lists `unmatched` words: rewrite how it is spelled (a
    number in words, a name split) in plan.cut and run `voice lines --only <id>`.
