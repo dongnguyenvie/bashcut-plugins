@@ -2,6 +2,16 @@
 <!-- A cost table, a receipt or a price list whose rows slide in on their words while the total counts up to the sum
      (rows is a JSON array of {item, amount, at}). Transparent, 1080×1920, 5 s. Raw material: change the card, the
      currency, the rows and the timing for the video. -->
+<!-- Pitfalls:
+  - Each row adds ~97 px under a card top of 480: seven rows already reach ~1500 px, eight end at ~1650 in the
+    platform's bottom band. Keep it to six rows, or merge small items into "Other".
+  - An item wraps after ~22 characters beside a 600.000đ amount and its row grows by ~53 px; shorten it
+    ("Bus, return").
+  - Amounts are rounded to whole numbers and the currency goes after them with no space: 129.99 and 84.5 with currency
+    "$" show 130$ + 85$ and a total of 214$. Give whole amounts, and set currency " USD" with its leading space.
+  - Rows slide in 0.3 s before their at and the total counts for 0.3 s after it, then pops at last at + 0.35: keep
+    the last at under data-duration − 1.2 (3.8 s at 5 s) or the pop lands in the swing-out.
+-->
 <html lang="en" data-composition-variables='[
   {"id": "title", "type": "string", "label": "Title", "default": "48 hours, total cost"},
   {"id": "rows", "type": "string", "label": "Rows (JSON [{item, amount, at}])", "default": "[{\"item\":\"Bus there and back\",\"amount\":600000,\"at\":0.8},{\"item\":\"Two nights homestay\",\"amount\":900000,\"at\":1.4},{\"item\":\"Food and coffee\",\"amount\":1100000,\"at\":2.0},{\"item\":\"Tickets\",\"amount\":400000,\"at\":2.6}]"},

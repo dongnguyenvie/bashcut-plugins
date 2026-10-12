@@ -1,6 +1,13 @@
 <!doctype html>
 <!-- A spoken phrase as type over footage: a small serif lead-in, then the keyword slams in big and bold on its word.
      Transparent, 1080×1920, 2.4 s. Raw material: change fonts, colours, sizes, motion and timing for the video. -->
+<!-- Pitfalls:
+  - The keyword never wraps: at 150 px about 12 characters fit ("Best weekend"); "Cheapest flights" (16) is cut off at
+    both edges. Pick a shorter keyword and move the rest of the phrase into lead.
+  - The keyword's bottom sits ~85 px below centerY: centerY over ~1400 puts it in the platform's caption band.
+  - keywordAt under 0.18 slams the keyword in on frame 0 before the lead-in; over ~1.6 s at the 2.4 s length leaves it
+    on screen for less than 0.6 s before the exit at data-duration − 0.2.
+-->
 <html lang="en" data-composition-variables='[
   {"id": "lead", "type": "string", "label": "Lead-in words", "default": "one of the"},
   {"id": "keyword", "type": "string", "label": "Keyword", "default": "Best ways"},

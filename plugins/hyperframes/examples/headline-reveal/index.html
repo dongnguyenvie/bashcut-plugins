@@ -6,6 +6,8 @@
   - wordStagger under ~0.05 s reads as one flash, not words landing; above ~0.16 s a 10-word headline drags past 2 s.
   - size 96–130 px fits 2–3 lines in the 900 px column; above ~140 px long Vietnamese words overflow or need 4 lines.
   - Put a phrase in *one pair* of asterisks (*hoa dã quỳ*); the underline follows the last starred phrase, so star one.
+  - The underline sits under the descenders, ~0.25 em below the line: with three lines and line-height kept, it
+    needs the gap above the next line, so do not tighten line-height below 1.17.
   - Keep top 380–720: below ~760 a three-line headline runs into the platform's bottom band.
 -->
 <html lang="en" data-composition-variables='[
@@ -123,7 +125,8 @@
         underline.style.left = `${left + size * 0.02}px`;
         underline.style.width = `${right - left - size * 0.04}px`;
         underline.style.height = `${thick}px`;
-        underline.style.top = `${lastTop + row[0].offsetHeight - thick * 0.35}px`;
+        // Below the descenders (g, y, p in an italic phrase), not on the baseline: the line box ends just under them.
+        underline.style.top = `${lastTop + row[0].offsetHeight + size * 0.08}px`;
       }
       placeUnderline();
       // A font that loads after this script moves the words; the underline follows them (no timing changes).

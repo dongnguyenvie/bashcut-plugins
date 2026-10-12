@@ -5,8 +5,9 @@
 <!-- Pitfalls:
   - typing time = characters ÷ charsPerSecond + 0.32 s per line: ~55 characters at 22 cps finish at ~4.2 s, leaving
     the ≥1 s hold in 5.6 s; longer text needs a longer data-duration or a higher speed (15–30 reads as typing, 45+ as a blur).
-  - with a side list the body column is ~530 px, so 72 px lines wrap at ~16 characters; pass sideItems [] for ~24.
-  - side entries longer than ~14 characters are cut with an ellipsis; they are decoration, keep them short.
+  - with a side list the body column is ~640 px, so 96 px lines wrap at ~13 characters; pass sideItems [] for ~18.
+    Keep fontSize ≥ 96 (5 % of the height): shorten the lines rather than shrink the type.
+  - side entries longer than ~11 characters are cut with an ellipsis; they are decoration, keep them short.
   - one *marked* phrase per line; asterisks must pair or the stars print as text.
 -->
 <html lang="en" data-composition-variables='[
@@ -14,7 +15,7 @@
   {"id": "lines", "type": "string", "label": "Lines (JSON array of strings or {text, at}; *words* get the marker; at = seconds typing starts)", "default": "[\"Up at 5:30 for fog.\",\"Coffee by the *lake*.\",\"Best morning yet.\"]"},
   {"id": "sideItems", "type": "string", "label": "Past entries in the side list, newest first (JSON array; [] hides the list)", "default": "[\"Day 2 · Market\",\"Day 1 · Arrival\",\"Packing list\"]"},
   {"id": "charsPerSecond", "type": "number", "label": "Typing speed (characters per second)", "default": 22},
-  {"id": "fontSize", "type": "number", "label": "Body text size (px)", "default": 72},
+  {"id": "fontSize", "type": "number", "label": "Body text size (px)", "default": 96},
   {"id": "top", "type": "number", "label": "Window top (px)", "default": 300},
   {"id": "width", "type": "number", "label": "Window width (px)", "default": 960},
   {"id": "accent", "type": "color", "label": "Marker and caret colour", "default": "#FFD23F"},
@@ -29,7 +30,7 @@
     <script src="gsap.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; --size: 72px; }
+      :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; --size: 96px; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       #root { position: relative; width: 1080px; height: 1920px; font-family: var(--body-font), Arial, sans-serif; }
       #doc { position: absolute; border-radius: 36px; background: var(--background); color: var(--text);
@@ -42,13 +43,13 @@
         line-height: 1.3; color: color-mix(in srgb, var(--text) 62%, transparent); white-space: nowrap; overflow: hidden;
         text-overflow: ellipsis; }
       #main { display: flex; }
-      #side { flex: none; width: 330px; padding: 30px 16px 30px 20px;
+      #side { flex: none; width: 250px; padding: 26px 12px 26px 16px;
         border-right: 2px solid color-mix(in srgb, var(--text) 10%, transparent);
         background: color-mix(in srgb, var(--text) 3%, var(--background)); }
-      .entry { font-size: 33px; font-weight: 600; line-height: 1.3; padding: 14px 12px; border-radius: 18px;
+      .entry { font-size: 30px; font-weight: 600; line-height: 1.3; padding: 12px 10px; border-radius: 18px;
         margin-bottom: 10px; transform-origin: 0% 50%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: color-mix(in srgb, var(--text) 55%, transparent); }
       .entry.now { background: color-mix(in srgb, var(--accent) 35%, var(--background)); color: var(--text); }
-      #body { flex: 1; min-width: 0; padding: 40px 44px 52px; font-size: var(--size); font-weight: 600; line-height: 1.28;
+      #body { flex: 1; min-width: 0; padding: 36px 36px 48px; font-size: var(--size); font-weight: 600; line-height: 1.28;
         letter-spacing: -0.012em; }
       .line { margin-bottom: 0.32em; padding-top: 0.04em; }
       .line:last-child { margin-bottom: 0; }
@@ -89,7 +90,7 @@
       const parse = (text) => { try { const list = JSON.parse(text); return Array.isArray(list) ? list : []; } catch (error) { return []; } };
       const lines = parse(v.lines).map((line) => (typeof line === "string" ? { text: line } : { text: String(line?.text ?? ""), at: line?.at }));
       const entries = parse(v.sideItems).map(String);
-      look.setProperty("--size", `${Math.max(48, Number(v.fontSize) || 72)}px`);
+      look.setProperty("--size", `${Math.max(48, Number(v.fontSize) || 96)}px`);
       const width = Math.min(1000, Math.max(600, Number(v.width) || 960));
       const doc = document.getElementById("doc");
       doc.style.width = `${width}px`;

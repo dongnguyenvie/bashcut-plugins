@@ -1,6 +1,13 @@
 <!doctype html>
 <!-- A checklist card over footage whose rows tick one by one (items is a JSON string array). Transparent,
      1080×1920, 4 s. Raw material: change the card, the rows, the ticks and the timing for the video. -->
+<!-- Pitfalls:
+  - Ticks run on a fixed clock (first at 1.3 s, then every 0.45 s) that ignores the words and data-duration: at 4 s
+    only five items tick before the card fades at 3.6 s. With six or more, give the block a longer duration.
+  - Each row adds ~86 px under a card top of 520: nine rows end the card at ~1515 px, in the platform's bottom band;
+    keep to eight.
+  - An item wraps after ~26 characters at 52 px and the title after ~26 at 64 px; shorten the words, not the size.
+-->
 <html lang="en" data-composition-variables='[
   {"id": "title", "type": "string", "label": "Title", "default": "Packing list"},
   {"id": "items", "type": "string", "label": "Items (JSON array)", "default": "[\"Passport\",\"Charger\",\"Rain jacket\"]"},

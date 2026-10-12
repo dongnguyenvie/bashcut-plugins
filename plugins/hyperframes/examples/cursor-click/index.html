@@ -1,6 +1,15 @@
 <!doctype html>
 <!-- A big pointer glides to a spot, clicks it with a ripple and leaves: "look here" over a screenshot, a button or a
      card. Transparent, 1080×1920, 2.2 s. Raw material: change the path, the target, the timing and the cursor. -->
+<!-- Pitfalls:
+  - The arrow is 120×150 px and hangs right and below its tip: targetX over ~960 or targetY over ~1770 cuts it off at
+    the frame edge, and a target below ~1500 px points into the platform's caption and button band.
+  - clickAt is also the glide: the pointer travels for clickAt − 0.1 s, so clickAt under ~0.4 s jumps in instead of
+    gliding.
+  - clickAt later than data-duration − 1.0 (1.2 s at 2.2 s) lets the after-click drift override the exit: the pointer
+    fades out where it stands instead of sliding away. Stretch the duration rather than moving the click.
+  - The ripple is white by default and disappears over a light screenshot; set accent to a dark or brand colour there.
+-->
 <html lang="en" data-composition-variables='[
   {"id": "targetX", "type": "number", "label": "Target x (px)", "default": 560},
   {"id": "targetY", "type": "number", "label": "Target y (px)", "default": 1360},
