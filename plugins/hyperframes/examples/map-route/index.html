@@ -1,7 +1,8 @@
 <!doctype html>
 <!-- A route that draws itself over a map, pins popping as it reaches each stop, with a title and "≈ 16 min · 7.5 km".
      Full frame, 1080×1920, 6 s. Run bin/osm-map --dir <this folder> first: it writes map/ tiles and map-data.js
-     (the one here is an offline stand-in with no tiles). Keep the OpenStreetMap credit on screen. -->
+     (the one here is an offline stand-in with no tiles); with --places, the measured outlines are drawn too. Keep the
+     OpenStreetMap credit on screen. -->
 <html lang="en" data-composition-variables='[
   {"id": "title", "type": "string", "label": "Title (white)", "default": "Old Quarter"},
   {"id": "subtitle", "type": "string", "label": "Second line (accent)", "default": "to West Lake"},
@@ -38,6 +39,7 @@
       #glow { fill: none; stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; opacity: 0.35;
         filter: blur(10px); }
       #line { fill: none; stroke-width: 11; stroke-linecap: round; stroke-linejoin: round; }
+      .area { stroke-width: 5; stroke-linejoin: round; }
       .pin { position: absolute; width: 0; height: 0; }
       .dot { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%;
         border: 8px solid var(--background); box-shadow: 0 0 0 4px rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.5); }
@@ -55,7 +57,7 @@
       <div id="stage">
         <div id="map" data-layout-allow-overflow></div>
         <div id="shade"></div>
-        <svg viewBox="0 0 1080 1920"><path id="glow" /><path id="line" /></svg>
+        <svg viewBox="0 0 1080 1920"><g id="areas"></g><path id="glow" /><path id="line" /></svg>
         <div id="pins"></div>
       </div>
       <div id="credit"></div>
@@ -95,6 +97,20 @@
       stat.textContent = v.stat;
       stat.style.background = v.accent;
       stat.style.display = v.stat ? "inline-block" : "none";
+
+      // Outlines of the places osm-map --places measured (lakes, parks, districts), drawn to scale under the route.
+      const areas = [];
+      for (const place of data.places ?? []) {
+        for (const ring of place.rings ?? []) {
+          const area = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          area.setAttribute("class", "area");
+          area.setAttribute("d", ring.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ") + " Z");
+          area.style.fill = `color-mix(in srgb, ${v.accent} 22%, transparent)`;
+          area.style.stroke = v.accent;
+          document.getElementById("areas").appendChild(area);
+          areas.push(area);
+        }
+      }
 
       const d = data.route.map(([x, y], i) => `${i ? "L" : "M"}${x} ${y}`).join(" ");
       const line = document.getElementById("line");
@@ -139,8 +155,12 @@
       const stage = document.getElementById("stage");
       stage.style.transformOrigin = `${cx}px ${cy}px`;
 
+      // The exit lands on the composition's end, so a render stretched to a span (bin/graphic plan sets
+      // data-duration) holds until then.
+      const END = Number(document.querySelector('[data-composition-id="main"]').dataset.duration);
       const tl = gsap.timeline({ paused: true });
-      tl.fromTo(stage, { scale: 1.12 }, { scale: 1.0, duration: 5.4, ease: "sine.out" }, 0);
+      tl.fromTo(stage, { scale: 1.12 }, { scale: 1.0, duration: END - 0.6, ease: "sine.out" }, 0);
+      if (areas.length) tl.fromTo(areas, { opacity: 0 }, { opacity: 1, duration: 0.5, stagger: 0.2, ease: "power2.out" }, Math.max(0, v.drawAt - 0.3));
       tl.fromTo("#head > div", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.15, ease: "power3.out" }, 0.15);
       tl.fromTo([line, glow], { strokeDashoffset: length }, { strokeDashoffset: 0, duration: v.drawSeconds, ease: "power1.inOut" }, v.drawAt);
       for (const stop of stops) {
@@ -149,7 +169,7 @@
       }
       tl.fromTo(stat, { scale: 1 }, { scale: 1.08, duration: 0.14, yoyo: true, repeat: 1, ease: "power2.out", transformOrigin: "left center" }, v.drawAt + v.drawSeconds);
       // The card swings away in 3D, the way the reference explainers change scene.
-      tl.to(root.children, { rotationY: -70, x: -260, opacity: 0, duration: 0.45, ease: "power2.in", transformOrigin: "0% 50%" }, 5.5);
+      tl.to(root.children, { rotationY: -70, x: -260, opacity: 0, duration: 0.45, ease: "power2.in", transformOrigin: "0% 50%" }, END - 0.5);
       tl.seek(0);
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;

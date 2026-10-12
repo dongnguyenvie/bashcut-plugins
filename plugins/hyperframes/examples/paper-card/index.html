@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- A full-frame paper card that turns in like a page over the cut, then builds a phrase line by line on the words
-     (lines is a JSON string: text, at seconds, size px, weight, colour, font). Opaque, 1080×1920, 3 s. Place it on the
+     (lines is a JSON string: text, at seconds, size px, weight, colour, font), with the brand's mascot when the project
+     has one. Opaque, 1080×1920, 3 s. Place it on the
      Overlay layer over the speaker, or under a shrunken speaker clip (see the skill). Raw material: change it. -->
 <html lang="en" data-composition-variables='[
   {"id": "background", "type": "color", "label": "Paper colour", "default": "#F2EEE5"},
@@ -8,7 +9,10 @@
   {"id": "text", "type": "color", "label": "Text colour", "default": "#1E2A44"},
   {"id": "accent", "type": "color", "label": "Colour of lines with \"accent\": true", "default": "#1E2A44"},
   {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
-  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""},
+  {"id": "mascot", "type": "image", "label": "Mascot picture (bin/graphic copies the brand pose; empty hides it)", "default": ""},
+  {"id": "mascotPose", "type": "string", "label": "Brand mascot pose to use", "default": "default"},
+  {"id": "mascotAt", "type": "number", "label": "Mascot pops in (s)", "default": 0.6}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -27,11 +31,13 @@
         align-items: baseline; justify-content: center; column-gap: 18px; color: var(--text);
         font-family: var(--body-font), Arial, sans-serif; letter-spacing: -0.03em; }
       .line { display: inline-block; white-space: nowrap; }
+      #mascot { position: absolute; right: 80px; bottom: 440px; width: 340px; height: 340px; object-fit: contain;
+        transform-origin: 50% 100%; display: none; }
     </style>
   </head>
   <body>
     <div id="root" data-composition-id="main" data-start="0" data-duration="3" data-width="1080" data-height="1920">
-      <div id="page"><div id="grain"></div><div id="text"></div><div id="shade"></div></div>
+      <div id="page"><div id="grain"></div><div id="text"></div><img id="mascot" alt="" /><div id="shade"></div></div>
     </div>
     <script>
       const v = window.__hyperframes.getVariables();
@@ -70,6 +76,13 @@
         text.appendChild(span);
         tl.fromTo(span, { opacity: 0, y: 26 }, { opacity: 1, y: 0, duration: 0.22, ease: "power3.out" }, Math.max(0, item.at - 0.12));
       });
+      // The brand's mascot (a pose bin/graphic copied in) hops up from the bottom edge of the page.
+      const mascot = document.getElementById("mascot");
+      if (v.mascot) {
+        mascot.src = v.mascot;
+        mascot.style.display = "block";
+        tl.fromTo(mascot, { scale: 0, y: 80, rotation: -8 }, { scale: 1, y: 0, rotation: 0, duration: 0.45, ease: "back.out(2.2)" }, v.mascotAt);
+      }
       tl.seek(0);
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;

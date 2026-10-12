@@ -46,6 +46,9 @@
       ring.style.left = `${v.targetX}px`;
       ring.style.top = `${v.targetY}px`;
       ring.style.borderColor = v.accent;
+      // The exit lands on the composition's end, so a render stretched to a span (bin/graphic plan sets
+      // data-duration) holds until then.
+      const END = Number(document.querySelector('[data-composition-id="main"]').dataset.duration);
       const tl = gsap.timeline({ paused: true });
       // The tip of the arrow (8 px, 8 px into the cursor) lands on the target.
       const land = { x: v.targetX - 8, y: v.targetY - 8 };
@@ -56,7 +59,7 @@
       // immediateRender: false, or the ripple would show its start state from frame 0.
       tl.fromTo(ring, { opacity: 0.9, scale: 0.3 }, { opacity: 0, scale: 1.4, duration: 0.5, ease: "power2.out", immediateRender: false }, v.clickAt);
       tl.to("#cursor", { x: land.x + 40, y: land.y + 70, duration: 0.3, ease: "power2.out" }, v.clickAt + 0.25);
-      tl.to("#cursor", { opacity: 0, x: land.x + 300, y: land.y + 500, duration: 0.4, ease: "power2.in" }, 1.75);
+      tl.to("#cursor", { opacity: 0, x: land.x + 300, y: land.y + 500, duration: 0.4, ease: "power2.in" }, END - 0.45);
       tl.seek(0);
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;

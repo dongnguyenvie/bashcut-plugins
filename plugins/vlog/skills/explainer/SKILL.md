@@ -10,6 +10,37 @@ script and the facts first, then design one widget per section that builds while
 and values from the tables below, write them into the edit plan and the review profile with `bashcut.vlog:plan`,
 then edit with `bc:edit-workflow`.
 
+## Build it in four calls
+
+The whole picture is one list, `plan.cut`: voiceover lines, one graphic per section, captions, music, SFX. Never place
+voice takes, graphics or captions one by one with `timeline apply`. `P` is the HyperFrames plugin folder
+(`~/Library/Application Support/BashCut/Plugins/bashcut.hyperframes`).
+
+1. **Facts and widgets.** Places: `"$P/bin/osm-map" --places "Hồ Tây, Hà Nội;Hồ Hoàn Kiếm, Hà Nội"` prints each one's
+   areaHa, areaKm2 and perimeterKm from OpenStreetMap (no Overpass, no maths by hand). A map:
+   `cp -R "$P/examples/map-route" <project>/graphics/map`, then `"$P/bin/osm-map" --dir <project>/graphics/map
+   --points "lat,lon,Name;…" [--places "…"]` (route km and minutes; `--places` also draws the outlines to scale).
+   `"$P/bin/graphic" examples` lists every widget's variables and defaults in one call: copy the examples you use into
+   `<project>/graphics/<name>/` and change only variables unless the design needs more.
+2. **The list.** `bashcut project set-data plan plan.json --merge --base-rev last` with `{cut: {…}}`:
+   `voiceover` [{id, text, caption, section, pause}] (one line per sentence; `text` exactly as it should be heard,
+   numbers spelled out; `caption` what the captions show instead, with digits),
+   `graphics` [{id, section, track: "main", render: {composition: "graphics/<name>", set: {…}}}] (one per section on
+   Main, the picture of the video; overlays such as a chip or a counter over the map without `track`), `captions`
+   {from: "speech", preset}, `music` {media, volumeDb, duckDb}, `sfx` [{media, on: "<graphic id>", offset}],
+   `review` {limits from the ranges below}. In `set`, a value `"@words"` becomes the seconds from the graphic's
+   start to where the voice says those words: a row `{"label": "Hồ Tây", "value": 528, "at": "@năm trăm hai mươi
+   tám"}` lands on its word.
+3. **The voice.** `bashcut voice lines --takes 2 --min-similarity 0.9` voices and checks every line in one job
+   (`bashcut jobs wait <job> --done`). A line whose best take lists `unmatched` words: rewrite how it is spelled (a
+   number in words, a name split) in plan.cut and run `voice lines --only <id>`.
+4. **Render and build.** `"$P/bin/graphic" plan` renders every graphic to its span (an exit lands on the span's end)
+   and runs `plan apply`: it prints what it rendered and the apply's problems and review. Renders take 10–60 s each
+   and run one at a time: give the call a long timeout. After a change, run it again: unchanged graphics are kept.
+
+Then look (`bashcut timeline sheet --cuts --text`, `bashcut ui frame F --phone` on landing words), `bashcut review
+run --measure`, and export. `bashcut plan check --words` shows each graphic's span and the words heard in it.
+
 Sources: RC = the Reelcrew / AgentVid study (30 explainer and promo videos measured on 2026-10-07: cuts, motion,
 still frames, loudness, speech rate, structure); T-notes as in the other recipes.
 
@@ -45,13 +76,14 @@ why (`bashcut.vlog:plan` §3).
 | Recap | 4–6 s | the answer to the hook in one card: the total, the ranking, the route, the verdict |
 | CTA | 2–3 s | save, follow, the next part (`vlog-cta`) |
 
-Mark each section with `upsertSection` (label = the section's header) so review and the user see the structure.
+Each voiceover line's `section` makes the section markers on apply (labels from `plan.sections`), so review and the
+user see the structure.
 
 ## The widgets
 
-One widget per section, chosen by what the words say. Build each with `bashcut.hyperframes:hyperframes` from its
-examples, timed so each row lands on its word (`bashcut transcript words` → `at` per row); `bc:motion-graphics`
-decides the timing and the hold.
+One widget per section, chosen by what the words say, built from the HyperFrames examples (step 1 above); each row
+lands on its word with an `"@words"` value. `bc:motion-graphics` decides what each graphic shows and how long it
+holds; read `bashcut.hyperframes:hyperframes` only to design something the examples cannot do.
 
 | The section says | Widget | Example to start from |
 |---|---|---|
