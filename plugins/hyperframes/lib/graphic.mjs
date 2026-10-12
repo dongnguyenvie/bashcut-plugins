@@ -13,6 +13,18 @@
 //     in-point. An item that played the whole old render plays the whole new one (its end moves; the result lists
 //     the length change); --keep-length keeps every length (cut to the new render when it is shorter).
 //
+//   examples [NAME]
+//     The examples as data: name, what it draws (its header comment), seconds, folder, and its own variables {id,
+//     type, label, default} (the brand ids it declares listed apart), so a graphic is chosen without reading HTML.
+//   plan [--only g1,g2] [--force] [--no-apply] [--codec C] [--dry-run]
+//     Renders every plan.cut graphic that has `render` {composition, set, name, codec} and no up-to-date movie, each to
+//     the span plan check gives it (the composition's data-duration is set to it while it renders, so an exit timed
+//     on the end lands there), imports the movies (alpha), records the inputs on each media, writes
+//     their media IDs into plan.cut and runs plan apply — the whole picture of a plan in one call. A `set` value
+//     "@words" becomes the seconds from the graphic's start to where the voiceover says those words (plan check
+//     --words); inside a list or object given for a string variable, every "@words" string is replaced the same way.
+//     A composition path may be relative to the project folder. Prints {rendered, kept, apply}.
+//
 // Variables: --set values are typed by the composition's declarations (number, boolean, string…); --variables takes
 // a JSON object (a list or object given for a string variable is stringified). An id the composition does not
 // declare is refused. Brand: the project's `brand` (bashcut project get) fills the standard ids the composition
@@ -20,8 +32,8 @@
 // explicit values win. A brand font in the project's fonts folder is copied into the composition's fonts/ folder.
 // Uses $BASHCUT_CLI, else `bashcut` on PATH.
 import { spawnSync } from "node:child_process";
-import { randomBytes, randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,15 +46,16 @@ const BRAND_MAP = {
     disclosure: ["disclosure"],
 };
 export const BRAND_IDS = Object.keys(BRAND_MAP);
-const FLAGS = new Set(["no-brand", "brand", "keep-length", "dry-run", "all"]);
+const FLAGS = new Set(["no-brand", "brand", "keep-length", "dry-run", "all", "force", "no-apply"]);
 const LISTS = new Set(["set", "unset"]);
-const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "name", "fps", "codec"]);
+const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "name", "fps", "codec", "only"]);
 
 /** argv (after the node script) → {command, target, options}; options.set/unset are lists. */
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
-    if (!["place", "rerender"].includes(command)) {
-        throw new UsageError("usage: graphic place DIR [--at-frame F] [--set k=v …] | graphic rerender ITEM|MEDIA|--all [--set k=v …]");
+    if (command === "examples") return { command, target: rest.find((w) => !w.startsWith("--")), options: { set: [], unset: [] } };
+    if (!["place", "rerender", "plan"].includes(command)) {
+        throw new UsageError("usage: graphic place DIR [--at-frame F] [--set k=v …] | graphic rerender ITEM|MEDIA|--all [--set k=v …] | graphic plan [--only IDS]");
     }
     const options = { set: [], unset: [] };
     let target;
@@ -77,6 +90,15 @@ export function parseArgs(argv) {
     }
     if (options.codec !== undefined && !["hevc", "prores"].includes(options.codec)) throw new UsageError('--codec is "hevc" or "prores"');
     if (options.brand && options["no-brand"]) throw new UsageError("--brand and --no-brand together");
+    if (command === "plan") {
+        if (target) throw new UsageError("plan takes no folder: it reads plan.cut.graphics");
+        for (const key of ["all", "keep-length", "brand", "at-frame", "duration", "track", "variables", "name"]) {
+            if (options[key] !== undefined && options[key] !== false) throw new UsageError(`--${key} is not for plan`);
+        }
+        if (options.set.length || options.unset.length) throw new UsageError("plan reads each graphic's render.set from plan.cut");
+        return { command, target, options };
+    }
+    if (options.only !== undefined || options.force || options["no-apply"]) throw new UsageError("--only, --force and --no-apply are for plan");
     if (command === "place") {
         if (!target) throw new UsageError("place needs the composition folder");
         for (const key of ["all", "unset", "keep-length", "brand"]) {
@@ -327,6 +349,44 @@ function resolveLogo(variables, brand, declared, dir, warnings) {
     return true;
 }
 
+/** The mascot pose a composition asks for: its `mascotPose` (given or declared), else "default", else the first. */
+export function mascotPose(poses, declared, variables) {
+    const names = Object.keys(poses ?? {}).sort();
+    if (names.length === 0) return null;
+    const asked = variables.mascotPose ?? declared.find((d) => d.id === "mascotPose")?.default;
+    if (asked && names.includes(asked)) return asked;
+    return names.includes("default") ? "default" : names[0];
+}
+
+/**
+ * Brand mascot: when the composition declares `mascot` (type image), the kit's pose sticker named by `mascotPose`
+ * (else "default", else the first) is copied next to it as brand-mascot-<pose>.<ext>.
+ */
+function resolveMascot(variables, brand, declared, dir, warnings) {
+    if (!declared.some((d) => d.id === "mascot") || variables.mascot) return false;
+    const poses = brand?.mascot;
+    const pose = mascotPose(poses, declared, variables);
+    if (!pose) return false;
+    if (variables.mascotPose && variables.mascotPose !== pose) {
+        warnings.push(`the brand has no mascot pose ${variables.mascotPose} (it has: ${Object.keys(poses).sort().join(", ")}); ${pose} is used`);
+    }
+    let source;
+    try {
+        source = libraryFilePath(cli(["library", "get", poses[pose]]));
+    } catch (error) {
+        warnings.push(`brand mascot ${pose}: ${error.message}`);
+        return false;
+    }
+    if (!source || !existsSync(source)) {
+        warnings.push(`brand mascot ${pose} has no file; the composition keeps its own`);
+        return false;
+    }
+    const name = `brand-mascot-${safeName(pose)}${extname(source).toLowerCase()}`;
+    copyFileSync(source, join(dir, name));
+    variables.mascot = name;
+    return true;
+}
+
 function resolveVariables(inputs, project, warnings) {
     const composition = readComposition(inputs.composition);
     const fromBrand = inputs.brand ? brandVariables(project.brand, composition.declared) : {};
@@ -335,6 +395,9 @@ function resolveVariables(inputs, project, warnings) {
     const variables = { ...fromBrand, ...inputs.variables };
     if (inputs.brand && resolveLogo(variables, project.brand, composition.declared, inputs.composition, warnings)) {
         applied.push("logo");
+    }
+    if (inputs.brand && resolveMascot(variables, project.brand, composition.declared, inputs.composition, warnings)) {
+        applied.push("mascot");
     }
     resolveFonts(variables, inputs.composition, warnings);
     const width = project.format?.width;
@@ -345,8 +408,8 @@ function resolveVariables(inputs, project, warnings) {
     return { variables, brand: applied };
 }
 
-function renderNow(inputs, variables, dryRun) {
-    const params = { composition: inputs.composition, fps: inputs.fps, codec: inputs.codec, variables, name: inputs.name };
+function renderNow(inputs, variables, dryRun, page) {
+    const params = { composition: page ?? inputs.composition, fps: inputs.fps, codec: inputs.codec, variables, name: inputs.name };
     if (dryRun) return { dryRun: params };
     const started = cli(["plugins", "invoke", "graphics.render", "--params", JSON.stringify(params)]);
     const job = started?.job;
@@ -471,10 +534,203 @@ function rerender(target, options) {
     return out;
 }
 
+// MARK: examples
+
+/** The examples (or one) as data: what each draws, its length and the variables it takes besides the brand's. */
+export function examples(name) {
+    const root = fileURLToPath(new URL("../examples/", import.meta.url));
+    const names = readdirSync(root).filter((n) => existsSync(join(root, n, "index.html"))).sort();
+    if (name && !names.includes(name)) throw new UsageError(`no example ${name} (there are: ${names.join(", ")})`);
+    return (name ? [name] : names).map((n) => {
+        const html = readFileSync(join(root, n, "index.html"), "utf8");
+        const about = (/<!--([\s\S]*?)-->/.exec(html)?.[1] ?? "").replace(/\s+/g, " ").trim();
+        const { declared, duration } = readComposition(join(root, n));
+        const own = declared.filter((d) => !BRAND_IDS.includes(d.id) && d.id !== "logo" && d.id !== "mascot");
+        const row = { name: n, about, seconds: duration, folder: join(root, n) };
+        row.variables = own.map((d) => {
+            const shown = typeof d.default === "string" && d.default.length > 160 ? `${d.default.slice(0, 160)}…` : d.default;
+            return { id: d.id, type: d.type, label: d.label, default: shown };
+        });
+        row.brand = declared.filter((d) => BRAND_IDS.includes(d.id) || d.id === "logo" || d.id === "mascot").map((d) => d.id);
+        return row;
+    });
+}
+
+// MARK: plan
+
+/** Words as compared: lower case, letters and digits only (tone marks kept). */
+function token(text) {
+    return String(text).normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+/** Seconds from the graphic's start to the first place `quote` is said in `words` [{text, at}]. */
+export function wordTime(quote, words) {
+    const wanted = String(quote).split(/\s+/).map(token).filter(Boolean);
+    const heard = words.map((w) => token(w.text));
+    if (wanted.length === 0) throw new UsageError(`"@" needs words after it`);
+    for (let i = 0; i + wanted.length <= heard.length; i += 1) {
+        if (wanted.every((w, k) => heard[i + k] === w)) return words[i].at;
+    }
+    const said = words.map((w) => w.text).join(" ");
+    throw new UsageError(`"@${quote}" is not said during this graphic (heard: ${said.slice(0, 300) || "nothing"})`);
+}
+
+/** A value with every "@words" string turned into seconds (lists and objects walked). */
+export function resolveWordTimes(value, words) {
+    if (typeof value === "string" && value.startsWith("@") && value.length > 1) return wordTime(value.slice(1), words);
+    if (Array.isArray(value)) return value.map((v) => resolveWordTimes(v, words));
+    if (value && typeof value === "object") {
+        return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, resolveWordTimes(v, words)]));
+    }
+    return value;
+}
+
+const BACKUP = ".index.html.plan-original";
+
+/** Puts back an index.html a stopped render left stretched. */
+export function restorePage(dir) {
+    const backup = join(dir, BACKUP);
+    if (existsSync(backup)) {
+        copyFileSync(backup, join(dir, "index.html"));
+        rmSync(backup, { force: true });
+    }
+}
+
+/**
+ * Runs `work` with index.html's root data-duration set to `seconds` (a second root file would be a lint error and a
+ * second entry point), then puts the page back.
+ */
+export function withDuration(dir, seconds, work) {
+    restorePage(dir);
+    const page = join(dir, "index.html");
+    const html = readFileSync(page, "utf8");
+    const root = /(data-composition-id="main"[^>]*\bdata-duration=")([\d.]+)(")/;
+    if (!root.test(html)) throw new Error(`${page} has no root with data-composition-id="main" and data-duration`);
+    copyFileSync(page, join(dir, BACKUP));
+    try {
+        writeFileSync(page, html.replace(root, `$1${Math.round(seconds * 100) / 100}$3`));
+        return work();
+    } finally {
+        restorePage(dir);
+    }
+}
+
+/** What an agent needs from plan apply: the outcome, the problems and the review, not the change list. */
+export function briefApply(apply) {
+    if (!apply || apply.error) return apply;
+    const keep = ["ok", "rev", "duration", "lines", "graphics", "captions", "sections", "problems", "review"];
+    const out = Object.fromEntries(keep.filter((k) => apply[k] !== undefined).map((k) => [k, apply[k]]));
+    if (Array.isArray(out.problems)) out.problems = out.problems.map(({ facts, ...p }) => (p.id === "review-profile-unset" ? { ...p, unsetLimits: facts?.unsetLimits } : p));
+    return out;
+}
+
+/** What a render depends on, so an unchanged graphic is not rendered again. */
+export function inputsHash(dir, variables, seconds, fps, codec) {
+    const page = readFileSync(join(dir, "index.html"), "utf8");
+    const data = existsSync(join(dir, "map-data.js")) ? readFileSync(join(dir, "map-data.js"), "utf8") : "";
+    return createHash("sha256").update(JSON.stringify([page, data, variables, Math.round(seconds * 100), fps, codec]))
+        .digest("hex").slice(0, 16);
+}
+
+function planGraphics(options) {
+    const project = cli(["project", "get"]) ?? {};
+    const root = dirname(cli(["context", "get"])?.project ?? "");
+    const entries = project.plan?.cut?.graphics ?? [];
+    const only = options.only ? new Set(String(options.only).split(",").map((s) => s.trim())) : null;
+    if (only) {
+        const unknown = [...only].filter((id) => !entries.some((e) => e.id === id));
+        if (unknown.length) throw new UsageError(`plan.cut.graphics has no ${unknown.join(", ")}`);
+    }
+    const check = cli(["plan", "check", "--words"]) ?? {};
+    const rows = Object.fromEntries((check.graphics ?? []).map((row) => [row.id, row]));
+    const fps = Math.round(frameRate(project.format?.fps));
+    const media = project.media ?? [];
+    const rendered = [];
+    const kept = [];
+    const warnings = [];
+    const patch = {};
+    const records = [];
+    for (const entry of entries) {
+        if (!entry.render || (only && !only.has(entry.id))) continue;
+        const row = rows[entry.id];
+        if (!row || !(row.seconds > 0)) throw new Error(`plan check gives graphic ${entry.id} no span: ${JSON.stringify((check.problems ?? []).filter((p) => p.entry === entry.id))}`);
+        const seconds = row.short ?? row.seconds;
+        const given = entry.render.composition;
+        if (typeof given !== "string" || !given) throw new UsageError(`graphic ${entry.id}: render.composition is missing`);
+        const dir = resolve(root, given);
+        if (!existsSync(join(dir, "index.html"))) throw new UsageError(`graphic ${entry.id}: ${dir} has no index.html`);
+        const declared = readComposition(dir).declared;
+        const asked = resolveWordTimes({ ...(entry.render.variables ?? {}), ...(entry.render.set ?? {}) }, row.words ?? []);
+        const inputs = {
+            composition: dir, variables: explicitVariables(declared, [], asked), name: safeName(entry.render.name ?? `${entry.id}-${basename(dir)}`),
+            fps, codec: options.codec ?? entry.render.codec ?? "hevc", brand: entry.render.brand !== false,
+        };
+        const { variables, brand } = resolveVariables(inputs, project, warnings);
+        restorePage(dir);
+        const hash = inputsHash(dir, variables, seconds, fps, inputs.codec);
+        const current = media.find((m) => m.id === entry.media);
+        if (!options.force && current?.data?.graphics?.hash === hash) {
+            kept.push(entry.id);
+            continue;
+        }
+        if (options["dry-run"]) {
+            rendered.push({ id: entry.id, seconds, variables, brand });
+            continue;
+        }
+        const render = withDuration(dir, seconds, () => renderNow(inputs, variables, false));
+        const imported = cli(["media", "import", render.path, "--origin", "ai", "--base-rev", "last"]) ?? {};
+        const id = imported.media ?? imported.files?.[0]?.media ?? imported.id;
+        if (!id) throw new Error(`media import returned no media for ${render.path}: ${JSON.stringify(imported).slice(0, 300)}`);
+        patch[entry.id] = { media: id };
+        records.push({ op: "setMediaData", media: id, patch: { graphics: { ...record(inputs, render), seconds, hash } } });
+        const out = { id: entry.id, media: id, seconds, frames: render.frames, renderSeconds: render.renderSeconds };
+        lintNote(render, out);
+        rendered.push(out);
+    }
+    const result = { rendered, kept };
+    if (options["dry-run"]) return result;
+    if (records.length) applyOps(records, cli(["project", "get"])?.rev, "Record graphic inputs");
+    if (!options["no-apply"]) {
+        const args = ["plan", "apply", "--base-rev", String(cli(["project", "get"])?.rev)];
+        if (Object.keys(patch).length) args.push("--patch", JSON.stringify({ graphics: patch }));
+        try {
+            result.apply = briefApply(cli(args));
+        } catch (error) {
+            result.apply = { error: error.message };
+            if (Object.keys(patch).length) {
+                // Keep the rendered media IDs in plan.cut, so fixing the list does not render again.
+                saveMedia(project, patch);
+            }
+        }
+    } else if (Object.keys(patch).length) {
+        saveMedia(project, patch);
+    }
+    if (warnings.length) result.warnings = [...new Set(warnings)];
+    return result;
+}
+
+/** plan.cut with each patched graphic's media set. */
+export function mergedCut(cut, patch) {
+    return { ...cut, graphics: (cut?.graphics ?? []).map((g) => (patch[g.id] ? { ...g, ...patch[g.id] } : g)) };
+}
+
+/** Writes the rendered media IDs into plan.cut without building it. */
+function saveMedia(project, patch) {
+    const folder = mkdtempSync(join(tmpdir(), "bashcut-graphic-"));
+    try {
+        const file = join(folder, "plan.json");
+        writeFileSync(file, JSON.stringify({ cut: mergedCut(project.plan?.cut, patch) }));
+        cli(["project", "set-data", "plan", file, "--merge", "--base-rev", String(cli(["project", "get"])?.rev)]);
+    } finally {
+        rmSync(folder, { recursive: true, force: true });
+    }
+}
+
 export function main(argv) {
     try {
         const { command, target, options } = parseArgs(argv);
-        const result = command === "place" ? place(target, options) : rerender(target, options);
+        const result = command === "examples" ? examples(target)
+            : command === "plan" ? planGraphics(options) : command === "place" ? place(target, options) : rerender(target, options);
         process.stdout.write(JSON.stringify(result) + "\n");
         return 0;
     } catch (error) {

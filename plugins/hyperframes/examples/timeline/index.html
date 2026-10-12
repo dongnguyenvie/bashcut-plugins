@@ -62,6 +62,9 @@
       const fill = document.getElementById("fill");
       fill.style.background = v.accent;
       const card = document.getElementById("card");
+      // The exit lands on the composition's end, so a render stretched to a span (bin/graphic plan sets
+      // data-duration) holds until then.
+      const END = Number(document.querySelector('[data-composition-id="main"]').dataset.duration);
       const tl = gsap.timeline({ paused: true });
       tl.fromTo(card, { opacity: 0, y: 80, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0);
       const first = stops[0]?.at ?? 0.8;
@@ -79,7 +82,7 @@
         tl.fromTo(el.querySelectorAll(".time, .text"), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.06, ease: "power2.out" }, stop.at - 0.15);
         tl.fromTo(el.querySelector(".dot"), { scale: 0.6 }, { scale: 1, background: v.accent, borderColor: v.text, duration: 0.3, ease: "back.out(3)" }, stop.at - 0.1);
       }
-      tl.to(card, { rotationY: -70, x: -260, opacity: 0, duration: 0.45, ease: "power2.in", transformOrigin: "0% 50%" }, 5.0);
+      tl.to(card, { rotationY: -70, x: -260, opacity: 0, duration: 0.45, ease: "power2.in", transformOrigin: "0% 50%" }, END - 0.5);
       tl.seek(0);
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;

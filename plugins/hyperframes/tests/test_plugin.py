@@ -204,6 +204,32 @@ class OsmMapTests(unittest.TestCase):
             out = self.run_map("--dir", target, "--points", "21.03,105.83,A", "--route", "plane")
         self.assertEqual(2, out.returncode, out.stderr)
 
+    def test_places_are_measured_on_the_sphere_minus_holes(self):
+        script = (
+            "import('" + (ROOT / "lib" / "osm-map.mjs").as_uri() + "').then(({measure}) => {"
+            "const sq = (a, b) => [[a, a], [b, a], [b, b], [a, b], [a, a]];"
+            "const lake = measure({type: 'Polygon', coordinates: [sq(0, 0.01)]});"
+            "const ring = measure({type: 'Polygon', coordinates: [sq(0, 0.01), sq(0.004, 0.006)]});"
+            "const road = measure({type: 'LineString', coordinates: [[0, 0], [0, 0.01]]});"
+            "console.log(JSON.stringify({lake, ring, road}));})")
+        with tempfile.TemporaryDirectory() as folder:
+            node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True,
+                                  env=environment(folder)).stdout.strip()
+            if not node:
+                self.skipTest("Node.js is not installed")
+            out = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, timeout=30)
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        side = 6371008.8 * 3.141592653589793 / 180 * 0.01  # metres in 0.01° at the equator
+        self.assertAlmostEqual(side * side, result["lake"]["areaM2"], delta=side * side * 0.001)
+        self.assertAlmostEqual(result["lake"]["areaM2"] * (1 - 0.04), result["ring"]["areaM2"], delta=side * side * 0.001)
+        self.assertAlmostEqual(4 * side / 1000, result["lake"]["perimeterKm"], places=3)
+        self.assertIsNone(result["road"]["areaM2"])
+
+    def test_places_alone_need_no_folder(self):
+        out = self.run_map("--places", "")
+        self.assertIn("--dir", out.stderr, "an empty --places is no places")
+
     def test_map_route_reads_the_data_osm_map_writes(self):
         html = (ROOT / "examples" / "map-route" / "index.html").read_text()
         self.assertIn('<script src="map-data.js"></script>', html)
@@ -274,6 +300,13 @@ elif command == "fonts list":
     out = state.get("fonts", [])
 elif command == "context get":
     out = {"project": state.get("projectFile"), "rev": 7}
+elif command == "plan check":
+    out = state["check"]
+elif command == "media import":
+    out = {"media": "media-" + os.path.basename(args[2]).split(".")[0], "rev": 9}
+elif command == "plan apply":
+    entry["patch"] = json.loads(option("--patch")) if option("--patch") else None
+    out = {"ok": True, "rev": 11, "clips": 0}
 elif command == "library get":
     out = {"id": args[2], "kind": "sticker", "fileURL": "file://" + state["logo"]} if state.get("logo") else {"id": args[2]}
 else:
@@ -319,6 +352,83 @@ class GraphicScriptTests(unittest.TestCase):
         return {"id": "media-old", "path": "stickers/library-1.mov", "kind": "video", "fps": [30, 1], "frames": frames,
                 "alpha": True, "data": {"graphics": {"composition": str(self.composition), "variables": variables,
                                                      "fps": 30, "codec": "hevc", "name": "calendar", "brand": brand}}}
+
+    def plan_project(self, media=(), graphics=None):
+        project = self.project(media=media)
+        project["plan"] = {"cut": {"voiceover": [{"id": "l1", "text": "Năm trăm hai mươi tám héc ta"}],
+                                   "graphics": graphics or [{"id": "g1", "on": "l1", "render": {
+                                       "composition": "graphics/calendar", "set": {"title": "Hồ Tây", "month": "@hai mươi"}}}]}}
+        return project
+
+    def plan_check(self, short=None):
+        row = {"id": "g1", "at": 1.0, "seconds": 3.2, "track": "overlay",
+               "words": [{"text": "Năm", "at": 0.1}, {"text": "trăm", "at": 0.3}, {"text": "hai", "at": 0.6},
+                         {"text": "mươi", "at": 0.8}, {"text": "tám", "at": 1.0}]}
+        if short:
+            row["short"] = short
+        return {"ok": False, "graphics": [row], "problems": [{"id": "graphic-no-media", "entry": "g1"}]}
+
+    def test_plan_renders_each_graphic_to_its_span_and_applies_once(self):
+        state = {"projects": [self.plan_project()], "check": self.plan_check(), "projectFile": str(self.folder / "project.bashcut.json")}
+        out, calls = self.run_graphic(state, "plan")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual(["g1"], [r["id"] for r in result["rendered"]])
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        params = invoke["params"]
+        self.assertEqual(0.6, params["variables"]["month"], "@hai mươi → seconds from the graphic's start")
+        self.assertEqual(str(self.composition), params["composition"], "the folder itself, with one root page")
+        html = (self.composition / "index.html").read_text()
+        self.assertIn('data-duration="5.5"', html, "index.html is put back after the render")
+        self.assertFalse((self.composition / ".index.html.plan-original").exists())
+        apply = next(c for c in calls if c["args"][:2] == ["plan", "apply"])
+        self.assertEqual({"graphics": {"g1": {"media": "media-calendar"}}}, apply["patch"])
+        record = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]
+        self.assertEqual("media-calendar", record["media"])
+        self.assertEqual(3.2, record["patch"]["graphics"]["seconds"])
+        self.assertTrue(record["patch"]["graphics"]["hash"])
+
+    def test_plan_keeps_a_graphic_whose_inputs_did_not_change(self):
+        first = {"projects": [self.plan_project()], "check": self.plan_check(), "projectFile": str(self.folder / "p.json")}
+        out, calls = self.run_graphic(first, "plan")
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        media = {"id": "media-calendar", "data": {"graphics": recorded}}
+        graphics = [{"id": "g1", "on": "l1", "media": "media-calendar", "render": {
+            "composition": "graphics/calendar", "set": {"title": "Hồ Tây", "month": "@hai mươi"}}}]
+        again = {"projects": [self.plan_project(media=[media], graphics=graphics)], "check": self.plan_check(),
+                 "projectFile": str(self.folder / "p.json")}
+        out, calls = self.run_graphic(again, "plan")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual({"rendered": [], "kept": ["g1"]}, {k: json.loads(out.stdout)[k] for k in ("rendered", "kept")})
+        self.assertFalse(any(c["args"][:2] == ["plugins", "invoke"] for c in calls))
+        self.assertIsNone(next(c for c in calls if c["args"][:2] == ["plan", "apply"])["patch"])
+
+    def test_plan_refuses_words_that_are_not_said_during_the_graphic(self):
+        graphics = [{"id": "g1", "on": "l1", "render": {"composition": "graphics/calendar", "set": {"month": "@mười bảy"}}}]
+        state = {"projects": [self.plan_project(graphics=graphics)], "check": self.plan_check(),
+                 "projectFile": str(self.folder / "p.json")}
+        out, calls = self.run_graphic(state, "plan")
+        self.assertEqual(2, out.returncode)
+        self.assertIn("mười bảy", json.loads(out.stderr)["error"])
+        self.assertFalse(any(c["args"][:2] == ["plugins", "invoke"] for c in calls))
+
+    def test_examples_list_their_own_variables_apart_from_the_brand(self):
+        out, calls = self.run_graphic({"projects": [self.project()]}, "examples")
+        self.assertEqual(0, out.returncode, out.stderr)
+        rows = {row["name"]: row for row in json.loads(out.stdout)}
+        self.assertEqual(sorted(p.name for p in (ROOT / "examples").iterdir() if (p / "index.html").exists()), sorted(rows))
+        self.assertIn("items", [v["id"] for v in rows["bar-chart"]["variables"]])
+        self.assertNotIn("accent", [v["id"] for v in rows["bar-chart"]["variables"]])
+        self.assertIn("accent", rows["bar-chart"]["brand"])
+        self.assertEqual([], calls, "no BashCut call")
+        out, _ = self.run_graphic({"projects": [self.project()]}, "examples", "nope")
+        self.assertEqual(2, out.returncode)
+
+    def test_example_exits_follow_the_composition_length(self):
+        for page in (ROOT / "examples").glob("*/index.html"):
+            html = page.read_text()
+            if "tl.to(" in html and "opacity: 0" in html:
+                self.assertIn("END - ", html, page.parent.name)
 
     def test_usage_errors_exit_2(self):
         for args in (["place"], ["rerender"], ["draw", "x"], ["place", "d", "--keep-length"],
@@ -387,6 +497,21 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertIn("logo", result["brand"])
         self.assertTrue((self.composition / "brand-logo.png").exists())
         self.assertIn(["library", "get", "acme-logo"], [call["args"][:3] for call in calls])
+
+    def test_brand_mascot_pose_is_copied_into_a_composition_that_declares_mascot(self):
+        composition = self.folder / "graphics" / "paper"
+        shutil.copytree(ROOT / "examples" / "paper-card", composition)
+        pose = self.folder / "wave.png"
+        pose.write_bytes(b"png")
+        brand = {**self.brand, "mascot": {"default": "sticker-idle", "wave": "sticker-wave"}}
+        state = {"projects": [self.project(brand=brand)], "logo": str(pose)}
+        out, calls = self.run_graphic(state, "place", str(composition), "--set", "mascotPose=wave", "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual("brand-mascot-wave.png", result["variables"]["mascot"])
+        self.assertIn("mascot", result["brand"])
+        self.assertTrue((composition / "brand-mascot-wave.png").exists())
+        self.assertIn(["library", "get", "sticker-wave"], [c["args"] for c in calls])
 
     def test_place_without_brand(self):
         state = {"projects": [self.project(brand=self.brand)]}

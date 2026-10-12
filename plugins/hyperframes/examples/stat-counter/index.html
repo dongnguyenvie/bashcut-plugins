@@ -71,6 +71,9 @@
       line.style.color = v.accent;
       const length = line.getTotalLength();
       line.style.strokeDasharray = `${length}`;
+      // The exit lands on the composition's end, so a render stretched to a span (bin/graphic plan sets
+      // data-duration) holds until then.
+      const END = Number(document.querySelector('[data-composition-id="main"]').dataset.duration);
       const tl = gsap.timeline({ paused: true });
       tl.fromTo(card, { opacity: 0, y: 60, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 0);
       tl.fromTo(line, { strokeDashoffset: length }, { strokeDashoffset: 0, duration: v.countSeconds, ease: "power2.out" }, 0.3);
@@ -81,7 +84,7 @@
         tl.set(value, { textContent: Math.round(v.from + (v.to - v.from) * t).toLocaleString("en-US") }, 0.3 + (i / steps) * v.countSeconds);
       }
       tl.fromTo(value, { scale: 1 }, { scale: 1.08, duration: 0.12, yoyo: true, repeat: 1, ease: "power2.out", transformOrigin: "left center" }, 0.3 + v.countSeconds);
-      tl.to(card, { opacity: 0, y: -30, duration: 0.3, ease: "power2.in" }, 3.2);
+      tl.to(card, { opacity: 0, y: -30, duration: 0.3, ease: "power2.in" }, END - 0.3);
       tl.seek(0);
       window.__timelines = window.__timelines || {};
       window.__timelines["main"] = tl;

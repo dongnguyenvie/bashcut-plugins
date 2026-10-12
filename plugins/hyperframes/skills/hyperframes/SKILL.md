@@ -23,8 +23,10 @@ to make it.
 | `"$P/bin/hf" snapshot D --at 0.3,0.8,1.6 --no-end -o OUT` | PNG frames and a `contact-sheet.jpg` to look at; `--against ref.mp4` pairs each with a reference frame; `--zoom "#card"` crops one element sharp |
 | `"$P/bin/hf" docs compositions\|data-attributes\|gsap` | The runtime's own rules |
 | `"$P/bin/hf" --gsap` | Path of GSAP to copy next to `index.html` (render copies it when missing) |
+| `"$P/bin/graphic" examples [NAME]` | Every example's own variables, types and defaults (the brand ids apart) and what it draws, as JSON: choose and fill one without reading its HTML |
+| `"$P/bin/graphic" plan [--only g1,g2]` | Renders every `plan.cut` graphic with `render` {composition, set} to the span plan check gives it, imports the movies, writes their media into plan.cut and runs `plan apply`: an edit made of graphics in one call. A `set` value `"@words"` is the seconds from the graphic's start to those words in the voiceover; unchanged graphics are not rendered again |
 | `"$P/bin/graphic" place D --at-frame F [--set k=v …]` | Render, wait and place full canvas on the Overlay layer in one call; records the inputs on the media. `rerender ITEM [--set k=v …]` renders it again with changed data and swaps every use in one undo step |
-| `"$P/bin/osm-map" --dir D --points "lat,lon,Name;…" [--route car\|bike\|foot\|none]` | OpenStreetMap tiles and a real route into composition D (`map/`, `map-data.js` in canvas pixels; `--width`/`--height` = the project). Prints `km`, `minutes` and per-stop `legs` to put on screen. Needs network; the render then needs none. Coordinates come from the user, the brief or a source you name, never from memory |
+| `"$P/bin/osm-map" --dir D --points "lat,lon,Name;…" [--route car\|bike\|foot\|none] [--places "Name, City;…"]` | OpenStreetMap tiles and a real route into composition D (`map/`, `map-data.js` in canvas pixels; `--width`/`--height` = the project). Prints `km`, `minutes` and per-stop `legs` to put on screen. `--places` looks named places up (Nominatim) and prints each one's `areaHa`, `areaKm2`, `perimeterKm`; with `--dir` their outlines go into `MAP_DATA.places` (drawn by `map-route`). `--places` alone, without `--dir`, only measures. Needs network; the render then needs none. Coordinates come from the user, the brief or a source you name, never from memory |
 | `$P/examples/` | Raw material, each lint-clean: `keyword-pop` (serif lead-in + bold keyword), `stat-counter` (number counts up, line draws), `cursor-click` (pointer lands and clicks), `paper-card` (full-frame card turns in like a page, lines build on words), `checklist-card`, `bar-chart` (bars rise on their words, values count), `cost-table` (rows land, the total counts to the sum), `timeline` (a day plan or history lights up stop by stop), `calendar` (good months of a year, or days of one month with `mode` days, light up with a legend of notes), `map-route` (full-frame map, the route draws with a glow, pins pop as it reaches them; run `osm-map` on the copy first). The data widgets take their rows as a JSON list with an `at` per row: the second from the overlay's start when that row lands on its word |
 
 When `bin/hf` exits 3 or the render says `dependency_missing`, the user chooses **Install Dependencies…** for
@@ -74,6 +76,8 @@ HyperFrames Graphics in Plugins (you cannot); say so and fall back to native tex
 - The body stays transparent for overlays; a full-frame card paints its own background. Shadows and plates carry
   legibility over busy footage (plate opacity 0.75–0.9).
 - Keep 60 px+ from the frame edges for anything to be read.
+- Time the exit from the root's `data-duration` (`const END = Number(root.dataset.duration)`; exit at `END - 0.5`),
+  as the examples do: `bin/graphic plan` sets it to the graphic's span, so the card holds until its section ends.
 - `bin/hf snapshot` and `check` do not copy GSAP: copy `"$P/bin/hf" --gsap` next to `index.html` first, or every
   frame shows the end state ("Timeline did not advance under seek").
 - Data on screen keeps its credit: a map keeps "© OpenStreetMap contributors" visible (`map-route` does); a chart
@@ -88,7 +92,10 @@ HyperFrames Graphics in Plugins (you cannot); say so and fall back to native tex
 After a brand change, `rerender --all --brand` restyles every placed graphic in one edit. Fonts: a family or
 PostScript name on this Mac, `System-<Weight>`, or a project font (`bashcut fonts import` a .ttf/.otf, not .ttc),
 copied into the composition's `fonts/`. A composition that declares `logo` (type image) gets the kit's logo sticker
-copied in as `brand-logo.<ext>`.
+copied in as `brand-logo.<ext>`; one that declares `mascot` (type image) gets the kit's mascot pose named by its
+`mascotPose` (else `default`, else the first) as `brand-mascot-<pose>.<ext>` (`paper-card` shows it). A mascot
+picture with a background: `bashcut image cutout <sticker or file> --crop`, look at it, then `bashcut library add
+--kind sticker --file <path>` and set that ID as the pose in the Brand panel.
 
 ## 5. Moves that combine a graphic with BashCut
 
