@@ -87,7 +87,8 @@ HyperFrames Graphics in Plugins (you cannot); say so and fall back to native tex
 `--set` wins. Every example uses them (copy the "Brand look" lines); declare the same ids in your own compositions.
 After a brand change, `rerender --all --brand` restyles every placed graphic in one edit. Fonts: a family or
 PostScript name on this Mac, `System-<Weight>`, or a project font (`bashcut fonts import` a .ttf/.otf, not .ttc),
-copied into the composition's `fonts/`.
+copied into the composition's `fonts/`. A composition that declares `logo` (type image) gets the kit's logo sticker
+copied in as `brand-logo.<ext>`.
 
 ## 5. Moves that combine a graphic with BashCut
 

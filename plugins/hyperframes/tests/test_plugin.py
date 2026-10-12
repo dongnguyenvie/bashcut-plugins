@@ -274,6 +274,8 @@ elif command == "fonts list":
     out = state.get("fonts", [])
 elif command == "context get":
     out = {"project": state.get("projectFile"), "rev": 7}
+elif command == "library get":
+    out = {"id": args[2], "kind": "sticker", "fileURL": "file://" + state["logo"]} if state.get("logo") else {"id": args[2]}
 else:
     out = {}
 state.setdefault("calls", []).append(entry)
@@ -362,6 +364,21 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertEqual(2, out.returncode)
         self.assertIn("accent", json.loads(out.stderr)["error"])  # lists what it has
         self.assertNotIn("plugins", [call["args"][0] for call in calls])
+
+    def test_brand_logo_is_copied_into_a_composition_that_declares_logo(self):
+        page = self.composition / "index.html"
+        html = page.read_text()
+        page.write_text(html.replace("data-composition-variables='[", """data-composition-variables='[{"id":"logo","type":"image","label":"Logo","default":""},""", 1))
+        logo = self.folder / "Acme Logo.png"
+        logo.write_bytes(b"\x89PNG\r\n\x1a\n")
+        state = {"projects": [self.project(brand={**self.brand, "logo": "acme-logo"})], "logo": str(logo)}
+        out, calls = self.run_graphic(state, "place", str(self.composition), "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual("brand-logo.png", result["variables"]["logo"])
+        self.assertIn("logo", result["brand"])
+        self.assertTrue((self.composition / "brand-logo.png").exists())
+        self.assertIn(["library", "get", "acme-logo"], [call["args"][:3] for call in calls])
 
     def test_place_without_brand(self):
         state = {"projects": [self.project(brand=self.brand)]}

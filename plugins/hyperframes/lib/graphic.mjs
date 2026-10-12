@@ -23,7 +23,7 @@ import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export class UsageError extends Error {}
@@ -300,12 +300,42 @@ function resolveFonts(variables, dir, warnings) {
     }
 }
 
+/** A library item's file path from `library get` (fileURL is a file URL or a path). */
+export function libraryFilePath(item) {
+    const url = item?.fileURL ?? item?.file;
+    if (typeof url !== "string" || !url) return null;
+    return url.startsWith("file://") ? decodeURIComponent(new URL(url).pathname) : url;
+}
+
+/** Brand logo: when the composition declares `logo`, the kit's logo sticker is copied next to it as brand-logo.<ext>. */
+function resolveLogo(variables, brand, declared, dir, warnings) {
+    if (!declared.some((d) => d.id === "logo") || variables.logo || typeof brand?.logo !== "string") return false;
+    let source;
+    try {
+        source = libraryFilePath(cli(["library", "get", brand.logo]));
+    } catch (error) {
+        warnings.push(`brand logo ${brand.logo}: ${error.message}`);
+        return false;
+    }
+    if (!source || !existsSync(source)) {
+        warnings.push(`brand logo ${brand.logo} has no file (an emoji sticker?); the composition keeps its own`);
+        return false;
+    }
+    const name = `brand-logo${extname(source).toLowerCase()}`;
+    copyFileSync(source, join(dir, name));
+    variables.logo = name;
+    return true;
+}
+
 function resolveVariables(inputs, project, warnings) {
     const composition = readComposition(inputs.composition);
     const fromBrand = inputs.brand ? brandVariables(project.brand, composition.declared) : {};
     const explicitIds = new Set(Object.keys(inputs.variables));
     const applied = Object.keys(fromBrand).filter((id) => !explicitIds.has(id));
     const variables = { ...fromBrand, ...inputs.variables };
+    if (inputs.brand && resolveLogo(variables, project.brand, composition.declared, inputs.composition, warnings)) {
+        applied.push("logo");
+    }
     resolveFonts(variables, inputs.composition, warnings);
     const width = project.format?.width;
     const height = project.format?.height;
