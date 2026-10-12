@@ -31,6 +31,12 @@ CREDITS = re.compile(r"ghiền mì gõ|subtitles by|amara\.org", re.IGNORECASE)
 OUTROS = re.compile(
     r"subscribe|đăng ký kênh|hãy like|cảm ơn các bạn đã (theo dõi|xem)|thanks for watching", re.IGNORECASE)
 
+# Defaults of the doubtful-segment options (plugin.json documents each as a range; the agent or user picks). They
+# are Whisper's own retry/skip thresholds except the no-speech one, which drops a segment on its own here.
+DEFAULT_MIN_AVG_LOGPROB = -1.0
+DEFAULT_MAX_COMPRESSION_RATIO = 2.4
+DEFAULT_MAX_NO_SPEECH_PROB = 0.8
+
 
 def log(message):
     print(message, file=sys.stderr, flush=True)
@@ -64,10 +70,15 @@ def fake_segments():
              ("Đôn", 3.7, 4.0), ("chơi", 4.0, 4.4)]
     return [
         {"start": 0.5, "end": 4.4, "text": " ".join(w for w, _, _ in words), "no_speech_prob": 0.0,
-         "avg_logprob": -0.2,
+         "avg_logprob": -0.2, "compression_ratio": 1.2,
          "words": [{"word": " " + w, "start": s, "end": e, "probability": 0.9} for w, s, e in words]},
         {"start": 9.0, "end": 11.0, "text": "Hãy subscribe cho kênh Ghiền Mì Gõ", "no_speech_prob": 0.1,
-         "avg_logprob": -0.3, "words": []},
+         "avg_logprob": -0.3, "compression_ratio": 1.1, "words": []},
+        # Text Whisper invents over ambient sound: very low average log probability.
+        {"start": 14.0, "end": 15.0, "text": "Thank you.", "no_speech_prob": 0.0, "avg_logprob": -2.6,
+         "compression_ratio": 0.8,
+         "words": [{"word": " Thank", "start": 14.0, "end": 14.4, "probability": 0.7},
+                   {"word": " you.", "start": 14.4, "end": 15.0, "probability": 0.7}]},
     ]
 
 
@@ -159,15 +170,68 @@ class Transcriber:
         return shifted(result.get("segments") or [], start)
 
 
-def spoken(segment):
-    """Drops silence Whisper filled in, and its stock outro lines."""
+def finite(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def reliability(segments):
+    """Which per-segment scores the backend really measured. mlx-whisper's large-v3 turbo returns no_speech_prob 0.0
+    for every segment (and NaN where the tokenizer has no no-speech token), so a value that is missing, not finite,
+    or the same in every segment says nothing and is not passed on as a measurement."""
+    def measured(key, constant_is_unknown):
+        values = [segment.get(key) for segment in segments]
+        if not values or not all(finite(value) for value in values):
+            return False
+        return not (constant_is_unknown and len(set(values)) == 1 and (len(values) > 1 or values[0] == 0))
+    return {"noSpeechProb": measured("no_speech_prob", True), "avgLogprob": measured("avg_logprob", False),
+            "compressionRatio": measured("compression_ratio", False)}
+
+
+def doubt_options(options):
+    """The doubtful-segment filter from the plugin options: off, or its thresholds (None turns one rule off)."""
+    def number(key, default):
+        value = options.get(key, default)
+        return float(value) if finite(value) else default
+    return {"drop": options.get("dropDoubtful", True) is not False,
+            "minAvgLogprob": number("minAvgLogprob", DEFAULT_MIN_AVG_LOGPROB),
+            "maxCompressionRatio": number("maxCompressionRatio", DEFAULT_MAX_COMPRESSION_RATIO),
+            "maxNoSpeechProb": number("maxNoSpeechProb", DEFAULT_MAX_NO_SPEECH_PROB)}
+
+
+def doubtful(segment, reliable, doubt):
+    """Why a segment looks invented rather than heard (a measured score past its threshold), or None."""
+    if not doubt["drop"]:
+        return None
+    logprob, ratio, nospeech = (segment.get(k) for k in ("avg_logprob", "compression_ratio", "no_speech_prob"))
+    if reliable["avgLogprob"] and finite(logprob) and logprob < doubt["minAvgLogprob"]:
+        return "avgLogprob"
+    if reliable["compressionRatio"] and finite(ratio) and ratio > doubt["maxCompressionRatio"]:
+        return "compressionRatio"
+    if reliable["noSpeechProb"] and finite(nospeech) and nospeech > doubt["maxNoSpeechProb"]:
+        return "noSpeechProb"
+    return None
+
+
+def dropped_reason(segment, reliable, doubt):
+    """Why a segment is left out of the captions: empty, a stock credit/outro line, or doubtful; None keeps it."""
     text = (segment.get("text") or "").strip()
-    if not text or CREDITS.search(text):
-        return False
-    doubtful = segment.get("no_speech_prob", 0)
-    if OUTROS.search(text) and doubtful > 0.3:
-        return False
-    return not (doubtful > 0.6 and segment.get("avg_logprob", 0) < -1.0)
+    if not text:
+        return "empty"
+    if CREDITS.search(text):
+        return "credits"
+    if OUTROS.search(text) and reliable["noSpeechProb"] and segment.get("no_speech_prob", 0) > 0.3:
+        return "outro"
+    return doubtful(segment, reliable, doubt)
+
+
+def scores(segment, reliable):
+    """The segment's measured scores under BashCut's word field names; unmeasured ones are left out."""
+    facts = {}
+    for key, name in (("no_speech_prob", "noSpeechProb"), ("avg_logprob", "avgLogprob"),
+                      ("compression_ratio", "compressionRatio")):
+        if reliable[name] and finite(segment.get(key)):
+            facts[name] = float(segment[key])
+    return facts
 
 
 def phrases(words):
@@ -207,16 +271,20 @@ def split_evenly(words, max_characters):
         count += 1
 
 
-def cues_from(segments, max_characters):
+def cues_from(segments, max_characters, doubt=None):
     """Readable captions: words grouped by pauses and sentence ends, then split evenly within the character limit and
     MAX_SECONDS."""
+    reliable = reliability(segments)
+    doubt = doubt or doubt_options({})
     cues = []
-    for segment in filter(spoken, segments):
-        # Each word keeps its segment's no-speech probability for BashCut's source transcript.
-        doubt = {"no_speech_prob": segment["no_speech_prob"]} if "no_speech_prob" in segment else {}
-        words = [dict(w, **doubt) for w in segment.get("words") or [] if (w.get("word") or "").strip()]
+    for segment in segments:
+        if dropped_reason(segment, reliable, doubt):
+            continue
+        # Each word keeps its segment's measured scores for BashCut's source transcript.
+        facts = {"segment": scores(segment, reliable)}
+        words = [dict(w, **facts) for w in segment.get("words") or [] if (w.get("word") or "").strip()]
         if not words:
-            words = [{"word": segment["text"], "start": segment["start"], "end": segment["end"], **doubt}]
+            words = [{"word": segment["text"], "start": segment["start"], "end": segment["end"], **facts}]
         for phrase in phrases(words):
             cues.extend(split_evenly(phrase, max_characters))
     result = []
@@ -236,8 +304,8 @@ def cues_from(segments, max_characters):
 def word_timings(cues):
     """Each caption word with its time, for BashCut's word-by-word captions (`wordsPath`). Words of one caption
     stay inside its time range and in order, so they line up with the caption text word for word. A word Whisper
-    timed itself carries its `confidence` (Whisper's word probability); every word carries its segment's
-    `noSpeechProb`."""
+    timed itself carries its `confidence` (Whisper's word probability); every word carries its segment's measured
+    `noSpeechProb`, `avgLogprob` and `compressionRatio` (each left out when the backend did not measure it)."""
     timed = []
     for start, end, _, words in cues:
         for word in words:
@@ -254,8 +322,8 @@ def word_timings(cues):
             facts = {}
             if len(parts) == 1 and isinstance(word.get("probability"), (int, float)):
                 facts["confidence"] = round(float(word["probability"]), 3)
-            if isinstance(word.get("no_speech_prob"), (int, float)):
-                facts["noSpeechProb"] = round(float(word["no_speech_prob"]), 3)
+            for name, value in (word.get("segment") or {}).items():
+                facts[name] = round(value, 3)
             for part in parts:
                 length = span * len(part) / total
                 timed.append({"text": part, "start": round(begin, 3), "end": round(begin + length, 3), **facts})
@@ -294,17 +362,52 @@ def transcribe(params, progress, transcriber):
     if start < 0 or (end is not None and end <= start):
         raise ValueError("endSeconds must follow startSeconds")
     segments = transcriber.segments(path, language, vocabulary, progress, start, end)
-    cues = cues_from(segments, max_characters)
+    doubt = doubt_options(options)
+    cues = cues_from(segments, max_characters, doubt)
+    stem = os.path.splitext(os.path.basename(path))[0]
+    reliable = reliability(segments)
+    report = segment_report(segments, reliable, doubt)
+    with open(os.path.join(output, stem + ".segments.json"), "w", encoding="utf-8") as file:
+        json.dump(report, file, ensure_ascii=False)
     if not cues:
+        doubtful_count = sum(1 for row in report["segments"] if row.get("dropped") in DOUBT_REASONS)
+        if doubtful_count:
+            raise ValueError(f"No speech found in this media ({doubtful_count} doubtful segments left out; "
+                             "turn off dropDoubtful or loosen its thresholds to keep them)")
         raise ValueError("No speech found in this media")
     progress(0.95, f"{len(cues)} captions")
-    stem = os.path.splitext(os.path.basename(path))[0]
     with open(os.path.join(output, stem + ".srt"), "w", encoding="utf-8") as file:
         file.write(srt(cues))
     with open(os.path.join(output, stem + ".words.json"), "w", encoding="utf-8") as file:
         json.dump(word_timings(cues), file, ensure_ascii=False)
     progress(1, "Done")
-    return {"srtPath": stem + ".srt", "wordsPath": stem + ".words.json"}
+    dropped = sum(1 for row in report["segments"] if row.get("dropped"))
+    return {"srtPath": stem + ".srt", "wordsPath": stem + ".words.json", "segmentsPath": stem + ".segments.json",
+            "reliable": reliable, "droppedSegments": dropped}
+
+
+DOUBT_REASONS = ("avgLogprob", "compressionRatio", "noSpeechProb")
+
+
+def segment_report(segments, reliable, doubt):
+    """Every segment Whisper returned with its measured scores and why it was left out (`dropped`), plus which scores
+    the backend really measured (`reliable`) and the thresholds used; a sidecar next to the captions."""
+    rows = []
+    for segment in segments:
+        row = {"start": round(float(segment["start"]), 3), "end": round(float(segment["end"]), 3),
+               "text": (segment.get("text") or "").strip(),
+               **{name: round(value, 3) for name, value in scores(segment, reliable).items()}}
+        if finite(segment.get("temperature")):
+            row["temperature"] = segment["temperature"]
+        reason = dropped_reason(segment, reliable, doubt)
+        if reason:
+            row["dropped"] = reason
+        rows.append(row)
+    return {"provider": PROVIDER_ID, "model": MODEL, "reliable": reliable,
+            "filter": {"dropDoubtful": doubt["drop"], "minAvgLogprob": doubt["minAvgLogprob"],
+                       "maxCompressionRatio": doubt["maxCompressionRatio"],
+                       "maxNoSpeechProb": doubt["maxNoSpeechProb"]},
+            "segments": rows}
 
 
 def handle(request, progress, transcriber):
