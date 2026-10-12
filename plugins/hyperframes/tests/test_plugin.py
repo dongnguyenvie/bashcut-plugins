@@ -138,7 +138,25 @@ class ExampleTests(unittest.TestCase):
     """The examples are starting points agents copy: each must follow the HyperFrames rules."""
 
     def test_examples_exist(self):
-        self.assertGreaterEqual(len(EXAMPLES), 9)
+        self.assertGreaterEqual(len(EXAMPLES), 10)
+        self.assertIn("calendar", [example.name for example in EXAMPLES])
+
+    def test_brand_variables_share_ids_and_types(self):
+        """One brand restyles every widget: the standard ids mean the same thing everywhere, and old names are gone."""
+        types = {"accent": "color", "background": "color", "text": "color", "secondary": "color",
+                 "headingFont": "font", "bodyFont": "font"}
+        for example in EXAMPLES:
+            html = (example / "index.html").read_text()
+            declarations = json.loads(re.search(r"data-composition-variables='(.*?)'", html, re.S).group(1))
+            ids = {entry["id"]: entry["type"] for entry in declarations}
+            self.assertIn("accent", ids, example.name)
+            self.assertFalse({"ripple", "paper"} & set(ids), example.name)
+            for key, kind in types.items():
+                if key in ids:
+                    self.assertEqual(kind, ids[key], f"{example.name}: {key}")
+            if "headingFont" in ids:
+                self.assertIn("Brand look", html, example.name)
+                self.assertIn("var(--heading-font)", html, example.name)
 
     def test_variables_are_declared_as_an_array(self):
         for example in EXAMPLES:
@@ -222,6 +240,243 @@ class RenderParamTests(unittest.TestCase):
         shutil.copytree(ROOT / "examples" / "keyword-pop", composition)
         response = self.render({"composition": str(composition)})  # the test data folder is empty
         self.assertEqual(response["error"]["code"], "dependency_missing")
+
+
+FAKE_CLI = r"""#!/usr/bin/env python3
+import json, os, sys
+state_path = os.environ["FAKE_STATE"]
+state = json.load(open(state_path))
+args = sys.argv[1:]
+entry = {"args": args}
+command = " ".join(args[:2])
+def option(name):
+    return args[args.index(name) + 1] if name in args else None
+if state.get("fail") == command:
+    sys.stderr.write(json.dumps({"code": -32602, "message": "refused"}) + "\n")
+    sys.exit(4)
+if command == "project get":
+    projects = state["projects"]
+    out = projects.pop(0) if len(projects) > 1 else projects[0]
+elif command == "plugins invoke":
+    entry["params"] = json.loads(option("--params"))
+    out = {"job": "job-1", "state": "running"}
+elif command == "jobs wait":
+    out = {"job": {"id": "job-1", "state": "completed", "result": {"plugin": "bashcut.hyperframes",
+           "outputDirectory": os.path.dirname(state["render"]["path"]), "result": state["render"]}}}
+elif command == "library add":
+    out = {"id": option("--id"), "kind": "sticker"}
+elif command == "library place":
+    out = {"rev": 8, "item": "item-new", "track": "overlay", "media": "media-new", "duration": state["render"]["frames"]}
+elif command == "timeline apply":
+    entry["ops"] = json.load(open(args[2]))
+    out = {"rev": int(option("--base-rev")) + 1, "changed": True}
+elif command == "fonts list":
+    out = state.get("fonts", [])
+elif command == "context get":
+    out = {"project": state.get("projectFile"), "rev": 7}
+elif command == "library get":
+    out = {"id": args[2], "kind": "sticker", "fileURL": "file://" + state["logo"]} if state.get("logo") else {"id": args[2]}
+else:
+    out = {}
+state.setdefault("calls", []).append(entry)
+json.dump(state, open(state_path, "w"))
+print(json.dumps(out))
+"""
+
+
+class GraphicScriptTests(unittest.TestCase):
+    """bin/graphic against a fake bashcut CLI that records each call: no app, no render."""
+
+    def setUp(self):
+        self.folder = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.folder, True)
+        self.cli = self.folder / "bashcut"
+        self.cli.write_text(FAKE_CLI)
+        self.cli.chmod(0o755)
+        self.composition = self.folder / "graphics" / "calendar"
+        shutil.copytree(ROOT / "examples" / "calendar", self.composition)
+        self.render = {"path": str(self.folder / "generated/plugins/cli/invoke/r1/calendar.mov"), "frames": 165,
+                       "fps": 30, "width": 1080, "height": 1920, "lint": {"errors": 0, "warnings": 0, "findings": []}}
+        self.brand = {"palette": {"accent": "#FF3366", "text": "#111111"}, "fonts": {"heading": "System-Black"},
+                      "disclosure": "Ảnh tạo bằng AI"}
+
+    def project(self, rev=7, media=(), items=(), brand=None):
+        project = {"rev": rev, "format": {"width": 1080, "height": 1920, "fps": [30, 1]}, "media": list(media),
+                   "tracks": [{"id": "overlay", "kind": "video", "role": "overlay", "items": list(items)}]}
+        if brand:
+            project["brand"] = brand
+        return project
+
+    def run_graphic(self, state, *args):
+        path = self.folder / "state.json"
+        path.write_text(json.dumps({"render": self.render, **state}))
+        env = {**environment(self.folder), "BASHCUT_CLI": str(self.cli), "FAKE_STATE": str(path)}
+        out = subprocess.run([str(ROOT / "bin" / "graphic"), *args], capture_output=True, text=True, env=env, timeout=60)
+        calls = json.loads(path.read_text()).get("calls", [])
+        return out, calls
+
+    def recorded_media(self, variables, brand=True, frames=165):
+        return {"id": "media-old", "path": "stickers/library-1.mov", "kind": "video", "fps": [30, 1], "frames": frames,
+                "alpha": True, "data": {"graphics": {"composition": str(self.composition), "variables": variables,
+                                                     "fps": 30, "codec": "hevc", "name": "calendar", "brand": brand}}}
+
+    def test_usage_errors_exit_2(self):
+        for args in (["place"], ["rerender"], ["draw", "x"], ["place", "d", "--keep-length"],
+                     ["rerender", "x", "--at-frame", "3"], ["place", "d", "--variables", "[1]"],
+                     ["place", "d", "--fps", "zero"], ["rerender", "x", "--all"]):
+            out, calls = self.run_graphic({"projects": [self.project()]}, *args)
+            self.assertEqual(2, out.returncode, (args, out.stderr))
+            self.assertIn("error", json.loads(out.stderr))
+            self.assertEqual([], calls, args)
+
+    def test_place_renders_places_full_canvas_and_records_the_inputs(self):
+        state = {"projects": [self.project(brand=self.brand), self.project(rev=7)]}
+        out, calls = self.run_graphic(state, "place", str(self.composition), "--at-frame", "120",
+                                      "--set", "title=Tháng đẹp", "--set", "month=3", "--set", "accent=#00AAFF",
+                                      "--variables", '{"items": [{"month": 3, "at": 0.8}]}')
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual(("item-new", "media-new", 165, 9), (result["item"], result["media"], result["frames"], result["rev"]))
+        self.assertEqual(["headingFont", "text"], sorted(result["brand"]))  # accent was given
+        commands = [" ".join(call["args"][:2]) for call in calls]
+        self.assertEqual(["project get", "plugins invoke", "jobs wait", "library add", "project get", "library place",
+                          "timeline apply"], commands)
+        params = calls[1]["params"]
+        self.assertEqual(str(self.composition), params["composition"])
+        self.assertEqual((30, "hevc", "calendar"), (params["fps"], params["codec"], params["name"]))
+        variables = params["variables"]
+        self.assertEqual("#00AAFF", variables["accent"])  # explicit wins over the brand
+        self.assertEqual(("#111111", "System-Black"), (variables["text"], variables["headingFont"]))
+        self.assertEqual(3, variables["month"])  # typed by the declaration
+        self.assertEqual('[{"month":3,"at":0.8}]', variables["items"])  # a list for a string is stringified
+        self.assertNotIn("disclosure", variables)  # the calendar does not declare it
+        place = calls[5]["args"]
+        for flag, value in (("--size", "1"), ("--position", "0.5,0.5"), ("--at-frame", "120"), ("--base-rev", "7")):
+            self.assertEqual(value, place[place.index(flag) + 1])
+        ops = calls[6]["ops"]
+        self.assertEqual("setMediaData", ops[0]["op"])
+        recorded = ops[0]["patch"]["graphics"]
+        self.assertEqual({"title", "month", "accent", "items"}, set(recorded["variables"]))  # brand values stay live
+        self.assertTrue(recorded["brand"])
+
+    def test_place_refuses_an_undeclared_variable_before_rendering(self):
+        out, calls = self.run_graphic({"projects": [self.project()]}, "place", str(self.composition), "--set", "colour=#fff")
+        self.assertEqual(2, out.returncode)
+        self.assertIn("accent", json.loads(out.stderr)["error"])  # lists what it has
+        self.assertNotIn("plugins", [call["args"][0] for call in calls])
+
+    def test_runs_through_a_symlinked_plugin_folder(self):
+        link = self.folder / "linked-plugin"
+        link.symlink_to(ROOT)
+        out = subprocess.run([str(link / "bin" / "graphic"), "draw"], capture_output=True, text=True,
+                             env=environment(self.folder), timeout=60)
+        self.assertEqual(2, out.returncode, out.stderr)  # it ran (usage error) instead of exiting silently
+        self.assertIn("usage", json.loads(out.stderr)["error"])
+
+    def test_brand_logo_is_copied_into_a_composition_that_declares_logo(self):
+        page = self.composition / "index.html"
+        html = page.read_text()
+        page.write_text(html.replace("data-composition-variables='[", """data-composition-variables='[{"id":"logo","type":"image","label":"Logo","default":""},""", 1))
+        logo = self.folder / "Acme Logo.png"
+        logo.write_bytes(b"\x89PNG\r\n\x1a\n")
+        state = {"projects": [self.project(brand={**self.brand, "logo": "acme-logo"})], "logo": str(logo)}
+        out, calls = self.run_graphic(state, "place", str(self.composition), "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual("brand-logo.png", result["variables"]["logo"])
+        self.assertIn("logo", result["brand"])
+        self.assertTrue((self.composition / "brand-logo.png").exists())
+        self.assertIn(["library", "get", "acme-logo"], [call["args"][:3] for call in calls])
+
+    def test_place_without_brand(self):
+        state = {"projects": [self.project(brand=self.brand)]}
+        out, calls = self.run_graphic(state, "place", str(self.composition), "--no-brand", "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual({}, json.loads(out.stdout)["variables"])
+
+    def test_rerender_merges_changes_and_repoints_items_in_one_apply(self):
+        items = [{"id": "a", "media": "media-old", "at": 100, "dur": 165, "in": 0},
+                 {"id": "b", "media": "media-old", "at": 400, "dur": 60, "in": 30}]
+        project = self.project(rev=12, media=[self.recorded_media({"title": "Old", "accent": "#00AAFF"})], items=items,
+                               brand={"palette": {"accent": "#FF3366", "background": "#222222"}})
+        self.render["frames"] = 150
+        out, calls = self.run_graphic({"projects": [project, project]}, "rerender", "a", "--set", "title=Mới",
+                                      "--unset", "accent")
+        self.assertEqual(0, out.returncode, out.stderr)
+        variables = calls[1]["params"]["variables"]
+        self.assertEqual({"title": "Mới", "accent": "#FF3366", "background": "#222222"}, variables)
+        applies = [call for call in calls if call["args"][:2] == ["timeline", "apply"]]
+        self.assertEqual(1, len(applies))
+        self.assertEqual("12", applies[0]["args"][applies[0]["args"].index("--base-rev") + 1])
+        ops = applies[0]["ops"]
+        added = ops[0]["media"]
+        self.assertEqual(("addMedia", True, "generated/plugins/cli/invoke/r1/calendar.mov", [30, 1], 150),
+                         (ops[0]["op"], added["alpha"], added["path"], added["fps"], added["frames"]))
+        sources = [op for op in ops if op["op"] == "setSource"]
+        self.assertEqual([("a", 0), ("b", 30)], [(op["item"], op["sourceIn"]) for op in sources])
+        self.assertTrue(all(op["media"] == added["id"] for op in sources))
+        # a played the whole render, so it plays the whole new one; b was cut short on purpose and keeps 60 frames.
+        self.assertEqual([{"op": "trim", "item": "a", "edge": "end", "toFrame": 250}], [op for op in ops if op["op"] == "trim"])
+        recorded = ops[-1]
+        self.assertEqual(("setMediaData", added["id"]), (recorded["op"], recorded["media"]))
+        self.assertEqual({"title": "Mới"}, recorded["patch"]["graphics"]["variables"])
+        result = json.loads(out.stdout)
+        self.assertEqual(("media-old", 13), (result["replaced"], result["rev"]))
+        self.assertIn("165→150", result["note"])
+
+    def test_rerender_keep_length_cuts_only_what_the_new_render_lacks(self):
+        items = [{"id": "a", "media": "media-old", "at": 0, "dur": 165, "in": 0}]
+        project = self.project(media=[self.recorded_media({})], items=items)
+        self.render["frames"] = 180
+        out, calls = self.run_graphic({"projects": [project, project]}, "rerender", "media-old", "--keep-length")
+        self.assertEqual(0, out.returncode, out.stderr)
+        ops = [call for call in calls if call["args"][:2] == ["timeline", "apply"]][0]["ops"]
+        self.assertEqual([], [op for op in ops if op["op"] == "trim"])
+        self.assertNotIn("note", json.loads(out.stdout))
+
+    def test_rerender_all_restyles_every_recorded_graphic_with_the_brand(self):
+        second = dict(self.recorded_media({}, brand=True), id="media-two")
+        unrecorded = {"id": "clip", "path": "a.mov", "kind": "video", "fps": [30, 1], "frames": 300}
+        items = [{"id": "a", "media": "media-old", "at": 0, "dur": 165, "in": 0},
+                 {"id": "b", "media": "media-two", "at": 300, "dur": 165, "in": 0},
+                 {"id": "c", "media": "clip", "at": 0, "dur": 300, "in": 0}]
+        project = self.project(media=[self.recorded_media({"accent": "#00AAFF"}, brand=False), second, unrecorded],
+                               items=items, brand={"palette": {"accent": "#FF3366"}})
+        out, calls = self.run_graphic({"projects": [project, project]}, "rerender", "--all", "--brand")
+        self.assertEqual(0, out.returncode, out.stderr)
+        renders = [call["params"]["variables"] for call in calls if call["args"][:2] == ["plugins", "invoke"]]
+        self.assertEqual([{"accent": "#00AAFF"}, {"accent": "#FF3366"}], renders)  # explicit still wins over the brand
+        applies = [call for call in calls if call["args"][:2] == ["timeline", "apply"]]
+        self.assertEqual(1, len(applies))
+        self.assertEqual(["a", "b"], [op["item"] for op in applies[0]["ops"] if op["op"] == "setSource"])
+        self.assertEqual(2, len(json.loads(out.stdout)["graphics"]))
+
+    def test_rerender_of_a_graphic_without_recorded_inputs_fails_loudly(self):
+        project = self.project(media=[{"id": "clip", "path": "a.mov", "kind": "video", "fps": [30, 1], "frames": 30}],
+                               items=[{"id": "c", "media": "clip", "at": 0, "dur": 30, "in": 0}])
+        out, calls = self.run_graphic({"projects": [project]}, "rerender", "c")
+        self.assertEqual(1, out.returncode)
+        self.assertIn("bin/graphic place", json.loads(out.stderr)["error"])
+
+    def test_a_refused_apply_fails_the_rerender(self):
+        items = [{"id": "a", "media": "media-old", "at": 0, "dur": 165, "in": 0}]
+        project = self.project(media=[self.recorded_media({})], items=items)
+        out, _ = self.run_graphic({"projects": [project, project], "fail": "timeline apply"}, "rerender", "a")
+        self.assertEqual(1, out.returncode)
+        self.assertIn("refused", json.loads(out.stderr)["error"])
+
+    def test_a_project_font_file_is_copied_next_to_the_composition(self):
+        root = self.folder / "project"
+        (root / "fonts").mkdir(parents=True)
+        (root / "fonts" / "Brand-Bold.otf").write_bytes(b"font")
+        state = {"projects": [self.project(brand={"fonts": {"heading": "Brand-Bold", "body": "Avenir Next"}})],
+                 "fonts": [{"name": "Brand-Bold", "family": "Brand", "file": "Brand-Bold.otf", "source": "project"}],
+                 "projectFile": str(root / "project.bashcut.json")}
+        out, _ = self.run_graphic(state, "place", str(self.composition), "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        variables = json.loads(out.stdout)["variables"]
+        self.assertEqual(("fonts/Brand-Bold.otf", "Avenir Next"), (variables["headingFont"], variables["bodyFont"]))
+        self.assertTrue((self.composition / "fonts" / "Brand-Bold.otf").is_file())
 
 
 @unittest.skipUnless(RUNTIME_DATA and RUNTIME_CACHE, "set HYPERFRAMES_TEST_DATA and HYPERFRAMES_TEST_CACHE to a setup install")

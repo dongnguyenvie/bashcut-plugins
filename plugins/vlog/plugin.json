@@ -26,6 +26,8 @@
       {"path": "skills/podcast-clips"},
       {"path": "skills/tutorial"},
       {"path": "skills/explainer"},
+      {"path": "skills/news"},
+      {"path": "skills/promo"},
       {"path": "skills/scene-prompt"}
     ],
     "library": [

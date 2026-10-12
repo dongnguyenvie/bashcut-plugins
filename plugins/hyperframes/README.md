@@ -12,6 +12,13 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
 - **`graphics.render`** (provider `bashcut.hyperframes.render`): a composition folder → a `.mov` with alpha (HEVC
   with alpha, or ProRes 4444) in the request's output folder, with the composition's lint findings. Agents call it
   with `bashcut plugins invoke graphics.render --params '{"composition": "/abs/folder", "variables": {…}}'`.
+- **`bin/graphic`**: one call per graphic for agents. `place D --at-frame F --set k=v` renders composition D, waits,
+  places the .mov full canvas on the Overlay layer (`library add` + `library place`) and records the render inputs on
+  the media (`setMediaData` › `graphics`). `rerender ITEM --set k=v` (or `--all`) renders again from those inputs and
+  points every item at the new movie as one `timeline apply` (`addMedia` with alpha, `setSource`, `trim` when the
+  length changed, which the result reports). Both fill the standard variables (`accent`, `background`, `text`,
+  `secondary`, `headingFont`, `bodyFont`, `disclosure`) from the project's `brand`, explicit values winning, so a brand
+  change restyles placed graphics with `rerender --all --brand`. Uses `$BASHCUT_CLI`, else `bashcut` on PATH.
 - **`bin/hf`**: the pinned HyperFrames CLI with telemetry off and the plugin's own Chrome: `catalog`, `add`, `lint`,
   `check`, `snapshot` (frames to look at, optionally against a reference video), `docs`.
 - **`bin/osm-map`**: an OpenStreetMap map and a route for a composition: tiles (cached in the plugin cache folder)
@@ -21,7 +28,7 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   contributors (ODbL); `map-route` keeps the credit on screen.
 - **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
   `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
-  `cost-table`, `timeline`, `map-route`.
+  `cost-table`, `timeline`, `calendar`, `map-route`. All take the brand variables `bin/graphic` fills.
 - **The skill** `skills/hyperframes/SKILL.md`: the design → build → look → render → place → check loop, the
   composition rules, and moves that combine a graphic with BashCut's own layers (the speaker shrinking into a card).
 

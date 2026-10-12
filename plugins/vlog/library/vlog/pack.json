@@ -187,6 +187,158 @@
       }
     },
     {
+      "id": "vlog-breaking-tag",
+      "kind": "text-preset",
+      "name": "Breaking tag",
+      "tags": [
+        "news",
+        "chrome"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "place-card",
+        "text": "BREAKING",
+        "textStyle": {
+          "size": 0.03,
+          "uppercase": true,
+          "fill": "#FFFFFF",
+          "align": "left",
+          "positionX": 0.06,
+          "positionY": 0.9,
+          "background": {
+            "color": "#E5262A",
+            "opacity": 1,
+            "padding": 0.35,
+            "radius": 0.2
+          }
+        }
+      }
+    },
+    {
+      "id": "vlog-credit-line",
+      "kind": "text-preset",
+      "name": "Credit line",
+      "tags": [
+        "news",
+        "documentary",
+        "chrome",
+        "credit"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "place-card",
+        "text": "Photo: NASA (public domain) · Wikimedia Commons",
+        "textStyle": {
+          "size": 0.018,
+          "fill": "#FFFFFF",
+          "align": "left",
+          "positionX": 0.06,
+          "positionY": 0.87,
+          "background": {
+            "color": "#000000",
+            "opacity": 0.55,
+            "padding": 0.3,
+            "radius": 0.15
+          }
+        }
+      }
+    },
+    {
+      "id": "vlog-headline-band",
+      "kind": "text-preset",
+      "name": "Headline band",
+      "tags": [
+        "news",
+        "chrome"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "SPACE SCIENCE\nNASA LAUNCHES ROMAN:\nHUBBLE'S SIBLING SEES FIRST LIGHT",
+        "textStyle": {
+          "font": "System-CondensedBlack",
+          "size": 0.045,
+          "strokeWidth": 0,
+          "uppercase": true,
+          "align": "left",
+          "positionX": 0.06,
+          "positionY": 0.52,
+          "lineHeight": 1.05,
+          "fill": "#FFFFFF",
+          "background": {
+            "color": "#B8960C",
+            "opacity": 0.95,
+            "padding": 0.5,
+            "radius": 0
+          },
+          "emphasis": {
+            "line": 0,
+            "fill": "#111111",
+            "scale": 0.55,
+            "plate": {
+              "color": "#F2F2F2",
+              "padding": 0.15,
+              "radius": 0.1
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "vlog-date-card",
+      "kind": "text-preset",
+      "name": "Date card",
+      "tags": [
+        "documentary",
+        "news",
+        "chapter"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "cinematic-serif",
+        "text": "30.04.1993\nCERN opens the web to everyone",
+        "textStyle": {
+          "size": 0.08,
+          "tracking": 0.12,
+          "fill": "#F2F2F2",
+          "emphasis": {
+            "line": -1,
+            "fill": "#E0B25A",
+            "scale": 0.3
+          }
+        },
+        "animation": "fade-in-out"
+      }
+    },
+    {
+      "id": "vlog-kinetic-word",
+      "kind": "text-preset",
+      "name": "Kinetic word",
+      "tags": [
+        "promo",
+        "hook",
+        "showreel"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "BUILD\nCAPACITY.",
+        "textStyle": {
+          "font": "System-CondensedBlack",
+          "size": 0.16,
+          "strokeWidth": 0,
+          "uppercase": true,
+          "lineHeight": 0.92,
+          "emphasis": false,
+          "lineFills": [
+            "#FFFFFF",
+            "#7FC8A0"
+          ]
+        },
+        "animation": "zoom-punch"
+      }
+    },
+    {
       "id": "vlog-plane",
       "kind": "sticker",
       "name": "Plane",

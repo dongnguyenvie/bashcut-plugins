@@ -3,13 +3,17 @@
      Full frame, 1080×1920, 6 s. Run bin/osm-map --dir <this folder> first: it writes map/ tiles and map-data.js
      (the one here is an offline stand-in with no tiles). Keep the OpenStreetMap credit on screen. -->
 <html lang="en" data-composition-variables='[
-  {"id":"title","type":"string","label":"Title (white)","default":"Old Quarter"},
-  {"id":"subtitle","type":"string","label":"Second line (accent)","default":"to West Lake"},
-  {"id":"stat","type":"string","label":"Stat line","default":"≈ 16 min · 7.5 km"},
-  {"id":"accent","type":"color","label":"Route colour","default":"#C6FF3D"},
-  {"id":"darkMap","type":"boolean","label":"Dark map (off: the normal OpenStreetMap colours)","default":true},
-  {"id":"drawAt","type":"number","label":"Route starts drawing (s)","default":0.6},
-  {"id":"drawSeconds","type":"number","label":"Route draw length (s)","default":2.6}
+  {"id": "title", "type": "string", "label": "Title (white)", "default": "Old Quarter"},
+  {"id": "subtitle", "type": "string", "label": "Second line (accent)", "default": "to West Lake"},
+  {"id": "stat", "type": "string", "label": "Stat line", "default": "≈ 16 min · 7.5 km"},
+  {"id": "accent", "type": "color", "label": "Route colour", "default": "#C6FF3D"},
+  {"id": "darkMap", "type": "boolean", "label": "Dark map (off: the normal OpenStreetMap colours)", "default": true},
+  {"id": "drawAt", "type": "number", "label": "Route starts drawing (s)", "default": 0.6},
+  {"id": "drawSeconds", "type": "number", "label": "Route draw length (s)", "default": 2.6},
+  {"id": "background", "type": "color", "label": "Map base and tag colour", "default": "#0B0E14"},
+  {"id": "text", "type": "color", "label": "Text colour", "default": "#FFFFFF"},
+  {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -18,9 +22,10 @@
     <script src="map-data.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; perspective: 1600px;
-        font-family: "Helvetica Neue", Arial, sans-serif; }
+        font-family: var(--body-font), Arial, sans-serif; }
       #stage { position: absolute; inset: 0; transform-origin: 50% 50%; }
       #map { position: absolute; inset: 0; background:
         repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 120px),
@@ -35,13 +40,13 @@
       #line { fill: none; stroke-width: 11; stroke-linecap: round; stroke-linejoin: round; }
       .pin { position: absolute; width: 0; height: 0; }
       .dot { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%;
-        border: 8px solid #0B0E14; box-shadow: 0 0 0 4px rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.5); }
+        border: 8px solid var(--background); box-shadow: 0 0 0 4px rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.5); }
       .tag { position: absolute; left: 34px; top: -30px; white-space: nowrap; padding: 8px 18px; border-radius: 14px;
-        background: rgba(11,14,20,0.88); color: #fff; font-size: 34px; font-weight: 700; }
-      #head { position: absolute; left: 72px; right: 72px; top: 150px; color: #fff; }
-      #title, #subtitle { font-size: 104px; line-height: 1.02; font-weight: 900; letter-spacing: -0.03em; }
+        background: color-mix(in srgb, var(--background) 88%, transparent); color: var(--text); font-size: 34px; font-weight: 700; }
+      #head { position: absolute; left: 72px; right: 72px; top: 150px; color: var(--text); }
+      #title, #subtitle { font-family: var(--heading-font), Arial, sans-serif; font-size: 104px; line-height: 1.02; font-weight: 900; letter-spacing: -0.03em; }
       #stat { margin-top: 26px; display: inline-block; padding: 12px 26px; border-radius: 999px; font-size: 44px;
-        font-weight: 800; color: #0B0E14; }
+        font-weight: 800; color: var(--background); }
       #credit { position: absolute; left: 72px; top: 92px; font-size: 24px; color: rgba(255,255,255,0.7); }
     </style>
   </head>
@@ -58,6 +63,19 @@
     </div>
     <script>
       const v = window.__hyperframes.getVariables();
+      // Brand look (bin/graphic fills accent, background, text, secondary and the fonts from the project's brand). A
+      // font is a family or PostScript name on this Mac, System-<Weight> (San Francisco) or a font file in this folder.
+      const look = document.documentElement.style;
+      for (const key of ["accent", "background", "text", "secondary"]) if (v[key]) look.setProperty(`--${key}`, v[key]);
+      const faces = document.createElement("style");
+      for (const [key, slot] of [["headingFont", "--heading-font"], ["bodyFont", "--body-font"]]) {
+        const name = String(v[key] ?? "").trim();
+        if (!name) continue;
+        const file = /\.(ttf|otf|woff2?)$/i.test(name);
+        if (!name.startsWith("System-")) faces.textContent += `@font-face { font-family: "${key}"; src: ${file ? `url("${name}")` : `local("${name}")`}; }`;
+        look.setProperty(slot, name.startsWith("System-") ? "system-ui" : file ? `"${key}"` : `"${name}", "${key}"`);
+      }
+      document.head.appendChild(faces);
       const data = window.MAP_DATA;
       const root = document.getElementById("root");
       root.classList.toggle("dark", v.darkMap !== false);

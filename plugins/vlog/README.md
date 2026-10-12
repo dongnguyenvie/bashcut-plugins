@@ -27,10 +27,12 @@ the agent kit (`bc:`); a recipe says what to measure and which range to choose f
 | `podcast-clips` | Shorts from a long podcast or interview: selects by quote, standalone test, blind second pass, one project per clip (`project derive`) |
 | `tutorial` | Screen recording or tool demo: result first, step cards, zooms, waiting sped up, presenter presence |
 | `explainer` | Cards and numbers with a voice, little or no footage: question + number hook, one data widget per section (cost table, chart, timeline, map route), frame chrome, sources for every number |
+| `news` | News and documentary from photos, archive and source screenshots: vertical news chrome (breaking tag, credit, headline band) or date cards and staggered dissolves; a source, credit and date for every claim and picture |
+| `promo` | Fast promo, hype or showreel: beat-synced cuts every 4–4.5 s, kinetic type, rolling counters, glitch, halftone and colour wipes; real numbers and only the person's own work |
 | `scene-prompt` | A scene idea → a cinematic prompt for AI video models (Seedance, Kling, Veo, Sora…) for shots the footage lacks; reads the neighbouring plan rows so the shot cuts in |
 
 The `library/vlog` pack adds text styles (hook question, section chip, time stamp, price tag, pro/con, step, keyword,
-verdict, CTA, sponsorship label), emoji stickers by topic and four transitions, all tagged by topic
+verdict, CTA, sponsorship label, news chrome: breaking tag, credit line, headline band, date card; kinetic word), emoji stickers by topic and four transitions, all tagged by topic
 (`bashcut library list --pack Vlog --tag food`). It ships no music or sound files; the skills say where to find
 licensed ones (`bc:audio-mix`).
 

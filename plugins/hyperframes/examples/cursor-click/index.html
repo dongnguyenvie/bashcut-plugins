@@ -2,10 +2,10 @@
 <!-- A big pointer glides to a spot, clicks it with a ripple and leaves: "look here" over a screenshot, a button or a
      card. Transparent, 1080×1920, 2.2 s. Raw material: change the path, the target, the timing and the cursor. -->
 <html lang="en" data-composition-variables='[
-  {"id":"targetX","type":"number","label":"Target x (px)","default":560},
-  {"id":"targetY","type":"number","label":"Target y (px)","default":1360},
-  {"id":"clickAt","type":"number","label":"Click at (s)","default":0.8},
-  {"id":"ripple","type":"color","label":"Ripple colour","default":"#FFFFFF"}
+  {"id": "targetX", "type": "number", "label": "Target x (px)", "default": 560},
+  {"id": "targetY", "type": "number", "label": "Target y (px)", "default": 1360},
+  {"id": "clickAt", "type": "number", "label": "Click at (s)", "default": 0.8},
+  {"id": "accent", "type": "color", "label": "Ripple colour", "default": "#FFFFFF"}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -29,10 +29,23 @@
     </div>
     <script>
       const v = window.__hyperframes.getVariables();
+      // Brand look (bin/graphic fills accent, background, text, secondary and the fonts from the project's brand). A
+      // font is a family or PostScript name on this Mac, System-<Weight> (San Francisco) or a font file in this folder.
+      const look = document.documentElement.style;
+      for (const key of ["accent", "background", "text", "secondary"]) if (v[key]) look.setProperty(`--${key}`, v[key]);
+      const faces = document.createElement("style");
+      for (const [key, slot] of [["headingFont", "--heading-font"], ["bodyFont", "--body-font"]]) {
+        const name = String(v[key] ?? "").trim();
+        if (!name) continue;
+        const file = /\.(ttf|otf|woff2?)$/i.test(name);
+        if (!name.startsWith("System-")) faces.textContent += `@font-face { font-family: "${key}"; src: ${file ? `url("${name}")` : `local("${name}")`}; }`;
+        look.setProperty(slot, name.startsWith("System-") ? "system-ui" : file ? `"${key}"` : `"${name}", "${key}"`);
+      }
+      document.head.appendChild(faces);
       const ring = document.getElementById("ring");
       ring.style.left = `${v.targetX}px`;
       ring.style.top = `${v.targetY}px`;
-      ring.style.borderColor = v.ripple;
+      ring.style.borderColor = v.accent;
       const tl = gsap.timeline({ paused: true });
       // The tip of the arrow (8 px, 8 px into the cursor) lands on the target.
       const land = { x: v.targetX - 8, y: v.targetY - 8 };

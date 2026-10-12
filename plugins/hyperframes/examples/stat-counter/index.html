@@ -2,13 +2,17 @@
 <!-- A number that matters, counted up on a dark glass card with a line that draws as it climbs. Transparent,
      1080×1920, 3.5 s. Raw material: change the card, the chart, the easing and the timing for the video. -->
 <html lang="en" data-composition-variables='[
-  {"id":"label","type":"string","label":"Label","default":"Average Views"},
-  {"id":"from","type":"number","label":"Count from","default":82366},
-  {"id":"to","type":"number","label":"Count to","default":100000},
-  {"id":"countSeconds","type":"number","label":"Count length (s)","default":1.4},
-  {"id":"top","type":"number","label":"Card top (px)","default":1180},
-  {"id":"accent","type":"color","label":"Line colour","default":"#3BF26A"},
-  {"id":"trend","type":"string","label":"Trend pill (empty hides it)","default":"▲ 21%"}
+  {"id": "label", "type": "string", "label": "Label", "default": "Average Views"},
+  {"id": "from", "type": "number", "label": "Count from", "default": 82366},
+  {"id": "to", "type": "number", "label": "Count to", "default": 100000},
+  {"id": "countSeconds", "type": "number", "label": "Count length (s)", "default": 1.4},
+  {"id": "top", "type": "number", "label": "Card top (px)", "default": 1180},
+  {"id": "accent", "type": "color", "label": "Line colour", "default": "#3BF26A"},
+  {"id": "trend", "type": "string", "label": "Trend pill (empty hides it)", "default": "▲ 21%"},
+  {"id": "background", "type": "color", "label": "Card colour", "default": "#16181E"},
+  {"id": "text", "type": "color", "label": "Text colour", "default": "#FFFFFF"},
+  {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -16,15 +20,17 @@
     <script src="gsap.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
-      #root { position: relative; width: 1080px; height: 1920px; font-family: "Helvetica Neue", Arial, sans-serif; }
+      #root { position: relative; width: 1080px; height: 1920px; font-family: var(--body-font), Arial, sans-serif; }
       #card { position: absolute; left: 110px; width: 860px; height: 400px; padding: 40px 48px; border-radius: 34px;
-        background: rgba(22, 24, 30, 0.86); border: 2px solid rgba(255, 255, 255, 0.12); color: #fff;
+        background: color-mix(in srgb, var(--background) 86%, transparent);
+        border: 2px solid color-mix(in srgb, var(--text) 12%, transparent); color: var(--text);
         box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5); }
-      #label { font-size: 34px; font-weight: 500; color: rgba(255, 255, 255, 0.75); }
-      #value { font-size: 84px; font-weight: 800; letter-spacing: -0.03em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+      #label { font-size: 34px; font-weight: 500; color: color-mix(in srgb, var(--text) 75%, transparent); }
+      #value { font-family: var(--heading-font), Arial, sans-serif; font-size: 84px; font-weight: 800; letter-spacing: -0.03em; margin-top: 4px; font-variant-numeric: tabular-nums; }
       #trend { position: absolute; top: 44px; right: 48px; padding: 6px 18px; border-radius: 999px; font-size: 30px;
-        font-weight: 700; color: #0B0D12; }
+        font-weight: 700; color: var(--background); }
       svg { position: absolute; left: 48px; bottom: 36px; width: 764px; height: 150px; overflow: visible; }
       #line { fill: none; stroke-width: 9; stroke-linecap: round; filter: drop-shadow(0 0 10px currentColor); }
     </style>
@@ -38,6 +44,19 @@
     </div>
     <script>
       const v = window.__hyperframes.getVariables();
+      // Brand look (bin/graphic fills accent, background, text, secondary and the fonts from the project's brand). A
+      // font is a family or PostScript name on this Mac, System-<Weight> (San Francisco) or a font file in this folder.
+      const look = document.documentElement.style;
+      for (const key of ["accent", "background", "text", "secondary"]) if (v[key]) look.setProperty(`--${key}`, v[key]);
+      const faces = document.createElement("style");
+      for (const [key, slot] of [["headingFont", "--heading-font"], ["bodyFont", "--body-font"]]) {
+        const name = String(v[key] ?? "").trim();
+        if (!name) continue;
+        const file = /\.(ttf|otf|woff2?)$/i.test(name);
+        if (!name.startsWith("System-")) faces.textContent += `@font-face { font-family: "${key}"; src: ${file ? `url("${name}")` : `local("${name}")`}; }`;
+        look.setProperty(slot, name.startsWith("System-") ? "system-ui" : file ? `"${key}"` : `"${name}", "${key}"`);
+      }
+      document.head.appendChild(faces);
       const card = document.getElementById("card");
       card.style.top = `${v.top}px`;
       document.getElementById("label").textContent = v.label;

@@ -3,8 +3,12 @@
      (lines is a JSON string: text, at seconds, size px, weight, colour, font). Opaque, 1080×1920, 3 s. Place it on the
      Overlay layer over the speaker, or under a shrunken speaker clip (see the skill). Raw material: change it. -->
 <html lang="en" data-composition-variables='[
-  {"id":"paper","type":"color","label":"Paper colour","default":"#F2EEE5"},
-  {"id":"lines","type":"string","label":"Lines (JSON)","default":"[{\"text\":\"to start\",\"at\":0.55,\"size\":40},{\"text\":\"getting\",\"at\":0.85,\"size\":40},{\"text\":\"more views\",\"at\":1.15,\"size\":112,\"weight\":800,\"color\":\"#1E2A44\"}]"}
+  {"id": "background", "type": "color", "label": "Paper colour", "default": "#F2EEE5"},
+  {"id": "lines", "type": "string", "label": "Lines (JSON)", "default": "[{\"text\":\"to start\",\"at\":0.55,\"size\":40},{\"text\":\"getting\",\"at\":0.85,\"size\":40},{\"text\":\"more views\",\"at\":1.15,\"size\":112,\"weight\":800,\"accent\":true}]"},
+  {"id": "text", "type": "color", "label": "Text colour", "default": "#1E2A44"},
+  {"id": "accent", "type": "color", "label": "Colour of lines with \"accent\": true", "default": "#1E2A44"},
+  {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -12,6 +16,7 @@
     <script src="gsap.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       #root { position: relative; width: 1080px; height: 1920px; perspective: 2400px; }
       #page { position: absolute; inset: 0; transform-origin: left center; overflow: hidden;
@@ -19,8 +24,8 @@
       #shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.28)); }
       #grain { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(255, 255, 255, 0.5), rgba(0, 0, 0, 0.06) 75%); }
       #text { position: absolute; left: 90px; right: 90px; top: 760px; display: flex; flex-wrap: wrap;
-        align-items: baseline; justify-content: center; column-gap: 18px; color: #1E2A44;
-        font-family: "Helvetica Neue", Arial, sans-serif; letter-spacing: -0.03em; }
+        align-items: baseline; justify-content: center; column-gap: 18px; color: var(--text);
+        font-family: var(--body-font), Arial, sans-serif; letter-spacing: -0.03em; }
       .line { display: inline-block; white-space: nowrap; }
     </style>
   </head>
@@ -30,8 +35,21 @@
     </div>
     <script>
       const v = window.__hyperframes.getVariables();
+      // Brand look (bin/graphic fills accent, background, text, secondary and the fonts from the project's brand). A
+      // font is a family or PostScript name on this Mac, System-<Weight> (San Francisco) or a font file in this folder.
+      const look = document.documentElement.style;
+      for (const key of ["accent", "background", "text", "secondary"]) if (v[key]) look.setProperty(`--${key}`, v[key]);
+      const faces = document.createElement("style");
+      for (const [key, slot] of [["headingFont", "--heading-font"], ["bodyFont", "--body-font"]]) {
+        const name = String(v[key] ?? "").trim();
+        if (!name) continue;
+        const file = /\.(ttf|otf|woff2?)$/i.test(name);
+        if (!name.startsWith("System-")) faces.textContent += `@font-face { font-family: "${key}"; src: ${file ? `url("${name}")` : `local("${name}")`}; }`;
+        look.setProperty(slot, name.startsWith("System-") ? "system-ui" : file ? `"${key}"` : `"${name}", "${key}"`);
+      }
+      document.head.appendChild(faces);
       const page = document.getElementById("page");
-      page.style.background = v.paper;
+      page.style.background = v.background;
       const text = document.getElementById("text");
       const lines = JSON.parse(v.lines);
       const tl = gsap.timeline({ paused: true });
@@ -44,7 +62,9 @@
         span.textContent = item.text;
         span.style.fontSize = `${item.size ?? 48}px`;
         span.style.fontWeight = String(item.weight ?? 500);
+        if (item.accent) span.style.color = v.accent;
         if (item.color) span.style.color = item.color;
+        if ((item.size ?? 48) >= 90) span.style.fontFamily = "var(--heading-font), Arial, sans-serif";
         if (item.font) span.style.fontFamily = item.font;
         if ((item.size ?? 48) >= 90) span.style.flexBasis = "100%", span.style.textAlign = "center";
         text.appendChild(span);
