@@ -88,6 +88,10 @@ function fields(declared, recorded, values, notice, words) {
     const node = (d) => {
         const label = d.label ?? d.id;
         const value = shown(d, recorded.variables ?? {}, values);
+        // Colour and font pickers: once core has view node kinds for them, map d.type "color" and "font" here (and
+        // drop the font filter on `look` above, so the brand fonts become editable). Adding their host feature to
+        // plugin.json `features` makes an app without it refuse the whole plugin, so either ship with that app or
+        // keep text fields when the host lacks the node kinds. `typed` keeps sending a hex string / font name.
         if (d.type === "boolean") return { type: "toggle", id: d.id, label, value };
         if (d.type === "string" && String(value).length > 40) return { type: "textArea", id: d.id, label, value, height: 60 };
         return { type: "textField", id: d.id, label, value };
