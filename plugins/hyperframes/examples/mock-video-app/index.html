@@ -32,7 +32,7 @@
   {"id": "accent", "type": "color", "label": "Highlight and button colour", "default": "#FF4D3D"},
   {"id": "background", "type": "color", "label": "Screen colour", "default": "#FFFFFF"},
   {"id": "text", "type": "color", "label": "Text colour", "default": "#111318"},
-  {"id": "secondary", "type": "color", "label": "Secondary text colour", "default": "#6B7180"},
+  {"id": "secondary", "type": "color", "label": "Secondary text colour", "default": "#575D6A"},
   {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
   {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
 ]'>
@@ -43,7 +43,7 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; --accent: #FF4D3D; --background: #FFFFFF;
-        --text: #111318; --secondary: #6B7180; }
+        --text: #111318; --secondary: #575D6A; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       #root { position: relative; width: 1080px; height: 1920px; font-family: var(--body-font), Arial, sans-serif; }
       #phone { position: absolute; left: 120px; top: 230px; width: 840px; height: 1460px; border-radius: 86px;
@@ -103,7 +103,7 @@
       <div id="phone"><div id="screen">
         <div id="status"><span>9:41</span><span class="dots">●●●</span></div>
         <div id="bar"><div id="logo"></div><div id="appName"></div><div id="search"></div></div>
-        <div id="body"></div>
+        <div id="body" data-layout-allow-overflow></div>
       </div></div>
     </div>
     <script>
