@@ -502,7 +502,7 @@ async function place(target, options) {
     if (options.duration !== undefined) {
         const frames = Number(options.duration);
         if (!(frames > 0)) throw new UsageError("--duration must be a positive number of frames");
-        inputs.seconds = Math.round((frames / frameRate(project.format?.fps)) * 100) / 100;
+        inputs.seconds = frames / frameRate(project.format?.fps);
     }
     const warnings = [];
     const { variables, brand } = await resolveVariables(inputs, project, warnings);
@@ -690,7 +690,8 @@ export async function withDuration(dir, seconds, work) {
     if (!root.test(html)) throw new Error(`${page} has no root with data-composition-id="main" and data-duration`);
     copyFileSync(page, join(dir, BACKUP));
     try {
-        writeFileSync(page, html.replace(root, `$1${Math.round(seconds * 100) / 100}$3`));
+        // Rounded down to the millisecond: the renderer rounds frames up, so 110 frames at 30 fps (3.667 s) stay 110.
+        writeFileSync(page, html.replace(root, `$1${Math.floor(seconds * 1000) / 1000}$3`));
         return await work();
     } finally {
         restorePage(dir);
