@@ -3,12 +3,17 @@
      of {label, value, at}: at = seconds from the start when that bar lands on its word). Transparent, 1080×1920,
      5 s. Raw material: change the card, the bars, the units and the timing for the video. -->
 <html lang="en" data-composition-variables='[
-  {"id":"title","type":"string","label":"Title","default":"Visitors per month"},
-  {"id":"items","type":"string","label":"Bars (JSON [{label, value, at}])","default":"[{\"label\":\"Jan\",\"value\":120,\"at\":0.8},{\"label\":\"Feb\",\"value\":180,\"at\":1.3},{\"label\":\"Mar\",\"value\":260,\"at\":1.8},{\"label\":\"Apr\",\"value\":410,\"at\":2.3}]"},
-  {"id":"unit","type":"string","label":"Unit after each value","default":"K"},
-  {"id":"highlight","type":"number","label":"Bar to highlight (index, -1 none)","default":3},
-  {"id":"accent","type":"color","label":"Highlight colour","default":"#FFB020"},
-  {"id":"source","type":"string","label":"Source line (empty hides it)","default":"Source: sample data"}
+  {"id": "title", "type": "string", "label": "Title", "default": "Visitors per month"},
+  {"id": "items", "type": "string", "label": "Bars (JSON [{label, value, at}])", "default": "[{\"label\":\"Jan\",\"value\":120,\"at\":0.8},{\"label\":\"Feb\",\"value\":180,\"at\":1.3},{\"label\":\"Mar\",\"value\":260,\"at\":1.8},{\"label\":\"Apr\",\"value\":410,\"at\":2.3}]"},
+  {"id": "unit", "type": "string", "label": "Unit after each value", "default": "K"},
+  {"id": "highlight", "type": "number", "label": "Bar to highlight (index, -1 none)", "default": 3},
+  {"id": "accent", "type": "color", "label": "Highlight colour", "default": "#FFB020"},
+  {"id": "source", "type": "string", "label": "Source line (empty hides it)", "default": "Source: sample data"},
+  {"id": "background", "type": "color", "label": "Card colour", "default": "#0E1016"},
+  {"id": "text", "type": "color", "label": "Text colour", "default": "#FFFFFF"},
+  {"id": "secondary", "type": "color", "label": "Other bars colour", "default": "#585B63"},
+  {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -16,23 +21,24 @@
     <script src="gsap.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       #root { position: relative; width: 1080px; height: 1920px; perspective: 1600px;
-        font-family: "Helvetica Neue", Arial, sans-serif; }
+        font-family: var(--body-font), Arial, sans-serif; }
       #card { position: absolute; left: 90px; top: 460px; width: 900px; height: 900px; padding: 56px 60px;
-        border-radius: 36px; background: rgba(14, 16, 22, 0.86); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-        color: #fff; }
-      #title { font-size: 58px; font-weight: 800; letter-spacing: -0.02em; }
+        border-radius: 36px; background: color-mix(in srgb, var(--background) 86%, transparent); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        color: var(--text); }
+      #title { font-family: var(--heading-font), Arial, sans-serif; font-size: 58px; font-weight: 800; letter-spacing: -0.02em; }
       #bars { position: absolute; left: 60px; right: 60px; bottom: 130px; height: 560px; display: flex;
-        align-items: flex-end; gap: 28px; border-bottom: 3px solid rgba(255, 255, 255, 0.25); }
+        align-items: flex-end; gap: 28px; border-bottom: 3px solid color-mix(in srgb, var(--text) 25%, transparent); }
       .col { flex: 1; height: 100%; position: relative; }
       .bar { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 18px 18px 6px 6px;
-        background: rgba(255, 255, 255, 0.28); transform-origin: 50% 100%; }
-      .value { position: absolute; left: -20px; right: -20px; text-align: center; font-size: 46px; font-weight: 800;
+        background: var(--secondary); transform-origin: 50% 100%; }
+      .value { position: absolute; left: -20px; right: -20px; text-align: center; font-family: var(--heading-font), Arial, sans-serif; font-size: 46px; font-weight: 800;
         font-variant-numeric: tabular-nums; }
       .label { position: absolute; left: -20px; right: -20px; bottom: -66px; text-align: center; font-size: 36px;
-        font-weight: 600; color: rgba(255, 255, 255, 0.8); }
-      #source { position: absolute; left: 60px; bottom: 34px; font-size: 26px; color: rgba(255, 255, 255, 0.55); }
+        font-weight: 600; color: color-mix(in srgb, var(--text) 80%, transparent); }
+      #source { position: absolute; left: 60px; bottom: 34px; font-size: 26px; color: color-mix(in srgb, var(--text) 55%, transparent); }
     </style>
   </head>
   <body>
@@ -41,6 +47,19 @@
     </div>
     <script>
       const v = window.__hyperframes.getVariables();
+      // Brand look (bin/graphic fills accent, background, text, secondary and the fonts from the project's brand). A
+      // font is a family or PostScript name on this Mac, System-<Weight> (San Francisco) or a font file in this folder.
+      const look = document.documentElement.style;
+      for (const key of ["accent", "background", "text", "secondary"]) if (v[key]) look.setProperty(`--${key}`, v[key]);
+      const faces = document.createElement("style");
+      for (const [key, slot] of [["headingFont", "--heading-font"], ["bodyFont", "--body-font"]]) {
+        const name = String(v[key] ?? "").trim();
+        if (!name) continue;
+        const file = /\.(ttf|otf|woff2?)$/i.test(name);
+        if (!name.startsWith("System-")) faces.textContent += `@font-face { font-family: "${key}"; src: ${file ? `url("${name}")` : `local("${name}")`}; }`;
+        look.setProperty(slot, name.startsWith("System-") ? "system-ui" : file ? `"${key}"` : `"${name}", "${key}"`);
+      }
+      document.head.appendChild(faces);
       const items = JSON.parse(v.items);
       document.getElementById("title").textContent = v.title;
       const source = document.getElementById("source");

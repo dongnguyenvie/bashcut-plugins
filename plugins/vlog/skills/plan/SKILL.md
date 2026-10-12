@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Start a vlog in BashCut from one prompt — read the brief, pick the topic recipe (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial, explainer), survey the footage, write the edit plan with `project set-data plan` (the recipe's data — recipe, promise, stages, checks, askAtIntake — sections with length ranges and reasons, shot rows, the establish-or-hook choice, the chosen review ranges), set the project's outputs and review profile from it, then hand the edit to bc:edit-workflow. Use first whenever the user asks for a vlog or a short video about a trip, a meal, a day, a product, a talk or a how-to, before cutting anything, and when footage is still to be shot or generated. Triggers: "làm vlog", "dựng vlog", "vlog du lịch", "vlog ăn uống", "review món", "review sản phẩm", "a day in my life", "video hướng dẫn", "video nói chuyện", "video giải thích", "lên kịch bản vlog", "shot list", "cần quay những gì", "một prompt ra video".
+description: Start a vlog in BashCut from one prompt — read the brief, pick the topic recipe (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial, explainer, news, promo), survey the footage, write the edit plan with `project set-data plan` (the recipe's data — recipe, promise, stages, checks, askAtIntake — sections with length ranges and reasons, shot rows, the establish-or-hook choice, the chosen review ranges), set the project's outputs and review profile from it, then hand the edit to bc:edit-workflow. Use first whenever the user asks for a vlog or a short video about a trip, a meal, a day, a product, a talk, a how-to, news or a promo, before cutting anything, and when footage is still to be shot or generated. Triggers: "làm vlog", "dựng vlog", "vlog du lịch", "vlog ăn uống", "review món", "review sản phẩm", "a day in my life", "video hướng dẫn", "video nói chuyện", "video giải thích", "lên kịch bản vlog", "shot list", "cần quay những gì", "một prompt ra video".
 ---
 
 # Plan a vlog
@@ -40,11 +40,13 @@ The brief's angle chooses the recipe; the recipe is a suggestion from the brief,
 | eating, cooking, a restaurant, a street food stall, "quán", "món" | `bashcut.vlog:food` |
 | a day, a routine, "a day in my life", "một ngày của tôi", study/work with me | `bashcut.vlog:daily` |
 | a product, an unboxing, a comparison, "có nên mua", "đáng tiền không" | `bashcut.vlog:product-review` |
-| an ad, a product video that sells, "quảng cáo", "video bán hàng", "TVC" | `bashcut.vlog:product-ad` |
+| an ad, a product video that sells one thing, "quảng cáo", "video bán hàng", "TVC" | `bashcut.vlog:product-ad` |
 | one person talking to camera, an opinion, a story time | `bashcut.vlog:talking-head` |
 | shorts cut from a long podcast, interview or livestream | `bashcut.vlog:podcast-clips` |
 | a screen recording, an app or tool demo, "cách làm", a step-by-step | `bashcut.vlog:tutorial` |
-| a topic explained with cards, numbers and a voice, little or no footage (law, history, science, a place, a business idea, news) | `bashcut.vlog:explainer` |
+| a topic explained with cards, numbers and a voice, little or no footage (law, history, science, a place, a business idea) | `bashcut.vlog:explainer` |
+| news or a documentary from photos, archive pictures and source screenshots: a story, a bulletin, the history of an event, "tin nóng", "bản tin", "phóng sự" | `bashcut.vlog:news` |
+| energy and identity, not one product's sale: a brand hype, a profile or portfolio showreel, a motion-comic teaser, "promo", "showreel" | `bashcut.vlog:promo` |
 
 Read the chosen skill in full (`bashcut skills get bashcut.vlog:<name>`); its **Plan data** section is what you write
 into the plan (§3). Two fit (a food stop inside a trip): take the one the *whole* video is about and borrow single
@@ -231,7 +233,8 @@ zones, smallest text, longest length, frame shape.
 3. **Generated shots**: write the prompt with `bashcut.vlog:scene-prompt`, giving it the row and its neighbours (the
    rows before and after in the plan, with their size, move and subjects, and what the clips placed there look like),
    so the new shot cuts in. Never label it on the video (no "AI" or "minh hoạ" text); AI disclosure is the
-   platform's upload toggle (`bashcut.vlog:publish`).
+   platform's upload toggle (`bashcut.vlog:publish`). The exception is `bashcut.vlog:news`: there an illustration
+   carries its label, because a news viewer takes pictures as evidence.
 4. **Not shot yet**: give the missing rows as a checklist to film (what, how long, which angle).
 
 ## 6. Edit, review, publish

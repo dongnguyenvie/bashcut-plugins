@@ -1,6 +1,6 @@
 ---
 name: hyperframes
-description: Design and render any animated graphic for a BashCut edit with HyperFrames — kinetic type and keyword pops, stat counters, bar charts, cost tables, timelines, a map with a route drawn from OpenStreetMap, a pointer that clicks, mock screens, full-frame paper or colour cards, lower thirds, diagrams, light leaks and other catalog blocks — as an HTML/CSS + GSAP composition you write or assemble, looked at frame by frame, rendered to a .mov with alpha and placed on the timeline; plus the speaker-shrinks-into-a-card move done with BashCut's own layers. Use when bc:motion-graphics decided a sentence needs a graphic, when native text cannot make the look, or when the user wants the graphics of a reference video. Triggers: "đồ hoạ", "motion graphic", "chữ chuyển động", "kinetic text", "số chạy", "counter", "biểu đồ", "bản đồ", "tuyến đường", "bảng chi phí", "timeline", "con trỏ chuột", "thẻ giấy", "thu nhỏ người nói", "làm giống video mẫu", "hyperframes".
+description: Design and render any animated graphic for a BashCut edit with HyperFrames — kinetic type and keyword pops, stat counters, bar charts, cost tables, timelines, calendars of good months or days, a map with a route drawn from OpenStreetMap, a pointer that clicks, mock screens, full-frame paper or colour cards, lower thirds, diagrams, light leaks and other catalog blocks — as an HTML/CSS + GSAP composition you write or assemble, looked at frame by frame, rendered to a .mov with alpha and placed on the timeline; plus the speaker-shrinks-into-a-card move done with BashCut's own layers. Use when bc:motion-graphics decided a sentence needs a graphic, when native text cannot make the look, or when the user wants the graphics of a reference video. Triggers: "đồ hoạ", "motion graphic", "chữ chuyển động", "kinetic text", "số chạy", "counter", "biểu đồ", "bản đồ", "tuyến đường", "bảng chi phí", "timeline", "lịch", "tháng đẹp", "con trỏ chuột", "thẻ giấy", "thu nhỏ người nói", "làm giống video mẫu", "hyperframes".
 ---
 
 # HyperFrames graphics
@@ -23,9 +23,9 @@ to make it.
 | `"$P/bin/hf" snapshot D --at 0.3,0.8,1.6 --no-end -o OUT` | PNG frames and a `contact-sheet.jpg` to look at; `--against ref.mp4` pairs each with a reference frame; `--zoom "#card"` crops one element sharp |
 | `"$P/bin/hf" docs compositions\|data-attributes\|gsap` | The runtime's own rules |
 | `"$P/bin/hf" --gsap` | Path of GSAP to copy next to `index.html` (render copies it when missing) |
-| `bashcut plugins invoke graphics.render --params '{…}'` | Render for the timeline: alpha `.mov` (HEVC, or ProRes 4444 with `"codec":"prores"`), lint findings in the result |
+| `"$P/bin/graphic" place D --at-frame F [--set k=v …]` | Render, wait and place full canvas on the Overlay layer in one call; records the inputs on the media. `rerender ITEM [--set k=v …]` renders it again with changed data and swaps every use in one undo step |
 | `"$P/bin/osm-map" --dir D --points "lat,lon,Name;…" [--route car\|bike\|foot\|none]` | OpenStreetMap tiles and a real route into composition D (`map/`, `map-data.js` in canvas pixels; `--width`/`--height` = the project). Prints `km`, `minutes` and per-stop `legs` to put on screen. Needs network; the render then needs none. Coordinates come from the user, the brief or a source you name, never from memory |
-| `$P/examples/` | Raw material, each lint-clean: `keyword-pop` (serif lead-in + bold keyword), `stat-counter` (number counts up, line draws), `cursor-click` (pointer lands and clicks), `paper-card` (full-frame card turns in like a page, lines build on words), `checklist-card`, `bar-chart` (bars rise on their words, values count), `cost-table` (rows land, the total counts to the sum), `timeline` (a day plan or history lights up stop by stop), `map-route` (full-frame map, the route draws with a glow, pins pop as it reaches them; run `osm-map` on the copy first). The data widgets take their rows as a JSON string with an `at` per row: the second from the overlay's start when that row lands on its word |
+| `$P/examples/` | Raw material, each lint-clean: `keyword-pop` (serif lead-in + bold keyword), `stat-counter` (number counts up, line draws), `cursor-click` (pointer lands and clicks), `paper-card` (full-frame card turns in like a page, lines build on words), `checklist-card`, `bar-chart` (bars rise on their words, values count), `cost-table` (rows land, the total counts to the sum), `timeline` (a day plan or history lights up stop by stop), `calendar` (good months of a year, or days of one month with `mode` days, light up with a legend of notes), `map-route` (full-frame map, the route draws with a glow, pins pop as it reaches them; run `osm-map` on the copy first). The data widgets take their rows as a JSON list with an `at` per row: the second from the overlay's start when that row lands on its word |
 
 When `bin/hf` exits 3 or the render says `dependency_missing`, the user chooses **Install Dependencies…** for
 HyperFrames Graphics in Plugins (you cannot); say so and fall back to native text.
@@ -49,20 +49,18 @@ HyperFrames Graphics in Plugins (you cannot); say so and fall back to native tex
    `--against`. Check: the words read at phone size, the face stays clear (`bashcut media subjects` boxes), nothing
    sits in the platform's bottom band (`bashcut platforms get <id>` › safe zones), Vietnamese tone marks render (a
    font without them falls back to another face mid-word). Fix and look again; two or three rounds is normal.
-4. **Render**: `bashcut plugins invoke graphics.render --params '{"composition":"/abs/<project>/graphics/<name>",
-   "fps":30,"variables":{…},"name":"<name>"}'`, then `bashcut jobs wait <job>`. The result has `path`, `frames`,
-   `bytes`, `renderSeconds` and `lint`; fix lint errors, they usually mean a frame is wrong. A 1080×1920 card of
-   3–5 s renders in about 10–15 s and is 0.2–1.5 MB; a full-frame map of 6 s takes about 1 min and 20 MB. One
-   render runs at a time ("graphics.render is already running"): wait for each job before starting the next.
-5. **Place**: `bashcut library add --kind sticker --name "<Name>" --file <path>` (keeps the alpha), then
-   `bashcut library place <id> --at-frame <W − entrance frames> --size 1 --position 0.5,0.5 --base-rev N` (the
-   composition is the full canvas; its layout lives in the HTML). Not `--position center`: a named spot keeps a
-   sticker inside the safe area, which shifts a full-canvas one up and left on a vertical frame and leaves a strip
-   of the picture below showing at the right and bottom edges. A full-frame card goes the same way and covers the
-   picture while the voice continues underneath.
+4. **Render and place** in one call:
+   `"$P/bin/graphic" place <project>/graphics/<name> --at-frame <W − entrance frames> [--duration N] --set title=… --variables '{"rows":[…]}'`.
+   It renders at the project's fps, places the alpha .mov full canvas on the Overlay layer and prints `{item, media,
+   frames, path, brand, lint?}`; fix lint errors. `--set` is typed by the declarations (undeclared ids are refused);
+   lists go in `--variables` as JSON. A 3–5 s card takes 10–15 s, a 6 s map about 1 min; one render runs at a time.
+   `--dry-run` prints the request (brand applied) without rendering.
+5. **Change it later**: `"$P/bin/graphic" rerender <item> --set total=…` (`--unset k` drops an override) renders
+   again from the recorded inputs and points every use at the new file as one edit. An item that played the whole
+   graphic follows the new length (the result's `note` says so); `--keep-length` keeps lengths.
 6. **Check in BashCut**: `bashcut ui frame W --phone` on the landing frame and `bashcut review window W --span 12`
-   across the entrance (it also shows the words heard there);
-   after re-cutting that range, re-read the words and move or re-render the graphic.
+   across the entrance (it also shows the words heard there); after re-cutting that range, re-read the words and
+   move it or `rerender` it with the new `at`s.
 
 ## 3. Composition rules (or frames come out wrong)
 
@@ -82,7 +80,16 @@ HyperFrames Graphics in Plugins (you cannot); say so and fall back to native tex
   or table from a source carries its source line (`bar-chart` › `source`). Illustrative numbers are said to be
   illustrative, in the words or on the card.
 
-## 4. Moves that combine a graphic with BashCut
+## 4. Brand
+
+`place` and `rerender` fill the standard variables a composition declares from the project's brand (`project get`
+› `brand`): `accent`, `background`, `text`, `secondary` (palette), `headingFont`, `bodyFont` (fonts), `disclosure`;
+`--set` wins. Every example uses them (copy the "Brand look" lines); declare the same ids in your own compositions.
+After a brand change, `rerender --all --brand` restyles every placed graphic in one edit. Fonts: a family or
+PostScript name on this Mac, `System-<Weight>`, or a project font (`bashcut fonts import` a .ttf/.otf, not .ttc),
+copied into the composition's `fonts/`.
+
+## 5. Moves that combine a graphic with BashCut
 
 Footage stays in BashCut (editable, re-cut without re-rendering); compositions draw only graphics.
 
@@ -104,7 +111,7 @@ Footage stays in BashCut (editable, re-cut without re-rendering); compositions d
 - **A screen or app page**: build it in HTML around the user's own screenshot or thumbnail; never draw a real
   brand's logo or interface from memory and present it as theirs.
 
-## 5. The catalog
+## 6. The catalog
 
 `hf catalog cursor --json`, `hf catalog --tag transition`, `--type component`. Blocks are whole scenes; components
 are parts to mount. The registry lives in the HyperFrames repository (Apache-2.0). Leave out items built around a

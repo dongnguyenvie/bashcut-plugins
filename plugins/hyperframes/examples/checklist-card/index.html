@@ -2,9 +2,13 @@
 <!-- A checklist card over footage whose rows tick one by one (items is a JSON string array). Transparent,
      1080×1920, 4 s. Raw material: change the card, the rows, the ticks and the timing for the video. -->
 <html lang="en" data-composition-variables='[
-  {"id":"title","type":"string","label":"Title","default":"Packing list"},
-  {"id":"items","type":"string","label":"Items (JSON array)","default":"[\"Passport\",\"Charger\",\"Rain jacket\"]"},
-  {"id":"accent","type":"color","label":"Tick colour","default":"#FFD400"}
+  {"id": "title", "type": "string", "label": "Title", "default": "Packing list"},
+  {"id": "items", "type": "string", "label": "Items (JSON array)", "default": "[\"Passport\",\"Charger\",\"Rain jacket\"]"},
+  {"id": "accent", "type": "color", "label": "Tick colour", "default": "#FFD400"},
+  {"id": "background", "type": "color", "label": "Card colour", "default": "#0E1016"},
+  {"id": "text", "type": "color", "label": "Text colour", "default": "#FFFFFF"},
+  {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -12,15 +16,17 @@
     <script src="gsap.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
-      #root { position: relative; width: 1080px; height: 1920px; font-family: "Helvetica Neue", Arial, sans-serif; }
+      #root { position: relative; width: 1080px; height: 1920px; font-family: var(--body-font), Arial, sans-serif; }
       #card { position: absolute; left: 90px; top: 520px; width: 900px; padding: 56px 64px; border-radius: 36px;
-        background: rgba(14, 16, 22, 0.82); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); color: #fff; }
-      #title { font-size: 64px; font-weight: 800; margin-bottom: 36px; letter-spacing: -0.02em; }
+        background: color-mix(in srgb, var(--background) 82%, transparent); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        color: var(--text); }
+      #title { font-family: var(--heading-font), Arial, sans-serif; font-size: 64px; font-weight: 800; margin-bottom: 36px; letter-spacing: -0.02em; }
       .row { display: flex; align-items: center; gap: 28px; font-size: 52px; font-weight: 600; margin: 22px 0; }
       .box { width: 64px; height: 64px; border-radius: 16px; border: 6px solid; position: relative; flex: none; }
       .tick { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-        font-size: 48px; color: #111; border-radius: 10px; }
+        font-size: 48px; color: var(--background); border-radius: 10px; }
     </style>
   </head>
   <body>
@@ -29,6 +35,19 @@
     </div>
     <script>
       const v = window.__hyperframes.getVariables();
+      // Brand look (bin/graphic fills accent, background, text, secondary and the fonts from the project's brand). A
+      // font is a family or PostScript name on this Mac, System-<Weight> (San Francisco) or a font file in this folder.
+      const look = document.documentElement.style;
+      for (const key of ["accent", "background", "text", "secondary"]) if (v[key]) look.setProperty(`--${key}`, v[key]);
+      const faces = document.createElement("style");
+      for (const [key, slot] of [["headingFont", "--heading-font"], ["bodyFont", "--body-font"]]) {
+        const name = String(v[key] ?? "").trim();
+        if (!name) continue;
+        const file = /\.(ttf|otf|woff2?)$/i.test(name);
+        if (!name.startsWith("System-")) faces.textContent += `@font-face { font-family: "${key}"; src: ${file ? `url("${name}")` : `local("${name}")`}; }`;
+        look.setProperty(slot, name.startsWith("System-") ? "system-ui" : file ? `"${key}"` : `"${name}", "${key}"`);
+      }
+      document.head.appendChild(faces);
       document.getElementById("title").textContent = v.title;
       const card = document.getElementById("card");
       for (const text of JSON.parse(v.items)) {

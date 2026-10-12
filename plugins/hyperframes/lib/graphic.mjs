@@ -1,0 +1,458 @@
+// bin/graphic: one call that renders a HyperFrames composition and places it, and one that renders it again when its
+// data or the project's brand changes, so an agent never repeats render → wait → library add → place by hand.
+//
+//   place D [--at-frame F] [--duration N] [--track T] [--set k=v …] [--variables JSON] [--name N] [--fps N]
+//           [--codec hevc|prores] [--no-brand] [--dry-run]
+//     Renders composition folder D with graphics.render, waits, adds the .mov as a sticker and places it full canvas
+//     (size 1 at 0.5,0.5) on the Overlay layer, then records the render inputs on the placed media
+//     (media.data.graphics, setMediaData). Prints {item, media, track, atFrame, frames, path, rev, brand, …}.
+//   rerender ITEM|MEDIA|--all [--set k=v …] [--unset k …] [--variables JSON] [--fps N] [--codec C] [--name N]
+//            [--brand | --no-brand] [--keep-length] [--dry-run]
+//     Reads the recorded inputs, applies the changes and the current brand, renders again and, as ONE timeline
+//     apply, adds the new movie and points every item that used the old one at it (setSource), keeping each item's
+//     in-point. An item that played the whole old render plays the whole new one (its end moves; the result lists
+//     the length change); --keep-length keeps every length (cut to the new render when it is shorter).
+//
+// Variables: --set values are typed by the composition's declarations (number, boolean, string…); --variables takes
+// a JSON object (a list or object given for a string variable is stringified). An id the composition does not
+// declare is refused. Brand: the project's `brand` (bashcut project get) fills the standard ids the composition
+// declares — accent, background, text, secondary (palette), headingFont, bodyFont (fonts), disclosure — and
+// explicit values win. A brand font in the project's fonts folder is copied into the composition's fonts/ folder.
+// Uses $BASHCUT_CLI, else `bashcut` on PATH.
+import { spawnSync } from "node:child_process";
+import { randomBytes, randomUUID } from "node:crypto";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+export class UsageError extends Error {}
+
+const BRAND_MAP = {
+    accent: ["palette", "accent"], background: ["palette", "background"], text: ["palette", "text"],
+    secondary: ["palette", "secondary"], headingFont: ["fonts", "heading"], bodyFont: ["fonts", "body"],
+    disclosure: ["disclosure"],
+};
+export const BRAND_IDS = Object.keys(BRAND_MAP);
+const FLAGS = new Set(["no-brand", "brand", "keep-length", "dry-run", "all"]);
+const LISTS = new Set(["set", "unset"]);
+const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "name", "fps", "codec"]);
+
+/** argv (after the node script) → {command, target, options}; options.set/unset are lists. */
+export function parseArgs(argv) {
+    const [command, ...rest] = argv;
+    if (!["place", "rerender"].includes(command)) {
+        throw new UsageError("usage: graphic place DIR [--at-frame F] [--set k=v …] | graphic rerender ITEM|MEDIA|--all [--set k=v …]");
+    }
+    const options = { set: [], unset: [] };
+    let target;
+    for (let i = 0; i < rest.length; i += 1) {
+        const word = rest[i];
+        if (!word.startsWith("--")) {
+            if (target !== undefined) throw new UsageError(`unexpected argument ${word}`);
+            target = word;
+            continue;
+        }
+        let name = word.slice(2);
+        let value;
+        const eq = name.indexOf("=");
+        if (eq > 0) [name, value] = [name.slice(0, eq), name.slice(eq + 1)];
+        if (FLAGS.has(name)) {
+            options[name] = true;
+            continue;
+        }
+        if (!LISTS.has(name) && !OPTIONS.has(name)) throw new UsageError(`unknown option --${name}`);
+        if (value === undefined) {
+            if (i + 1 >= rest.length) throw new UsageError(`--${name} needs a value`);
+            value = rest[(i += 1)];
+        }
+        if (LISTS.has(name)) options[name].push(value);
+        else options[name] = value;
+    }
+    for (const key of ["at-frame", "duration", "fps"]) {
+        if (options[key] === undefined) continue;
+        const number = Number(options[key]);
+        if (!Number.isInteger(number) || number < (key === "at-frame" ? 0 : 1)) throw new UsageError(`--${key} must be a whole number`);
+        options[key] = number;
+    }
+    if (options.codec !== undefined && !["hevc", "prores"].includes(options.codec)) throw new UsageError('--codec is "hevc" or "prores"');
+    if (options.brand && options["no-brand"]) throw new UsageError("--brand and --no-brand together");
+    if (command === "place") {
+        if (!target) throw new UsageError("place needs the composition folder");
+        for (const key of ["all", "unset", "keep-length", "brand"]) {
+            if (key === "unset" ? options.unset.length : options[key]) throw new UsageError(`--${key} is for rerender`);
+        }
+    } else {
+        if (!target && !options.all) throw new UsageError("rerender needs an item or media id, or --all");
+        if (target && options.all) throw new UsageError("give an id or --all, not both");
+        for (const key of ["at-frame", "duration", "track"]) if (options[key] !== undefined) throw new UsageError(`--${key} is for place`);
+    }
+    if (options.variables !== undefined) {
+        try {
+            options.variables = JSON.parse(options.variables);
+        } catch {
+            throw new UsageError("--variables must be a JSON object");
+        }
+        if (typeof options.variables !== "object" || options.variables === null || Array.isArray(options.variables)) {
+            throw new UsageError("--variables must be a JSON object");
+        }
+    }
+    return { command, target, options };
+}
+
+/** The composition's declarations and canvas from its index.html. */
+export function readComposition(dir) {
+    const page = join(dir, "index.html");
+    if (!existsSync(page)) throw new Error(`${dir} has no index.html`);
+    const html = readFileSync(page, "utf8");
+    const match = /data-composition-variables='([\s\S]*?)'/.exec(html);
+    let declared = [];
+    if (match) {
+        try {
+            declared = JSON.parse(match[1].replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&"));
+        } catch (error) {
+            throw new Error(`data-composition-variables in ${page} is not JSON: ${error.message}`);
+        }
+    }
+    const number = (name) => Number(new RegExp(`data-composition-id="main"[^>]*\\bdata-${name}="([\\d.]+)"`).exec(html)?.[1]);
+    return { declared, width: number("width"), height: number("height"), duration: number("duration") };
+}
+
+/** Explicit values from --set and --variables, typed by the declarations; unknown ids fail. */
+export function explicitVariables(declared, sets = [], variables = {}) {
+    const types = Object.fromEntries(declared.map((d) => [d.id, d.type]));
+    const known = () => Object.keys(types).join(", ") || "none";
+    const out = {};
+    const put = (id, value, fromText) => {
+        const type = types[id];
+        if (!type) throw new UsageError(`the composition declares no variable ${id} (it has: ${known()})`);
+        if (type === "number") {
+            const number = typeof value === "number" ? value : Number(value);
+            if (!Number.isFinite(number) || (fromText && String(value).trim() === "")) throw new UsageError(`${id} must be a number`);
+            out[id] = number;
+        } else if (type === "boolean") {
+            const text = String(value).toLowerCase();
+            if (typeof value === "boolean") out[id] = value;
+            else if (["true", "1", "yes", "on"].includes(text)) out[id] = true;
+            else if (["false", "0", "no", "off"].includes(text)) out[id] = false;
+            else throw new UsageError(`${id} must be true or false`);
+        } else {
+            out[id] = typeof value === "string" ? value : JSON.stringify(value);
+        }
+    };
+    for (const [id, value] of Object.entries(variables)) put(id, value, false);
+    for (const pair of sets) {
+        const eq = pair.indexOf("=");
+        if (eq < 1) throw new UsageError(`--set takes key=value, got ${pair}`);
+        put(pair.slice(0, eq), pair.slice(eq + 1), true);
+    }
+    return out;
+}
+
+/** The brand's values for the standard ids this composition declares. */
+export function brandVariables(brand, declared) {
+    if (!brand || typeof brand !== "object") return {};
+    const ids = new Set(declared.map((d) => d.id));
+    const out = {};
+    for (const [id, path] of Object.entries(BRAND_MAP)) {
+        if (!ids.has(id)) continue;
+        const value = path.reduce((node, key) => (node && typeof node === "object" ? node[key] : undefined), brand);
+        if (typeof value === "string" && value.trim()) out[id] = value.trim();
+    }
+    return out;
+}
+
+/** Inputs recorded on a placed graphic's media, merged with a rerender's changes. */
+export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, name, brand } = {}) {
+    const variables = { ...(recorded.variables ?? {}), ...explicit };
+    for (const id of unset) delete variables[id];
+    return {
+        composition: recorded.composition,
+        variables,
+        fps: fps ?? recorded.fps,
+        codec: codec ?? recorded.codec ?? "hevc",
+        name: name ?? recorded.name,
+        brand: brand ?? recorded.brand ?? true,
+    };
+}
+
+function frameRate(value) {
+    if (Array.isArray(value)) return value[0] / (value[1] || 1);
+    return Number(value) || 30;
+}
+
+/** A file name graphics.render accepts. */
+export function safeName(text) {
+    const cleaned = String(text).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D")
+        .replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[^A-Za-z0-9]+/, "").slice(0, 80);
+    return cleaned || "graphic";
+}
+
+/** A path BashCut stores: relative to the project when the render landed in its generated/ folder. */
+export function projectPath(path) {
+    const index = path.indexOf("/generated/plugins/");
+    return index > 0 ? path.slice(index + 1) : path;
+}
+
+/**
+ * The ops of one rerender: add the new movie (alpha), point every item of `oldMedia` at it, fix lengths, record
+ * the inputs. `render` is graphics.render's result; returns {ops, items, media}.
+ */
+export function rerenderOps(project, oldMedia, render, inputs, { keepLength = false, mediaId = randomUUID().toUpperCase() } = {}) {
+    const projectFps = frameRate(project.format?.fps);
+    const toProject = (frames, fps) => Math.floor((frames / fps) * projectFps + 1e-6);
+    const old = (project.media ?? []).find((m) => m.id === oldMedia);
+    const oldLength = old ? toProject(old.frames ?? 0, frameRate(old.fps)) : 0;
+    const newLength = toProject(render.frames, render.fps);
+    const ops = [{
+        op: "addMedia",
+        media: {
+            id: mediaId, path: projectPath(render.path), kind: "video", fps: [render.fps, 1], frames: render.frames,
+            width: render.width, height: render.height, hasAudio: false, alpha: true,
+        },
+    }];
+    const items = [];
+    for (const track of project.tracks ?? []) {
+        for (const item of track.items ?? []) {
+            if (item.media !== oldMedia) continue;
+            const at = item.at ?? 0;
+            const length = item.dur ?? 0;
+            const sourceIn = Math.min(item.in ?? 0, Math.max(0, newLength - 1));
+            ops.push({ op: "setSource", item: item.id, media: mediaId, sourceIn });
+            const playedAll = (item.in ?? 0) + length >= oldLength - 1;
+            let next = length;
+            if (!keepLength && playedAll) next = newLength - sourceIn;
+            next = Math.max(1, Math.min(next, newLength - sourceIn));
+            const entry = { item: item.id, track: track.id, frames: next };
+            if (next !== length) {
+                ops.push({ op: "trim", item: item.id, edge: "end", toFrame: at + next });
+                entry.from = length;
+            }
+            items.push(entry);
+        }
+    }
+    if (items.length === 0) throw new Error(`no timeline item uses media ${oldMedia}`);
+    ops.push({ op: "setMediaData", media: mediaId, patch: { graphics: record(inputs, render) } });
+    return { ops, items, media: mediaId, length: newLength };
+}
+
+function record(inputs, render) {
+    return {
+        composition: inputs.composition, variables: inputs.variables, fps: inputs.fps, codec: inputs.codec,
+        name: inputs.name, brand: inputs.brand, frames: render.frames,
+    };
+}
+
+// MARK: Talking to BashCut
+
+function cli(args) {
+    const program = process.env.BASHCUT_CLI || "bashcut";
+    const out = spawnSync(program, args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
+    if (out.error) throw new Error(`cannot run ${program}: ${out.error.message}`);
+    if (out.status !== 0) {
+        const detail = (out.stderr || out.stdout || "").trim();
+        throw new Error(`bashcut ${args.slice(0, 2).join(" ")} failed: ${detail.slice(0, 1500)}`);
+    }
+    const text = out.stdout.trim();
+    try {
+        return text ? JSON.parse(text) : null;
+    } catch {
+        throw new Error(`bashcut ${args.slice(0, 2).join(" ")} printed something that is not JSON: ${text.slice(0, 300)}`);
+    }
+}
+
+function applyOps(ops, baseRev, label) {
+    const folder = mkdtempSync(join(tmpdir(), "bashcut-graphic-"));
+    try {
+        const file = join(folder, "ops.json");
+        writeFileSync(file, JSON.stringify(ops));
+        return cli(["timeline", "apply", file, "--base-rev", String(baseRev), "--label", label]);
+    } finally {
+        rmSync(folder, { recursive: true, force: true });
+    }
+}
+
+/** Brand fonts: a font in the project's fonts/ folder is copied next to the composition (Chrome loads it by file). */
+function resolveFonts(variables, dir, warnings) {
+    const fontIds = ["headingFont", "bodyFont"].filter((id) => variables[id] && !variables[id].startsWith("System-")
+        && !/\.(ttf|otf|woff2?)$/i.test(variables[id]));
+    if (fontIds.length === 0) return;
+    let fonts = [];
+    try {
+        fonts = cli(["fonts", "list", "--project"]) ?? [];
+    } catch {
+        return;
+    }
+    let root;
+    for (const id of fontIds) {
+        const font = fonts.find((f) => f.file && (f.name === variables[id] || f.family === variables[id]));
+        if (!font) continue;
+        if (/\.ttc$/i.test(font.file)) {
+            warnings.push(`${variables[id]} is in a .ttc collection, which the composition cannot load; it falls back to the design font`);
+            continue;
+        }
+        root ??= dirname(cli(["context", "get"])?.project ?? "");
+        const source = join(root, "fonts", font.file);
+        if (!existsSync(source)) continue;
+        mkdirSync(join(dir, "fonts"), { recursive: true });
+        copyFileSync(source, join(dir, "fonts", font.file));
+        variables[id] = `fonts/${font.file}`;
+    }
+}
+
+function resolveVariables(inputs, project, warnings) {
+    const composition = readComposition(inputs.composition);
+    const fromBrand = inputs.brand ? brandVariables(project.brand, composition.declared) : {};
+    const explicitIds = new Set(Object.keys(inputs.variables));
+    const applied = Object.keys(fromBrand).filter((id) => !explicitIds.has(id));
+    const variables = { ...fromBrand, ...inputs.variables };
+    resolveFonts(variables, inputs.composition, warnings);
+    const width = project.format?.width;
+    const height = project.format?.height;
+    if (composition.width && width && (composition.width !== width || composition.height !== height)) {
+        warnings.push(`the composition is ${composition.width}×${composition.height} but the project is ${width}×${height}`);
+    }
+    return { variables, brand: applied };
+}
+
+function renderNow(inputs, variables, dryRun) {
+    const params = { composition: inputs.composition, fps: inputs.fps, codec: inputs.codec, variables, name: inputs.name };
+    if (dryRun) return { dryRun: params };
+    const started = cli(["plugins", "invoke", "graphics.render", "--params", JSON.stringify(params)]);
+    const job = started?.job;
+    if (!job) throw new Error(`graphics.render did not start a job: ${JSON.stringify(started)}`);
+    for (let round = 0; round < 60; round += 1) {
+        const waited = cli(["jobs", "wait", job, "--done", "--timeout", "110"]);
+        const state = waited?.job?.state;
+        if (state === "completed") {
+            const result = waited.job.result ?? {};
+            const render = result.result ?? result;
+            if (!render.path) throw new Error(`graphics.render finished without a file: ${JSON.stringify(result).slice(0, 500)}`);
+            return render;
+        }
+        if (state === "failed" || state === "cancelled") throw new Error(`graphics.render ${state}: ${waited.job.error ?? "no detail"}`);
+    }
+    throw new Error(`graphics.render job ${job} did not finish`);
+}
+
+function lintNote(render, out) {
+    if (render.lint && (render.lint.errors || render.lint.warnings)) {
+        out.lint = { errors: render.lint.errors, warnings: render.lint.warnings, findings: (render.lint.findings ?? []).slice(0, 3) };
+    }
+}
+
+function place(target, options) {
+    const dir = resolve(target);
+    if (!existsSync(dir) || !statSync(dir).isDirectory()) throw new UsageError(`${dir} is not a composition folder`);
+    const declared = readComposition(dir).declared;
+    const project = cli(["project", "get"]) ?? {};
+    const name = safeName(options.name ?? basename(dir));
+    const inputs = {
+        composition: dir, variables: explicitVariables(declared, options.set, options.variables), name,
+        fps: options.fps ?? Math.round(frameRate(project.format?.fps)), codec: options.codec ?? "hevc",
+        brand: !options["no-brand"],
+    };
+    const warnings = [];
+    const { variables, brand } = resolveVariables(inputs, project, warnings);
+    const render = renderNow(inputs, variables, options["dry-run"]);
+    if (render.dryRun) return { ...render.dryRun, brand, ...(warnings.length ? { warnings } : {}) };
+    const id = `graphic-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "card"}-${randomBytes(3).toString("hex")}`;
+    const added = cli(["library", "add", "--kind", "sticker", "--name", name, "--file", render.path, "--id", id]);
+    const libraryId = added?.id ?? id;
+    const rev = cli(["project", "get"])?.rev;
+    const args = ["library", "place", libraryId, "--size", "1", "--position", "0.5,0.5", "--base-rev", String(rev)];
+    if (options["at-frame"] !== undefined) args.push("--at-frame", String(options["at-frame"]));
+    if (options.duration !== undefined) args.push("--duration", String(options.duration));
+    if (options.track) args.push("--track", options.track);
+    const placed = cli(args);
+    const out = {
+        item: placed.item, media: placed.media, track: placed.track, atFrame: options["at-frame"] ?? null,
+        frames: placed.duration, path: render.path, rev: placed.rev, brand,
+    };
+    try {
+        const recorded = applyOps([{ op: "setMediaData", media: placed.media, patch: { graphics: record(inputs, render) } }],
+            placed.rev, "Record graphic inputs");
+        out.rev = recorded?.rev ?? out.rev;
+    } catch (error) {
+        warnings.push(`placed, but the render inputs were not recorded (rerender will not find them): ${error.message}`);
+    }
+    if (placed.note) warnings.push(placed.note);
+    lintNote(render, out);
+    if (warnings.length) out.warnings = warnings;
+    return out;
+}
+
+function rerender(target, options) {
+    const project = cli(["project", "get"]) ?? {};
+    const media = project.media ?? [];
+    const used = new Set((project.tracks ?? []).flatMap((t) => (t.items ?? []).map((i) => i.media)).filter(Boolean));
+    let targets;
+    if (options.all) {
+        targets = media.filter((m) => m.data?.graphics && used.has(m.id)).map((m) => m.id);
+        if (targets.length === 0) throw new Error("no placed graphic has recorded inputs (place them with bin/graphic place)");
+    } else {
+        const item = (project.tracks ?? []).flatMap((t) => t.items ?? []).find((i) => i.id === target);
+        const id = item ? item.media : target;
+        const found = media.find((m) => m.id === id);
+        if (!found) throw new Error(`${target} is neither a timeline item nor a media of this project`);
+        if (!found.data?.graphics) throw new Error(`${target} has no recorded render inputs (it was not placed with bin/graphic place)`);
+        targets = [id];
+    }
+    const warnings = [];
+    const renders = [];
+    for (const id of targets) {
+        const recorded = media.find((m) => m.id === id).data.graphics;
+        if (!recorded.composition || !existsSync(join(recorded.composition, "index.html"))) {
+            throw new Error(`the composition of ${id} is gone: ${recorded.composition}`);
+        }
+        const declared = readComposition(recorded.composition).declared;
+        const unknown = options.unset.filter((key) => !declared.some((d) => d.id === key));
+        if (unknown.length && !options.all) throw new UsageError(`the composition declares no variable ${unknown.join(", ")}`);
+        // With --all, a change applies to the graphics that declare it.
+        const ids = new Set(declared.map((d) => d.id));
+        const sets = options.all ? options.set.filter((pair) => ids.has(pair.split("=")[0])) : options.set;
+        const given = options.all && options.variables
+            ? Object.fromEntries(Object.entries(options.variables).filter(([key]) => ids.has(key))) : options.variables;
+        const inputs = mergeInputs(recorded, {
+            explicit: explicitVariables(declared, sets, given), unset: options.unset, fps: options.fps,
+            codec: options.codec, name: options.name && safeName(options.name),
+            brand: options.brand ? true : options["no-brand"] ? false : undefined,
+        });
+        const { variables, brand } = resolveVariables(inputs, project, warnings);
+        const render = renderNow(inputs, variables, options["dry-run"]);
+        renders.push({ id, inputs, render, brand });
+    }
+    if (options["dry-run"]) return { graphics: renders.map((r) => ({ media: r.id, ...r.render.dryRun, brand: r.brand })) };
+    const fresh = cli(["project", "get"]) ?? {};
+    const ops = [];
+    const graphics = [];
+    for (const { id, inputs, render, brand } of renders) {
+        const plan = rerenderOps(fresh, id, render, inputs, { keepLength: options["keep-length"] });
+        ops.push(...plan.ops);
+        const entry = { media: plan.media, replaced: id, path: render.path, frames: plan.length, items: plan.items, brand };
+        const changed = plan.items.filter((i) => i.from !== undefined);
+        if (changed.length) entry.note = `length changed for ${changed.map((i) => `${i.item} ${i.from}→${i.frames}`).join(", ")} frames`;
+        lintNote(render, entry);
+        graphics.push(entry);
+    }
+    const applied = applyOps(ops, fresh.rev, graphics.length > 1 ? "Re-render graphics" : "Re-render graphic");
+    const out = graphics.length === 1 && !options.all ? { ...graphics[0], rev: applied?.rev } : { graphics, rev: applied?.rev };
+    if (warnings.length) out.warnings = [...new Set(warnings)];
+    return out;
+}
+
+export function main(argv) {
+    try {
+        const { command, target, options } = parseArgs(argv);
+        const result = command === "place" ? place(target, options) : rerender(target, options);
+        process.stdout.write(JSON.stringify(result) + "\n");
+        return 0;
+    } catch (error) {
+        process.stderr.write(JSON.stringify({ error: error.message }) + "\n");
+        return error instanceof UsageError ? 2 : 1;
+    }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+    process.exitCode = main(process.argv.slice(2));
+}

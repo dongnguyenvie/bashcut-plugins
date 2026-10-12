@@ -2,11 +2,14 @@
 <!-- A spoken phrase as type over footage: a small serif lead-in, then the keyword slams in big and bold on its word.
      Transparent, 1080×1920, 2.4 s. Raw material: change fonts, colours, sizes, motion and timing for the video. -->
 <html lang="en" data-composition-variables='[
-  {"id":"lead","type":"string","label":"Lead-in words","default":"one of the"},
-  {"id":"keyword","type":"string","label":"Keyword","default":"Best ways"},
-  {"id":"accent","type":"color","label":"Keyword colour","default":"#E4F53B"},
-  {"id":"centerY","type":"number","label":"Vertical centre (px)","default":1180},
-  {"id":"keywordAt","type":"number","label":"Keyword lands at (s)","default":0.45}
+  {"id": "lead", "type": "string", "label": "Lead-in words", "default": "one of the"},
+  {"id": "keyword", "type": "string", "label": "Keyword", "default": "Best ways"},
+  {"id": "accent", "type": "color", "label": "Keyword colour", "default": "#E4F53B"},
+  {"id": "centerY", "type": "number", "label": "Vertical centre (px)", "default": 1180},
+  {"id": "keywordAt", "type": "number", "label": "Keyword lands at (s)", "default": 0.45},
+  {"id": "text", "type": "color", "label": "Lead-in colour", "default": "#FFFFFF"},
+  {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -14,12 +17,13 @@
     <script src="gsap.min.js"></script>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root { --heading-font: "Helvetica Neue"; --body-font: Georgia; }
       html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
       #root { position: relative; width: 1080px; height: 1920px; }
       #group { position: absolute; left: 60px; right: 60px; display: flex; flex-direction: column; align-items: center; }
-      #lead { font-family: Georgia, "Times New Roman", serif; font-size: 58px; color: #fff; letter-spacing: -0.01em;
+      #lead { font-family: var(--body-font), "Times New Roman", serif; font-size: 58px; color: var(--text); letter-spacing: -0.01em;
         text-shadow: 0 3px 14px rgba(0, 0, 0, 0.55); margin-bottom: -18px; align-self: flex-end; margin-right: 150px; }
-      #keyword { font-family: "Helvetica Neue", Arial, sans-serif; font-weight: 800; font-size: 150px; line-height: 1;
+      #keyword { font-family: var(--heading-font), Arial, sans-serif; font-weight: 800; font-size: 150px; line-height: 1;
         letter-spacing: -0.045em; text-shadow: 0 6px 24px rgba(0, 0, 0, 0.45); white-space: nowrap; }
     </style>
   </head>
@@ -29,6 +33,19 @@
     </div>
     <script>
       const v = window.__hyperframes.getVariables();
+      // Brand look (bin/graphic fills accent, background, text, secondary and the fonts from the project's brand). A
+      // font is a family or PostScript name on this Mac, System-<Weight> (San Francisco) or a font file in this folder.
+      const look = document.documentElement.style;
+      for (const key of ["accent", "background", "text", "secondary"]) if (v[key]) look.setProperty(`--${key}`, v[key]);
+      const faces = document.createElement("style");
+      for (const [key, slot] of [["headingFont", "--heading-font"], ["bodyFont", "--body-font"]]) {
+        const name = String(v[key] ?? "").trim();
+        if (!name) continue;
+        const file = /\.(ttf|otf|woff2?)$/i.test(name);
+        if (!name.startsWith("System-")) faces.textContent += `@font-face { font-family: "${key}"; src: ${file ? `url("${name}")` : `local("${name}")`}; }`;
+        look.setProperty(slot, name.startsWith("System-") ? "system-ui" : file ? `"${key}"` : `"${name}", "${key}"`);
+      }
+      document.head.appendChild(faces);
       document.getElementById("lead").textContent = v.lead;
       const keyword = document.getElementById("keyword");
       keyword.textContent = v.keyword;

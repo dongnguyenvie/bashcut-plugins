@@ -1,0 +1,13 @@
+#!/bin/sh
+# Render a composition and put it on the timeline in one call, and render it again when its data or the brand
+# changes (see lib/graphic.mjs):
+#   bin/graphic place D --at-frame F [--duration N] [--set key=value …] [--variables JSON]
+#   bin/graphic rerender ITEM|MEDIA|--all [--set key=value …] [--unset key] [--variables JSON] [--keep-length]
+# Uses $BASHCUT_CLI when set, else `bashcut` on PATH. Prints one JSON line.
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+if ! node="$("$here/find-node")"; then
+    echo "Node.js 22.19+ is missing: choose Install Dependencies for HyperFrames Graphics in BashCut › Plugins." >&2
+    exit 3
+fi
+exec "$node" "$here/../lib/graphic.mjs" "$@"

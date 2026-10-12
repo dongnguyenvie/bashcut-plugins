@@ -1,6 +1,6 @@
 ---
 name: explainer
-description: Recipe for an explainer in BashCut, vertical by default, made without footage or with little of it — a question and a number as the hook, numbered sections each built around one data widget that builds with the voice (cost table, bar chart, timeline, map route, checklist, counter), a recap and a CTA, one illustration style and frame chrome for the whole video, every number with its source; the review profile for cards that move instead of cutting. Use after bashcut.vlog:plan picked explainer, or when the user wants a topic, place, law, history, science or business idea explained with cards, numbers and a voice. Triggers: "video giải thích", "explainer", "giải thích bằng hình", "video kiến thức", "video infographic", "video thẻ", "lịch sử", "luật", "khoa học", "tin tức", "bất động sản", "tuyến đường".
+description: Recipe for an explainer in BashCut, vertical by default, made without footage or with little of it — a question and a number as the hook, numbered sections each built around one data widget that builds with the voice (cost table, bar chart, timeline, map route, checklist, counter), a recap and a CTA, one illustration style and frame chrome for the whole video, every number with its source; the review profile for cards that move instead of cutting. Use after bashcut.vlog:plan picked explainer, or when the user wants a topic, place, law, history, science or business idea explained with cards, numbers and a voice. Triggers: "video giải thích", "explainer", "giải thích bằng hình", "video kiến thức", "video infographic", "video thẻ", "lịch sử", "luật", "khoa học", "bất động sản", "tuyến đường".
 ---
 
 # Explainer
@@ -22,7 +22,7 @@ reason in the plan.
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
-| Cuts | 0–1.5 hard cuts a minute: scenes change by a card swinging away, a dissolve or a widget building, not by cutting (RC) | a news or promo explainer cuts every 4–4.5 s (12–13 a minute, RC); a calm card piece does not cut at all | `bashcut review shots --summary` → `cutsPerMinute` |
+| Cuts | 0–1.5 hard cuts a minute: scenes change by a card swinging away, a dissolve or a widget building, not by cutting (RC) | news and promos cut every 4–4.5 s (12–13 a minute, RC; `bashcut.vlog:news`, `bashcut.vlog:promo`); a calm card piece does not cut at all | `bashcut review shots --summary` → `cutsPerMinute` |
 | Long shot `maxShotSeconds`, `severities.shot-long` | `shot-long` at `info`: one card stays on screen for a whole section; judge pace by motion, not by shot length (RC) | a sequence of photos does cut; then use the photo hold below | `review shots --summary`; `review shots` → `motion.mean` |
 | Frozen picture `maxStillSeconds`, `severities.still` | 1–2 s, `warning`: nothing is ever still in the references, every picture drifts and every widget builds (RC: still frames 0–14 % in voiced pieces; 14–66 % in the older music-only kits, which read as slides) | a quote or a dense table held to be read may stay still for its reading time | `bashcut review measure`, then `bashcut review picture` (frozen stretches) |
 | Photo or illustration hold | 2–4 s with a Ken Burns drift of 0.3–1.5 % a second (T08 §3); 3–6 s while a line is said over it | a photo with a widget on it holds as long as the widget builds | `bashcut timeline get` → keyframes; `review picture` |
@@ -83,8 +83,9 @@ sits at the top of the 3–8 a minute band (T13 §3) because the widgets are the
 - **A mascot or character** only from the user's own image or a style they approved; no character is invented and
   presented as theirs.
 - **Scene changes**: the widget examples exit by swinging away in 3D; let the next card enter as one leaves
-  (0.3–0.45 s overlap). Between photos, a cross-dissolve of 0.3–0.5 s, the title fading out first, then the picture,
-  then the new title in (RC). No other transition is needed.
+  (0.3–0.45 s overlap). Between full-frame cards on Main, BashCut's `swing` transition does the same swap natively
+  (about 0.3 s, 9 frames at 30 fps, RC). Between photos, a cross-dissolve of 0.3–0.5 s, the title fading out first,
+  then the picture, then the new title in (RC). No other transition is needed.
 
 ## Facts and honesty
 
