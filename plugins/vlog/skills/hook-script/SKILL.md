@@ -77,9 +77,13 @@ Size every line to its window with a **measured** rate, never a fixed table:
 - **Budget per window**: `bashcut narration windows --min-seconds <n> --rate <units per second>` adds how many units fit
   each window. Use the p50 rate for the budget and the p10–p90 spread as the margin (T02 §7), not a fixed ×0.85.
 
-Before anything is measured, these are samples only (T02 §3): Vietnamese about 3–4.5 syllables a second (the old
-165–235 a minute here was unsourced and must be measured); English 2.0–3.5 words a second (150 wpm is common, 210 was
-measured for one creator); Chinese 3–4 characters a second.
+Before anything is measured, these are samples only (T02 §3), a sanity check for a measurement, not a budget.
+Vietnamese with pauses removed (articulation rate) 4.7–5.3 syllables a second (4.74 in Bradlow, Interspeech 2019,
+https://www.isca-archive.org/interspeech_2019/bradlow19b_interspeech.pdf; 5.22 in Pellegrino et al., Language 2011);
+with pauses kept (overall rate) 200–245 syllables a minute (read audiobooks in Vu et al., ACL 2025, PhoAudiobook,
+https://aclanthology.org/2025.acl-short.81.pdf; its words a minute read as syllables, since written Vietnamese
+separates syllables). No study measures vlog speech directly. English 2.0–3.5 words a second (150 wpm is common, 210
+was measured for one creator); Chinese 3–4 characters a second.
 
 When a line does not fit: cut or split its job, or move it to another window. **Never speed the voice up to fit**
 (T02 §4); a mild stretch of up to about 1.1× only after rewriting failed, slow-down to 0.82–0.95× (T10 §3). Leaving
@@ -119,8 +123,11 @@ cut changed either end, update `promise` with a reason.
 
 ## 7. Into the plan, then the script gate
 
-Write the beats as `beats` [{id, section, text}] (text = the exact words to be heard) and the `promise` with `bashcut
-project set-data plan beats.json --merge --base-rev N`. Show the hook options, the story options and the script to the user, then request the script
+Write the beats as `beats` [{id, section, text, job, onScreen, treatment?, source}] (text = the exact words to be
+heard; job from §5; onScreen = the ON SCREEN note as one phrase; treatment, when already clear, one of bc:visual-plan's
+names: speaker, punch-in, own-broll, stock, icon, text, graphic, generated, screen, none; source = where the fact comes
+from, or empty) and the `promise` with `bashcut project set-data plan beats.json --merge --base-rev N`. bc:visual-plan
+turns these into `plan.visuals` rows. Show the hook options, the story options and the script to the user, then request the script
 gate before any voice is made: `bashcut checkpoint request G4 --summary "<hook, story, beats>"` and poll `bashcut
 checkpoint status`. After voiceover and editing, `bashcut script check` shows per beat how much was heard as written
 and where; fix the beats or the edit, not the measurement.
