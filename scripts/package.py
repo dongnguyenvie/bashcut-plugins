@@ -22,7 +22,7 @@ import subprocess
 import sys
 import tempfile
 
-from plugin_manifest import CATEGORIES, skill_problems
+from plugin_manifest import CATEGORIES, manifest_problems, skill_problems
 from registry_tools import load_versions, save_versions, sign, write_registry
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -56,9 +56,14 @@ def manifest_for(slug):
         fail("version must be semantic")
     check_package_versions(folder, manifest["version"])
     build(folder)
-    entrypoint = folder / manifest.get("entrypoint", "")
-    if not os.access(entrypoint, os.X_OK):
-        fail(f"entrypoint {entrypoint} is missing or not executable")
+    problems = manifest_problems(manifest)
+    if problems:
+        fail("plugin.json: " + "; ".join(problems))
+    # A skill or library pack may leave out the entrypoint (host feature skillsOnly): nothing of it ever runs.
+    if manifest.get("entrypoint"):
+        entrypoint = folder / manifest["entrypoint"]
+        if not os.access(entrypoint, os.X_OK):
+            fail(f"entrypoint {entrypoint} is missing or not executable")
     listing = json.loads((folder / "listing.json").read_text()) if (folder / "listing.json").is_file() else {}
     check_localized(manifest, "plugin.json")
     check_dependencies(manifest)
