@@ -70,7 +70,9 @@ this video needs, and when a value broke a block, record it (`bashcut knowledge 
    graphic follows the new length (the result's `note` says so); `--keep-length` keeps lengths.
 6. **Check in BashCut**: `bashcut ui frame W --phone` on the landing frame and `bashcut review window W --span 12`
    across the entrance (it also shows the words heard there); after re-cutting that range, re-read the words and
-   move it or `rerender` it with the new `at`s.
+   move it or `rerender` it with the new `at`s. Several graphics (or the bare footage before placing them): one
+   `bashcut timeline sheet --at F1,F2,F3 --outputs <output>` puts every landing frame on one sheet with the
+   platform's covered zones, one image to read instead of a frame per graphic.
 
 ## 3. Composition rules (or frames come out wrong)
 
