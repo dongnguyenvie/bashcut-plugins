@@ -7,6 +7,8 @@
 //     graphics/<name>-<id>/ and the copy rendered), waits, adds the .mov as a sticker and places it full canvas
 //     (size 1 at 0.5,0.5) on the Overlay layer, then records the render inputs on the placed media
 //     (media.data.graphics, setMediaData). Prints {item, media, track, atFrame, frames, path, rev, brand, …}.
+//     --duration N (frames) is also the composition's length: its root data-duration is set to N while it renders, so
+//     an exit timed on the end plays at the end of the span; rerender keeps that length.
 //   rerender ITEM|MEDIA|--all [--set k=v …] [--unset k …] [--variables JSON] [--fps N] [--codec C] [--name N]
 //            [--brand | --no-brand] [--keep-length] [--dry-run]
 //     Reads the recorded inputs, applies the changes and the current brand, renders again and, as ONE timeline
@@ -198,6 +200,7 @@ export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, n
         codec: codec ?? recorded.codec ?? "hevc",
         name: name ?? recorded.name,
         brand: brand ?? recorded.brand ?? true,
+        ...(recorded.seconds ? { seconds: recorded.seconds } : {}),
     };
 }
 
@@ -265,6 +268,7 @@ function record(inputs, render) {
     return {
         composition: inputs.composition, variables: inputs.variables, fps: inputs.fps, codec: inputs.codec,
         name: inputs.name, brand: inputs.brand, frames: render.frames,
+        ...(inputs.seconds ? { seconds: inputs.seconds } : {}),
     };
 }
 
@@ -431,6 +435,16 @@ function renderNow(inputs, variables, dryRun, page) {
     throw new Error(`graphics.render job ${job} did not finish`);
 }
 
+/** Renders with the page's data-duration set to `inputs.seconds` when it has one (so the exit lands on the end). */
+function renderSpan(inputs, variables, dryRun) {
+    if (dryRun || !inputs.seconds) {
+        const render = renderNow(inputs, variables, dryRun);
+        if (render.dryRun && inputs.seconds) render.dryRun.seconds = inputs.seconds;
+        return render;
+    }
+    return withDuration(inputs.composition, inputs.seconds, () => renderNow(inputs, variables, false));
+}
+
 function lintNote(render, out) {
     if (render.lint && (render.lint.errors || render.lint.warnings)) {
         out.lint = { errors: render.lint.errors, warnings: render.lint.warnings, findings: (render.lint.findings ?? []).slice(0, 3) };
@@ -471,9 +485,15 @@ function place(target, options) {
         fps: options.fps ?? Math.round(frameRate(project.format?.fps)), codec: options.codec ?? "hevc",
         brand: !options["no-brand"],
     };
+    // --duration also sets the composition's length, so its exit plays at the end of the span instead of being cut.
+    if (options.duration !== undefined) {
+        const frames = Number(options.duration);
+        if (!(frames > 0)) throw new UsageError("--duration must be a positive number of frames");
+        inputs.seconds = Math.round((frames / frameRate(project.format?.fps)) * 100) / 100;
+    }
     const warnings = [];
     const { variables, brand } = resolveVariables(inputs, project, warnings);
-    const render = renderNow(inputs, variables, options["dry-run"]);
+    const render = renderSpan(inputs, variables, options["dry-run"]);
     if (render.dryRun) return { ...render.dryRun, brand, ...(warnings.length ? { warnings } : {}) };
     const id = `graphic-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "card"}-${randomBytes(3).toString("hex")}`;
     const added = cli(["library", "add", "--kind", "sticker", "--name", name, "--file", render.path, "--id", id]);
@@ -538,7 +558,7 @@ function rerender(target, options) {
             brand: options.brand ? true : options["no-brand"] ? false : undefined,
         });
         const { variables, brand } = resolveVariables(inputs, project, warnings);
-        const render = renderNow(inputs, variables, options["dry-run"]);
+        const render = renderSpan(inputs, variables, options["dry-run"]);
         renders.push({ id, inputs, render, brand });
     }
     if (options["dry-run"]) return { graphics: renders.map((r) => ({ media: r.id, ...r.render.dryRun, brand: r.brand })) };

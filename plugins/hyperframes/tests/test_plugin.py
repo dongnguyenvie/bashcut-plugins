@@ -285,6 +285,11 @@ if command == "project get":
     out = projects.pop(0) if len(projects) > 1 else projects[0]
 elif command == "plugins invoke":
     entry["params"] = json.loads(option("--params"))
+    import re
+    page = os.path.join(entry["params"]["composition"], "index.html")
+    if os.path.exists(page):
+        found = re.search(r'data-composition-id="main"[^>]*data-duration="([\d.]+)"', open(page).read())
+        entry["pageDuration"] = float(found.group(1)) if found else None
     out = {"job": "job-1", "state": "running"}
 elif command == "jobs wait":
     out = {"job": {"id": "job-1", "state": "completed", "result": {"plugin": "bashcut.hyperframes",
@@ -499,6 +504,23 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertEqual(before, sorted(p.name for p in (ROOT / "examples" / "calendar").iterdir()))  # plugin untouched
         recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
         self.assertEqual(str(rendered), recorded["composition"])  # rerender finds the copy after a plugin update
+
+    def test_place_duration_sets_the_composition_length_and_rerender_keeps_it(self):
+        page = (self.composition / "index.html").read_text()
+        out, calls = self.run_graphic({"projects": [self.project(), self.project(rev=7)]}, "place", str(self.composition),
+                                      "--duration", "75")
+        self.assertEqual(0, out.returncode, out.stderr)
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        self.assertEqual(2.5, invoke["pageDuration"])  # 75 frames at 30 fps, while it rendered
+        self.assertEqual(page, (self.composition / "index.html").read_text())  # put back afterwards
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        self.assertEqual(2.5, recorded["seconds"])
+        media = {**self.recorded_media({}), "data": {"graphics": {**self.recorded_media({})["data"]["graphics"], "seconds": 2.5}}}
+        item = {"id": "item-1", "at": 0, "dur": 75, "media": "media-old", "sourceIn": 0}
+        state = {"projects": [self.project(media=[media], items=[item])]}
+        out, calls = self.run_graphic(state, "rerender", "item-1", "--set", "title=Mới")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual(2.5, next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["pageDuration"])
 
     def test_place_refuses_an_undeclared_variable_before_rendering(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "place", str(self.composition), "--set", "colour=#fff")

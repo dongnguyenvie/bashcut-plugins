@@ -13,7 +13,8 @@ to make it.
 
 ## 1. What you have
 
-`P` is this plugin's folder: two levels above this SKILL.md (`<skill_dir>/../..`).
+`P` is this plugin's folder: `P="$HOME/Library/Application Support/BashCut/Plugins/bashcut.hyperframes"` (where
+BashCut installs it; this SKILL.md may be a copy elsewhere).
 
 | Tool | What it does |
 |---|---|
@@ -60,7 +61,7 @@ this video needs, and when a value broke a block, record it (`bashcut knowledge 
    font without them falls back to another face mid-word). Fix and look again; two or three rounds is normal.
 4. **Render and place** in one call:
    `"$P/bin/graphic" place <project>/graphics/<name> --at-frame <W − entrance frames> [--duration N] --set title=… --variables '{"rows":[…]}'`.
-   It renders at the project's fps, places the alpha .mov full canvas on the Overlay layer and prints `{item, media,
+   `--duration N` (frames) is also the composition's length (its exit lands at the end; no `data-duration` edit). It renders at the project's fps, places the alpha .mov full canvas on the Overlay layer and prints `{item, media,
    frames, path, brand, lint?}`; fix lint errors. `--set` is typed by the declarations (undeclared ids are refused);
    lists go in `--variables` as JSON. A 3–5 s card takes 10–15 s, a 6 s map about 1 min; one render runs at a time.
    `--dry-run` prints the request (brand applied) without rendering.
