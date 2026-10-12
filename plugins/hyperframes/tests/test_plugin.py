@@ -285,6 +285,11 @@ if command == "project get":
     out = projects.pop(0) if len(projects) > 1 else projects[0]
 elif command == "plugins invoke":
     entry["params"] = json.loads(option("--params"))
+    import re
+    page = os.path.join(entry["params"]["composition"], "index.html")
+    if os.path.exists(page):
+        found = re.search(r'data-composition-id="main"[^>]*data-duration="([\d.]+)"', open(page).read())
+        entry["pageDuration"] = float(found.group(1)) if found else None
     out = {"job": "job-1", "state": "running"}
 elif command == "jobs wait":
     out = {"job": {"id": "job-1", "state": "completed", "result": {"plugin": "bashcut.hyperframes",
@@ -317,6 +322,51 @@ state.setdefault("calls", []).append(entry)
 json.dump(state, open(state_path, "w"))
 print(json.dumps(out))
 """
+
+
+class InspectorViewTests(unittest.TestCase):
+    """The Inspector view "graphic": fields for a graphic this plugin rendered, nothing for other items."""
+
+    def view(self, folder, media, values=None, event=None):
+        params = {"view": "graphic", "context": {"selection": {"id": "item-1"}, "media": media},
+                  "values": values or {}, "state": None}
+        if event:
+            params["event"] = event
+        return rpc(folder, "view.event" if event else "view.render", params)["result"]
+
+    def test_other_items_get_an_empty_view(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual([], self.view(folder, {"id": "m1", "kind": "video"})["body"])
+
+    def test_a_rendered_graphic_shows_its_variables_and_a_render_button(self):
+        with tempfile.TemporaryDirectory() as folder:
+            composition = pathlib.Path(folder, "graphics", "lower-third")
+            shutil.copytree(ROOT / "examples" / "lower-third", composition)
+            media = {"id": "m1", "data": {"graphics": {"composition": str(composition), "name": "lower-third",
+                                                       "variables": {"name": "Samantha Abrams", "accent": "#FF3B30"}}}}
+            body = self.view(folder, media)["body"]
+            nodes = {n.get("id"): n for n in body + [c for n in body for c in n.get("children", [])] if n.get("id")}
+            self.assertEqual("Samantha Abrams", nodes["name"]["value"])  # the recorded value, not the default
+            self.assertEqual("Head roaster", nodes["role"]["value"])  # the declared default
+            self.assertEqual("toggle", nodes["glint"]["type"])
+            self.assertEqual("#FF3B30", nodes["accent"]["value"])  # look fields sit in their own section
+            self.assertNotIn("headingFont", nodes)  # fonts come from the brand
+            self.assertEqual("button", nodes["render"]["type"])
+            clicked = self.view(folder, media, values={"name": "Samantha Abrams"}, event={"node": "render", "type": "click"})
+            self.assertIn("Nothing changed.", [n.get("text") for n in clicked["body"]])
+            params = {"view": "graphic", "locale": "vi", "context": {"selection": {"id": "item-1"}, "media": media}}
+            vietnamese = rpc(folder, "view.render", params)["result"]
+            self.assertEqual(("Đồ hoạ", "Render lại"), (vietnamese["title"], vietnamese["body"][-1]["title"]))
+
+    def test_only_edited_fields_are_sent_typed(self):
+        script = ("import('" + (ROOT / "lib" / "inspector.mjs").as_uri() + "').then(({changedVariables}) => {"
+                  "const declared = [{id: 'name', type: 'string', default: 'A'}, {id: 'bottom', type: 'number', default: 520},"
+                  " {id: 'glint', type: 'boolean', default: true}, {id: 'role', type: 'string', default: 'R'}];"
+                  "console.log(JSON.stringify(changedVariables(declared, {name: 'B'},"
+                  " {name: 'B', bottom: '600', glint: false, role: 'R'})));})")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual({"bottom": 600, "glint": False}, json.loads(out.stdout))
 
 
 class GraphicScriptTests(unittest.TestCase):
@@ -484,6 +534,38 @@ class GraphicScriptTests(unittest.TestCase):
         recorded = ops[0]["patch"]["graphics"]
         self.assertEqual({"title", "month", "accent", "items"}, set(recorded["variables"]))  # brand values stay live
         self.assertTrue(recorded["brand"])
+
+    def test_place_renders_a_copy_of_a_plugin_example_in_the_project(self):
+        project_file = self.folder / "project" / "project.bashcut.json"
+        project_file.parent.mkdir()
+        before = sorted(p.name for p in (ROOT / "examples" / "calendar").iterdir())
+        state = {"projects": [self.project(), self.project(rev=7)], "projectFile": str(project_file)}
+        out, calls = self.run_graphic(state, "place", str(ROOT / "examples" / "calendar"), "--set", "title=Tháng đẹp")
+        self.assertEqual(0, out.returncode, out.stderr)
+        rendered = pathlib.Path(next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]["composition"])
+        self.assertEqual(project_file.parent / "graphics", rendered.parent)
+        self.assertTrue(rendered.name.startswith("calendar-"))
+        self.assertTrue((rendered / "index.html").is_file())
+        self.assertEqual(before, sorted(p.name for p in (ROOT / "examples" / "calendar").iterdir()))  # plugin untouched
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        self.assertEqual(str(rendered), recorded["composition"])  # rerender finds the copy after a plugin update
+
+    def test_place_duration_sets_the_composition_length_and_rerender_keeps_it(self):
+        page = (self.composition / "index.html").read_text()
+        out, calls = self.run_graphic({"projects": [self.project(), self.project(rev=7)]}, "place", str(self.composition),
+                                      "--duration", "75")
+        self.assertEqual(0, out.returncode, out.stderr)
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        self.assertEqual(2.5, invoke["pageDuration"])  # 75 frames at 30 fps, while it rendered
+        self.assertEqual(page, (self.composition / "index.html").read_text())  # put back afterwards
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        self.assertEqual(2.5, recorded["seconds"])
+        media = {**self.recorded_media({}), "data": {"graphics": {**self.recorded_media({})["data"]["graphics"], "seconds": 2.5}}}
+        item = {"id": "item-1", "at": 0, "dur": 75, "media": "media-old", "sourceIn": 0}
+        state = {"projects": [self.project(media=[media], items=[item])]}
+        out, calls = self.run_graphic(state, "rerender", "item-1", "--set", "title=Mới")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual(2.5, next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["pageDuration"])
 
     def test_place_refuses_an_undeclared_variable_before_rendering(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "place", str(self.composition), "--set", "colour=#fff")

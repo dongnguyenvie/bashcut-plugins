@@ -5,7 +5,10 @@
 <!-- Pitfalls:
   - bottom under ~420 px puts the plates in the platform's caption and button band; 480–620 is the safe range.
   - side right sits in the platform's button column in the lower half: use it only with bottom ≥ 700 or no buttons.
-  - Names over ~16 characters at nameSize 96 wrap to two lines; drop nameSize to 80–86 rather than let it wrap.
+  - At nameSize 96 one line holds ~14 characters; a longer name shrinks itself to one line down to 80 % of nameSize
+    (~20 characters) and wraps past that: shorten it rather than lower nameSize further.
+  - A role over ~26 characters wraps to two lines and the @handle chip drops to its own row under it; shorten the
+    role ("Head roaster") rather than let three rows stack.
   - Without a role the name plate stands alone and the hold looks long: shorten the duration to ~3 s.
 -->
 <html lang="en" data-composition-variables='[
@@ -50,9 +53,9 @@
         font-family: var(--body-font), Arial, sans-serif; font-size: 58px; font-weight: 650; line-height: 1.2;
         color: var(--background); }
       #lt.right #rolePlate { border-radius: 16px 0 0 16px; padding: 8px 34px 12px 30px; }
-      #handle { padding: 8px 24px 10px; border-radius: 999px; border: 3px solid var(--accent);
+      #handle { padding: 8px 28px 12px; border-radius: 999px; border: 3px solid var(--accent);
         background: color-mix(in srgb, var(--background) 85%, transparent); font-family: var(--body-font), Arial, sans-serif;
-        font-size: 48px; font-weight: 700; line-height: 1.15; color: var(--text); white-space: nowrap; }
+        font-size: 58px; font-weight: 700; line-height: 1.15; color: var(--text); white-space: nowrap; }
     </style>
   </head>
   <body>
@@ -87,7 +90,17 @@
       lt.style.bottom = `${v.bottom}px`;
       const nameEl = document.getElementById("name");
       nameEl.textContent = v.name;
-      nameEl.style.fontSize = `${Math.max(48, Number(v.nameSize) || 96)}px`;
+      // A name that would wrap shrinks to one line, down to 80 % of nameSize; past that it wraps (shorten it instead).
+      const nameSize = Math.max(48, Number(v.nameSize) || 96);
+      function fitName() {
+        for (let size = nameSize; size >= Math.round(nameSize * 0.8); size -= 2) {
+          nameEl.style.fontSize = `${size}px`;
+          if (nameEl.getBoundingClientRect().height < size * 1.17 * 1.5) break;
+        }
+      }
+      fitName();
+      // A font that loads after this script changes the widths; fit again (no timing changes).
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitName);
       const rolePlate = document.getElementById("rolePlate");
       rolePlate.textContent = v.role;
       const hasRole = Boolean(String(v.role ?? "").trim());

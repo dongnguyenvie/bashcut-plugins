@@ -3,6 +3,16 @@
      mode "days" (items is a JSON array of {month or day, to (a span of days), at, note, soft}: at = seconds from the
      start when that cell lights; soft lights it in the secondary colour; notes build a legend under the grid).
      Transparent, 1080×1920, 5.5 s. Raw material: change the card, the cells and the timing for the video. -->
+<!-- Pitfalls:
+  - Custom labels over ~4 characters are cut off in the 104 px legend key, and from ~6 ("January") they widen their
+    column until the grid runs out of the 900 px card; use 3-letter labels ("Jan") or leave labels empty for T1–T12.
+  - months: six one-line notes end the card at ~1480 px, a seventh at ~1540, in the platform's bottom band. days: a
+    month that spans six week rows (August 2026) ends at ~1465 with two notes and ~1640 with four; keep it to two.
+  - A note wraps after ~34 characters (~32 in days mode) and each extra line adds ~48 px; the title wraps after ~26
+    characters at 60 px. Shorten the words before adding notes.
+  - Cells finish popping in at ~0.7 s, so an at earlier than that lights a cell that is still appearing; an at past
+    data-duration − 0.5 (5.0 s at 5.5 s) lights during the swing-out. A "to" span takes 0.05 s per day.
+-->
 <html lang="vi" data-composition-variables='[
   {"id":"title","type":"string","label":"Title","default":"Đà Lạt đẹp nhất tháng nào?"},
   {"id":"subtitle","type":"string","label":"Second line (empty hides it)","default":"Mùa hoa và mùa khô"},

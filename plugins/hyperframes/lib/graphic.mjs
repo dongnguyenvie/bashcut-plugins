@@ -3,9 +3,12 @@
 //
 //   place D [--at-frame F] [--duration N] [--track T] [--set k=v …] [--variables JSON] [--name N] [--fps N]
 //           [--codec hevc|prores] [--no-brand] [--dry-run]
-//     Renders composition folder D with graphics.render, waits, adds the .mov as a sticker and places it full canvas
+//     Renders composition folder D with graphics.render (an example of this plugin is first copied to the project's
+//     graphics/<name>-<id>/ and the copy rendered), waits, adds the .mov as a sticker and places it full canvas
 //     (size 1 at 0.5,0.5) on the Overlay layer, then records the render inputs on the placed media
 //     (media.data.graphics, setMediaData). Prints {item, media, track, atFrame, frames, path, rev, brand, …}.
+//     --duration N (frames) is also the composition's length: its root data-duration is set to N while it renders, so
+//     an exit timed on the end plays at the end of the span; rerender keeps that length.
 //   rerender ITEM|MEDIA|--all [--set k=v …] [--unset k …] [--variables JSON] [--fps N] [--codec C] [--name N]
 //            [--brand | --no-brand] [--keep-length] [--dry-run]
 //     Reads the recorded inputs, applies the changes and the current brand, renders again and, as ONE timeline
@@ -35,7 +38,7 @@
 // Uses $BASHCUT_CLI, else `bashcut` on PATH.
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -197,6 +200,7 @@ export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, n
         codec: codec ?? recorded.codec ?? "hevc",
         name: name ?? recorded.name,
         brand: brand ?? recorded.brand ?? true,
+        ...(recorded.seconds ? { seconds: recorded.seconds } : {}),
     };
 }
 
@@ -264,10 +268,24 @@ function record(inputs, render) {
     return {
         composition: inputs.composition, variables: inputs.variables, fps: inputs.fps, codec: inputs.codec,
         name: inputs.name, brand: inputs.brand, frames: render.frames,
+        ...(inputs.seconds ? { seconds: inputs.seconds } : {}),
     };
 }
 
 // MARK: Talking to BashCut
+
+// Every BashCut call goes through `call`: the bashcut CLI (spawnSync) for bin/graphic, or a runner set with useRunner,
+// such as the plugin's own host channel when the Inspector view renders a graphic again.
+let runner = null;
+
+/** Sends BashCut calls (`["project", "get"]`-style CLI arguments) to `fn(args)` (async) instead of the CLI. */
+export function useRunner(fn) {
+    runner = fn;
+}
+
+async function call(args) {
+    return runner ? runner(args) : cli(args);
+}
 
 function cli(args) {
     const program = process.env.BASHCUT_CLI || "bashcut";
@@ -285,25 +303,25 @@ function cli(args) {
     }
 }
 
-function applyOps(ops, baseRev, label) {
+async function applyOps(ops, baseRev, label) {
     const folder = mkdtempSync(join(tmpdir(), "bashcut-graphic-"));
     try {
         const file = join(folder, "ops.json");
         writeFileSync(file, JSON.stringify(ops));
-        return cli(["timeline", "apply", file, "--base-rev", String(baseRev), "--label", label]);
+        return await call(["timeline", "apply", file, "--base-rev", String(baseRev), "--label", label]);
     } finally {
         rmSync(folder, { recursive: true, force: true });
     }
 }
 
 /** Brand fonts: a font in the project's fonts/ folder is copied next to the composition (Chrome loads it by file). */
-function resolveFonts(variables, dir, warnings) {
+async function resolveFonts(variables, dir, warnings) {
     const fontIds = ["headingFont", "bodyFont"].filter((id) => variables[id] && !variables[id].startsWith("System-")
         && !/\.(ttf|otf|woff2?)$/i.test(variables[id]));
     if (fontIds.length === 0) return;
     let fonts = [];
     try {
-        fonts = cli(["fonts", "list", "--project"]) ?? [];
+        fonts = await call(["fonts", "list", "--project"]) ?? [];
     } catch {
         return;
     }
@@ -315,7 +333,7 @@ function resolveFonts(variables, dir, warnings) {
             warnings.push(`${variables[id]} is in a .ttc collection, which the composition cannot load; it falls back to the design font`);
             continue;
         }
-        root ??= dirname(cli(["context", "get"])?.project ?? "");
+        root ??= dirname((await call(["context", "get"]))?.project ?? "");
         const source = join(root, "fonts", font.file);
         if (!existsSync(source)) continue;
         mkdirSync(join(dir, "fonts"), { recursive: true });
@@ -332,11 +350,11 @@ export function libraryFilePath(item) {
 }
 
 /** Brand logo: when the composition declares `logo`, the kit's logo sticker is copied next to it as brand-logo.<ext>. */
-function resolveLogo(variables, brand, declared, dir, warnings) {
+async function resolveLogo(variables, brand, declared, dir, warnings) {
     if (!declared.some((d) => d.id === "logo") || variables.logo || typeof brand?.logo !== "string") return false;
     let source;
     try {
-        source = libraryFilePath(cli(["library", "get", brand.logo]));
+        source = libraryFilePath(await call(["library", "get", brand.logo]));
     } catch (error) {
         warnings.push(`brand logo ${brand.logo}: ${error.message}`);
         return false;
@@ -364,7 +382,7 @@ export function mascotPose(poses, declared, variables) {
  * Brand mascot: when the composition declares `mascot` (type image), the kit's pose sticker named by `mascotPose`
  * (else "default", else the first) is copied next to it as brand-mascot-<pose>.<ext>.
  */
-function resolveMascot(variables, brand, declared, dir, warnings) {
+async function resolveMascot(variables, brand, declared, dir, warnings) {
     if (!declared.some((d) => d.id === "mascot") || variables.mascot) return false;
     const poses = brand?.mascot;
     const pose = mascotPose(poses, declared, variables);
@@ -374,7 +392,7 @@ function resolveMascot(variables, brand, declared, dir, warnings) {
     }
     let source;
     try {
-        source = libraryFilePath(cli(["library", "get", poses[pose]]));
+        source = libraryFilePath(await call(["library", "get", poses[pose]]));
     } catch (error) {
         warnings.push(`brand mascot ${pose}: ${error.message}`);
         return false;
@@ -389,19 +407,19 @@ function resolveMascot(variables, brand, declared, dir, warnings) {
     return true;
 }
 
-function resolveVariables(inputs, project, warnings) {
+async function resolveVariables(inputs, project, warnings) {
     const composition = readComposition(inputs.composition);
     const fromBrand = inputs.brand ? brandVariables(project.brand, composition.declared) : {};
     const explicitIds = new Set(Object.keys(inputs.variables));
     const applied = Object.keys(fromBrand).filter((id) => !explicitIds.has(id));
     const variables = { ...fromBrand, ...inputs.variables };
-    if (inputs.brand && resolveLogo(variables, project.brand, composition.declared, inputs.composition, warnings)) {
+    if (inputs.brand && await resolveLogo(variables, project.brand, composition.declared, inputs.composition, warnings)) {
         applied.push("logo");
     }
-    if (inputs.brand && resolveMascot(variables, project.brand, composition.declared, inputs.composition, warnings)) {
+    if (inputs.brand && await resolveMascot(variables, project.brand, composition.declared, inputs.composition, warnings)) {
         applied.push("mascot");
     }
-    resolveFonts(variables, inputs.composition, warnings);
+    await resolveFonts(variables, inputs.composition, warnings);
     const width = project.format?.width;
     const height = project.format?.height;
     if (composition.width && width && (composition.width !== width || composition.height !== height)) {
@@ -410,14 +428,14 @@ function resolveVariables(inputs, project, warnings) {
     return { variables, brand: applied };
 }
 
-function renderNow(inputs, variables, dryRun, page) {
+async function renderNow(inputs, variables, dryRun, page) {
     const params = { composition: page ?? inputs.composition, fps: inputs.fps, codec: inputs.codec, variables, name: inputs.name };
     if (dryRun) return { dryRun: params };
-    const started = cli(["plugins", "invoke", "graphics.render", "--params", JSON.stringify(params)]);
+    const started = await call(["plugins", "invoke", "graphics.render", "--params", JSON.stringify(params)]);
     const job = started?.job;
     if (!job) throw new Error(`graphics.render did not start a job: ${JSON.stringify(started)}`);
     for (let round = 0; round < 60; round += 1) {
-        const waited = cli(["jobs", "wait", job, "--done", "--timeout", "110"]);
+        const waited = await call(["jobs", "wait", job, "--done", "--timeout", "110"]);
         const state = waited?.job?.state;
         if (state === "completed") {
             const result = waited.job.result ?? {};
@@ -430,31 +448,70 @@ function renderNow(inputs, variables, dryRun, page) {
     throw new Error(`graphics.render job ${job} did not finish`);
 }
 
+/** Renders with the page's data-duration set to `inputs.seconds` when it has one (so the exit lands on the end). */
+async function renderSpan(inputs, variables, dryRun) {
+    if (dryRun || !inputs.seconds) {
+        const render = await renderNow(inputs, variables, dryRun);
+        if (render.dryRun && inputs.seconds) render.dryRun.seconds = inputs.seconds;
+        return render;
+    }
+    return withDuration(inputs.composition, inputs.seconds, () => renderNow(inputs, variables, false));
+}
+
 function lintNote(render, out) {
     if (render.lint && (render.lint.errors || render.lint.warnings)) {
         out.lint = { errors: render.lint.errors, warnings: render.lint.warnings, findings: (render.lint.findings ?? []).slice(0, 3) };
     }
 }
 
-function place(target, options) {
-    const dir = resolve(target);
-    if (!existsSync(dir) || !statSync(dir).isDirectory()) throw new UsageError(`${dir} is not a composition folder`);
+/**
+ * A composition inside this plugin (an example) is copied into the project's graphics/ folder first: rendering writes
+ * gsap.min.js, brand fonts, logos and (plan) a stretched data-duration next to the page, and the plugin's own folder
+ * must not change (its trust follows its files). The copy is also what rerender finds after a plugin update.
+ * `slot` names the copy; an existing copy is reused as it is (it may have been edited for this project). `projectRoot`
+ * is the project folder or a function that returns it (asked only for a plugin folder).
+ */
+export async function ownComposition(dir, projectRoot, slot) {
+    const plugin = realpathSync(fileURLToPath(new URL("../", import.meta.url)));
+    const real = realpathSync(dir);
+    if (!real.startsWith(plugin + "/")) return dir;
+    if (typeof projectRoot === "function") projectRoot = await projectRoot();
+    if (!projectRoot || projectRoot === ".") return dir;
+    const copy = join(projectRoot, "graphics", safeName(slot));
+    if (!existsSync(join(copy, "index.html"))) {
+        mkdirSync(dirname(copy), { recursive: true });
+        cpSync(real, copy, { recursive: true, filter: (from) => basename(from) !== "gsap.min.js" });
+    }
+    return copy;
+}
+
+async function place(target, options) {
+    const given = resolve(target);
+    if (!existsSync(given) || !statSync(given).isDirectory()) throw new UsageError(`${given} is not a composition folder`);
+    const project = await call(["project", "get"]) ?? {};
+    const name = safeName(options.name ?? basename(given));
+    const dir = options["dry-run"] ? given
+        : await ownComposition(given, async () => dirname((await call(["context", "get"]))?.project ?? ""), `${name}-${randomBytes(3).toString("hex")}`);
     const declared = readComposition(dir).declared;
-    const project = cli(["project", "get"]) ?? {};
-    const name = safeName(options.name ?? basename(dir));
     const inputs = {
         composition: dir, variables: explicitVariables(declared, options.set, options.variables), name,
         fps: options.fps ?? Math.round(frameRate(project.format?.fps)), codec: options.codec ?? "hevc",
         brand: !options["no-brand"],
     };
+    // --duration also sets the composition's length, so its exit plays at the end of the span instead of being cut.
+    if (options.duration !== undefined) {
+        const frames = Number(options.duration);
+        if (!(frames > 0)) throw new UsageError("--duration must be a positive number of frames");
+        inputs.seconds = frames / frameRate(project.format?.fps);
+    }
     const warnings = [];
-    const { variables, brand } = resolveVariables(inputs, project, warnings);
-    const render = renderNow(inputs, variables, options["dry-run"]);
+    const { variables, brand } = await resolveVariables(inputs, project, warnings);
+    const render = await renderSpan(inputs, variables, options["dry-run"]);
     if (render.dryRun) return { ...render.dryRun, brand, ...(warnings.length ? { warnings } : {}) };
     const id = `graphic-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "card"}-${randomBytes(3).toString("hex")}`;
-    const added = cli(["library", "add", "--kind", "sticker", "--name", name, "--file", render.path, "--id", id]);
+    const added = await call(["library", "add", "--kind", "sticker", "--name", name, "--file", render.path, "--id", id]);
     const libraryId = added?.id ?? id;
-    const rev = cli(["project", "get"])?.rev;
+    const rev = (await call(["project", "get"]))?.rev;
     const args = ["library", "place", libraryId, "--size", "1", "--position", "0.5,0.5", "--base-rev", String(rev)];
     if (options["at-frame"] !== undefined) args.push("--at-frame", String(options["at-frame"]));
     if (options.duration !== undefined) args.push("--duration", String(options.duration));
@@ -465,7 +522,7 @@ function place(target, options) {
         frames: placed.duration, path: render.path, rev: placed.rev, brand,
     };
     try {
-        const recorded = applyOps([{ op: "setMediaData", media: placed.media, patch: { graphics: record(inputs, render) } }],
+        const recorded = await applyOps([{ op: "setMediaData", media: placed.media, patch: { graphics: record(inputs, render) } }],
             placed.rev, "Record graphic inputs");
         out.rev = recorded?.rev ?? out.rev;
     } catch (error) {
@@ -477,8 +534,8 @@ function place(target, options) {
     return out;
 }
 
-function rerender(target, options) {
-    const project = cli(["project", "get"]) ?? {};
+export async function rerender(target, options) {
+    const project = await call(["project", "get"]) ?? {};
     const media = project.media ?? [];
     const used = new Set((project.tracks ?? []).flatMap((t) => (t.items ?? []).map((i) => i.media)).filter(Boolean));
     let targets;
@@ -513,12 +570,12 @@ function rerender(target, options) {
             codec: options.codec, name: options.name && safeName(options.name),
             brand: options.brand ? true : options["no-brand"] ? false : undefined,
         });
-        const { variables, brand } = resolveVariables(inputs, project, warnings);
-        const render = renderNow(inputs, variables, options["dry-run"]);
+        const { variables, brand } = await resolveVariables(inputs, project, warnings);
+        const render = await renderSpan(inputs, variables, options["dry-run"]);
         renders.push({ id, inputs, render, brand });
     }
     if (options["dry-run"]) return { graphics: renders.map((r) => ({ media: r.id, ...r.render.dryRun, brand: r.brand })) };
-    const fresh = cli(["project", "get"]) ?? {};
+    const fresh = await call(["project", "get"]) ?? {};
     const ops = [];
     const graphics = [];
     for (const { id, inputs, render, brand } of renders) {
@@ -530,7 +587,7 @@ function rerender(target, options) {
         lintNote(render, entry);
         graphics.push(entry);
     }
-    const applied = applyOps(ops, fresh.rev, graphics.length > 1 ? "Re-render graphics" : "Re-render graphic");
+    const applied = await applyOps(ops, fresh.rev, graphics.length > 1 ? "Re-render graphics" : "Re-render graphic");
     const out = graphics.length === 1 && !options.all ? { ...graphics[0], rev: applied?.rev } : { graphics, rev: applied?.rev };
     if (warnings.length) out.warnings = [...new Set(warnings)];
     return out;
@@ -539,11 +596,11 @@ function rerender(target, options) {
 // MARK: examples
 
 /** The examples (or one) as data: what each draws, its length and the variables it takes besides the brand's. */
-export function examples(name) {
+export async function examples(name) {
     const root = fileURLToPath(new URL("../examples/", import.meta.url));
     const names = readdirSync(root).filter((n) => existsSync(join(root, n, "index.html"))).sort();
     if (name && !names.includes(name)) throw new UsageError(`no example ${name} (there are: ${names.join(", ")})`);
-    return (name ? [name] : names).map((n) => {
+    return Promise.all((name ? [name] : names).map(async (n) => {
         const html = readFileSync(join(root, n, "index.html"), "utf8");
         const about = (/<!--([\s\S]*?)-->/.exec(html)?.[1] ?? "").replace(/\s+/g, " ").trim();
         const { declared, duration } = readComposition(join(root, n));
@@ -556,11 +613,11 @@ export function examples(name) {
         row.brand = declared.filter((d) => BRAND_IDS.includes(d.id) || d.id === "logo" || d.id === "mascot").map((d) => d.id);
         if (name) {
             row.pitfalls = pitfalls(html);
-            const learned = blockLessons(n);
+            const learned = await blockLessons(n);
             if (learned) row.lessons = learned;
         }
         return row;
-    });
+    }));
 }
 
 /** The page's `<!-- Pitfalls: - one - two -->` comment as a list of lines; empty without one. */
@@ -571,9 +628,9 @@ export function pitfalls(html) {
 }
 
 /** Active lessons tagged block:NAME ({id, title, fix, check}), or null when BashCut cannot be asked. */
-function blockLessons(name) {
+async function blockLessons(name) {
     try {
-        const lessons = cli(["knowledge", "lessons", "--tag", `block:${name}`, "--status", "active"]) ?? [];
+        const lessons = await call(["knowledge", "lessons", "--tag", `block:${name}`, "--status", "active"]) ?? [];
         return lessons.map((l) => Object.fromEntries(Object.entries({ id: l.id, title: l.title, fix: l.fix, check: l.check })
             .filter(([, value]) => value)));
     } catch {
@@ -625,7 +682,7 @@ export function restorePage(dir) {
  * Runs `work` with index.html's root data-duration set to `seconds` (a second root file would be a lint error and a
  * second entry point), then puts the page back.
  */
-export function withDuration(dir, seconds, work) {
+export async function withDuration(dir, seconds, work) {
     restorePage(dir);
     const page = join(dir, "index.html");
     const html = readFileSync(page, "utf8");
@@ -633,8 +690,9 @@ export function withDuration(dir, seconds, work) {
     if (!root.test(html)) throw new Error(`${page} has no root with data-composition-id="main" and data-duration`);
     copyFileSync(page, join(dir, BACKUP));
     try {
-        writeFileSync(page, html.replace(root, `$1${Math.round(seconds * 100) / 100}$3`));
-        return work();
+        // Rounded down to the millisecond: the renderer rounds frames up, so 110 frames at 30 fps (3.667 s) stay 110.
+        writeFileSync(page, html.replace(root, `$1${Math.floor(seconds * 1000) / 1000}$3`));
+        return await work();
     } finally {
         restorePage(dir);
     }
@@ -657,16 +715,16 @@ export function inputsHash(dir, variables, seconds, fps, codec) {
         .digest("hex").slice(0, 16);
 }
 
-function planGraphics(options) {
-    const project = cli(["project", "get"]) ?? {};
-    const root = dirname(cli(["context", "get"])?.project ?? "");
+async function planGraphics(options) {
+    const project = await call(["project", "get"]) ?? {};
+    const root = dirname((await call(["context", "get"]))?.project ?? "");
     const entries = project.plan?.cut?.graphics ?? [];
     const only = options.only ? new Set(String(options.only).split(",").map((s) => s.trim())) : null;
     if (only) {
         const unknown = [...only].filter((id) => !entries.some((e) => e.id === id));
         if (unknown.length) throw new UsageError(`plan.cut.graphics has no ${unknown.join(", ")}`);
     }
-    const check = cli(["plan", "check", "--words"]) ?? {};
+    const check = await call(["plan", "check", "--words"]) ?? {};
     const rows = Object.fromEntries((check.graphics ?? []).map((row) => [row.id, row]));
     const fps = Math.round(frameRate(project.format?.fps));
     const media = project.media ?? [];
@@ -682,15 +740,16 @@ function planGraphics(options) {
         const seconds = row.short ?? row.seconds;
         const given = entry.render.composition;
         if (typeof given !== "string" || !given) throw new UsageError(`graphic ${entry.id}: render.composition is missing`);
-        const dir = resolve(root, given);
-        if (!existsSync(join(dir, "index.html"))) throw new UsageError(`graphic ${entry.id}: ${dir} has no index.html`);
+        const asGiven = resolve(root, given);
+        if (!existsSync(join(asGiven, "index.html"))) throw new UsageError(`graphic ${entry.id}: ${asGiven} has no index.html`);
+        const dir = options["dry-run"] ? asGiven : await ownComposition(asGiven, root, `${entry.id}-${basename(asGiven)}`);
         const declared = readComposition(dir).declared;
         const asked = resolveWordTimes({ ...(entry.render.variables ?? {}), ...(entry.render.set ?? {}) }, row.words ?? []);
         const inputs = {
             composition: dir, variables: explicitVariables(declared, [], asked), name: safeName(entry.render.name ?? `${entry.id}-${basename(dir)}`),
             fps, codec: options.codec ?? entry.render.codec ?? "hevc", brand: entry.render.brand !== false,
         };
-        const { variables, brand } = resolveVariables(inputs, project, warnings);
+        const { variables, brand } = await resolveVariables(inputs, project, warnings);
         restorePage(dir);
         const hash = inputsHash(dir, variables, seconds, fps, inputs.codec);
         const current = media.find((m) => m.id === entry.media);
@@ -702,8 +761,8 @@ function planGraphics(options) {
             rendered.push({ id: entry.id, seconds, variables, brand });
             continue;
         }
-        const render = withDuration(dir, seconds, () => renderNow(inputs, variables, false));
-        const imported = cli(["media", "import", render.path, "--origin", "ai", "--base-rev", "last"]) ?? {};
+        const render = await withDuration(dir, seconds, () => renderNow(inputs, variables, false));
+        const imported = await call(["media", "import", render.path, "--origin", "ai", "--base-rev", "last"]) ?? {};
         const id = imported.media ?? imported.files?.[0]?.media ?? imported.id;
         if (!id) throw new Error(`media import returned no media for ${render.path}: ${JSON.stringify(imported).slice(0, 300)}`);
         patch[entry.id] = { media: id };
@@ -714,9 +773,9 @@ function planGraphics(options) {
     }
     const result = { rendered, kept };
     if (options["dry-run"]) return result;
-    if (records.length) applyOps(records, cli(["project", "get"])?.rev, "Record graphic inputs");
+    if (records.length) await applyOps(records, (await call(["project", "get"]))?.rev, "Record graphic inputs");
     if (!options["no-apply"]) {
-        const args = ["plan", "apply", "--base-rev", String(cli(["project", "get"])?.rev)];
+        const args = ["plan", "apply", "--base-rev", String((await call(["project", "get"]))?.rev)];
         if (Object.keys(patch).length) args.push("--patch", JSON.stringify({ graphics: patch }));
         try {
             result.apply = briefApply(cli(args));
@@ -724,11 +783,11 @@ function planGraphics(options) {
             result.apply = { error: error.message };
             if (Object.keys(patch).length) {
                 // Keep the rendered media IDs in plan.cut, so fixing the list does not render again.
-                saveMedia(project, patch);
+                await saveMedia(project, patch);
             }
         }
     } else if (Object.keys(patch).length) {
-        saveMedia(project, patch);
+        await saveMedia(project, patch);
     }
     if (warnings.length) result.warnings = [...new Set(warnings)];
     return result;
@@ -740,22 +799,23 @@ export function mergedCut(cut, patch) {
 }
 
 /** Writes the rendered media IDs into plan.cut without building it. */
-function saveMedia(project, patch) {
+async function saveMedia(project, patch) {
     const folder = mkdtempSync(join(tmpdir(), "bashcut-graphic-"));
     try {
         const file = join(folder, "plan.json");
         writeFileSync(file, JSON.stringify({ cut: mergedCut(project.plan?.cut, patch) }));
-        cli(["project", "set-data", "plan", file, "--merge", "--base-rev", String(cli(["project", "get"])?.rev)]);
+        await call(["project", "set-data", "plan", file, "--merge", "--base-rev", String((await call(["project", "get"]))?.rev)]);
     } finally {
         rmSync(folder, { recursive: true, force: true });
     }
 }
 
-export function main(argv) {
+export async function main(argv) {
     try {
         const { command, target, options } = parseArgs(argv);
-        const result = command === "examples" ? examples(target)
-            : command === "plan" ? planGraphics(options) : command === "place" ? place(target, options) : rerender(target, options);
+        const result = command === "examples" ? await examples(target)
+            : command === "plan" ? await planGraphics(options) : command === "place" ? await place(target, options)
+                : await rerender(target, options);
         process.stdout.write(JSON.stringify(result) + "\n");
         return 0;
     } catch (error) {
@@ -767,5 +827,5 @@ export function main(argv) {
 // Compared as real paths: an installed plugin is often reached through a symlink, and Node resolves the module's own
 // URL to the real file, so a plain comparison never matched and the script exited doing nothing.
 if (process.argv[1] && realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))) {
-    process.exitCode = main(process.argv.slice(2));
+    process.exitCode = await main(process.argv.slice(2));
 }

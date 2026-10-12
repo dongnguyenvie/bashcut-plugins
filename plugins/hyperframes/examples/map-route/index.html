@@ -3,6 +3,15 @@
      Full frame, 1080×1920, 6 s. Run bin/osm-map --dir <this folder> first: it writes map/ tiles and map-data.js
      (the one here is an offline stand-in with no tiles); with --places, the measured outlines are drawn too. Keep the
      OpenStreetMap credit on screen. -->
+<!-- Pitfalls:
+  - Title and subtitle are 104 px each in a 936 px block: each wraps after ~17 characters ("Chợ Đà Lạt đến Hồ") and
+    every extra line pushes the stat pill ~106 px further down over the map.
+  - osm-map's default --padding 0.2 lets the route reach y 384 (under the title block) and y 1536 (the platform's
+    bottom band); run it with --padding 0.3 to keep the route in 576–1344.
+  - Pin tags never wrap and start 34 px right of the pin: a pin at x 864 shows only ~8 characters before the frame
+    edge ("Hồ Tuyền Lâm" is cut). Use short labels (--points) for stops on the right.
+  - drawAt + drawSeconds past data-duration − 0.5 (5.5 s at 6 s) pops the last pin during the swing-out.
+-->
 <html lang="en" data-composition-variables='[
   {"id": "title", "type": "string", "label": "Title (white)", "default": "Old Quarter"},
   {"id": "subtitle", "type": "string", "label": "Second line (accent)", "default": "to West Lake"},

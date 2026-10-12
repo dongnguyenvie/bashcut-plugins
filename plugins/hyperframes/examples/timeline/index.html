@@ -2,6 +2,15 @@
 <!-- A vertical timeline (a day plan, a history, the steps of a process): the line grows down and each stop lights up
      on its word (stops is a JSON array of {time, text, at}). Transparent, 1080×1920, 5.5 s. Raw material: change the
      card, the markers and the timing for the video. -->
+<!-- Pitfalls:
+  - Each one-line stop adds ~153 px under a card top of 420: five stops end at ~1390 px, six at ~1540, in the
+    platform's bottom band. Keep to five, or split the day into two cards.
+  - A stop's text wraps after ~27 characters at 50 px and adds ~60 px; shorten it ("Sunrise, Langbiang").
+  - The line grows at one speed from the first at to the last, but the dots are evenly spaced: with uneven gaps (0.8,
+    1.0, 1.2, 3.6) dots light ahead of the line. Keep the gaps between at values roughly even.
+  - stops must be in at order (the line reads the first and last), and the last at must be under
+    data-duration − 0.8 (4.7 s at 5.5 s) so the line ends before the swing-out.
+-->
 <html lang="en" data-composition-variables='[
   {"id": "title", "type": "string", "label": "Title", "default": "Day 1"},
   {"id": "stops", "type": "string", "label": "Stops (JSON [{time, text, at}])", "default": "[{\"time\":\"07:00\",\"text\":\"Sunrise at the hill\",\"at\":0.8},{\"time\":\"10:30\",\"text\":\"Flower garden\",\"at\":1.6},{\"time\":\"13:00\",\"text\":\"Lunch by the lake\",\"at\":2.4},{\"time\":\"19:00\",\"text\":\"Night market\",\"at\":3.2}]"},

@@ -6,7 +6,7 @@
     "vi": "Đồ hoạ HyperFrames"
   },
   "version": "0.0.1",
-  "apiVersion": 7,
+  "apiVersion": 8,
   "minApiVersion": 7,
   "entrypoint": "bin/provider",
   "transport": "session",
@@ -42,10 +42,24 @@
       "estimatedBytes": 400000000
     }
   ],
+  "features": [
+    "views",
+    "location.inspector"
+  ],
   "contributes": {
     "skills": [
       {
         "path": "skills/hyperframes"
+      }
+    ],
+    "views": [
+      {
+        "id": "graphic",
+        "title": {
+          "en": "Graphic",
+          "vi": "Đồ hoạ"
+        },
+        "location": "inspector"
       }
     ]
   }

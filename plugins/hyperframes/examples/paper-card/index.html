@@ -3,6 +3,16 @@
      (lines is a JSON string: text, at seconds, size px, weight, colour, font), with the brand's mascot when the project
      has one. Opaque, 1080×1920, 3 s. Place it on the
      Overlay layer over the speaker, or under a shrunken speaker clip (see the skill). Raw material: change it. -->
+<!-- Pitfalls:
+  - A line of size 90 or more takes a full row and never wraps: at 112 px about 15 characters fit inside the margins
+    ("more views fast"); 17 already run past them. Split a long phrase into two lines.
+  - Three 112 px lines end at ~1195 px and run into the mascot box (x 660–1000, y 1140–1480); with a mascot keep
+    to two big lines.
+  - The card has no exit and stays opaque to its last frame: cut away on the timeline, and keep every at under
+    data-duration − 0.3 (2.7 s at 3 s) so a line is not still rising at the cut.
+  - The page turns in during the first 0.5 s: a line or mascotAt before ~0.5 s appears on a page that is still
+    turning.
+-->
 <html lang="en" data-composition-variables='[
   {"id": "background", "type": "color", "label": "Paper colour", "default": "#F2EEE5"},
   {"id": "lines", "type": "string", "label": "Lines (JSON)", "default": "[{\"text\":\"to start\",\"at\":0.55,\"size\":40},{\"text\":\"getting\",\"at\":0.85,\"size\":40},{\"text\":\"more views\",\"at\":1.15,\"size\":112,\"weight\":800,\"accent\":true}]"},
