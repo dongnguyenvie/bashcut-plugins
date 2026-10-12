@@ -1,6 +1,12 @@
 <!doctype html>
 <!-- A number that matters, counted up on a dark glass card with a line that draws as it climbs. Transparent,
      1080×1920, 3.5 s. Raw material: change the card, the chart, the easing and the timing for the video. -->
+<!-- Pitfalls:
+  - countSeconds under ~0.8 s blurs the digits into noise; 1.2–2 s reads, longer than the sentence drags.
+  - Numbers past seven digits overflow the 860 px card at 84 px; shorten them (1.2M) instead of shrinking the type.
+  - A trend pill that repeats the number adds nothing; leave it empty to hide it.
+  - Over bright footage the glass card needs the dark background colour; a light card loses the white value.
+-->
 <html lang="en" data-composition-variables='[
   {"id": "label", "type": "string", "label": "Label", "default": "Average Views"},
   {"id": "from", "type": "number", "label": "Count from", "default": 82366},

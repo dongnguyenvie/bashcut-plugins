@@ -59,6 +59,11 @@ bashcut export status
   both shapes (T17 §4).
 - `--bitrate` only for a measured reason; `export status` reports the bit rate written and the delivered file's
   checks.
+- **A version without the music** (`--without music`): the same cut with voice and sound effects only, from the same
+  timeline, so the creator can add the platform's own sound (a trending track on TikTok or Reels). Offer it when an
+  output is TikTok, Reels or Shorts and the edit has a music bed; name it `<name>-nomusic`. When the cut was timed to
+  the beat, say that a new track will not match the cuts. Its loudness is not checked by review (it is not the
+  edit's mix): normalize it with `--normalize-audio` too.
 
 ## 4. Cover
 
