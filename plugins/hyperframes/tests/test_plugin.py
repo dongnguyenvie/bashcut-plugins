@@ -365,6 +365,14 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertIn("accent", json.loads(out.stderr)["error"])  # lists what it has
         self.assertNotIn("plugins", [call["args"][0] for call in calls])
 
+    def test_runs_through_a_symlinked_plugin_folder(self):
+        link = self.folder / "linked-plugin"
+        link.symlink_to(ROOT)
+        out = subprocess.run([str(link / "bin" / "graphic"), "draw"], capture_output=True, text=True,
+                             env=environment(self.folder), timeout=60)
+        self.assertEqual(2, out.returncode, out.stderr)  # it ran (usage error) instead of exiting silently
+        self.assertIn("usage", json.loads(out.stderr)["error"])
+
     def test_brand_logo_is_copied_into_a_composition_that_declares_logo(self):
         page = self.composition / "index.html"
         html = page.read_text()

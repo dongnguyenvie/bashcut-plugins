@@ -21,7 +21,7 @@
 // Uses $BASHCUT_CLI, else `bashcut` on PATH.
 import { spawnSync } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -483,6 +483,8 @@ export function main(argv) {
     }
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// Compared as real paths: an installed plugin is often reached through a symlink, and Node resolves the module's own
+// URL to the real file, so a plain comparison never matched and the script exited doing nothing.
+if (process.argv[1] && realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))) {
     process.exitCode = main(process.argv.slice(2));
 }
