@@ -51,11 +51,14 @@ HyperFrames Graphics in Plugins (you cannot); say so and fall back to native tex
    font without them falls back to another face mid-word). Fix and look again; two or three rounds is normal.
 4. **Render**: `bashcut plugins invoke graphics.render --params '{"composition":"/abs/<project>/graphics/<name>",
    "fps":30,"variables":{…},"name":"<name>"}'`, then `bashcut jobs wait <job>`. The result has `path`, `frames`,
-   `bytes`, `renderSeconds` and `lint`; fix lint errors, they usually mean a frame is wrong. A 1080×1920 graphic of
-   3 s renders in about 10 s and is about 0.2 MB.
+   `bytes`, `renderSeconds` and `lint`; fix lint errors, they usually mean a frame is wrong. A 1080×1920 card of
+   3–5 s renders in about 10–15 s and is 0.2–1.5 MB; a full-frame map of 6 s takes about 1 min and 20 MB. One
+   render runs at a time ("graphics.render is already running"): wait for each job before starting the next.
 5. **Place**: `bashcut library add --kind sticker --name "<Name>" --file <path>` (keeps the alpha), then
-   `bashcut library place <id> --at-frame <W − entrance frames> --size 1 --position center --base-rev N` (the
-   composition is the full canvas; its layout lives in the HTML). A full-frame card goes the same way and covers the
+   `bashcut library place <id> --at-frame <W − entrance frames> --size 1 --position 0.5,0.5 --base-rev N` (the
+   composition is the full canvas; its layout lives in the HTML). Not `--position center`: a named spot keeps a
+   sticker inside the safe area, which shifts a full-canvas one up and left on a vertical frame and leaves a strip
+   of the picture below showing at the right and bottom edges. A full-frame card goes the same way and covers the
    picture while the voice continues underneath.
 6. **Check in BashCut**: `bashcut ui frame W --phone` on the landing frame and `bashcut review window W --span 12`
    across the entrance (it also shows the words heard there);
