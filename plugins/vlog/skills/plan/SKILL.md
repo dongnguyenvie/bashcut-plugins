@@ -1,6 +1,6 @@
 ---
 name: plan
-description: Start a vlog in BashCut from one prompt — read the brief, pick the topic recipe (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial), survey the footage, write the edit plan with `project set-data plan` (the recipe's data — recipe, promise, stages, checks, askAtIntake — sections with length ranges and reasons, shot rows, the establish-or-hook choice, the chosen review ranges), set the project's outputs and review profile from it, then hand the edit to bc:edit-workflow. Use first whenever the user asks for a vlog or a short video about a trip, a meal, a day, a product, a talk or a how-to, before cutting anything, and when footage is still to be shot or generated. Triggers: "làm vlog", "dựng vlog", "vlog du lịch", "vlog ăn uống", "review món", "review sản phẩm", "a day in my life", "video hướng dẫn", "video nói chuyện", "lên kịch bản vlog", "shot list", "cần quay những gì", "một prompt ra video".
+description: Start a vlog in BashCut from one prompt — read the brief, pick the topic recipe (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial, explainer), survey the footage, write the edit plan with `project set-data plan` (the recipe's data — recipe, promise, stages, checks, askAtIntake — sections with length ranges and reasons, shot rows, the establish-or-hook choice, the chosen review ranges), set the project's outputs and review profile from it, then hand the edit to bc:edit-workflow. Use first whenever the user asks for a vlog or a short video about a trip, a meal, a day, a product, a talk or a how-to, before cutting anything, and when footage is still to be shot or generated. Triggers: "làm vlog", "dựng vlog", "vlog du lịch", "vlog ăn uống", "review món", "review sản phẩm", "a day in my life", "video hướng dẫn", "video nói chuyện", "video giải thích", "lên kịch bản vlog", "shot list", "cần quay những gì", "một prompt ra video".
 ---
 
 # Plan a vlog
@@ -44,6 +44,7 @@ The brief's angle chooses the recipe; the recipe is a suggestion from the brief,
 | one person talking to camera, an opinion, a story time | `bashcut.vlog:talking-head` |
 | shorts cut from a long podcast, interview or livestream | `bashcut.vlog:podcast-clips` |
 | a screen recording, an app or tool demo, "cách làm", a step-by-step | `bashcut.vlog:tutorial` |
+| a topic explained with cards, numbers and a voice, little or no footage (law, history, science, a place, a business idea, news) | `bashcut.vlog:explainer` |
 
 Read the chosen skill in full (`bashcut skills get bashcut.vlog:<name>`); its **Plan data** section is what you write
 into the plan (§3). Two fit (a food stop inside a trip): take the one the *whole* video is about and borrow single

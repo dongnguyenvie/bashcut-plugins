@@ -26,6 +26,7 @@ the agent kit (`bc:`); a recipe says what to measure and which range to choose f
 | `talking-head` | One person to camera: tight speech cuts, punch-ins, word-by-word captions, presence |
 | `podcast-clips` | Shorts from a long podcast or interview: selects by quote, standalone test, blind second pass, one project per clip (`project derive`) |
 | `tutorial` | Screen recording or tool demo: result first, step cards, zooms, waiting sped up, presenter presence |
+| `explainer` | Cards and numbers with a voice, little or no footage: question + number hook, one data widget per section (cost table, chart, timeline, map route), frame chrome, sources for every number |
 | `scene-prompt` | A scene idea → a cinematic prompt for AI video models (Seedance, Kling, Veo, Sora…) for shots the footage lacks; reads the neighbouring plan rows so the shot cuts in |
 
 The `library/vlog` pack adds text styles (hook question, section chip, time stamp, price tag, pro/con, step, keyword,
@@ -36,7 +37,8 @@ licensed ones (`bc:audio-mix`).
 ## Recipes and numbers
 
 A recipe ships ranges, not settings: no recipe has a profile block to copy. Each range cites where it comes from (the
-analysis notes T00–T19, e.g. "(T07 §3)") and says what makes it move. The agent picks a range and a value and says why
+analysis notes T00–T19, e.g. "(T07 §3)"; RC is the Reelcrew / AgentVid study of 30 explainer and promo videos)
+and says what makes it move. The agent picks a range and a value and says why
 in the plan; contradictions between sources are shown, not hidden. It never fixes colour values
 or loudness: a look is an intent the agent grades to after measuring the footage (`bc:color-grade`), and each export
 is normalized to its own output's target (`bashcut platforms get`), never one number for every platform.
