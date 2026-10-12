@@ -324,6 +324,48 @@ print(json.dumps(out))
 """
 
 
+class InspectorViewTests(unittest.TestCase):
+    """The Inspector view "graphic": fields for a graphic this plugin rendered, nothing for other items."""
+
+    def view(self, folder, media, values=None, event=None):
+        params = {"view": "graphic", "context": {"selection": {"id": "item-1"}, "media": media},
+                  "values": values or {}, "state": None}
+        if event:
+            params["event"] = event
+        return rpc(folder, "view.event" if event else "view.render", params)["result"]
+
+    def test_other_items_get_an_empty_view(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual([], self.view(folder, {"id": "m1", "kind": "video"})["body"])
+
+    def test_a_rendered_graphic_shows_its_variables_and_a_render_button(self):
+        with tempfile.TemporaryDirectory() as folder:
+            composition = pathlib.Path(folder, "graphics", "lower-third")
+            shutil.copytree(ROOT / "examples" / "lower-third", composition)
+            media = {"id": "m1", "data": {"graphics": {"composition": str(composition), "name": "lower-third",
+                                                       "variables": {"name": "Samantha Abrams", "accent": "#FF3B30"}}}}
+            body = self.view(folder, media)["body"]
+            nodes = {n.get("id"): n for n in body + [c for n in body for c in n.get("children", [])] if n.get("id")}
+            self.assertEqual("Samantha Abrams", nodes["name"]["value"])  # the recorded value, not the default
+            self.assertEqual("Head roaster", nodes["role"]["value"])  # the declared default
+            self.assertEqual("toggle", nodes["glint"]["type"])
+            self.assertEqual("#FF3B30", nodes["accent"]["value"])  # look fields sit in their own section
+            self.assertNotIn("headingFont", nodes)  # fonts come from the brand
+            self.assertEqual("button", nodes["render"]["type"])
+            clicked = self.view(folder, media, values={"name": "Samantha Abrams"}, event={"node": "render", "type": "click"})
+            self.assertIn("Nothing changed.", [n.get("text") for n in clicked["body"]])
+
+    def test_only_edited_fields_are_sent_typed(self):
+        script = ("import('" + (ROOT / "lib" / "inspector.mjs").as_uri() + "').then(({changedVariables}) => {"
+                  "const declared = [{id: 'name', type: 'string', default: 'A'}, {id: 'bottom', type: 'number', default: 520},"
+                  " {id: 'glint', type: 'boolean', default: true}, {id: 'role', type: 'string', default: 'R'}];"
+                  "console.log(JSON.stringify(changedVariables(declared, {name: 'B'},"
+                  " {name: 'B', bottom: '600', glint: false, role: 'R'})));})")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual({"bottom": 600, "glint": False}, json.loads(out.stdout))
+
+
 class GraphicScriptTests(unittest.TestCase):
     """bin/graphic against a fake bashcut CLI that records each call: no app, no render."""
 

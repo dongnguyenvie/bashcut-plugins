@@ -13,9 +13,13 @@ import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, 
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative } from "node:path";
 import { PluginError } from "./bashcut-plugin.mjs";
+import { graphicView, VIEW } from "./inspector.mjs";
 import { hyperframes, execute, paths, requireRuntime } from "./runtime.mjs";
 
 export async function handle(method, params, host) {
+    if ((method === "view.render" || method === "view.event") && params.view === VIEW) {
+        return graphicView(params, host, render);
+    }
     if (method !== "graphics.render") {
         throw new PluginError("unknown_method", `HyperFrames Graphics does not handle ${method}`);
     }

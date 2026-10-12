@@ -48,7 +48,7 @@ MAX_SKILL_NAME, MAX_SKILL_DESCRIPTION = 64, 1024
 MAX_VIEWS, MAX_REQUIRES, MAX_USES, MAX_FEATURES = 8, 16, 32, 32
 SYMBOL_PATTERN = r"[a-z0-9]+(?:\.[a-z0-9]+)*"
 VERSION_RANGE_PATTERN = r"\*|(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?)(?: +(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?))*"
-VIEW_LOCATIONS = ("panel", "dock", "sheet")
+VIEW_LOCATIONS = ("panel", "dock", "sheet", "inspector")
 FEATURE_PATTERN = r"[a-z][a-zA-Z0-9]*(?:[.-][a-zA-Z0-9]+)*"
 
 
