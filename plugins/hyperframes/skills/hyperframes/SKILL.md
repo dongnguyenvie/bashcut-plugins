@@ -1,6 +1,6 @@
 ---
 name: hyperframes
-description: Design and render any animated graphic for a BashCut edit with HyperFrames — kinetic type and keyword pops, stat counters and charts, a pointer that clicks, mock screens, full-frame paper or colour cards, lower thirds, diagrams, light leaks and other catalog blocks — as an HTML/CSS + GSAP composition you write or assemble, looked at frame by frame, rendered to a .mov with alpha and placed on the timeline; plus the speaker-shrinks-into-a-card move done with BashCut's own layers. Use when bc:motion-graphics decided a sentence needs a graphic, when native text cannot make the look, or when the user wants the graphics of a reference video. Triggers: "đồ hoạ", "motion graphic", "chữ chuyển động", "kinetic text", "số chạy", "counter", "biểu đồ", "con trỏ chuột", "thẻ giấy", "thu nhỏ người nói", "làm giống video mẫu", "hyperframes".
+description: Design and render any animated graphic for a BashCut edit with HyperFrames — kinetic type and keyword pops, stat counters, bar charts, cost tables, timelines, a map with a route drawn from OpenStreetMap, a pointer that clicks, mock screens, full-frame paper or colour cards, lower thirds, diagrams, light leaks and other catalog blocks — as an HTML/CSS + GSAP composition you write or assemble, looked at frame by frame, rendered to a .mov with alpha and placed on the timeline; plus the speaker-shrinks-into-a-card move done with BashCut's own layers. Use when bc:motion-graphics decided a sentence needs a graphic, when native text cannot make the look, or when the user wants the graphics of a reference video. Triggers: "đồ hoạ", "motion graphic", "chữ chuyển động", "kinetic text", "số chạy", "counter", "biểu đồ", "bản đồ", "tuyến đường", "bảng chi phí", "timeline", "con trỏ chuột", "thẻ giấy", "thu nhỏ người nói", "làm giống video mẫu", "hyperframes".
 ---
 
 # HyperFrames graphics
@@ -24,7 +24,8 @@ to make it.
 | `"$P/bin/hf" docs compositions\|data-attributes\|gsap` | The runtime's own rules |
 | `"$P/bin/hf" --gsap` | Path of GSAP to copy next to `index.html` (render copies it when missing) |
 | `bashcut plugins invoke graphics.render --params '{…}'` | Render for the timeline: alpha `.mov` (HEVC, or ProRes 4444 with `"codec":"prores"`), lint findings in the result |
-| `$P/examples/` | Raw material, each lint-clean: `keyword-pop` (serif lead-in + bold keyword), `stat-counter` (number counts up, line draws), `cursor-click` (pointer lands and clicks), `paper-card` (full-frame card turns in like a page, lines build on words), `checklist-card` |
+| `"$P/bin/osm-map" --dir D --points "lat,lon,Name;…" [--route car\|bike\|foot\|none]` | OpenStreetMap tiles and a real route into composition D (`map/`, `map-data.js` in canvas pixels; `--width`/`--height` = the project). Prints `km`, `minutes` and per-stop `legs` to put on screen. Needs network; the render then needs none. Coordinates come from the user, the brief or a source you name, never from memory |
+| `$P/examples/` | Raw material, each lint-clean: `keyword-pop` (serif lead-in + bold keyword), `stat-counter` (number counts up, line draws), `cursor-click` (pointer lands and clicks), `paper-card` (full-frame card turns in like a page, lines build on words), `checklist-card`, `bar-chart` (bars rise on their words, values count), `cost-table` (rows land, the total counts to the sum), `timeline` (a day plan or history lights up stop by stop), `map-route` (full-frame map, the route draws with a glow, pins pop as it reaches them; run `osm-map` on the copy first). The data widgets take their rows as a JSON string with an `at` per row: the second from the overlay's start when that row lands on its word |
 
 When `bin/hf` exits 3 or the render says `dependency_missing`, the user chooses **Install Dependencies…** for
 HyperFrames Graphics in Plugins (you cannot); say so and fall back to native text.
@@ -72,6 +73,11 @@ HyperFrames Graphics in Plugins (you cannot); say so and fall back to native tex
 - The body stays transparent for overlays; a full-frame card paints its own background. Shadows and plates carry
   legibility over busy footage (plate opacity 0.75–0.9).
 - Keep 60 px+ from the frame edges for anything to be read.
+- `bin/hf snapshot` and `check` do not copy GSAP: copy `"$P/bin/hf" --gsap` next to `index.html` first, or every
+  frame shows the end state ("Timeline did not advance under seek").
+- Data on screen keeps its credit: a map keeps "© OpenStreetMap contributors" visible (`map-route` does); a chart
+  or table from a source carries its source line (`bar-chart` › `source`). Illustrative numbers are said to be
+  illustrative, in the words or on the card.
 
 ## 4. Moves that combine a graphic with BashCut
 
@@ -87,6 +93,9 @@ Footage stays in BashCut (editable, re-cut without re-rendering); compositions d
 - **A page or card that turns in over the cut**: the graphic's own entrance (`paper-card`); no BashCut transition
   needed. A catalog shader transition (`hf catalog transition`) is a full-frame block: render it as an overlay at the
   cut.
+- **Scene change in an explainer**: the data widgets exit by swinging away in 3D (`rotationY` about the left edge,
+  0.45 s) the way card explainers change scene; the next card enters as this one leaves, so place it 0.3–0.45 s
+  before the previous one ends.
 - **A pointer clicking something on screen**: `cursor-click` with the target's pixel position read from
   `bashcut ui frame` on that frame.
 - **A screen or app page**: build it in HTML around the user's own screenshot or thumbnail; never draw a real

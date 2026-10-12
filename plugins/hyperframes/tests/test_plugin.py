@@ -138,7 +138,7 @@ class ExampleTests(unittest.TestCase):
     """The examples are starting points agents copy: each must follow the HyperFrames rules."""
 
     def test_examples_exist(self):
-        self.assertGreaterEqual(len(EXAMPLES), 5)
+        self.assertGreaterEqual(len(EXAMPLES), 9)
 
     def test_variables_are_declared_as_an_array(self):
         for example in EXAMPLES:
@@ -159,6 +159,39 @@ class ExampleTests(unittest.TestCase):
             self.assertIn('window.__timelines["main"] = tl', html, example.name)
             self.assertNotRegex(html, r"Math\.random|Date\.now|new Date|setTimeout|setInterval|https?://(?!www\.w3)",
                                 example.name)
+
+
+class OsmMapTests(unittest.TestCase):
+    """bin/osm-map refuses bad arguments before it touches the network."""
+
+    def run_map(self, *args):
+        with tempfile.TemporaryDirectory() as folder:
+            env = environment(folder)
+            return subprocess.run([str(ROOT / "bin" / "osm-map"), *args], capture_output=True, text=True, env=env,
+                                  timeout=30)
+
+    def test_needs_a_folder_and_points(self):
+        out = self.run_map("--points", "21.03,105.83,A")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("--dir", out.stderr)
+
+    def test_rejects_a_point_that_is_not_a_coordinate(self):
+        with tempfile.TemporaryDirectory() as target:
+            out = self.run_map("--dir", target, "--points", "105.83,21.03,Swapped")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("latitude,longitude", out.stderr)
+
+    def test_rejects_an_unknown_route_profile(self):
+        with tempfile.TemporaryDirectory() as target:
+            out = self.run_map("--dir", target, "--points", "21.03,105.83,A", "--route", "plane")
+        self.assertEqual(2, out.returncode, out.stderr)
+
+    def test_map_route_reads_the_data_osm_map_writes(self):
+        html = (ROOT / "examples" / "map-route" / "index.html").read_text()
+        self.assertIn('<script src="map-data.js"></script>', html)
+        self.assertIn("data.attribution", html)
+        stand_in = (ROOT / "examples" / "map-route" / "map-data.js").read_text()
+        self.assertIn("© OpenStreetMap contributors", stand_in)
 
 
 class RenderParamTests(unittest.TestCase):

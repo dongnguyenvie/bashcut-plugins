@@ -1,0 +1,79 @@
+<!doctype html>
+<!-- A cost table, a receipt or a price list whose rows slide in on their words while the total counts up to the sum
+     (rows is a JSON array of {item, amount, at}). Transparent, 1080×1920, 5 s. Raw material: change the card, the
+     currency, the rows and the timing for the video. -->
+<html lang="en" data-composition-variables='[
+  {"id":"title","type":"string","label":"Title","default":"48 hours, total cost"},
+  {"id":"rows","type":"string","label":"Rows (JSON [{item, amount, at}])","default":"[{\"item\":\"Bus there and back\",\"amount\":600000,\"at\":0.8},{\"item\":\"Two nights homestay\",\"amount\":900000,\"at\":1.4},{\"item\":\"Food and coffee\",\"amount\":1100000,\"at\":2.0},{\"item\":\"Tickets\",\"amount\":400000,\"at\":2.6}]"},
+  {"id":"totalLabel","type":"string","label":"Total label","default":"Total"},
+  {"id":"currency","type":"string","label":"Currency after the amount","default":"đ"},
+  {"id":"locale","type":"string","label":"Number format locale","default":"vi-VN"},
+  {"id":"accent","type":"color","label":"Total colour","default":"#3BF26A"}
+]'>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      #root { position: relative; width: 1080px; height: 1920px; perspective: 1600px;
+        font-family: "Helvetica Neue", Arial, sans-serif; }
+      #card { position: absolute; left: 90px; top: 480px; width: 900px; padding: 56px 60px 48px; border-radius: 36px;
+        background: #FBF7EE; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); color: #1B1B1B; }
+      #title { font-size: 56px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 30px; }
+      .row { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding: 20px 0;
+        border-bottom: 3px dashed rgba(0, 0, 0, 0.18); font-size: 44px; }
+      .row .amount { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      #total { display: flex; justify-content: space-between; align-items: baseline; margin-top: 28px;
+        padding: 22px 28px; border-radius: 22px; background: #16181E; color: #fff; }
+      #totalLabel { font-size: 44px; font-weight: 700; }
+      #totalValue { font-size: 64px; font-weight: 900; font-variant-numeric: tabular-nums; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="5" data-width="1080" data-height="1920">
+      <div id="card">
+        <div id="title"></div><div id="rows"></div>
+        <div id="total"><span id="totalLabel"></span><span id="totalValue"></span></div>
+      </div>
+    </div>
+    <script>
+      const v = window.__hyperframes.getVariables();
+      const rows = JSON.parse(v.rows);
+      const money = (n) => `${Math.round(n).toLocaleString(v.locale)}${v.currency}`;
+      document.getElementById("title").textContent = v.title;
+      document.getElementById("totalLabel").textContent = v.totalLabel;
+      const totalValue = document.getElementById("totalValue");
+      totalValue.style.color = v.accent;
+      totalValue.textContent = money(0);
+      const list = document.getElementById("rows");
+      const card = document.getElementById("card");
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo(card, { opacity: 0, y: 80, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0);
+      let sum = 0;
+      for (const row of rows) {
+        const el = document.createElement("div");
+        el.className = "row";
+        el.innerHTML = '<span class="item"></span><span class="amount"></span>';
+        el.querySelector(".item").textContent = row.item;
+        el.querySelector(".amount").textContent = money(row.amount);
+        list.appendChild(el);
+        const start = Math.max(0.3, row.at - 0.3);
+        tl.fromTo(el, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.3, ease: "power2.out" }, start);
+        // The total climbs from the previous sum to the new one as the row lands (one tl.set per frame).
+        const before = sum;
+        sum += row.amount;
+        const steps = 9;
+        for (let s = 1; s <= steps; s += 1) {
+          tl.set(totalValue, { textContent: money(before + (sum - before) * (s / steps)) }, row.at + (s / steps) * 0.3);
+        }
+      }
+      tl.fromTo("#total", { scale: 1 }, { scale: 1.05, duration: 0.14, yoyo: true, repeat: 1, ease: "power2.out" }, (rows.at(-1)?.at ?? 1) + 0.35);
+      tl.to(card, { rotationY: -70, x: -260, opacity: 0, duration: 0.45, ease: "power2.in", transformOrigin: "0% 50%" }, 4.5);
+      tl.seek(0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
