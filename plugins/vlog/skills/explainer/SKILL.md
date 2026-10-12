@@ -21,7 +21,9 @@ voice takes, graphics or captions one by one with `timeline apply`. `P` is the H
    `cp -R "$P/examples/map-route" <project>/graphics/map`, then `"$P/bin/osm-map" --dir <project>/graphics/map
    --points "lat,lon,Name;…" [--places "…"]` (route km and minutes; `--places` also draws the outlines to scale).
    `"$P/bin/graphic" examples` lists every widget's variables and defaults in one call: copy the examples you use into
-   `<project>/graphics/<name>/` and change only variables unless the design needs more.
+   `<project>/graphics/<name>/` and change only variables unless the design needs more: `stat-counter`, `bar-chart`
+   and `cost-table` take `locale` (`vi-VN` writes 11,2 and 528,5), `decimals` and a unit; `stat-counter` `at` and a
+   bar's `at` land on a word; `bar-chart` and `stat-counter` take `top`. `bin/osm-map --help` lists its options.
 2. **The list.** `bashcut project set-data plan plan.json --merge --base-rev last` with `{cut: {…}}`:
    `voiceover` [{id, text, caption, section, pause}] (one line per sentence; `text` exactly as it should be heard,
    numbers spelled out; `caption` what the captions show instead, with digits),
@@ -30,25 +32,31 @@ voice takes, graphics or captions one by one with `timeline apply`. `P` is the H
    {from: "speech", preset, maxChars (the caption line length from the ranges below), style {positionY}}, `music`
    {media, volumeDb, duckDb}, `sfx` [{media, on: "<graphic id>", offset}], `review` {limits from the ranges below}. In `set`, a value `"@words"` becomes the seconds from the graphic's
    start to where the voice says those words: a row `{"label": "Hồ Tây", "value": 528, "at": "@năm trăm hai mươi
-   tám"}` lands on its word. The shape, in short (every field: `bashcut help plan check`):
+   tám"}` lands on its word. Captions sit above the output's caption bar from the first build (TikTok covers the
+   bottom 24 %, `bashcut platforms get tiktok`): `positionY` about 0.3 for one line. The shape, in short (every
+   field: `bashcut help plan check`):
 
    ```json
    {"sections": [{"id": "s1", "label": "1/4 Hồ Gươm"}],
     "cut": {"voiceover": [{"id": "l1", "text": "Hồ Gươm rộng mười một phẩy hai héc ta.", "caption": "Hồ Gươm rộng 11,2 ha.",
                            "section": "s1", "pause": 0.3}],
             "graphics": [{"id": "g1", "section": "s1", "track": "main",
-                          "render": {"composition": "graphics/s1-count", "set": {"to": 11.2, "label": "ha"}}}],
+                          "render": {"composition": "graphics/s1-count", "set": {"from": 0, "to": 11.2,
+                                     "unit": " ha", "locale": "vi-VN", "label": "Hồ Gươm", "at": "@héc ta"}}}],
             "captions": {"from": "speech", "maxChars": 26, "style": {"positionY": 0.3}},
             "review": {"captionLineChars": 26, "maxStillSeconds": 2}}}
    ```
 3. **The voice.** `bashcut voice lines --takes 2 --min-similarity 0.9` voices and checks every line in one job
-   (`bashcut jobs wait <job> --done`). A line whose best take lists `unmatched` words: rewrite how it is spelled (a
+   (`bashcut jobs wait <job> --done --timeout 110` returns after at most 110 s: repeat it in the same shell call
+   until `state` is `completed`). A line whose best take lists `unmatched` words: rewrite how it is spelled (a
    number in words, a name split) in plan.cut and run `voice lines --only <id>`.
 4. **Render and build.** `"$P/bin/graphic" plan` renders every graphic to its span (an exit lands on the span's end)
    and runs `plan apply`: it prints what it rendered and the apply's problems and review. Renders take 10–60 s each
    and run one at a time: give the call a long timeout. After a change, run it again: unchanged graphics are kept.
 
-Then look (`bashcut timeline sheet --cuts --text`, `bashcut ui frame F --phone` on landing words), `bashcut review
+Before rendering, `bashcut plan check --words` lists what the build would get wrong in `problems`
+(`review-errors`: text under a caption bar, a cut inside a word): fix those in the list first. Then look
+(`bashcut timeline sheet --cuts --text --outputs tiktok`, `bashcut ui frame F --phone` on landing words), `bashcut review
 run --measure`, and export. `bashcut plan check --words` shows each graphic's span and the words heard in it.
 
 Sources: RC = the Reelcrew / AgentVid study (30 explainer and promo videos measured on 2026-10-07: cuts, motion,
