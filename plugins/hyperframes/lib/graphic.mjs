@@ -16,6 +16,8 @@
 //   examples [NAME]
 //     The examples as data: name, what it draws (its header comment), seconds, folder, and its own variables {id,
 //     type, label, default} (the brand ids it declares listed apart), so a graphic is chosen without reading HTML.
+//     With NAME also its known pitfalls (a `<!-- Pitfalls: - … -->` comment in the page) and the active lessons
+//     tagged block:NAME in BashCut's knowledge (`lessons`; skipped when BashCut cannot be reached).
 //   plan [--only g1,g2] [--force] [--no-apply] [--codec C] [--dry-run]
 //     Renders every plan.cut graphic that has `render` {composition, set, name, codec} and no up-to-date movie, each to
 //     the span plan check gives it (the composition's data-duration is set to it while it renders, so an exit timed
@@ -552,8 +554,31 @@ export function examples(name) {
             return { id: d.id, type: d.type, label: d.label, default: shown };
         });
         row.brand = declared.filter((d) => BRAND_IDS.includes(d.id) || d.id === "logo" || d.id === "mascot").map((d) => d.id);
+        if (name) {
+            row.pitfalls = pitfalls(html);
+            const learned = blockLessons(n);
+            if (learned) row.lessons = learned;
+        }
         return row;
     });
+}
+
+/** The page's `<!-- Pitfalls: - one - two -->` comment as a list of lines; empty without one. */
+export function pitfalls(html) {
+    const comment = /<!--\s*Pitfalls:([\s\S]*?)-->/.exec(html)?.[1];
+    if (!comment) return [];
+    return comment.split(/\n\s*-\s+/).map((line) => line.replace(/^\s*-\s+/, "").replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
+/** Active lessons tagged block:NAME ({id, title, fix, check}), or null when BashCut cannot be asked. */
+function blockLessons(name) {
+    try {
+        const lessons = cli(["knowledge", "lessons", "--tag", `block:${name}`, "--status", "active"]) ?? [];
+        return lessons.map((l) => Object.fromEntries(Object.entries({ id: l.id, title: l.title, fix: l.fix, check: l.check })
+            .filter(([, value]) => value)));
+    } catch {
+        return null;
+    }
 }
 
 // MARK: plan

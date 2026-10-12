@@ -296,6 +296,8 @@ elif command == "library place":
 elif command == "timeline apply":
     entry["ops"] = json.load(open(args[2]))
     out = {"rev": int(option("--base-rev")) + 1, "changed": True}
+elif command == "knowledge lessons":
+    out = state.get("lessons", [])
 elif command == "fonts list":
     out = state.get("fonts", [])
 elif command == "context get":
@@ -423,6 +425,20 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertEqual([], calls, "no BashCut call")
         out, _ = self.run_graphic({"projects": [self.project()]}, "examples", "nope")
         self.assertEqual(2, out.returncode)
+
+    def test_one_example_carries_its_pitfalls_and_learned_lessons(self):
+        lessons = [{"id": "l-1", "title": "Count slower", "fix": "countSeconds 1.6", "check": "Can the number be read?",
+                    "tags": ["block:stat-counter"]}]
+        out, calls = self.run_graphic({"projects": [self.project()], "lessons": lessons}, "examples", "stat-counter")
+        self.assertEqual(0, out.returncode, out.stderr)
+        row = json.loads(out.stdout)[0]
+        self.assertTrue(row["pitfalls"] and all(isinstance(line, str) for line in row["pitfalls"]))
+        self.assertEqual([{"id": "l-1", "title": "Count slower", "fix": "countSeconds 1.6", "check": "Can the number be read?"}],
+                         row["lessons"])
+        self.assertEqual(["knowledge", "lessons", "--tag", "block:stat-counter", "--status", "active"], calls[0]["args"])
+        out, _ = self.run_graphic({"projects": [self.project()], "fail": "knowledge lessons"}, "examples", "stat-counter")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertNotIn("lessons", json.loads(out.stdout)[0])
 
     def test_example_exits_follow_the_composition_length(self):
         for page in (ROOT / "examples").glob("*/index.html"):
