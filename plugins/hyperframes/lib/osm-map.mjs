@@ -33,12 +33,23 @@ function pluginVersion() {
 }
 
 function fail(message) {
-    process.stderr.write(`osm-map: ${message}\n`);
+    process.stderr.write(`osm-map: ${message} (bin/osm-map --help shows the options)\n`);
     process.exit(2);
+}
+
+/** The comment at the top of this file: the options, what is written and what is printed. */
+function usage() {
+    const lines = readFileSync(fileURLToPath(import.meta.url), "utf8").split("\n");
+    const end = lines.findIndex((line) => !line.startsWith("//"));
+    return lines.slice(0, end).map((line) => line.replace(/^\/\/ ?/, "")).join("\n").replace(/^\s+/, "");
 }
 
 function parseArgs(argv) {
     const options = { route: "car", width: 1080, height: 1920, padding: 0.2 };
+    if (argv.includes("--help") || argv.includes("-h")) {
+        process.stdout.write(`${usage()}\n`);
+        process.exit(0);
+    }
     for (let i = 0; i < argv.length; i += 1) {
         const key = argv[i];
         const value = argv[i + 1];
