@@ -53,10 +53,13 @@ def rpc(folder, method, params, provider=None):
 class Session:
     """The session transport (`provider session`): newline-delimited JSON in both directions."""
 
-    def __init__(self, folder):
+    def __init__(self, folder, features=None):
         self.process = subprocess.Popen([str(ENTRYPOINT), "session"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE, text=True, cwd=ROOT, env=environment(folder))
-        self.send({"type": "hello", "apiVersion": MANIFEST["apiVersion"], "host": "BashCut", "pluginId": MANIFEST["id"]})
+        hello = {"type": "hello", "apiVersion": MANIFEST["apiVersion"], "host": "BashCut", "pluginId": MANIFEST["id"]}
+        if features is not None:
+            hello["features"] = features
+        self.send(hello)
         hello = self.read()
         if hello.get("type") != "hello":
             raise AssertionError(f"expected hello, got {hello}")
@@ -327,12 +330,31 @@ print(json.dumps(out))
 class InspectorViewTests(unittest.TestCase):
     """The Inspector view "graphic": fields for a graphic this plugin rendered, nothing for other items."""
 
-    def view(self, folder, media, values=None, event=None):
+    def view(self, folder, media, values=None, event=None, features=None):
+        """Without features: an older BashCut (one-shot, no hello features). With them: a session whose hello lists
+        them, as BashCut sends it."""
         params = {"view": "graphic", "context": {"selection": {"id": "item-1"}, "media": media},
                   "values": values or {}, "state": None}
         if event:
             params["event"] = event
-        return rpc(folder, "view.event" if event else "view.render", params)["result"]
+        method = "view.event" if event else "view.render"
+        if features is None:
+            return rpc(folder, method, params)["result"]
+        session = Session(folder, features)
+        try:
+            return session.request("v1", method, params)[1]["result"]
+        finally:
+            session.close()
+
+    def graphic_media(self, folder, variables):
+        composition = pathlib.Path(folder, "graphics", "lower-third")
+        shutil.copytree(ROOT / "examples" / "lower-third", composition, dirs_exist_ok=True)
+        return {"id": "m1", "data": {"graphics": {"composition": str(composition), "name": "lower-third",
+                                                  "variables": variables}}}
+
+    @staticmethod
+    def nodes(body):
+        return {n.get("id"): n for n in body + [c for n in body for c in n.get("children", [])] if n.get("id")}
 
     def test_other_items_get_an_empty_view(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -350,13 +372,55 @@ class InspectorViewTests(unittest.TestCase):
             self.assertEqual("Head roaster", nodes["role"]["value"])  # the declared default
             self.assertEqual("toggle", nodes["glint"]["type"])
             self.assertEqual("#FF3B30", nodes["accent"]["value"])  # look fields sit in their own section
-            self.assertNotIn("headingFont", nodes)  # fonts come from the brand
+            self.assertEqual("textField", nodes["headingFont"]["type"])  # brand fonts are editable too
+            self.assertEqual("textField", nodes["accent"]["type"])  # a BashCut without the pickers gets text fields
             self.assertEqual("button", nodes["render"]["type"])
             clicked = self.view(folder, media, values={"name": "Samantha Abrams"}, event={"node": "render", "type": "click"})
             self.assertIn("Nothing changed.", [n.get("text") for n in clicked["body"]])
             params = {"view": "graphic", "locale": "vi", "context": {"selection": {"id": "item-1"}, "media": media}}
             vietnamese = rpc(folder, "view.render", params)["result"]
             self.assertEqual(("Đồ hoạ", "Render lại"), (vietnamese["title"], vietnamese["body"][-1]["title"]))
+
+    def test_pickers_when_the_host_has_them(self):
+        with tempfile.TemporaryDirectory() as folder:
+            media = self.graphic_media(folder, {"name": "Samantha Abrams", "accent": "#ff3b30", "headingFont": "Inter"})
+            features = ["views", "views.colorPicker", "views.fontPicker"]
+            nodes = self.nodes(self.view(folder, media, features=features)["body"])
+            self.assertEqual({"type": "colorPicker", "id": "accent", "value": "#ff3b30"},
+                             {k: nodes["accent"][k] for k in ("type", "id", "value")})
+            self.assertEqual(("fontPicker", "Inter", "family"),
+                             (nodes["headingFont"]["type"], nodes["headingFont"]["value"], nodes["headingFont"]["by"]))
+            self.assertEqual("fontPicker", nodes["bodyFont"]["type"])
+            self.assertEqual("textField", nodes["name"]["type"])
+            # Only the colour well: fonts stay text fields on a host that lists one feature and not the other.
+            nodes = self.nodes(self.view(folder, media, features=["views.colorPicker"])["body"])
+            self.assertEqual(("colorPicker", "textField"), (nodes["accent"]["type"], nodes["headingFont"]["type"]))
+            # A hello without the features (an app before them) keeps text fields.
+            nodes = self.nodes(self.view(folder, media, features=["views"])["body"])
+            self.assertEqual(("textField", "textField"), (nodes["accent"]["type"], nodes["headingFont"]["type"]))
+
+    def test_colour_wells_take_hex_only(self):
+        script = ("import('" + (ROOT / "lib" / "inspector.mjs").as_uri() + "').then(({fields, hexColor}) => {"
+                  "const declared = [{id: 'accent', type: 'color', default: '#FFF'},"
+                  " {id: 'text', type: 'color', default: 'rgba(0,0,0,0.5)'}, {id: 'shade', type: 'color', default: '#11223380'}];"
+                  "const body = fields(declared, {variables: {}}, {}, null, {look: 'Look', render: 'Render'},"
+                  " new Set(['views.colorPicker']));"
+                  "console.log(JSON.stringify({kinds: body.find((n) => n.type === 'section').children.map((n) => [n.type, n.value, n.alpha ?? false]),"
+                  " own: body.filter((n) => n.id === 'shade').map((n) => [n.type, n.alpha]), bad: hexColor('red')}));})")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual([["colorPicker", "#FFFFFF", False], ["textField", "rgba(0,0,0,0.5)", False]], result["kinds"])
+        self.assertEqual([["colorPicker", True]], result["own"])
+        self.assertIsNone(result["bad"])
+
+    def test_picked_colour_in_upper_case_is_not_a_change(self):
+        script = ("import('" + (ROOT / "lib" / "inspector.mjs").as_uri() + "').then(({changedVariables}) => {"
+                  "const declared = [{id: 'accent', type: 'color', default: '#ff3b30'}, {id: 'text', type: 'color', default: '#fff'}];"
+                  "console.log(JSON.stringify(changedVariables(declared, {}, {accent: '#FF3B30', text: '#FFFFFE'})));})")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual({"text": "#FFFFFE"}, json.loads(out.stdout))
 
     def test_only_edited_fields_are_sent_typed(self):
         script = ("import('" + (ROOT / "lib" / "inspector.mjs").as_uri() + "').then(({changedVariables}) => {"

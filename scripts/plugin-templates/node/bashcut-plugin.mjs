@@ -15,6 +15,11 @@ export class PluginError extends Error {
 
 class Cancelled extends Error {}
 
+/** The host features the session hello listed (API 8), such as "views.colorPicker" or "overlays". Check one before
+ * using what it names, so the plugin still works in an older BashCut: hostFeatures.has("views.fontPicker"). Empty
+ * over the one-shot transport and before the hello. */
+export const hostFeatures = new Set();
+
 function send(message) {
     process.stdout.write(JSON.stringify(message) + "\n");
 }
@@ -140,7 +145,10 @@ class Session {
         for (;;) {
             const message = this.backlog.length ? this.backlog.shift() : await this.reader.message();
             if (message === null || message.type === "shutdown") return;
-            if (message.type === "hello") send({ type: "hello", apiVersion: message.apiVersion ?? 2 });
+            if (message.type === "hello") {
+                for (const feature of message.features ?? []) hostFeatures.add(String(feature));
+                send({ type: "hello", apiVersion: message.apiVersion ?? 2 });
+            }
             else if (message.type === "cancel" || message.type === "callResult") continue;
             else send(await respond(message, this.handler, this));
         }

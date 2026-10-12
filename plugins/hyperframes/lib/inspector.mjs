@@ -9,6 +9,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { hostFeatures } from "./bashcut-plugin.mjs";
 import { BRAND_IDS, readComposition, rerender, useRunner } from "./graphic.mjs";
 
 export const VIEW = "graphic";
@@ -50,7 +51,7 @@ export async function graphicView(params, host, renderHere) {
             }
         }
     }
-    return { title: words.title, body: fields(declared, recorded, values, notice, words) };
+    return { title: words.title, body: fields(declared, recorded, values, notice, words, hostFeatures) };
 }
 
 /** The variables whose field differs from what the graphic was rendered with, typed by their declarations. */
@@ -61,7 +62,7 @@ export function changedVariables(declared, recordedVariables, values) {
         const now = typed(d, values[d.id]);
         if (now === undefined) continue;
         const before = d.id in recordedVariables ? recordedVariables[d.id] : d.default;
-        if (JSON.stringify(now) !== JSON.stringify(before)) changed[d.id] = now;
+        if (JSON.stringify(comparable(d, now)) !== JSON.stringify(comparable(d, before))) changed[d.id] = now;
     }
     return changed;
 }
@@ -75,6 +76,20 @@ function typed(declaration, value) {
     return value == null ? "" : String(value);
 }
 
+/** The colour picker answers `#AABBCC` in upper case: "#aabbcc" and "#abc" recorded earlier are the same colour. */
+function comparable(declaration, value) {
+    if (declaration.type !== "color" || typeof value !== "string") return value;
+    return hexColor(value)?.toUpperCase() ?? value;
+}
+
+/** `#RRGGBB` or `#RRGGBBAA` (3- and 4-digit forms widened) for a hex colour; null for anything else (rgba(), names). */
+export function hexColor(value) {
+    const match = /^#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.exec(String(value ?? "").trim());
+    if (!match) return null;
+    const digits = match[1].length <= 4 ? [...match[1]].map((c) => c + c).join("") : match[1];
+    return `#${digits}`;
+}
+
 function shown(declaration, recordedVariables, values) {
     if (declaration.id in values) return values[declaration.id];
     const value = declaration.id in recordedVariables ? recordedVariables[declaration.id] : declaration.default;
@@ -82,17 +97,24 @@ function shown(declaration, recordedVariables, values) {
     return value == null ? "" : String(value);
 }
 
-function fields(declared, recorded, values, notice, words) {
+/**
+ * The view's components. Colours get a colour well and fonts a font menu (by family: the composition sets CSS
+ * font-family) when the host lists `views.colorPicker` / `views.fontPicker` in its hello; an older BashCut gets text
+ * fields, so those features stay out of plugin.json `features` (that would make it refuse the whole plugin). A
+ * colour that is not hex (rgba(), a name) keeps a text field too: the colour well only takes hex.
+ */
+export function fields(declared, recorded, values, notice, words, features = new Set()) {
     const own = declared.filter((d) => !BRAND_IDS.includes(d.id) && d.id !== "logo" && d.id !== "mascot");
-    const look = declared.filter((d) => BRAND_IDS.includes(d.id) && d.type !== "font");
+    const look = declared.filter((d) => BRAND_IDS.includes(d.id));
     const node = (d) => {
         const label = d.label ?? d.id;
         const value = shown(d, recorded.variables ?? {}, values);
-        // Colour and font pickers: once core has view node kinds for them, map d.type "color" and "font" here (and
-        // drop the font filter on `look` above, so the brand fonts become editable). Adding their host feature to
-        // plugin.json `features` makes an app without it refuse the whole plugin, so either ship with that app or
-        // keep text fields when the host lacks the node kinds. `typed` keeps sending a hex string / font name.
         if (d.type === "boolean") return { type: "toggle", id: d.id, label, value };
+        if (d.type === "color" && features.has("views.colorPicker")) {
+            const hex = hexColor(value);
+            if (hex) return { type: "colorPicker", id: d.id, label, value: hex, ...(hex.length === 9 ? { alpha: true } : {}) };
+        }
+        if (d.type === "font" && features.has("views.fontPicker")) return { type: "fontPicker", id: d.id, label, value, by: "family" };
         if (d.type === "string" && String(value).length > 40) return { type: "textArea", id: d.id, label, value, height: 60 };
         return { type: "textField", id: d.id, label, value };
     };
