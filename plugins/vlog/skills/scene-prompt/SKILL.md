@@ -32,6 +32,25 @@ needs it, is its upload toggle (`bashcut.vlog:publish`).
   time of day), and a length inside the row's `targetSeconds` (T03 §7). Say which neighbours you read.
 - **No generation by default.** Delivering the prompt is the job. Call a video or image generator only when the user
   asks and a tool for it is available; never spend their credits on your own initiative.
+- **Dry run before generating.** When the user asks for generation and a provider is installed, first run
+  `bashcut library generate "<final prompt>" --kind clip --params '{"seconds": N, "aspect": "9:16"}' --dry-run`: it
+  (`params` are hints in the provider's own names) returns the request as it would go to the provider, whether it is
+  paid and its estimate. Check the request against
+  the provider's own limits (duration choices, prompt length, reference count) and the plan row's `targetSeconds`,
+  show the user the priced request, and wait for a yes before the real run (same command without `--dry-run`, with a
+  `--request-id` so a retry never pays twice). No provider: deliver the prompt and say generation is theirs to run.
+- **Compare the takes, then keep one.** Generated takes are candidates, not shots. Import them, then look at them
+  side by side: `bashcut media frames --media <a>,<b>,<c> --count 6 --sheet` (one sheet, cells labelled per take) and,
+  for a plan row, against its neighbour with `--reference <neighbour> --media <take>`. Measure what the model did, not
+  what was asked: the real duration (`bashcut media list`), cuts inside the clip and motion
+  (`bashcut media strip --media <take>`, `media description`). Cull on hard invariants first (identity, wardrobe,
+  props, screen direction, text that must not appear, length outside the row), then judge the rest. Record each
+  verdict on the take with `timeline apply` op `{"op":"setMediaData","media":"<id>","patch":{"take":2,
+  "verdict":"keep|cull","reason":"face changes at 2 s"}}` (core keeps it, never reads it), so the next session sees
+  the ledger. Before rewriting the prompt, count the verdicts: the same failure in most takes is the prompt (rewrite
+  it, see Execution Gates and Failure Recovery); one bad take among good ones is chance (run again, same prompt).
+- **Chaining.** The next clip starts from the kept take's real last frame, `bashcut media frame --media <kept>
+  --edge last`, never from a planned or imagined frame.
 - **Bringing the clips in.** When the user has generated clips and wants to edit them, import them with
   `bashcut media import <path> --base-rev <rev>` (rev from `bashcut timeline get`; `--place` also puts them on the
   timeline), check with `bashcut ui frame`; for a plan row, describe the clip (`bashcut media describe`) so
@@ -40,7 +59,8 @@ needs it, is its upload toggle (`bashcut.vlog:publish`).
 - **Not this skill:** effects, transitions or grading on footage already in BashCut — use `bc:effects` and
   `bc:color-grade`.
 - **Series.** For continuation work across sessions, offer to save the character, scene and prop anchors in the
-  project memo (`bashcut knowledge memo`) so the next segment can reuse them.
+  project memo (`bashcut knowledge memo`) with the reference media each one comes from (the kept take and its frame),
+  so the next segment can reuse them.
 
 ## About this skill
 
