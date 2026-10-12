@@ -108,3 +108,13 @@ below come from `platforms get` once core's platform data carries them (fields `
 Report: per output the file, length, bit rate and loudness from `export status`; the cover files and frame; the
 chapter list and any rule it fails; the title, caption and hashtags per platform; and which facts came from data
 (with their `checked` date) and which are ranges you chose.
+
+## 7. After posting
+
+- When the user posts, record the link: `bashcut export link --url URL --platform tiktok --posted-at YYYY-MM-DD
+  [--export ID]` (`export history` lists the exports with their IDs; the latest by default).
+- Later, with the platform's retention CSV or JSON: `bashcut outcomes import FILE [--export ID] [--platform …]`, then
+  `bashcut outcomes map [--export ID]`: per section the raw drops and lifts with the words heard around them (±4 s by
+  default). These are facts, not verdicts; hand them to `bc:self-learn` to propose lessons.
+- For variety across videos, `bashcut project history --limit 10` compares recent projects (looks, captions, music,
+  hook and cut numbers).
