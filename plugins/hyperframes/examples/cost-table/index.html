@@ -7,8 +7,12 @@
     platform's bottom band. Keep it to six rows, or merge small items into "Other".
   - An item wraps after ~22 characters beside a 600.000đ amount and its row grows by ~53 px; shorten it
     ("Bus, return").
-  - Amounts are rounded to whole numbers and the currency goes after them with no space: 129.99 and 84.5 with currency
-    "$" show 130$ + 85$ and a total of 214$. Give whole amounts, and set currency " USD" with its leading space.
+  - Amounts keep their decimals (decimals -1 shows as many as the rows have, up to 2, the same on every row and the
+    total: 129.99 + 84.5 = 214.49 shows 129.99 / 84.50 / 214.49); decimals 0 rounds them. Prices in đồng have none.
+  - The currency goes after the amount with no space by default (600.000đ). For $129.99 set currencyBefore true; for
+    129,99 € set currencySpace true and locale de-DE. currencyCode (USD, EUR, VND…) lets the locale place the symbol
+    and the spacing itself (en-US + USD = $129.99, vi-VN + VND = 129.990 ₫) and overrides currency, currencyBefore
+    and currencySpace.
   - Rows slide in 0.3 s before their at and the total counts for 0.3 s after it, then pops at last at + 0.35: keep
     the last at under data-duration − 1.2 (3.8 s at 5 s) or the pop lands in the swing-out.
 -->
@@ -16,7 +20,11 @@
   {"id": "title", "type": "string", "label": "Title", "default": "48 hours, total cost"},
   {"id": "rows", "type": "string", "label": "Rows (JSON [{item, amount, at}])", "default": "[{\"item\":\"Bus there and back\",\"amount\":600000,\"at\":0.8},{\"item\":\"Two nights homestay\",\"amount\":900000,\"at\":1.4},{\"item\":\"Food and coffee\",\"amount\":1100000,\"at\":2.0},{\"item\":\"Tickets\",\"amount\":400000,\"at\":2.6}]"},
   {"id": "totalLabel", "type": "string", "label": "Total label", "default": "Total"},
-  {"id": "currency", "type": "string", "label": "Currency after the amount", "default": "đ"},
+  {"id": "currency", "type": "string", "label": "Currency symbol or word", "default": "đ"},
+  {"id": "currencyBefore", "type": "boolean", "label": "Currency before the amount ($129.99)", "default": false},
+  {"id": "currencySpace", "type": "boolean", "label": "Space between amount and currency (129,99 €)", "default": false},
+  {"id": "currencyCode", "type": "string", "label": "ISO currency code (USD, EUR, VND…): the locale places symbol and space; empty uses the three above", "default": ""},
+  {"id": "decimals", "type": "number", "label": "Decimals (-1: as many as the amounts have, up to 2)", "default": -1},
   {"id": "locale", "type": "string", "label": "Number format locale", "default": "vi-VN"},
   {"id": "accent", "type": "color", "label": "Total colour", "default": "#3BF26A"},
   {"id": "background", "type": "color", "label": "Card colour", "default": "#FBF7EE"},
@@ -69,7 +77,25 @@
       }
       document.head.appendChild(faces);
       const rows = JSON.parse(v.rows);
-      const money = (n) => `${Math.round(n).toLocaleString(v.locale)}${v.currency}`;
+      // Amounts keep their decimals, every number with the same count so the total does not jump while it counts.
+      const places = (n) => (String(n).split(".")[1] ?? "").length;
+      const decimals = Number(v.decimals) >= 0 ? Math.min(4, Math.round(Number(v.decimals)))
+        : Math.min(2, Math.max(0, ...rows.map((row) => places(row.amount))));
+      const code = String(v.currencyCode ?? "").trim().toUpperCase();
+      let format;
+      try {
+        format = new Intl.NumberFormat(v.locale || undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals,
+          ...(code ? { style: "currency", currency: code } : {}) });
+      } catch {
+        format = new Intl.NumberFormat("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      }
+      const money = (n) => {
+        const number = format.format(n);
+        if (code) return number;
+        const symbol = String(v.currency ?? ""), gap = v.currencySpace ? "\u00A0" : "";
+        if (!symbol) return number;
+        return v.currencyBefore ? `${symbol}${gap}${number}` : `${number}${gap}${symbol}`;
+      };
       document.getElementById("title").textContent = v.title;
       document.getElementById("totalLabel").textContent = v.totalLabel;
       const totalValue = document.getElementById("totalValue");
