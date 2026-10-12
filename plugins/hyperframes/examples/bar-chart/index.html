@@ -8,6 +8,8 @@
   - Labels have the bar width + 40 px: at 8 bars "January" runs into "Feb"; use 3-letter labels from 6 bars up.
   - Bars scale to the largest value: one under ~2% of it gets a bar under 10 px (300 next to 125,000 draws none) and
     its number sits on the axis. Split the chart or plot the small ones on their own.
+  - Decimals follow the values (11.2 and 528.5 show one) unless decimals is set; locale vi-VN writes 528,5.
+  - The card spans top to top + 900 px: over captions low in the frame, raise it (top 360 ends at 1260).
   - highlight counts from 0 (3 is the fourth bar); -1 leaves every bar grey.
   - A bar rises for 0.5 s and lands on its at, but never starts before 0.3 s, so an at under 0.8 lands late; the last
     at must be before data-duration − 0.5 (4.5 s at 5 s), where the card swings out.
@@ -15,7 +17,10 @@
 <html lang="en" data-composition-variables='[
   {"id": "title", "type": "string", "label": "Title", "default": "Visitors per month"},
   {"id": "items", "type": "string", "label": "Bars (JSON [{label, value, at}])", "default": "[{\"label\":\"Jan\",\"value\":120,\"at\":0.8},{\"label\":\"Feb\",\"value\":180,\"at\":1.3},{\"label\":\"Mar\",\"value\":260,\"at\":1.8},{\"label\":\"Apr\",\"value\":410,\"at\":2.3}]"},
-  {"id": "unit", "type": "string", "label": "Unit after each value", "default": "K"},
+  {"id": "unit", "type": "string", "label": "Unit after each value, as written (\" ha\" keeps a space)", "default": "K"},
+  {"id": "decimals", "type": "number", "label": "Decimals (-1: as many as the values have, up to 2)", "default": -1},
+  {"id": "locale", "type": "string", "label": "Number format locale (vi-VN: 528,5)", "default": "en-US"},
+  {"id": "top", "type": "number", "label": "Card top (px; the card is 900 px tall)", "default": 460},
   {"id": "highlight", "type": "number", "label": "Bar to highlight (index, -1 none)", "default": 3},
   {"id": "accent", "type": "color", "label": "Highlight colour", "default": "#FFB020"},
   {"id": "source", "type": "string", "label": "Source line (empty hides it)", "default": "Source: sample data"},
@@ -77,12 +82,21 @@
       source.style.display = v.source ? "block" : "none";
       const max = Math.max(...items.map((item) => item.value)) || 1;
       const bars = document.getElementById("bars");
-      const format = (n) => `${Math.round(n).toLocaleString("en-US")}${v.unit}`;
+      const places = (n) => (String(n).split(".")[1] ?? "").length;
+      const decimals = Number(v.decimals) >= 0 ? Math.min(4, Math.round(Number(v.decimals))) : Math.min(2, Math.max(...items.map((item) => places(item.value))));
+      let numbers;
+      try {
+        numbers = new Intl.NumberFormat(v.locale || "en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      } catch {
+        numbers = new Intl.NumberFormat("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      }
+      const format = (n) => `${numbers.format(n)}${v.unit}`;
       // The exit lands on the composition's end, so a render stretched to a span (bin/graphic plan sets
       // data-duration) holds until then.
       const END = Number(document.querySelector('[data-composition-id="main"]').dataset.duration);
       const tl = gsap.timeline({ paused: true });
       const card = document.getElementById("card");
+      card.style.top = `${Number(v.top ?? 460)}px`;
       tl.fromTo(card, { opacity: 0, y: 80, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0);
       items.forEach((item, i) => {
         const col = document.createElement("div");
