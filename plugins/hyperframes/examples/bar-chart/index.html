@@ -1,0 +1,87 @@
+<!doctype html>
+<!-- A bar chart on a card whose bars rise one by one, each value counting up as its bar grows (items is a JSON array
+     of {label, value, at}: at = seconds from the start when that bar lands on its word). Transparent, 1080×1920,
+     5 s. Raw material: change the card, the bars, the units and the timing for the video. -->
+<html lang="en" data-composition-variables='[
+  {"id":"title","type":"string","label":"Title","default":"Visitors per month"},
+  {"id":"items","type":"string","label":"Bars (JSON [{label, value, at}])","default":"[{\"label\":\"Jan\",\"value\":120,\"at\":0.8},{\"label\":\"Feb\",\"value\":180,\"at\":1.3},{\"label\":\"Mar\",\"value\":260,\"at\":1.8},{\"label\":\"Apr\",\"value\":410,\"at\":2.3}]"},
+  {"id":"unit","type":"string","label":"Unit after each value","default":"K"},
+  {"id":"highlight","type":"number","label":"Bar to highlight (index, -1 none)","default":3},
+  {"id":"accent","type":"color","label":"Highlight colour","default":"#FFB020"},
+  {"id":"source","type":"string","label":"Source line (empty hides it)","default":"Source: sample data"}
+]'>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      #root { position: relative; width: 1080px; height: 1920px; perspective: 1600px;
+        font-family: "Helvetica Neue", Arial, sans-serif; }
+      #card { position: absolute; left: 90px; top: 460px; width: 900px; height: 900px; padding: 56px 60px;
+        border-radius: 36px; background: rgba(14, 16, 22, 0.86); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        color: #fff; }
+      #title { font-size: 58px; font-weight: 800; letter-spacing: -0.02em; }
+      #bars { position: absolute; left: 60px; right: 60px; bottom: 130px; height: 560px; display: flex;
+        align-items: flex-end; gap: 28px; border-bottom: 3px solid rgba(255, 255, 255, 0.25); }
+      .col { flex: 1; height: 100%; position: relative; }
+      .bar { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 18px 18px 6px 6px;
+        background: rgba(255, 255, 255, 0.28); transform-origin: 50% 100%; }
+      .value { position: absolute; left: -20px; right: -20px; text-align: center; font-size: 46px; font-weight: 800;
+        font-variant-numeric: tabular-nums; }
+      .label { position: absolute; left: -20px; right: -20px; bottom: -66px; text-align: center; font-size: 36px;
+        font-weight: 600; color: rgba(255, 255, 255, 0.8); }
+      #source { position: absolute; left: 60px; bottom: 34px; font-size: 26px; color: rgba(255, 255, 255, 0.55); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="5" data-width="1080" data-height="1920">
+      <div id="card"><div id="title"></div><div id="bars"></div><div id="source"></div></div>
+    </div>
+    <script>
+      const v = window.__hyperframes.getVariables();
+      const items = JSON.parse(v.items);
+      document.getElementById("title").textContent = v.title;
+      const source = document.getElementById("source");
+      source.textContent = v.source;
+      source.style.display = v.source ? "block" : "none";
+      const max = Math.max(...items.map((item) => item.value)) || 1;
+      const bars = document.getElementById("bars");
+      const format = (n) => `${Math.round(n).toLocaleString("en-US")}${v.unit}`;
+      const tl = gsap.timeline({ paused: true });
+      const card = document.getElementById("card");
+      tl.fromTo(card, { opacity: 0, y: 80, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0);
+      items.forEach((item, i) => {
+        const col = document.createElement("div");
+        col.className = "col";
+        col.innerHTML = '<div class="bar"></div><div class="value"></div><div class="label"></div>';
+        const bar = col.querySelector(".bar");
+        const value = col.querySelector(".value");
+        const share = item.value / max;
+        bar.style.height = `${share * 86}%`;
+        if (i === v.highlight) bar.style.background = v.accent;
+        value.style.bottom = `calc(${share * 86}% + 14px)`;
+        value.textContent = format(0);
+        col.querySelector(".label").textContent = item.label;
+        col.querySelector(".label").setAttribute("data-layout-allow-overflow", "");
+        bars.appendChild(col);
+        // The bar finishes rising on its word (item.at).
+        const rise = 0.5;
+        const start = Math.max(0.3, item.at - rise);
+        tl.fromTo(bar, { scaleY: 0 }, { scaleY: 1, duration: rise, ease: "power2.out" }, start);
+        tl.fromTo(value, { opacity: 0, y: share * 480 }, { opacity: 1, y: 0, duration: rise, ease: "power2.out" }, start);
+        // Text cannot be tweened: one tl.set per frame.
+        const steps = Math.round(rise * 30);
+        for (let s = 0; s <= steps; s += 1) {
+          const t = 1 - Math.pow(1 - s / steps, 2);
+          tl.set(value, { textContent: format(item.value * t) }, start + (s / steps) * rise);
+        }
+      });
+      tl.to(card, { rotationY: -70, x: -260, opacity: 0, duration: 0.45, ease: "power2.in", transformOrigin: "0% 50%" }, 4.5);
+      tl.seek(0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

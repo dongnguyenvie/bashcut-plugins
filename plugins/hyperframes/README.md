@@ -14,8 +14,14 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   with `bashcut plugins invoke graphics.render --params '{"composition": "/abs/folder", "variables": {…}}'`.
 - **`bin/hf`**: the pinned HyperFrames CLI with telemetry off and the plugin's own Chrome: `catalog`, `add`, `lint`,
   `check`, `snapshot` (frames to look at, optionally against a reference video), `docs`.
-- **`examples/`**: starting points that pass `hf lint`: `keyword-pop`, `stat-counter`, `cursor-click`,
-  `paper-card`, `checklist-card`.
+- **`bin/osm-map`**: an OpenStreetMap map and a route for a composition: tiles (cached in the plugin cache folder)
+  and `map-data.js` in canvas pixels, plus `km`, `minutes` and per-stop legs as JSON. Routes from OSRM on
+  routing.openstreetmap.de (FOSSGIS); tiles from tile.openstreetmap.org with the plugin's User-Agent, two at a time,
+  under the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Map data © OpenStreetMap
+  contributors (ODbL); `map-route` keeps the credit on screen.
+- **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
+  `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
+  `cost-table`, `timeline`, `map-route`.
 - **The skill** `skills/hyperframes/SKILL.md`: the design → build → look → render → place → check loop, the
   composition rules, and moves that combine a graphic with BashCut's own layers (the speaker shrinking into a card).
 

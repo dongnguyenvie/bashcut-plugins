@@ -25,6 +25,7 @@
       {"path": "skills/talking-head"},
       {"path": "skills/podcast-clips"},
       {"path": "skills/tutorial"},
+      {"path": "skills/explainer"},
       {"path": "skills/scene-prompt"}
     ],
     "library": [

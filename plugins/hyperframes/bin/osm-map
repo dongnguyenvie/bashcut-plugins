@@ -1,0 +1,11 @@
+#!/bin/sh
+# An OpenStreetMap map and a route for a composition (tiles + map-data.js, read by examples/map-route):
+#   bin/osm-map --dir D --points "lat,lon,Label;lat,lon,Label" [--route car|bike|foot|none] [--width W --height H]
+# Prints km, minutes and legs per stop as JSON. Needs network; renders then need none. See lib/osm-map.mjs.
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+if ! node="$("$here/find-node")"; then
+    echo "Node.js 22.19+ is missing: choose Install Dependencies for HyperFrames Graphics in BashCut › Plugins." >&2
+    exit 3
+fi
+exec "$node" "$here/../lib/osm-map.mjs" "$@"
