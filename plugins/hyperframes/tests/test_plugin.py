@@ -354,6 +354,9 @@ class InspectorViewTests(unittest.TestCase):
             self.assertEqual("button", nodes["render"]["type"])
             clicked = self.view(folder, media, values={"name": "Samantha Abrams"}, event={"node": "render", "type": "click"})
             self.assertIn("Nothing changed.", [n.get("text") for n in clicked["body"]])
+            params = {"view": "graphic", "locale": "vi", "context": {"selection": {"id": "item-1"}, "media": media}}
+            vietnamese = rpc(folder, "view.render", params)["result"]
+            self.assertEqual(("Đồ hoạ", "Render lại"), (vietnamese["title"], vietnamese["body"][-1]["title"]))
 
     def test_only_edited_fields_are_sent_typed(self):
         script = ("import('" + (ROOT / "lib" / "inspector.mjs").as_uri() + "').then(({changedVariables}) => {"

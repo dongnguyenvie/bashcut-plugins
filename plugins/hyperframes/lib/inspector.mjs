@@ -13,8 +13,16 @@ import { BRAND_IDS, readComposition, rerender, useRunner } from "./graphic.mjs";
 
 export const VIEW = "graphic";
 
+const WORDS = {
+    en: { title: "Graphic", unreadable: "Its composition cannot be read:", nothing: "Nothing changed.", rendering: "Rendering…",
+          rendered: (n) => `Rendered again (${n} frames).`, look: "Look (empty keeps the brand)", render: "Render again" },
+    vi: { title: "Đồ hoạ", unreadable: "Không đọc được composition:", nothing: "Chưa có gì thay đổi.", rendering: "Đang render…",
+          rendered: (n) => `Đã render lại (${n} frame).`, look: "Giao diện (để trống thì theo brand)", render: "Render lại" },
+};
+
 /** view.render / view.event for the Inspector view. */
 export async function graphicView(params, host, renderHere) {
+    const words = String(params.locale ?? "").startsWith("vi") ? WORDS.vi : WORDS.en;
     const context = params.context ?? {};
     const item = context.selection;
     const recorded = context.media?.data?.graphics;
@@ -23,7 +31,7 @@ export async function graphicView(params, host, renderHere) {
     try {
         declared = readComposition(recorded.composition).declared;
     } catch (error) {
-        return { title: "Graphic", body: [{ type: "text", text: `Its composition cannot be read: ${error.message}`, style: "caption", color: "orange" }] };
+        return { title: words.title, body: [{ type: "text", text: `${words.unreadable} ${error.message}`, style: "caption", color: "orange" }] };
     }
     const values = params.values ?? {};
     const event = params.event;
@@ -31,18 +39,18 @@ export async function graphicView(params, host, renderHere) {
     if (event?.node === "render" && event.type === "click") {
         const changed = changedVariables(declared, recorded.variables ?? {}, values);
         if (Object.keys(changed).length === 0) {
-            notice = { type: "text", text: "Nothing changed.", style: "caption" };
+            notice = { type: "text", text: words.nothing, style: "caption" };
         } else {
-            host.event({ kind: "render", title: "Graphic", body: [{ type: "progress", label: "Rendering…" }] });
+            host.event({ kind: "render", title: words.title, body: [{ type: "progress", label: words.rendering }] });
             try {
                 const result = await rerenderWithHost(host, item.id, changed, renderHere, context);
-                notice = { type: "text", text: `Rendered again (${result.frames ?? "?"} frames).`, style: "caption", color: "green" };
+                notice = { type: "text", text: words.rendered(result.frames ?? "?"), style: "caption", color: "green" };
             } catch (error) {
                 notice = { type: "text", text: error.message, style: "caption", color: "red" };
             }
         }
     }
-    return { title: "Graphic", body: fields(declared, recorded, values, notice) };
+    return { title: words.title, body: fields(declared, recorded, values, notice, words) };
 }
 
 /** The variables whose field differs from what the graphic was rendered with, typed by their declarations. */
@@ -74,7 +82,7 @@ function shown(declaration, recordedVariables, values) {
     return value == null ? "" : String(value);
 }
 
-function fields(declared, recorded, values, notice) {
+function fields(declared, recorded, values, notice, words) {
     const own = declared.filter((d) => !BRAND_IDS.includes(d.id) && d.id !== "logo" && d.id !== "mascot");
     const look = declared.filter((d) => BRAND_IDS.includes(d.id) && d.type !== "font");
     const node = (d) => {
@@ -85,8 +93,8 @@ function fields(declared, recorded, values, notice) {
         return { type: "textField", id: d.id, label, value };
     };
     const body = [{ type: "text", text: recorded.name ?? "", style: "caption" }, ...own.map(node)];
-    if (look.length) body.push({ type: "section", title: "Look (empty keeps the brand)", children: look.map(node) });
-    body.push({ type: "button", id: "render", title: "Render again", icon: "arrow.clockwise", style: "primary" });
+    if (look.length) body.push({ type: "section", title: words.look, children: look.map(node) });
+    body.push({ type: "button", id: "render", title: words.render, icon: "arrow.clockwise", style: "primary" });
     if (notice) body.push(notice);
     return body;
 }
