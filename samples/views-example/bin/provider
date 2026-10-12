@@ -281,8 +281,8 @@ def voice_providers(request):
         return []
     entries = answer.get("capabilities") if isinstance(answer.get("capabilities"), list) else [answer]
     providers = [p for entry in entries if isinstance(entry, dict) for p in entry.get("providers") or []]
-    return [(p["id"], (p.get("name") or p["id"]) + (" (paid)" if p.get("paid") else ""))
-            for p in providers if isinstance(p, dict) and p.get("id")]
+    rows = [(p.get("provider") or p.get("id"), p) for p in providers if isinstance(p, dict)]
+    return [(pid, (p.get("name") or pid) + (" (paid)" if p.get("paid") else "")) for pid, p in rows if pid]
 
 
 def voice(request, state, values, event):
