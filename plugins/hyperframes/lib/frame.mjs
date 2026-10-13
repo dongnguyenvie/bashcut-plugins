@@ -9,7 +9,8 @@
 //   fadeIn    seconds the backdrop takes to fade in (0: there from the first frame)
 //   drift     true: the backdrop pans and the widget slides a few pixels over the whole span, so a held card is
 //             never a still frame
-//   chip      a short label in a pill at the top left ("2/4", "Bước 1"); fades out 0.3 s before the end
+//   chip      a short label in a pill at the top left ("2/4", "Bước 1"); fades out 0.3 s before the end. When chip
+//             or credit pushes a widget with a painted full-frame layer down, a "plain" backdrop fills the top
 //   credit    a source line at the top left, above the chip ("© OpenStreetMap contributors")
 //   callout   {text, at, top}: a plate under the widget that lands at `at` seconds ("@words" in plan); `*word*` is
 //             drawn in the accent; top (px) overrides where it sits
@@ -19,7 +20,7 @@
 // brand applies to the frame too.
 
 /** Bumped when the drawing changes, so graphic plan renders a framed graphic again. */
-export const FRAME_VERSION = 1;
+export const FRAME_VERSION = 2;
 
 const KEYS = new Set(["backdrop", "fadeIn", "drift", "chip", "credit", "callout", "scale"]);
 
@@ -138,10 +139,18 @@ function build(frame) {
     const frameBox = root.getBoundingClientRect();
     let box = null;
     const boxes = [];
+    // A painted full-frame layer (a map, a photo, a colour card) moves with the widget too.
+    let fullFrame = false;
     for (const el of widget.querySelectorAll("*")) {
         const r = el.getBoundingClientRect();
-        if (r.width < 2 || r.height < 2 || (r.width >= W * 0.95 && r.height >= H * 0.95)) continue;
-        if (getComputedStyle(el).display === "none") continue;
+        if (r.width < 2 || r.height < 2) continue;
+        const style = getComputedStyle(el);
+        if (style.display === "none") continue;
+        if (r.width >= W * 0.95 && r.height >= H * 0.95) {
+            const clear = /^rgba\(.*,\s*0\)$|^transparent$/.test(style.backgroundColor);
+            if (!clear || style.backgroundImage !== "none" || /^(IMG|CANVAS|VIDEO)$/.test(el.tagName)) fullFrame = true;
+            continue;
+        }
         const x0 = Math.max(0, r.left - frameBox.left), y0 = Math.max(0, r.top - frameBox.top);
         const x1 = Math.min(W, r.right - frameBox.left), y1 = Math.min(H, r.bottom - frameBox.top);
         if (x1 <= x0 || y1 <= y0) continue;
@@ -191,7 +200,12 @@ function build(frame) {
             corner = "left";
             const b = moved(box);
             const push = left.y1 - b.y0;
-            if (push > 0 && b.y1 + push <= H - 60 * unit) place.dy += push;
+            if (push > 0 && b.y1 + push <= H - 60 * unit) {
+                place.dy += push;
+                // The pushed full-frame layer would leave a transparent band at the top: fill it with the brand
+                // background.
+                if (fullFrame && !frame.backdrop) frame.backdrop = "plain";
+            }
         }
     }
     if (place.s !== 1 || place.dx || place.dy) {
