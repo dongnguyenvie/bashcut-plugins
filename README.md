@@ -19,6 +19,7 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 ```text
 registry.json                 catalog BashCut reads — generated, never edited by hand
 publishers.json               schemaVersion and publishers (source of registry.json)
+bundles.json                  plugin bundles such as Recommended (source of registry.json)
 plugins/<slug>/versions.json  the plugin's listing at its last release and its published versions (source)
 plugins/<slug>/plugin.json    manifest (bashcut.plugin/1)
 plugins/<slug>/bin/…          entrypoint and helpers
@@ -75,6 +76,25 @@ languages must include `en`. Adding a language is adding a key — no new fields
 the field.
 
 Each archive holds one folder named after the plugin id. The registry keeps the newest 3 versions of each plugin.
+
+## Bundles
+
+[`bundles.json`](bundles.json) lists plugins installed together after one approval: **Plugins › Browse ›
+Recommended** in BashCut, `bashcut plugins install --bundle starter`, and the agent kit's `/bc:setup`. The approval
+lists every plugin with a checkbox (`default` is whether it starts checked), its download size and capabilities;
+BashCut then downloads, verifies, sets up and trusts each one in turn, like a single install.
+
+```json
+{"bundles": [{
+  "id": "starter", "name": {"en": "Recommended", "vi": "Gói đề xuất"}, "summary": {"en": "…", "vi": "…"},
+  "plugins": [{"id": "bashcut.whisper-captions", "default": true}, {"id": "bashcut.antigravity", "default": false}]
+}]}
+```
+
+Edit it by hand and run `scripts/build-registry.py`, which copies it into `registry.json`. It refuses a bundle that
+names a plugin the registry does not have or one from an unverified publisher, since one approval covers them all.
+Plugins that do not run on a Mac (platform, BashCut version) are shown greyed out and skipped. BashCut versions
+without bundles ignore the field.
 
 ## Signatures
 

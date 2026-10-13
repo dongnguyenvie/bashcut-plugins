@@ -3,6 +3,7 @@
 Sources of truth (edited by the scripts, reviewed in PRs):
 
     publishers.json                 schemaVersion and publishers
+    bundles.json                    plugin bundles (Recommended): plugins installed together after one approval
     plugins/<slug>/versions.json    one plugin's listing at its last release and its published versions
 
 registry.json, the file BashCut downloads, is generated from them by `build_registry` (scripts/build-registry.py):
@@ -47,8 +48,15 @@ def slug_for(plugin_id):
     sys.exit(f"error: no plugins/*/{VERSIONS} for {plugin_id}")
 
 
+def load_bundles(root=ROOT):
+    """The bundles in bundles.json, in display order (empty without the file)."""
+    path = root / "bundles.json"
+    return json.loads(path.read_text()).get("bundles", []) if path.is_file() else []
+
+
 def build_registry():
-    """registry.json as BashCut reads it: publishers plus every plugin with at least one version, sorted by id."""
+    """registry.json as BashCut reads it: publishers, every plugin with at least one version (sorted by id) and the
+    bundles. BashCut versions without bundle support ignore `bundles`."""
     header = json.loads((ROOT / "publishers.json").read_text())
     plugins = []
     for path in sorted((ROOT / "plugins").glob(f"*/{VERSIONS}")):
@@ -59,7 +67,11 @@ def build_registry():
         entry.update({key: data["listing"][key] for key in LISTING_KEYS if key in data.get("listing", {})})
         plugins.append(entry)
     plugins.sort(key=lambda entry: entry["id"])
-    return {"schemaVersion": header["schemaVersion"], "publishers": header["publishers"], "plugins": plugins}
+    registry = {"schemaVersion": header["schemaVersion"], "publishers": header["publishers"], "plugins": plugins}
+    bundles = load_bundles()
+    if bundles:
+        registry["bundles"] = bundles
+    return registry
 
 
 def render(registry):
