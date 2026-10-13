@@ -684,6 +684,20 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertIn("accent", json.loads(out.stderr)["error"])  # lists what it has
         self.assertNotIn("plugins", [call["args"][0] for call in calls])
 
+    def test_plan_takes_an_example_by_name_and_leaves_out_a_brand_id_it_does_not_use(self):
+        graphics = [{"id": "g1", "on": "l1", "render": {"composition": "calendar", "set": {
+            "title": "Hồ Tây", "disclosure": "Ảnh tạo bằng AI"}, "frame": {"backdrop": "paper", "float": True}}}]
+        project_file = self.folder / "project" / "project.bashcut.json"
+        project_file.parent.mkdir()
+        state = {"projects": [self.plan_project(graphics=graphics)], "check": self.plan_check(), "projectFile": str(project_file)}
+        out, calls = self.run_graphic(state, "plan")
+        self.assertEqual(0, out.returncode, out.stderr)
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        self.assertEqual(project_file.parent / "graphics" / "g1-calendar", pathlib.Path(invoke["params"]["composition"]))
+        self.assertNotIn("disclosure", invoke["params"]["variables"])
+        self.assertEqual({"backdrop": "paper", "float": True}, invoke["pageFrame"])
+        self.assertTrue(any("disclosure" in w for w in json.loads(out.stdout)["warnings"]))
+
     def test_runs_through_a_symlinked_plugin_folder(self):
         link = self.folder / "linked-plugin"
         link.symlink_to(ROOT)
