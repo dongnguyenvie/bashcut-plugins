@@ -4,11 +4,15 @@
 // stretched data-duration); the script runs after the composition's own, wraps the composition's content in
 // #bc-widget and adds its tweens to window.__timelines.main.
 //
-//   backdrop  "texture" | "plain" | "none"  full-frame background behind the widget: the brand background with
-//             faint accent glows and a grid ("texture") or flat ("plain"); "none" (default) keeps the alpha
+//   backdrop  "texture" | "paper" | "plain" | "none"  full-frame background behind the widget: the brand background
+//             with faint accent glows and a grid ("texture"), with paper grain, fibres and a soft vignette ("paper":
+//             kraft with a kraft-brown brand background, notebook with a cream one) or flat ("plain"); "none"
+//             (default) keeps the alpha
 //   fadeIn    seconds the backdrop takes to fade in (0: there from the first frame)
-//   drift     true: the backdrop pans and the widget slides a few pixels over the whole span, so a held card is
-//             never a still frame
+//   drift     true: the backdrop pans and the widget slides a few pixels over the whole span (too slow for review's
+//             frozen-picture check; use float for that)
+//   float     true: once the widget has landed (about 1.2 s in) it bobs and breathes until the end, enough for review
+//             to count a held card as moving
 //   chip      a short label in a pill at the top left ("2/4", "Bước 1"); fades out 0.3 s before the end. When chip
 //             or credit pushes a widget with a painted full-frame layer down, a "plain" backdrop fills the top
 //   credit    a source line at the top left, above the chip ("© OpenStreetMap contributors")
@@ -20,9 +24,10 @@
 // brand applies to the frame too.
 
 /** Bumped when the drawing changes, so graphic plan renders a framed graphic again. */
-export const FRAME_VERSION = 2;
+export const FRAME_VERSION = 3;
 
-const KEYS = new Set(["backdrop", "fadeIn", "drift", "chip", "credit", "callout", "scale"]);
+const KEYS = new Set(["backdrop", "fadeIn", "drift", "float", "chip", "credit", "callout", "scale"]);
+const BACKDROPS = ["texture", "paper", "plain", "none"];
 
 /** A checked frame (keys and types), or null for none; throws Error with the reason. */
 export function checkFrame(frame) {
@@ -34,7 +39,7 @@ export function checkFrame(frame) {
     for (const [key, value] of Object.entries(frame)) {
         if (value === null || value === undefined || value === false || value === "") continue;
         if (key === "backdrop") {
-            if (!["texture", "plain", "none"].includes(value)) throw new Error('frame.backdrop is "texture", "plain" or "none"');
+            if (!BACKDROPS.includes(value)) throw new Error(`frame.backdrop is ${BACKDROPS.map((b) => `"${b}"`).join(", ")}`);
             if (value !== "none") out.backdrop = value;
         } else if (key === "fadeIn" || key === "scale") {
             const number = Number(value);
@@ -42,9 +47,9 @@ export function checkFrame(frame) {
             if (key === "scale" && (number < 0.5 || number > 2.5)) throw new Error("frame.scale is between 0.5 and 2.5");
             if (key === "fadeIn" && number < 0) throw new Error("frame.fadeIn must be 0 or more");
             if (key === "fadeIn" ? number > 0 : number !== 1) out[key] = number;
-        } else if (key === "drift") {
-            if (value !== true) throw new Error("frame.drift is true or left out");
-            out.drift = true;
+        } else if (key === "drift" || key === "float") {
+            if (value !== true) throw new Error(`frame.${key} is true or left out`);
+            out[key] = true;
         } else if (key === "chip" || key === "credit") {
             if (typeof value !== "string") throw new Error(`frame.${key} must be a string`);
             out[key] = value;
@@ -99,7 +104,12 @@ const STYLE = `
   repeating-linear-gradient(0deg, color-mix(in srgb, var(--text, #FFFFFF) 4%, transparent) 0 2px, transparent 2px 96px),
   repeating-linear-gradient(90deg, color-mix(in srgb, var(--text, #FFFFFF) 4%, transparent) 0 2px, transparent 2px 96px),
   var(--background, #0E1218); }
-#bc-widget { position: absolute; inset: 0; }
+#bc-backdrop.paper { background:
+  radial-gradient(ellipse at 50% 42%, transparent 50%, color-mix(in srgb, var(--text, #2A1E14) 22%, transparent) 100%),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='320'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0 0 0 -0.18'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1000' height='1000'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.09' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0 0 0 -0.07'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"),
+  var(--background, #C9A877); }
+#bc-widget, #bc-float { position: absolute; inset: 0; }
 #bc-chip { position: absolute; left: 72px; padding: 6px 26px 8px; border-radius: 999px; white-space: nowrap;
   border: 3px solid var(--accent, #FFB547); color: var(--accent, #FFB547); background: rgba(8, 10, 14, 0.55);
   font-family: var(--heading-font), Arial, sans-serif; font-size: 40px; font-weight: 800; letter-spacing: 0.04em; }
@@ -212,6 +222,21 @@ function build(frame) {
         widget.style.transformOrigin = `${place.ox}px ${place.oy}px`;
         gsap.set(widget, { scale: place.s, x: place.dx, y: place.dy });
     }
+    // Float: an inner layer bobs and breathes around the widget's centre once it has landed, so a held card keeps
+    // moving (review samples twice a second on a 24×24 grid; the drift alone stays under its threshold).
+    if (frame.float) {
+        const inner = document.createElement("div");
+        inner.id = "bc-float";
+        while (widget.firstChild) inner.appendChild(widget.firstChild);
+        widget.appendChild(inner);
+        inner.style.transformOrigin = `${(box.x0 + box.x1) / 2}px ${(box.y0 + box.y1) / 2}px`;
+        // Bob and breathe on different periods, so one is moving while the other turns.
+        const start = Math.min(1.2, END / 3);
+        for (const [vars, half] of [[{ y: -18 * unit }, 1.3], [{ scale: 1.035 }, 0.85]]) {
+            const repeat = Math.floor((END - start - 0.2) / half) - 1;
+            if (repeat >= 0) tl.to(inner, { ...vars, duration: half, ease: "sine.inOut", yoyo: true, repeat }, start);
+        }
+    }
     box = moved(box);
     const pin = (el) => {
         if (corner === "right") { el.style.left = "auto"; el.style.right = `${72 * unit}px`; el.style.textAlign = "right"; }
@@ -219,7 +244,7 @@ function build(frame) {
 
     if (frame.backdrop) {
         const back = layer("bc-backdrop", true);
-        if (frame.backdrop === "texture") back.className = "texture";
+        if (frame.backdrop !== "plain") back.className = frame.backdrop;
         if (frame.fadeIn) tl.fromTo(back, { opacity: 0 }, { opacity: 1, duration: frame.fadeIn, ease: "none" }, 0);
         if (frame.drift) tl.fromTo(back, { x: 0, y: 0 }, { x: -60 * unit, y: 45 * unit, duration: END, ease: "none" }, 0);
     }

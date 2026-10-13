@@ -132,8 +132,8 @@ sits at the top of the 3–8 a minute band (T13 §3) because the widgets are the
 - **Frame chrome stays across scenes** (RC): the section chip and header bar, a small channel avatar or mascot in a
   corner when the user has one, a credit line while sourced data or archive pictures are on screen. Only the content
   swaps; the chrome is what makes the channel recognisable. Keep it in the platform's safe zone (`bashcut platforms
-  get <id>`). Give every row the same `render.frame` instead of editing the widgets' HTML: `{"backdrop": "texture",
-  "drift": true, "chip": "2/4", "credit": "© OpenStreetMap contributors", "callout": {"text": "≈ *47 lần*", "at":
+  get <id>`). Give every row the same `render.frame` instead of editing the widgets' HTML: `{"backdrop": "texture"` (or
+  `"paper"` for a kraft or notebook look), `"float": true` (held cards keep moving for the frozen-picture check), `"chip": "2/4", "credit": "© OpenStreetMap contributors", "callout": {"text": "≈ *47 lần*", "at":
   "@bốn mươi bảy"}, "scale": 1.2}` — the hook and recap leave out the chip; `map-route` lands each pin on its name
   with `arriveAt` `["@…", "@…"]`.
 - **A mascot or character** only from the user's own image or a style they approved; no character is invented and

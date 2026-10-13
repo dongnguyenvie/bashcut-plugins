@@ -29,11 +29,12 @@
 //     their media IDs into plan.cut and runs plan apply — the whole picture of a plan in one call. A `set` value
 //     "@words" becomes the seconds from the graphic's start to where the voiceover says those words (plan check
 //     --words); inside a list or object given for a string variable, every "@words" string is replaced the same way.
-//     A composition path may be relative to the project folder. render.frame is the frame (below); "@words" work
+//     A composition path may be relative to the project folder; a bare name ("stat-counter") is this plugin's
+//     example. A brand id in `set` the composition does not declare is left out with a warning. render.frame is the frame (below); "@words" work
 //     in its callout.at too. Prints {rendered, kept, apply}.
 //
 // Frame (--frame JSON, render.frame): chrome drawn around any composition for the render only — backdrop
-// ("texture" | "plain"), fadeIn (s), drift (true), chip ("2/4"), credit ("© OpenStreetMap contributors"), callout
+// ("texture" | "paper" | "plain"), fadeIn (s), drift (true), float (true), chip ("2/4"), credit ("© OpenStreetMap contributors"), callout
 // ({text, at, top}, *word* in the accent), scale (0.5–2.5) — so a series of cards shares one look without editing
 // their HTML (lib/frame.mjs). It is recorded with the inputs; rerender --frame changes keys (null drops one; --frame
 // null drops the frame).
@@ -174,13 +175,20 @@ export function readComposition(dir) {
     return { declared, width: number("width"), height: number("height"), duration: number("duration") };
 }
 
-/** Explicit values from --set and --variables, typed by the declarations; unknown ids fail. */
-export function explicitVariables(declared, sets = [], variables = {}) {
+/**
+ * Explicit values from --set and --variables, typed by the declarations; unknown ids fail, except a brand id the
+ * composition does not use (one look given to every row), which is left out with a warning when `warnings` is given.
+ */
+export function explicitVariables(declared, sets = [], variables = {}, warnings = null) {
     const types = Object.fromEntries(declared.map((d) => [d.id, d.type]));
     const known = () => Object.keys(types).join(", ") || "none";
     const out = {};
     const put = (id, value, fromText) => {
         const type = types[id];
+        if (!type && warnings && BRAND_IDS.includes(id)) {
+            warnings.push(`the composition declares no ${id}; that brand value is left out`);
+            return;
+        }
         if (!type) throw new UsageError(`the composition declares no variable ${id} (it has: ${known()})`);
         if (type === "number") {
             const number = typeof value === "number" ? value : Number(value);
@@ -507,6 +515,17 @@ function lintNote(render, out) {
  * `slot` names the copy; an existing copy is reused as it is (it may have been edited for this project). `projectRoot`
  * is the project folder or a function that returns it (asked only for a plugin folder).
  */
+/**
+ * A composition folder: `given` resolved against `base` (the project folder in plan), or the plugin's example of that
+ * name ("stat-counter") when there is no such folder.
+ */
+export function compositionFolder(given, base) {
+    const asGiven = resolve(base, given);
+    if (existsSync(asGiven) || given.includes("/")) return asGiven;
+    const example = fileURLToPath(new URL(`../examples/${given}/`, import.meta.url)).replace(/\/$/, "");
+    return existsSync(join(example, "index.html")) ? example : asGiven;
+}
+
 export async function ownComposition(dir, projectRoot, slot) {
     const plugin = realpathSync(fileURLToPath(new URL("../", import.meta.url)));
     const real = realpathSync(dir);
@@ -522,15 +541,16 @@ export async function ownComposition(dir, projectRoot, slot) {
 }
 
 async function place(target, options) {
-    const given = resolve(target);
+    const given = compositionFolder(target, process.cwd());
     if (!existsSync(given) || !statSync(given).isDirectory()) throw new UsageError(`${given} is not a composition folder`);
     const project = await call(["project", "get"]) ?? {};
     const name = safeName(options.name ?? basename(given));
     const dir = options["dry-run"] ? given
         : await ownComposition(given, async () => dirname((await call(["context", "get"]))?.project ?? ""), `${name}-${randomBytes(3).toString("hex")}`);
     const declared = readComposition(dir).declared;
+    const warnings = [];
     const inputs = {
-        composition: dir, variables: explicitVariables(declared, options.set, options.variables), name,
+        composition: dir, variables: explicitVariables(declared, options.set, options.variables, warnings), name,
         fps: options.fps ?? Math.round(frameRate(project.format?.fps)), codec: options.codec ?? "hevc",
         brand: !options["no-brand"],
     };
@@ -541,7 +561,6 @@ async function place(target, options) {
         if (!(frames > 0)) throw new UsageError("--duration must be a positive number of frames");
         inputs.seconds = frames / frameRate(project.format?.fps);
     }
-    const warnings = [];
     const { variables, brand } = await resolveVariables(inputs, project, warnings);
     const render = await renderSpan(inputs, variables, options["dry-run"]);
     if (render.dryRun) return { ...render.dryRun, brand, ...(warnings.length ? { warnings } : {}) };
@@ -603,7 +622,7 @@ export async function rerender(target, options) {
         const given = options.all && options.variables
             ? Object.fromEntries(Object.entries(options.variables).filter(([key]) => ids.has(key))) : options.variables;
         const inputs = mergeInputs(recorded, {
-            explicit: explicitVariables(declared, sets, given), unset: options.unset, fps: options.fps,
+            explicit: explicitVariables(declared, sets, given, warnings), unset: options.unset, fps: options.fps,
             codec: options.codec, name: options.name && safeName(options.name),
             brand: options.brand ? true : options["no-brand"] ? false : undefined, frame: options.frame,
         });
@@ -801,7 +820,7 @@ async function planGraphics(options) {
         const seconds = row.short ?? row.seconds;
         const given = entry.render.composition;
         if (typeof given !== "string" || !given) throw new UsageError(`graphic ${entry.id}: render.composition is missing`);
-        const asGiven = resolve(root, given);
+        const asGiven = compositionFolder(given, root);
         if (!existsSync(join(asGiven, "index.html"))) throw new UsageError(`graphic ${entry.id}: ${asGiven} has no index.html`);
         const dir = options["dry-run"] ? asGiven : await ownComposition(asGiven, root, `${entry.id}-${basename(asGiven)}`);
         const declared = readComposition(dir).declared;
@@ -813,7 +832,7 @@ async function planGraphics(options) {
             throw new UsageError(`graphic ${entry.id}: ${error.message}`);
         }
         const inputs = {
-            composition: dir, variables: explicitVariables(declared, [], asked), name: safeName(entry.render.name ?? `${entry.id}-${basename(dir)}`),
+            composition: dir, variables: explicitVariables(declared, [], asked, warnings), name: safeName(entry.render.name ?? `${entry.id}-${basename(dir)}`),
             fps, codec: options.codec ?? entry.render.codec ?? "hevc", brand: entry.render.brand !== false,
             ...(frame ? { frame } : {}),
         };
