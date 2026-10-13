@@ -48,6 +48,22 @@
       "size": 282200,
       "downloadBytes": 0,
       "releasedAt": "2026-10-13"
+    },
+    {
+      "version": "0.0.4",
+      "apiVersion": 7,
+      "minApiVersion": 7,
+      "minAppVersion": "0.0.21",
+      "platforms": [
+        "macos-arm64",
+        "macos-x86_64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vlog-v0.0.4/bashcut.vlog-0.0.4.zip",
+      "sha256": "ebf4c11d300b68ad133b7fb3566d2602d55531392661b2f62493191b92e73036",
+      "signature": "ed25519:vYtl7cUe98XZsFjVmMuDz5EC9DWM5JXwIPheV8vxb1VJueW+Ig7jItHZf4hsgEP1o0d12sM9oBTktWOyOqTADQ==",
+      "size": 282455,
+      "downloadBytes": 0,
+      "releasedAt": "2026-10-13"
     }
   ]
 }
