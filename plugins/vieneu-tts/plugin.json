@@ -5,7 +5,7 @@
     "en": "VieNeu TTS (Vietnamese)",
     "vi": "VieNeu TTS (tiếng Việt)"
   },
-  "version": "0.0.5",
+  "version": "0.0.6",
   "apiVersion": 3,
   "entrypoint": "bin/provider",
   "transport": "session",
@@ -396,8 +396,8 @@
       "default": "",
       "scope": "project",
       "help": {
-        "en": "A clean 3–8 second clip of the voice to clone; none uses the preset voice",
-        "vi": "Đoạn 3–8 giây giọng cần nhái, thật sạch; để trống thì dùng giọng mẫu"
+        "en": "A clean 3–8 second clip of the voice to clone; none uses the preset voice. A voice saved in BashCut's My voices is used without this",
+        "vi": "Đoạn 3–8 giây giọng cần nhái, thật sạch; để trống thì dùng giọng mẫu. Giọng đã lưu trong Giọng của tôi của BashCut không cần mục này"
       },
       "fileTypes": [
         "wav",

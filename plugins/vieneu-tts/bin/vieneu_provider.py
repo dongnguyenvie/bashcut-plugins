@@ -57,7 +57,10 @@ def synthesize(params, progress):
     offset = int(params.get("takeOffset", 0))
     options = params.get("options") or {}
     voice = options.get("voice") or DEFAULT_VOICE
-    reference = (options.get("referenceAudio") or "").strip()
+    # A voice saved in BashCut's My voices comes as params.reference (#532); the referenceAudio option stays for
+    # projects set up before it.
+    saved = params.get("reference") or {}
+    reference = (saved.get("path") or options.get("referenceAudio") or "").strip()
     if reference and not os.path.isfile(reference):
         raise ValueError(f"Reference audio not found: {reference}")
     # BashCut sends cloneConsent (P0-C7); older hosts do not, and keep working as before.
