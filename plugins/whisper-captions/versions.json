@@ -20,21 +20,6 @@
   },
   "versions": [
     {
-      "version": "0.0.5",
-      "apiVersion": 3,
-      "minApiVersion": 3,
-      "minAppVersion": "0.0.1",
-      "platforms": [
-        "macos-arm64"
-      ],
-      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/whisper-captions-v0.0.5/bashcut.whisper-captions-0.0.5.zip",
-      "sha256": "1b4561795583d5a4e08f622315a01d47bd1a8e27af5470e7f4991fd246406197",
-      "signature": "ed25519:qDcoRt3RukZ9N5MOQnVdTyYDw2Prr/I/F+jYjFH2MXmWf6L2TS6TKXYnsNajY5G9crgbYej/rKRQOGANmukdBA==",
-      "size": 9683,
-      "downloadBytes": 1900000000,
-      "releasedAt": "2026-10-05"
-    },
-    {
       "version": "0.0.6",
       "apiVersion": 7,
       "minApiVersion": 3,
@@ -63,6 +48,21 @@
       "size": 11966,
       "downloadBytes": 1900000000,
       "releasedAt": "2026-10-09"
+    },
+    {
+      "version": "0.0.8",
+      "apiVersion": 7,
+      "minApiVersion": 3,
+      "minAppVersion": "0.0.1",
+      "platforms": [
+        "macos-arm64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/whisper-captions-v0.0.8/bashcut.whisper-captions-0.0.8.zip",
+      "sha256": "8647fcab5d6477c36981f30ec0aea7e78700d381ba64b2c44a75e9ca722b6d28",
+      "signature": "ed25519:ArVheC8RgA2YuG6D1GrrtE1vzuUJh6SrWzGCiFLR03sC6rCON3DG0oqznGLahGn/0j1Yybr3GT1Byg0nMk0FDw==",
+      "size": 15084,
+      "downloadBytes": 1900000000,
+      "releasedAt": "2026-10-13"
     }
   ]
 }
