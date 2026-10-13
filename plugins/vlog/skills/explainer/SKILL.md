@@ -149,6 +149,8 @@ sits at the top of the 3–8 a minute band (T13 §3) because the widgets are the
 - Every number, date, price, distance and legal claim has a source in the plan's script beats
   (`bashcut.vlog:hook-script`): the user, an official page, an open dataset (OpenStreetMap, Wikipedia, arXiv). A
   number without a source is said to be an example ("số liệu minh hoạ") on the card or in the words, or left out.
+- Every number: one `fetch_facts.py` call (`bc:motion-graphics`) for all of them before any web search; search by
+  hand only for its `none` rows; widget data comes from its `--json` rows {value, unit, credit}.
 - Maps: real coordinates from the user or a named source, a route from `bin/osm-map`; its minutes and km are what
   goes on screen, rounded ("≈ 16 phút · 7,5 km"); "© OpenStreetMap contributors" stays visible.
 - Law, health and money: name the law, article and date of the rule; say "check with a professional" when advice
