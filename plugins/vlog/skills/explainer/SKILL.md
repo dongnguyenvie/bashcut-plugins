@@ -47,8 +47,8 @@ voice takes, graphics or captions one by one with `timeline apply`. `P` is the H
             "review": {"captionLineChars": 26, "maxStillSeconds": 2}}}
    ```
 3. **The voice.** `bashcut voice lines --takes 2 --min-similarity 0.9` voices and checks every line in one job
-   (`bashcut jobs wait <job> --done --timeout 110` returns after at most 110 s: repeat it in the same shell call
-   until `state` is `completed`). A line whose best take lists `unmatched` words: rewrite how it is spelled (a
+   (`bashcut jobs wait <job> --done --timeout 110` returns `{job: {state, result}, timedOut}` after at most 110 s:
+   repeat it in the same shell call until `.job.state` is `completed`; `.job.result.lines` holds each line). A line whose best take lists `unmatched` words: rewrite how it is spelled (a
    number in words, a name split) in plan.cut and run `voice lines --only <id>`.
 4. **Render and build.** `"$P/bin/graphic" plan` renders every graphic to its span (an exit lands on the span's end)
    and runs `plan apply`: it prints what it rendered and the apply's problems and review. Renders take 10–60 s each
