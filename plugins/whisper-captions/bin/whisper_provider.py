@@ -140,6 +140,7 @@ class Transcriber:
         if os.environ.get("WHISPER_FAKE") == "1":
             if not os.path.isfile(path):
                 raise ValueError(f"Media not found: {path}")
+            self.language = None if language else "vi"
             return within(fake_segments(), start, end) if start or end is not None else fake_segments()
         try:
             import mlx_whisper
@@ -167,6 +168,8 @@ class Transcriber:
         with heartbeat(progress, len(audio) / SAMPLE_RATE):
             result = mlx_whisper.transcribe(audio, **options)
         self.loaded = True
+        # The language Whisper heard when none was asked for (BashCut keeps it for a project without one).
+        self.language = result.get("language") if not language else None
         return shifted(result.get("segments") or [], start)
 
 
@@ -361,6 +364,7 @@ def transcribe(params, progress, transcriber):
     end = float(end) if end is not None else None
     if start < 0 or (end is not None and end <= start):
         raise ValueError("endSeconds must follow startSeconds")
+    transcriber.language = None
     segments = transcriber.segments(path, language, vocabulary, progress, start, end)
     doubt = doubt_options(options)
     cues = cues_from(segments, max_characters, doubt)
@@ -382,8 +386,12 @@ def transcribe(params, progress, transcriber):
         json.dump(word_timings(cues), file, ensure_ascii=False)
     progress(1, "Done")
     dropped = sum(1 for row in report["segments"] if row.get("dropped"))
-    return {"srtPath": stem + ".srt", "wordsPath": stem + ".words.json", "segmentsPath": stem + ".segments.json",
-            "reliable": reliable, "droppedSegments": dropped}
+    result = {"srtPath": stem + ".srt", "wordsPath": stem + ".words.json", "segmentsPath": stem + ".segments.json",
+              "reliable": reliable, "droppedSegments": dropped}
+    heard = getattr(transcriber, "language", None)
+    if isinstance(heard, str) and heard:
+        result["language"] = heard
+    return result
 
 
 DOUBT_REASONS = ("avgLogprob", "compressionRatio", "noSpeechProb")

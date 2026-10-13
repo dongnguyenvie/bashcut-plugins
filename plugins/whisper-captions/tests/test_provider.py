@@ -68,6 +68,12 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(kinds[-1], "reply")
         self.assertIn("progress", kinds)
 
+    def test_the_language_heard_is_returned_when_none_was_asked(self):
+        asked = next(m for m in session(self.request()) if m.get("id") == "r0" and "result" in m)["result"]
+        self.assertNotIn("language", asked)
+        heard = next(m for m in session(self.request(language="")) if m.get("id") == "r0" and "result" in m)["result"]
+        self.assertEqual(heard["language"], "vi")
+
     def test_the_doubt_filter_can_be_turned_off(self):
         session(self.request(options={"dropDoubtful": False}))
         text = pathlib.Path(self.output, "clip 1.srt").read_text(encoding="utf-8")
