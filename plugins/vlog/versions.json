@@ -37,7 +37,7 @@
       "version": "0.0.3",
       "apiVersion": 7,
       "minApiVersion": 7,
-      "minAppVersion": "0.0.1",
+      "minAppVersion": "0.0.21",
       "platforms": [
         "macos-arm64",
         "macos-x86_64"
