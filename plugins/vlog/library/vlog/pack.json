@@ -1,0 +1,569 @@
+{
+  "format": 1,
+  "name": "Vlog",
+  "items": [
+    {
+      "id": "vlog-hook-question",
+      "kind": "text-preset",
+      "name": "Hook question",
+      "tags": [
+        "hook",
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "48H IN DA LAT\nHOW MUCH?",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-section-chip",
+      "kind": "text-preset",
+      "name": "Section chip n/N",
+      "tags": [
+        "section",
+        "travel",
+        "tutorial",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "chapter-card",
+        "text": "1/5 · NIGHT MARKET"
+      }
+    },
+    {
+      "id": "vlog-time-stamp",
+      "kind": "text-preset",
+      "name": "Time stamp",
+      "tags": [
+        "daily",
+        "travel"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "place-card",
+        "text": "07:30 · MORNING"
+      }
+    },
+    {
+      "id": "vlog-price-tag",
+      "kind": "text-preset",
+      "name": "Price tag",
+      "tags": [
+        "price",
+        "food",
+        "travel",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "keyword-sticker",
+        "text": "$4",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-pro",
+      "kind": "text-preset",
+      "name": "Pro (tick)",
+      "tags": [
+        "product-review",
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "bold-outline",
+        "text": "✓ WORTH IT",
+        "textStyle": {
+          "fill": "#3DDC84"
+        },
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-con",
+      "kind": "text-preset",
+      "name": "Con (cross)",
+      "tags": [
+        "product-review",
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "bold-outline",
+        "text": "✗ TOO SWEET",
+        "textStyle": {
+          "fill": "#FF5A5F"
+        },
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-step",
+      "kind": "text-preset",
+      "name": "Step card",
+      "tags": [
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "chapter-card",
+        "text": "STEP 1"
+      }
+    },
+    {
+      "id": "vlog-keyword",
+      "kind": "text-preset",
+      "name": "Keyword pop",
+      "tags": [
+        "talking-head",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "keyword-sticker",
+        "text": "IMPORTANT",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-verdict",
+      "kind": "text-preset",
+      "name": "Verdict",
+      "tags": [
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "8.5/10\nBUY IT",
+        "animation": "pop-in",
+        "textStyle": {
+          "emphasis": {
+            "line": 0,
+            "fill": "#111111",
+            "scale": 1.6,
+            "plate": {
+              "color": "#F2F2F2",
+              "padding": 0.1,
+              "radius": 0.04
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "vlog-cta",
+      "kind": "text-preset",
+      "name": "Call to action",
+      "tags": [
+        "cta",
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "SAVE THIS\nFOR YOUR TRIP",
+        "animation": "pop-in"
+      }
+    },
+    {
+      "id": "vlog-disclosure",
+      "kind": "text-preset",
+      "name": "Sponsorship label",
+      "tags": [
+        "disclosure",
+        "all"
+      ],
+      "version": 2,
+      "params": {
+        "textPreset": "place-card",
+        "text": "Paid partnership",
+        "textStyle": {
+          "size": 0.028
+        }
+      }
+    },
+    {
+      "id": "vlog-breaking-tag",
+      "kind": "text-preset",
+      "name": "Breaking tag",
+      "tags": [
+        "news",
+        "chrome"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "place-card",
+        "text": "BREAKING",
+        "textStyle": {
+          "size": 0.03,
+          "uppercase": true,
+          "fill": "#FFFFFF",
+          "align": "left",
+          "positionX": 0.06,
+          "positionY": 0.9,
+          "background": {
+            "color": "#E5262A",
+            "opacity": 1,
+            "padding": 0.35,
+            "radius": 0.2
+          }
+        }
+      }
+    },
+    {
+      "id": "vlog-credit-line",
+      "kind": "text-preset",
+      "name": "Credit line",
+      "tags": [
+        "news",
+        "documentary",
+        "chrome",
+        "credit"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "place-card",
+        "text": "Photo: NASA (public domain) · Wikimedia Commons",
+        "textStyle": {
+          "size": 0.018,
+          "fill": "#FFFFFF",
+          "align": "left",
+          "positionX": 0.06,
+          "positionY": 0.87,
+          "background": {
+            "color": "#000000",
+            "opacity": 0.55,
+            "padding": 0.3,
+            "radius": 0.15
+          }
+        }
+      }
+    },
+    {
+      "id": "vlog-headline-band",
+      "kind": "text-preset",
+      "name": "Headline band",
+      "tags": [
+        "news",
+        "chrome"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "SPACE SCIENCE\nNASA LAUNCHES ROMAN:\nHUBBLE'S SIBLING SEES FIRST LIGHT",
+        "textStyle": {
+          "font": "System-CondensedBlack",
+          "size": 0.045,
+          "strokeWidth": 0,
+          "uppercase": true,
+          "align": "left",
+          "positionX": 0.06,
+          "positionY": 0.52,
+          "lineHeight": 1.05,
+          "fill": "#FFFFFF",
+          "background": {
+            "color": "#B8960C",
+            "opacity": 0.95,
+            "padding": 0.5,
+            "radius": 0
+          },
+          "emphasis": {
+            "line": 0,
+            "fill": "#111111",
+            "scale": 0.55,
+            "plate": {
+              "color": "#F2F2F2",
+              "padding": 0.15,
+              "radius": 0.1
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "vlog-date-card",
+      "kind": "text-preset",
+      "name": "Date card",
+      "tags": [
+        "documentary",
+        "news",
+        "chapter"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "cinematic-serif",
+        "text": "30.04.1993\nCERN opens the web to everyone",
+        "textStyle": {
+          "size": 0.08,
+          "tracking": 0.12,
+          "fill": "#F2F2F2",
+          "emphasis": {
+            "line": -1,
+            "fill": "#E0B25A",
+            "scale": 0.3
+          }
+        },
+        "animation": "fade-in-out"
+      }
+    },
+    {
+      "id": "vlog-kinetic-word",
+      "kind": "text-preset",
+      "name": "Kinetic word",
+      "tags": [
+        "promo",
+        "hook",
+        "showreel"
+      ],
+      "version": 1,
+      "params": {
+        "textPreset": "hook-title",
+        "text": "BUILD\nCAPACITY.",
+        "textStyle": {
+          "font": "System-CondensedBlack",
+          "size": 0.16,
+          "strokeWidth": 0,
+          "uppercase": true,
+          "lineHeight": 0.92,
+          "emphasis": false,
+          "lineFills": [
+            "#FFFFFF",
+            "#7FC8A0"
+          ]
+        },
+        "animation": "zoom-punch"
+      }
+    },
+    {
+      "id": "vlog-plane",
+      "kind": "sticker",
+      "name": "Plane",
+      "tags": [
+        "travel"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "✈️",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-map",
+      "kind": "sticker",
+      "name": "Map",
+      "tags": [
+        "travel"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "🗺️",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-camera",
+      "kind": "sticker",
+      "name": "Camera",
+      "tags": [
+        "travel",
+        "daily"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "📸",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-money",
+      "kind": "sticker",
+      "name": "Money",
+      "tags": [
+        "travel",
+        "product-review",
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "💸",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-drool",
+      "kind": "sticker",
+      "name": "Drooling",
+      "tags": [
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "🤤",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-clock",
+      "kind": "sticker",
+      "name": "Clock",
+      "tags": [
+        "daily",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "⏰",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-check",
+      "kind": "sticker",
+      "name": "Check",
+      "tags": [
+        "product-review",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "✅",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-cross",
+      "kind": "sticker",
+      "name": "Cross",
+      "tags": [
+        "product-review",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "❌",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-sparkles",
+      "kind": "sticker",
+      "name": "Sparkles",
+      "tags": [
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "✨",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-point-down",
+      "kind": "sticker",
+      "name": "Point down",
+      "tags": [
+        "cta",
+        "all"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "👇",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-bulb",
+      "kind": "sticker",
+      "name": "Idea",
+      "tags": [
+        "talking-head",
+        "tutorial"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "💡",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-warning",
+      "kind": "sticker",
+      "name": "Warning",
+      "tags": [
+        "tutorial",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "emoji": "⚠️",
+        "textPreset": "bold-outline"
+      }
+    },
+    {
+      "id": "vlog-whip-fast",
+      "kind": "transition-preset",
+      "name": "Fast whip",
+      "tags": [
+        "travel",
+        "daily",
+        "food"
+      ],
+      "version": 1,
+      "params": {
+        "kind": "whip",
+        "duration": 6,
+        "easing": "out"
+      }
+    },
+    {
+      "id": "vlog-blink",
+      "kind": "transition-preset",
+      "name": "Blink",
+      "tags": [
+        "talking-head",
+        "daily"
+      ],
+      "version": 1,
+      "params": {
+        "kind": "blink",
+        "duration": 4
+      }
+    },
+    {
+      "id": "vlog-soft-cut",
+      "kind": "transition-preset",
+      "name": "Soft cut",
+      "tags": [
+        "daily",
+        "tutorial",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "kind": "dissolve",
+        "duration": 8,
+        "easing": "inOut"
+      }
+    },
+    {
+      "id": "vlog-zoom-hit",
+      "kind": "transition-preset",
+      "name": "Zoom hit",
+      "tags": [
+        "food",
+        "travel",
+        "product-review"
+      ],
+      "version": 1,
+      "params": {
+        "kind": "zoom",
+        "duration": 8,
+        "easing": "in"
+      }
+    }
+  ]
+}

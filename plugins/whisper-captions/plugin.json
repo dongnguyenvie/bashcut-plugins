@@ -5,7 +5,7 @@
     "en": "Whisper Captions",
     "vi": "Phụ đề Whisper"
   },
-  "version": "0.0.6",
+  "version": "0.0.8",
   "apiVersion": 7,
   "minApiVersion": 3,
   "entrypoint": "bin/provider",
@@ -70,6 +70,68 @@
       "help": {
         "en": "Longer sentences are split into captions of at most this many characters",
         "vi": "Câu dài được tách thành các phụ đề không quá số ký tự này"
+      }
+    },
+    {
+      "id": "dropDoubtful",
+      "title": {
+        "en": "Leave out doubtful lines",
+        "vi": "Bỏ dòng đáng ngờ"
+      },
+      "type": "bool",
+      "default": true,
+      "scope": "user",
+      "help": {
+        "en": "Leave out text Whisper likely invented over music or ambient sound: a segment whose measured score passes one of the thresholds below. Every segment and why it was left out is listed in the .segments.json file next to the captions.",
+        "vi": "Bỏ chữ Whisper có thể tự bịa trên nhạc hoặc tiếng ồn nền: đoạn có điểm đo vượt một trong các ngưỡng bên dưới. Mọi đoạn và lý do bị bỏ được ghi trong file .segments.json cạnh phụ đề."
+      }
+    },
+    {
+      "id": "minAvgLogprob",
+      "title": {
+        "en": "Lowest average log probability",
+        "vi": "Log xác suất trung bình thấp nhất"
+      },
+      "type": "number",
+      "minimum": -10,
+      "maximum": 0,
+      "default": -1.0,
+      "scope": "user",
+      "help": {
+        "en": "A segment below this is left out. Clear speech is usually about -0.5 to -0.1, invented text -2 to -6; useful thresholds are -1.5 to -0.8 (-1.0 is Whisper's own). Go lower for noisy or accented speech that gets dropped.",
+        "vi": "Đoạn thấp hơn mức này bị bỏ. Lời nói rõ thường khoảng -0,5 đến -0,1, chữ bịa -2 đến -6; ngưỡng hợp lý -1,5 đến -0,8 (-1,0 là mặc định của Whisper). Hạ thấp hơn nếu lời nói ồn hoặc giọng vùng miền bị bỏ nhầm."
+      }
+    },
+    {
+      "id": "maxCompressionRatio",
+      "title": {
+        "en": "Highest compression ratio",
+        "vi": "Tỉ lệ nén cao nhất"
+      },
+      "type": "number",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 2.4,
+      "scope": "user",
+      "help": {
+        "en": "A segment above this (text that repeats itself) is left out. Useful thresholds are 2.2 to 2.8 (2.4 is Whisper's own).",
+        "vi": "Đoạn cao hơn mức này (chữ lặp đi lặp lại) bị bỏ. Ngưỡng hợp lý 2,2 đến 2,8 (2,4 là mặc định của Whisper)."
+      }
+    },
+    {
+      "id": "maxNoSpeechProb",
+      "title": {
+        "en": "Highest no-speech probability",
+        "vi": "Xác suất không có lời cao nhất"
+      },
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.8,
+      "scope": "user",
+      "help": {
+        "en": "A segment above this is left out, only when the model really measures it (large-v3 turbo does not: its value is always 0 and is ignored). Useful thresholds are 0.6 to 0.9.",
+        "vi": "Đoạn cao hơn mức này bị bỏ, chỉ khi mô hình thật sự đo được (large-v3 turbo thì không: giá trị luôn là 0 và bị bỏ qua). Ngưỡng hợp lý 0,6 đến 0,9."
       }
     }
   ],

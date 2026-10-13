@@ -3,6 +3,7 @@
     from plugin_manifest import manifest_problems, skill_problems
     problems = manifest_problems(json.load(open("plugin.json")))   # [] when the manifest is valid
     problems += skill_problems(folder, manifest)                     # the SKILL.md files contributes.skills names
+    problems = view_problems(answer)                                 # a view.render / view.event answer (API 8)
 
 `scripts/new-plugin.py` checks every manifest it writes, and its CI test checks every template, so templates never
 drift from the API. The app stays the authority: this mirrors its rules, it does not replace them.
@@ -12,7 +13,7 @@ import re
 
 SCHEMA = "bashcut.plugin/1"
 API_MINIMUM = 1
-API_CURRENT = 8
+API_CURRENT = 9
 # Capabilities BashCut wires today (docs/guides/plugins.md › Capabilities).
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")
@@ -48,8 +49,18 @@ MAX_SKILL_NAME, MAX_SKILL_DESCRIPTION = 64, 1024
 MAX_VIEWS, MAX_REQUIRES, MAX_USES, MAX_FEATURES = 8, 16, 32, 32
 SYMBOL_PATTERN = r"[a-z0-9]+(?:\.[a-z0-9]+)*"
 VERSION_RANGE_PATTERN = r"\*|(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?)(?: +(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?))*"
-VIEW_LOCATIONS = ("panel", "dock", "sheet")
+VIEW_LOCATIONS = ("panel", "dock", "sheet", "inspector")
 FEATURE_PATTERN = r"[a-z][a-zA-Z0-9]*(?:[.-][a-zA-Z0-9]+)*"
+# View components (PluginViewNode.Kind in the app); each is also the host feature `views.<type>`. A type the host does
+# not know draws "Needs a newer BashCut", so view_problems accepts unknown types.
+VIEW_NODE_TYPES = ("section", "row", "divider", "spacer", "text", "badge", "keyValue", "progress", "image",
+                   "imageCompare", "audio", "list", "button", "textField", "textArea", "toggle", "picker", "slider",
+                   "colorPicker", "fontPicker")
+VIEW_INPUTS = {"textField", "textArea", "toggle", "picker", "slider", "colorPicker", "fontPicker"}
+VIEW_INTERACTIVE = VIEW_INPUTS | {"button", "list"}
+MAX_VIEW_NODES, MAX_VIEW_DEPTH, MAX_LIST_ITEMS, MAX_PICKER_OPTIONS = 2000, 12, 500, 200
+HEX_COLOR_PATTERN = r"#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})"
+MAX_TAKES = 8
 
 
 def text_ok(value, limit=None):
@@ -132,8 +143,11 @@ def manifest_problems(manifest):
     if not isinstance(api, int) or not isinstance(minimum, int) or not API_MINIMUM <= minimum <= api:
         problems.append(f"apiVersion must be {API_MINIMUM}–{API_CURRENT} and minApiVersion no higher than it")
         api = minimum = API_CURRENT
-    if not relative_path_ok(manifest.get("entrypoint")):
+    runs_code = bool(manifest.get("entrypoint"))
+    if runs_code and not relative_path_ok(manifest.get("entrypoint")):
         problems.append("entrypoint must be a relative path inside the plugin folder")
+    if not runs_code:
+        problems += data_only_problems(manifest, api)
     if "category" in manifest and manifest["category"] not in CATEGORIES:
         problems.append(f"category must be one of {', '.join(CATEGORIES)}")
     if "author" in manifest:
@@ -143,6 +157,8 @@ def manifest_problems(manifest):
     contributes = manifest.get("contributes") or {}
     actions, hooks = contributes.get("actions", []), contributes.get("hooks", [])
     library, skills = contributes.get("library", []), contributes.get("skills", [])
+    if capabilities is None and not runs_code:
+        capabilities = []
     if not isinstance(capabilities, list):
         problems.append("capabilities is required (it may be [] when the plugin contributes something)")
         capabilities = []
@@ -161,6 +177,13 @@ def manifest_problems(manifest):
             problems.append(f'provider {provider.get("id")}: name is required')
         if not 10 <= provider.get("timeoutSeconds", 120) <= 3600:
             problems.append(f'provider {provider.get("id")}: timeoutSeconds must be 10–3600')
+        if "maxTakes" in provider:
+            takes = provider["maxTakes"]
+            if provider.get("capability") != "voice.synthesize" or isinstance(takes, bool) \
+                    or not isinstance(takes, int) or not 1 <= takes <= MAX_TAKES:
+                problems.append(f'provider {provider.get("id")}: maxTakes is 1–{MAX_TAKES}, for voice.synthesize')
+            elif api < 8:
+                problems.append(f'provider {provider.get("id")}: maxTakes needs apiVersion 8 (feature voice.maxTakes)')
 
     dependency_ids = [d.get("id") for d in manifest.get("dependencies", [])]
     if len(set(dependency_ids)) != len(dependency_ids):
@@ -194,6 +217,8 @@ def manifest_problems(manifest):
         problems.append("contributes.library needs apiVersion 6")
     if skills and api < 7:
         problems.append("contributes.skills needs apiVersion 7")
+    if "review.check" in capabilities and api < 9:
+        problems.append("review.check needs apiVersion 9")
     skill_paths = [s.get("path") if isinstance(s, dict) else None for s in skills]
     if len(skills) > MAX_SKILLS or len({str(p).rstrip("/") for p in skill_paths}) != len(skills):
         problems.append(f"contributes.skills lists at most {MAX_SKILLS} different skill folders")
@@ -242,6 +267,23 @@ def manifest_problems(manifest):
     return problems
 
 
+def data_only_problems(manifest, api):
+    """A plugin without an entrypoint (host feature `skillsOnly`, #506) ships skills and library packs only."""
+    contributes = manifest.get("contributes") or {}
+    if api < 7 or not (contributes.get("skills") or contributes.get("library")):
+        return ["a plugin without an entrypoint must ship contributes.skills or contributes.library (apiVersion 7)"]
+    runs = [field for field in ("capabilities", "providers", "dependencies", "options", "terminal")
+            if manifest.get(field)]
+    runs += [f"contributes.{field}" for field in ("actions", "hooks", "views", "container", "platforms")
+             if contributes.get(field)]
+    if manifest.get("transport") == "session":
+        runs.append("the session transport")
+    if runs:
+        return ["a plugin without an entrypoint can only ship skills and library packs; add an entrypoint for "
+                + ", ".join(runs)]
+    return []
+
+
 def composition_problems(manifest, api, transport, container, views):
     """contributes.container and views, requires, uses and features (plugin API 8)."""
     problems = []
@@ -271,6 +313,11 @@ def composition_problems(manifest, api, transport, container, views):
             problems.append(f'view {view.get("id")}: location must be one of {", ".join(VIEW_LOCATIONS)}')
         if "icon" in view and not re.fullmatch(SYMBOL_PATTERN, str(view["icon"])):
             problems.append(f'view {view.get("id")}: icon must be an SF Symbol name')
+        if "when" in view:
+            if view.get("location", "panel") != "inspector":
+                problems.append(f'view {view.get("id")}: when is for inspector views')
+            elif not isinstance(view["when"], str) or not view["when"].strip() or len(view["when"]) > 500:
+                problems.append(f'view {view.get("id")}: when must be a condition such as selection.kind == text')
     requires = requires or []
     if len(requires) > MAX_REQUIRES or len({r.get("id") for r in requires}) != len(requires):
         problems.append(f"requires lists at most {MAX_REQUIRES} different plugins")
@@ -289,6 +336,63 @@ def composition_problems(manifest, api, transport, container, views):
     if len(features) > MAX_FEATURES or len(set(features)) != len(features) \
             or not all(re.fullmatch(FEATURE_PATTERN, str(f)) for f in features):
         problems.append(f"features lists at most {MAX_FEATURES} different feature names")
+    return problems
+
+
+def view_problems(answer):
+    """What BashCut would refuse in a view answer (PluginViewTree in the app): a `body` of components with a `type`,
+    an `id` on buttons, lists and inputs (unique in the view), list items with an `id` (and a text `file` to drag),
+    images whose `file` is text, `colorPicker` values in hex and `fontPicker` `by` of font or family. Unknown types
+    pass: the host draws a placeholder for them."""
+    problems, ids, count = [], set(), 0
+    if not isinstance(answer, dict) or not isinstance(answer.get("body"), list):
+        return ["a view answer needs a body array of components"]
+
+    def walk(node, path, depth):
+        nonlocal count
+        count += 1
+        if depth > MAX_VIEW_DEPTH:
+            problems.append(f"{path}: nests deeper than {MAX_VIEW_DEPTH} levels")
+            return
+        kind = node.get("type") if isinstance(node, dict) else None
+        if not isinstance(kind, str) or not re.fullmatch(r"[a-zA-Z][a-zA-Z0-9]{0,31}", kind):
+            problems.append(f"{path}: each component needs a type")
+            return
+        node_id = node.get("id")
+        where = f"{kind} {node_id or path}"
+        if node_id is not None:
+            if not isinstance(node_id, str) or not re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_.-]{0,63}", node_id):
+                problems.append(f"{where}: id must be a short key")
+            elif node_id in ids:
+                problems.append(f"{where}: id is used twice")
+            ids.add(node_id)
+        elif kind in VIEW_INTERACTIVE:
+            problems.append(f"{where}: needs an id")
+        if kind == "list":
+            items = node.get("items") or []
+            if len(items) > MAX_LIST_ITEMS:
+                problems.append(f"{where}: at most {MAX_LIST_ITEMS} items")
+            for item in items:
+                if not isinstance(item, dict) or not item.get("id"):
+                    problems.append(f"{where}: items need an id")
+                elif "file" in item and not isinstance(item["file"], str):
+                    problems.append(f"{where}: item {item['id']} file must be a path")
+        if kind == "image" and "file" in node and not isinstance(node["file"], str):
+            problems.append(f"{where}: file must be a path")
+        if kind == "picker" and len(node.get("options") or []) > MAX_PICKER_OPTIONS:
+            problems.append(f"{where}: at most {MAX_PICKER_OPTIONS} options")
+        if kind == "colorPicker" and node.get("value") is not None and not (
+                isinstance(node["value"], str) and re.fullmatch(HEX_COLOR_PATTERN, node["value"].strip())):
+            problems.append(f"{where}: value must be #RRGGBB or #RRGGBBAA")
+        if kind == "fontPicker" and "by" in node and node["by"] not in ("font", "family"):
+            problems.append(f"{where}: by must be font or family")
+        for index, child in enumerate(node.get("children") or []):
+            walk(child, f"{path}.{index}", depth + 1)
+
+    for index, node in enumerate(answer["body"]):
+        walk(node, f"_{index}", 1)
+    if count > MAX_VIEW_NODES:
+        problems.append(f"a view has at most {MAX_VIEW_NODES} components")
     return problems
 
 

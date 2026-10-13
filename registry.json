@@ -28,6 +28,38 @@
           "size": 64815,
           "downloadBytes": 0,
           "releasedAt": "2026-10-04"
+        },
+        {
+          "version": "0.0.3",
+          "apiVersion": 5,
+          "minApiVersion": 5,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/antigravity-v0.0.3/bashcut.antigravity-0.0.3.zip",
+          "sha256": "5de6bf404362d823b00727c23c23c0f480919dca5358e5b4f89f739900aff80e",
+          "signature": "ed25519:IAOW4jvu/GWHC7kyZhny1SZTTSu1Ddt743DPTuRxem8nOxZn+b9gyhElTfZkjDPBCQTZKNf8BzGr3ctofpaUBA==",
+          "size": 64954,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-09"
+        },
+        {
+          "version": "0.0.4",
+          "apiVersion": 5,
+          "minApiVersion": 5,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/antigravity-v0.0.4/bashcut.antigravity-0.0.4.zip",
+          "sha256": "36e7d806102b422d033a4ac096c98b7fbce3efa68b1b14ed706e3603628420b8",
+          "signature": "ed25519:+d1UTAvG9J8BugeQlqWFmt3fldy/sxzCq3WInofEPx2riL876glPUkf6QczYNIIDYuLWlievqzlGFoWZWw9TCQ==",
+          "size": 65028,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-13"
         }
       ],
       "name": {
@@ -39,6 +71,10 @@
         "vi": "Dùng Antigravity CLI của Google trong agent dock của BashCut, với công cụ BashCut, kỹ năng dựng phim và tiếp tục trò chuyện theo từng project. Dùng tài khoản Antigravity hoặc Gemini API key."
       },
       "publisher": "bashcut",
+      "author": {
+        "name": "Luan Tran",
+        "url": "https://github.com/luantran069"
+      },
       "category": "agents",
       "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/antigravity",
       "capabilities": [
@@ -81,6 +117,22 @@
           "size": 447719,
           "downloadBytes": 50000000,
           "releasedAt": "2026-10-06"
+        },
+        {
+          "version": "0.0.4",
+          "apiVersion": 4,
+          "minApiVersion": 4,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/director-v0.0.4/bashcut.director-0.0.4.zip",
+          "sha256": "d6a6c167ecd8a6f5abcaf85c13201cd2ded9e257a0c4e43dc4e0c9eb8913dca5",
+          "signature": "ed25519:Xyjd/GyLOFlp0wBU03Cn4JZnf+69UxwQyQfWy1b6qZthrSyAb8Wt9IWyiSXfps9u7i3GSD5IjeQ/GKZA3j2xDw==",
+          "size": 448223,
+          "downloadBytes": 50000000,
+          "releasedAt": "2026-10-09"
         }
       ],
       "name": {
@@ -101,59 +153,45 @@
       "hooks": []
     },
     {
-      "id": "bashcut.preproduction",
+      "id": "bashcut.hyperframes",
       "versions": [
         {
           "version": "0.0.1",
-          "apiVersion": 7,
+          "apiVersion": 8,
           "minApiVersion": 7,
-          "minAppVersion": "0.0.1",
+          "minAppVersion": "0.0.21",
           "platforms": [
             "macos-arm64",
             "macos-x86_64"
           ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/preproduction-v0.0.1/bashcut.preproduction-0.0.1.zip",
-          "sha256": "b2e440246a55dc005904e5a272c821a3fcb1cb0cd95fc72e108a09d07a67c3f0",
-          "signature": "ed25519:o3Er5hIsMVQgievDYxMZ1c1CCSyF/BDcajsgfC7XEUJXiywDLIgIHAB7Kgop+nvLlErZ/x3lEuHKprTCO9ZiDA==",
-          "size": 210338,
-          "downloadBytes": 0,
-          "releasedAt": "2026-10-06"
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/hyperframes-v0.0.1/bashcut.hyperframes-0.0.1.zip",
+          "sha256": "fc073f7d92575716d093d955edb4c9b126ebbae198536494eedf2b09559bf672",
+          "signature": "ed25519:KvnwhkQUz2hWQ5iEWtGDyiF87vvinqu3HdsyZBUrAJc7nJxTYnzVawKcG9CY16nIfORKF1B1VGdQ9rG3XiODBQ==",
+          "size": 219692,
+          "downloadBytes": 400000000,
+          "releasedAt": "2026-10-13"
         }
       ],
       "name": {
-        "en": "Pre-production",
-        "vi": "Tiền kỳ"
+        "en": "HyperFrames Graphics",
+        "vi": "Đồ hoạ HyperFrames"
       },
       "summary": {
-        "en": "Agent skills for the work before the edit. First skill: scene-prompt turns a plot or scene idea into a cinematic prompt for AI video models (Seedance, Kling, Veo, Sora…), plans reference images and repairs failed generations.",
-        "vi": "Kỹ năng cho agent ở khâu trước khi dựng. Kỹ năng đầu tiên: scene-prompt biến cốt truyện hay ý tưởng cảnh quay thành prompt điện ảnh cho mô hình video AI (Seedance, Kling, Veo, Sora…), lên kế hoạch ảnh tham chiếu và sửa video tạo lỗi."
+        "en": "Animated graphics of any design for your edit: kinetic type, counters, charts and calendars, pointers, paper cards, lower thirds and 390+ catalog blocks, written as HTML/CSS + GSAP with HyperFrames (Apache-2.0) and rendered on this Mac to a .mov with alpha that sits on the timeline. Built for agents: they design, look at frames and render.",
+        "vi": "Đồ hoạ chuyển động theo bất kỳ thiết kế nào cho bản dựng: chữ động, số chạy, biểu đồ và lịch, con trỏ chuột, thẻ giấy, lower third và hơn 390 block có sẵn, viết bằng HTML/CSS + GSAP với HyperFrames (Apache-2.0) và render ngay trên máy thành .mov có kênh alpha đặt lên timeline. Làm cho AI: tự thiết kế, xem từng khung hình rồi render."
       },
       "publisher": "bashcut",
-      "category": "utilities",
-      "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/preproduction",
-      "capabilities": [],
+      "category": "effects",
+      "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/hyperframes",
+      "capabilities": [
+        "graphics.render"
+      ],
       "actions": [],
       "hooks": []
     },
     {
       "id": "bashcut.silence-markers",
       "versions": [
-        {
-          "version": "0.0.2",
-          "apiVersion": 2,
-          "minApiVersion": 2,
-          "minAppVersion": "0.0.1",
-          "platforms": [
-            "macos-arm64",
-            "macos-x86_64"
-          ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/silence-markers-v0.0.2/bashcut.silence-markers-0.0.2.zip",
-          "sha256": "2d1e642e59ba28c87d131c76b09ceb438e78381b8e5f61a74c56d631f817473f",
-          "signature": "ed25519:FADUllDeIu1uqrrYB/LYvLSB3C71YsrGdWfe+Y7Hk9hwUrCodvi4W1/XK1CzBkoy41bmdPUI4DfilXW7jnnUCw==",
-          "size": 49739,
-          "downloadBytes": 0,
-          "releasedAt": "2026-10-03"
-        },
         {
           "version": "0.0.3",
           "apiVersion": 2,
@@ -185,6 +223,22 @@
           "size": 64216,
           "downloadBytes": 0,
           "releasedAt": "2026-10-04"
+        },
+        {
+          "version": "0.0.5",
+          "apiVersion": 8,
+          "minApiVersion": 2,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/silence-markers-v0.0.5/bashcut.silence-markers-0.0.5.zip",
+          "sha256": "0eb5c0680210f7fe2c8d50c149e5eb94da790ad81e84c4cdaab3a0e183852a57",
+          "signature": "ed25519:nQrSIGNnExx+zYmBCLCgbY9X5gWypT8vY57wOMO34PoZJK5vshGlK5BLl745jVU+9nxZ3FjQBuH5WSTKyIQHAg==",
+          "size": 86118,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-09"
         }
       ],
       "name": {
@@ -208,22 +262,6 @@
     {
       "id": "bashcut.vieneu-tts",
       "versions": [
-        {
-          "version": "0.0.2",
-          "apiVersion": 3,
-          "minApiVersion": 3,
-          "minAppVersion": "0.0.1",
-          "platforms": [
-            "macos-arm64",
-            "macos-x86_64"
-          ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vieneu-tts-v0.0.2/bashcut.vieneu-tts-0.0.2.zip",
-          "sha256": "a417dfabe40eadcf1c90e2219d74254b79802060a73ca6a741b9b333d2fc20e9",
-          "signature": "ed25519:4r4BNE3cNVov/VDSYtMT40e7JwUb5Is8T85e2aNDb0z7xoGbZ/2gkIB9os4c1oH1v/2/0hnbCWde7/isIfD4Bw==",
-          "size": 6798,
-          "downloadBytes": 1500000000,
-          "releasedAt": "2026-10-03"
-        },
         {
           "version": "0.0.3",
           "apiVersion": 3,
@@ -255,6 +293,22 @@
           "size": 7069,
           "downloadBytes": 1500000000,
           "releasedAt": "2026-10-05"
+        },
+        {
+          "version": "0.0.5",
+          "apiVersion": 3,
+          "minApiVersion": 3,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vieneu-tts-v0.0.5/bashcut.vieneu-tts-0.0.5.zip",
+          "sha256": "e51d5fbe7e458196d37dd0231497d52e3c86c82fefde501ac4ea9546804ee381",
+          "signature": "ed25519:5Nbb7cT8zNRLMnADCqqg4uq+snJjFYKkFghdVvtYvLRd343Aq4FZ+57CafIDpWSvz/vFGD2bsML+u6M5DeDRBA==",
+          "size": 7457,
+          "downloadBytes": 1500000000,
+          "releasedAt": "2026-10-09"
         }
       ],
       "name": {
@@ -275,38 +329,59 @@
       "hooks": []
     },
     {
-      "id": "bashcut.whisper-captions",
+      "id": "bashcut.vlog",
       "versions": [
         {
-          "version": "0.0.4",
-          "apiVersion": 3,
-          "minApiVersion": 3,
+          "version": "0.0.2",
+          "apiVersion": 7,
+          "minApiVersion": 7,
           "minAppVersion": "0.0.1",
           "platforms": [
-            "macos-arm64"
+            "macos-arm64",
+            "macos-x86_64"
           ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/whisper-captions-v0.0.4/bashcut.whisper-captions-0.0.4.zip",
-          "sha256": "b2ef1efa4602cdaccd2c73a2debb86c574d68f487991c93d5f79d4e9f30e5cb3",
-          "signature": "ed25519:MCf0oWmU5VpPw3GPlVvKi2nIjwMy2MJzrvC+uEk4lZxGUzFysJ3+yLia0Gqxyeqh1q0dm2GRyXAoXLF33TZVDw==",
-          "size": 9382,
-          "downloadBytes": 1900000000,
-          "releasedAt": "2026-10-04"
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vlog-v0.0.2/bashcut.vlog-0.0.2.zip",
+          "sha256": "e6b0716dd13e049893b5d752efaa8dec8e38a6d597d465a207b9923fb67b0ef4",
+          "signature": "ed25519:2h1f6iLXlbjR0Q/1FYbSAUH/JjydTZ/Fj+5C2OtF53MaDd6vOm/sri2sB0CEG+aFjcRUVWdPTRaPbYfGKLMtCw==",
+          "size": 259383,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-09"
         },
         {
-          "version": "0.0.5",
-          "apiVersion": 3,
-          "minApiVersion": 3,
-          "minAppVersion": "0.0.1",
+          "version": "0.0.3",
+          "apiVersion": 7,
+          "minApiVersion": 7,
+          "minAppVersion": "0.0.21",
           "platforms": [
-            "macos-arm64"
+            "macos-arm64",
+            "macos-x86_64"
           ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/whisper-captions-v0.0.5/bashcut.whisper-captions-0.0.5.zip",
-          "sha256": "1b4561795583d5a4e08f622315a01d47bd1a8e27af5470e7f4991fd246406197",
-          "signature": "ed25519:qDcoRt3RukZ9N5MOQnVdTyYDw2Prr/I/F+jYjFH2MXmWf6L2TS6TKXYnsNajY5G9crgbYej/rKRQOGANmukdBA==",
-          "size": 9683,
-          "downloadBytes": 1900000000,
-          "releasedAt": "2026-10-05"
-        },
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vlog-v0.0.3/bashcut.vlog-0.0.3.zip",
+          "sha256": "7c31b4757f5e5d04342a75db88ab4ee87e769a27a4c59ac9049dc61204c47a49",
+          "signature": "ed25519:AK0EFBRrTbS0jNCxBxiMZzCeWZDDnZMWgjEzVKlLmh31WIIdRyc3G1mt7BTugnfaewbeCdt/+KQke+FOPoedBg==",
+          "size": 282200,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-13"
+        }
+      ],
+      "name": {
+        "en": "Vlog",
+        "vi": "Vlog"
+      },
+      "summary": {
+        "en": "Recipes for making vlogs, one skill per topic (travel, food, daily life, product review, product ad, talking head, podcast clips, tutorial, explainer, news and documentary, promo and showreel): structure and sample ranges with sources for pacing, transitions, graphics, hook, text, sound and look, from which the agent writes the project's edit plan and review profile. Around them: ideate (the angle and brief from the footage), plan, hook-script (story, hook and script sized to the measured voice) and publish (platform data, cover, chapters, captions). Includes a library pack of vlog text styles, stickers and transitions, and scene-prompt for AI video prompts.",
+        "vi": "Công thức làm vlog, mỗi chủ đề một kỹ năng (du lịch, ăn uống, đời thường, review sản phẩm, quảng cáo sản phẩm, nói trước camera, cắt clip podcast, hướng dẫn, video giải thích, tin tức và phóng sự, video hype và showreel): cấu trúc và các khoảng tham khảo có nguồn cho nhịp cắt, chuyển cảnh, đồ hoạ, hook, chữ, âm thanh và màu, để agent tự viết kế hoạch dựng và ngưỡng review cho project. Kèm các kỹ năng tìm ý tưởng (góc kể và brief từ footage), lên kế hoạch, viết hook và lời thoại theo tốc độ giọng đo được, đăng bài (dữ liệu nền tảng, ảnh bìa, chương, phụ đề). Có gói thư viện kiểu chữ, sticker, chuyển cảnh cho vlog và scene-prompt viết prompt video AI."
+      },
+      "publisher": "bashcut",
+      "category": "utilities",
+      "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/vlog",
+      "capabilities": [],
+      "actions": [],
+      "hooks": []
+    },
+    {
+      "id": "bashcut.whisper-captions",
+      "versions": [
         {
           "version": "0.0.6",
           "apiVersion": 7,
@@ -321,6 +396,36 @@
           "size": 11526,
           "downloadBytes": 1900000000,
           "releasedAt": "2026-10-06"
+        },
+        {
+          "version": "0.0.7",
+          "apiVersion": 7,
+          "minApiVersion": 3,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/whisper-captions-v0.0.7/bashcut.whisper-captions-0.0.7.zip",
+          "sha256": "ec9ddc43bb7a4468622d64f12df8112abf9428daeff17b885d0ca053667b29c7",
+          "signature": "ed25519:lLumdFqlk5PqdWxBKeEJnA3bqGVyRG1p+jHPbNK+Le3uB2/jHLMeizLQ7NAcAcGTeN/135dbasGxcSXKYVa0DQ==",
+          "size": 11966,
+          "downloadBytes": 1900000000,
+          "releasedAt": "2026-10-09"
+        },
+        {
+          "version": "0.0.8",
+          "apiVersion": 7,
+          "minApiVersion": 3,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/whisper-captions-v0.0.8/bashcut.whisper-captions-0.0.8.zip",
+          "sha256": "8647fcab5d6477c36981f30ec0aea7e78700d381ba64b2c44a75e9ca722b6d28",
+          "signature": "ed25519:ArVheC8RgA2YuG6D1GrrtE1vzuUJh6SrWzGCiFLR03sC6rCON3DG0oqznGLahGn/0j1Yybr3GT1Byg0nMk0FDw==",
+          "size": 15084,
+          "downloadBytes": 1900000000,
+          "releasedAt": "2026-10-13"
         }
       ],
       "name": {

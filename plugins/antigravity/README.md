@@ -11,7 +11,8 @@ Contributed by [Luan Tran](https://github.com/luantran069) ([#21](https://github
 For a local checkout, run `plugins/antigravity/build.sh` and `scripts/dev-link.sh antigravity`, then reopen
 **Plugins** in BashCut and choose **Trust**.
 After a plugin release is published, it can be installed from Plugins › Browse. Its dependency setup can install
-`agy` from Google's official installer without changing your shell profile; sign in when its terminal opens.
+`agy` into `~/.local/bin` with Google's official installer (which may add that folder to your shell PATH); sign in
+when its terminal opens.
 
 Open **Agent → + → Antigravity terminal**. The app supplies a token to that tab only; the plugin's config file stores
 `$BASHCUT_SESSION_TOKEN` as an environment reference, never the token value. The tab receives BashCut's current

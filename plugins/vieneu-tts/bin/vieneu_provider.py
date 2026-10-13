@@ -60,6 +60,9 @@ def synthesize(params, progress):
     reference = (options.get("referenceAudio") or "").strip()
     if reference and not os.path.isfile(reference):
         raise ValueError(f"Reference audio not found: {reference}")
+    # BashCut sends cloneConsent (P0-C7); older hosts do not, and keep working as before.
+    if reference and params.get("cloneConsent") is False:
+        raise ValueError("Cloning a voice needs the person's consent: ask them, then pass clone consent")
     fake = os.environ.get("VIENEU_FAKE") == "1"
     takes = []
     for index in range(count):

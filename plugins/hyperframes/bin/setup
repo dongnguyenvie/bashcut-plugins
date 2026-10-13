@@ -1,0 +1,82 @@
+#!/bin/sh
+# Install recipe for HyperFrames Graphics. BashCut runs it after the user approves, in the plugin's environment:
+#   1. Node.js 22: a Node.js 22.19+ already on this Mac is used; otherwise the newest official Node.js 22 LTS for this
+#      Mac is downloaded from nodejs.org into BASHCUT_SHARED_DATA/node/<version> (shared with other Node plugins),
+#      checked against the release's SHASUMS256.txt.
+#   2. HyperFrames and GSAP at the versions runtime/package.template.json pins, with `npm ci` and the lockfile next to
+#      it, into BASHCUT_PLUGIN_DATA/runtime.
+#   3. Chrome headless shell for rendering (HyperFrames' `browser ensure`), into BASHCUT_PLUGIN_CACHE/chrome.
+# `::progress` lines drive the progress bar. Running it again repairs or updates the install.
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+. "$here/runtime.sh"
+mkdir -p "$data" "$cache"
+work="$(mktemp -d "$data/.setup.XXXXXX")"
+trap 'rm -rf "$work"' EXIT
+
+install_node() {
+    base="${HYPERFRAMES_NODE_MIRROR:-https://nodejs.org/dist/latest-v22.x}"
+    case "$(uname -m)" in
+        arm64) arch=arm64 ;;
+        x86_64) arch=x64 ;;
+        *) echo "Unsupported Mac architecture: $(uname -m)" >&2; exit 1 ;;
+    esac
+    echo "::progress 0.02 Finding the newest Node.js 22"
+    curl --fail --location --silent --show-error "$base/SHASUMS256.txt" -o "$work/SHASUMS256.txt"
+    line="$(grep -E "  node-v22\.[0-9]+\.[0-9]+-darwin-$arch\.tar\.gz\$" "$work/SHASUMS256.txt" | head -n 1)"
+    if [ -z "$line" ]; then
+        echo "No darwin-$arch archive in $base/SHASUMS256.txt" >&2
+        exit 1
+    fi
+    sum="${line%% *}"
+    name="${line##* }"
+    folder="${name%.tar.gz}"
+    echo "::progress 0.05 Downloading $folder"
+    curl --fail --location --silent --show-error "$base/$name" -o "$work/$name"
+    actual="$(shasum -a 256 "$work/$name" | cut -d' ' -f1)"
+    if [ "$actual" != "$sum" ]; then
+        echo "Checksum mismatch for $name: expected $sum, got $actual" >&2
+        exit 1
+    fi
+    tar -xzf "$work/$name" -C "$work"
+    if [ -n "${BASHCUT_SHARED_DATA:-}" ]; then
+        # Versioned, so other plugins keep the version they use; the same version is replaced (repaired) in place.
+        target="$BASHCUT_SHARED_DATA/node/$folder"
+        mkdir -p "$BASHCUT_SHARED_DATA/node"
+    else
+        target="$data/node"
+    fi
+    rm -rf "$target.old"
+    [ -d "$target" ] && mv "$target" "$target.old"
+    mv "$work/$folder" "$target"
+    rm -rf "$target.old"
+}
+
+if ! node="$("$here/find-node")"; then
+    install_node
+    node="$("$here/find-node")" || { echo "Node.js was installed but cannot be found" >&2; exit 1; }
+fi
+echo "Node.js $("$node" -v) at $node"
+# npm's own scripts start with `#!/usr/bin/env node`: this Node.js goes first on PATH.
+PATH="$(dirname "$node"):$PATH"
+export PATH
+
+echo "::progress 0.20 Installing HyperFrames and GSAP (about 130 MB)"
+mkdir -p "$runtime"
+if ! cmp -s "$here/../runtime/package-lock.template.json" "$runtime/package-lock.json" || [ ! -f "$cli" ] || [ ! -f "$gsap" ]; then
+    cp "$here/../runtime/package.template.json" "$runtime/package.json"
+    cp "$here/../runtime/package-lock.template.json" "$runtime/package-lock.json"
+    (cd "$runtime" && npm ci --no-audit --no-fund --loglevel=error)
+fi
+"$node" "$cli" --version
+
+echo "::progress 0.70 Downloading Chrome headless shell for rendering (about 210 MB)"
+mkdir -p "$chrome_home"
+CI=1 HOME="$chrome_home" "$node" "$cli" browser ensure >&2
+path="$(HOME="$chrome_home" "$node" "$cli" browser path 2>/dev/null | tail -n 1)"
+if [ ! -x "$path" ]; then
+    echo "HyperFrames did not report a Chrome it can run (got: $path)" >&2
+    exit 1
+fi
+printf '%s\n' "$path" > "$chrome_path_file"
+echo "::progress 1.0 HyperFrames is ready"

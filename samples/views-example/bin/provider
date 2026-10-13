@@ -5,9 +5,11 @@ Read it top to bottom:
   1. Protocol   - the session transport: hello, requests, host calls (about 50 lines you can copy).
   2. Gallery    - the "Components" view: every component type, events and state.
   3. Voice      - the "Voice" view, a tab in the agent dock: reuse other plugins through BashCut (voice.speak,
-                  plugins.invoke, media.import).
+                  plugins.invoke, voice.place) and remember the chosen voice plugin in an option (plugins.option).
   4. Title card - a sheet: a short form that closes itself when done.
-  5. Actions    - Tools buttons that call BashCut while they run, one opening the sheet.
+  5. Live       - the "Live" view: marks on the timeline (overlays) and a background job that redraws the view
+                  after its request has answered (viewUpdate lines).
+  6. Actions    - Tools buttons that call BashCut while they run, one opening the sheet.
 
 Views are answers, not widgets: BashCut sends `view.render` (draw) or `view.event` (the user did something) and the
 plugin answers with the whole component tree. Keep what you need between requests in `state`.
@@ -17,6 +19,7 @@ import math
 import os
 import struct
 import sys
+import threading
 import time
 import wave
 import zlib
@@ -24,9 +27,14 @@ import zlib
 # ---------------------------------------------------------------------------------------------------- 1. Protocol
 
 
+SEND_LOCK = threading.Lock()
+
+
 def send(message):
-    sys.stdout.write(json.dumps(message) + "\n")
-    sys.stdout.flush()
+    # The background job of the Live view writes too: one line at a time.
+    with SEND_LOCK:
+        sys.stdout.write(json.dumps(message) + "\n")
+        sys.stdout.flush()
 
 
 class Request:
@@ -197,8 +205,14 @@ def gallery(request, state, values, event):
                  "options": ["16:9", "9:16", "1:1"]},
                 {"type": "slider", "id": "speed", "label": "Speed", "min": 0.25, "max": 4, "step": 0.25},
                 {"type": "textArea", "id": "notes", "label": "Notes (sent with the next event)", "height": 60},
+                # Newer components: check the hello's features and fall back to a text field in an older BashCut.
+                {"type": "colorPicker", "id": "accent", "label": "Accent", "value": values.get("accent", "#FF8800")}
+                if "views.colorPicker" in FEATURES else
+                {"type": "textField", "id": "accent", "label": "Accent (hex)", "value": values.get("accent", "#FF8800")},
+                {"type": "fontPicker", "id": "font", "label": "Font", "by": "family"}
+                if "views.fontPicker" in FEATURES else {"type": "textField", "id": "font", "label": "Font family"},
                 {"type": "text", "style": "mono",
-                 "text": json.dumps({k: values.get(k) for k in ("proxies", "ratio", "speed", "notes")})},
+                 "text": json.dumps({k: values.get(k) for k in ("proxies", "ratio", "speed", "notes", "accent", "font")})},
                 {"type": "text", "style": "caption", "text": f"Speed {speed}× · shots matching: {len(shots)}"},
             ]},
             {"type": "section", "title": "List", "children": [
@@ -207,7 +221,8 @@ def gallery(request, state, values, event):
                 {"type": "text", "style": "caption", "text": f"Selected: {selected or 'none'} · starred: {len(starred)}"},
             ]},
             {"type": "section", "title": "Media", "collapsed": True, "children": [
-                {"type": "image", "path": before, "height": 90, "caption": "image: a local file, shown as a thumbnail"},
+                {"type": "image", "path": before, "file": after, "height": 90,
+                 "caption": "image: a local file, shown as a thumbnail; drag it onto the timeline (its file)"},
                 {"type": "imageCompare", "before": before, "after": after, "height": 120,
                  "beforeLabel": "Before", "afterLabel": "After"},
                 {"type": "audio", "path": sample_tone(), "title": "Play a tone"},
@@ -257,20 +272,50 @@ def sample_tone():
 # ------------------------------------------------------------------------------------------------------- 3. Voice
 
 
+def voice_providers(request):
+    """The voice.synthesize providers BashCut knows (capabilities.get): [(provider id, label)]. Empty when the call is
+    refused or nothing provides voices; the picker then offers only BashCut's choice."""
+    try:
+        answer = request.call("capabilities.get", {"capability": "voice.synthesize"}) or {}
+    except RuntimeError:
+        return []
+    entries = answer.get("capabilities") if isinstance(answer.get("capabilities"), list) else [answer]
+    providers = [p for entry in entries if isinstance(entry, dict) for p in entry.get("providers") or []]
+    rows = [(p.get("provider") or p.get("id"), p) for p in providers if isinstance(p, dict)]
+    return [(pid, (p.get("name") or pid) + (" (paid)" if p.get("paid") else "")) for pid, p in rows if pid]
+
+
 def voice(request, state, values, event):
     """Reuse other plugins without knowing them:
-    - voice.speak: BashCut picks the user's voice.synthesize plugin (VieNeu-TTS or any other);
+    - voice.speak: BashCut picks the user's voice.synthesize plugin (VieNeu-TTS or any other) and keeps every take;
+      the picker overrides it, and the choice is saved in this plugin's `provider` option with the host call
+      plugins.option, so it is there next time (and in Settings) without a copy in plugin data;
     - plugins.invoke: a capability without its own command (audio.loudness, listed in "uses");
-    - media.import: place the chosen take on the timeline, as an undoable edit by this plugin."""
+    - voice.place: place the chosen take on the timeline, as an undoable edit by this plugin."""
     takes = state.get("takes", [])
     message = state.get("message", "")
+    options = request.params.get("options") or {}
+    provider = str(state.get("provider", options.get("provider") or ""))
+    if "providers" not in state:  # asked once per view, then kept in state
+        state["providers"] = voice_providers(request)
+    if event and event.get("node") == "provider" and event.get("type") == "change":
+        provider = str(event.get("value") or "")
+        if "options.set" in FEATURES:
+            # Its own options only, never a secret; null resets the option to its default.
+            request.call("plugins.option", {"plugin": PLUGIN_ID, "option": "provider", "value": provider or None})
+            message = "Saved: the next takes use this voice plugin."
+        else:
+            message = "This BashCut cannot save the choice; it holds until the view closes."
     if event and event.get("node") == "speak":
         text = str(values.get("text") or "").strip()
         if not text:
             message = "Write something to say first."
         else:
             request.render([{"type": "progress", "label": "Generating takes with your voice plugin…"}])
-            result = request.wait_job(request.call("voice.speak", {"text": text, "takes": 2, "keepTakes": True}))
+            speak = {"text": text, "takes": 2}
+            if provider:
+                speak["provider"] = provider
+            result = request.wait_job(request.call("voice.speak", speak))
             takes = [{"path": take["path"], "score": take.get("score"), "seconds": take.get("seconds")}
                      for take in result.get("takes", [])]
             message = f"{len(takes)} takes. Play them, measure them or use one."
@@ -284,8 +329,7 @@ def voice(request, state, values, event):
             take["lufs"] = loudness.get("integratedLUFS")
             message = f"Measured with {measured.get('plugin')}: {take['lufs']:.1f} LUFS"
         elif take and action == "use":
-            rev = request.call("context.get")["rev"]
-            request.call("media.import", {"path": take["path"], "place": True, "baseRev": rev})
+            request.call("voice.place", {"take": take["path"]})
             request.notify("Take placed on the timeline")
             message = "Placed. Undo works like any edit."
     rows = [{
@@ -298,10 +342,15 @@ def voice(request, state, values, event):
         "actions": [{"id": "measure", "title": "Measure loudness", "icon": "speedometer"},
                     {"id": "use", "title": "Use this take", "icon": "plus.rectangle.on.rectangle"}],
     } for take in takes]
+    choices = [{"value": "", "label": "BashCut's choice"}] + [
+        {"value": provider_id, "label": label} for provider_id, label in state["providers"]]
+    if provider and provider not in [choice["value"] for choice in choices]:
+        choices.append({"value": provider, "label": f"{provider} (not ready)"})
     return {
         "title": "Giọng nói" if is_vietnamese(request.params) else "Voice",
-        "state": {"takes": takes, "message": message},
+        "state": {"takes": takes, "message": message, "provider": provider, "providers": state["providers"]},
         "body": [
+            {"type": "picker", "id": "provider", "label": "Voice plugin", "value": provider, "options": choices},
             {"type": "textArea", "id": "text", "label": "Text", "height": 70},
             {"type": "button", "id": "speak", "title": "Generate takes", "icon": "waveform", "style": "primary",
              "wide": True},
@@ -323,8 +372,8 @@ def title_card(request, state, values, event):
         title = str(values.get("title") or "").strip()
         if not title:
             return title_card_form(values, "Write a title first.")
-        request.call("ui.notify", {"message": f"Title card: {title} ({values.get('style', 'bold')}, "
-                                              f"{values.get('seconds', 3)} s)"})
+        request.call("ui.action", {"action": "notify", "target": f"Title card: {title} ({values.get('style', 'bold')}, "
+                                                                f"{values.get('seconds', 3)} s)"})
         return {"body": [], "close": True, "state": {}, "notify": "Title card created"}
     return title_card_form(values, "")
 
@@ -350,17 +399,84 @@ def title_card_form(values, problem):
     }
 
 
-VIEWS = {"gallery": gallery, "voice": voice, "titleCard": title_card}
+# ---------------------------------------------------------------------------------------------------------- 5. Live
+
+
+def live(request, state, values, event):
+    """Two things that are not an answer to a request:
+    - overlays: marks BashCut draws on the timeline and the viewer from data (host call plugins.set-overlays, or an
+      {"type": "overlays"} line at any time); the plugin sends the whole set again when it changes, [] clears it;
+    - viewUpdate: a line that redraws one of the plugin's views after the request answered, here a background job
+      that counts to five. BashCut draws it only while the view is on screen."""
+    node = (event or {}).get("node")
+    context = request.params.get("context") or {}
+    playhead = int(context.get("playhead") or 0)
+    message = state.get("message", "")
+    if node == "mark" and "overlays" in FEATURES:
+        request.call("plugins.set-overlays", {"plugin": PLUGIN_ID, "overlays": [
+            {"id": "here", "kind": "marker", "start": playhead, "label": "Marked here", "color": "purple"},
+            {"id": "next", "kind": "range", "start": playhead, "end": playhead + 90, "label": "Next 3 s",
+             "color": "orange"},
+            {"id": "centre", "kind": "region", "rect": {"x": 0.25, "y": 0.25, "width": 0.5, "height": 0.5},
+             "start": playhead, "end": playhead + 90, "label": "Centre"},
+        ]})
+        message = f"Marked frame {playhead} on the timeline and the viewer."
+    elif node == "clear" and "overlays" in FEATURES:
+        request.call("plugins.set-overlays", {"plugin": PLUGIN_ID, "overlays": []})
+        message = "Marks cleared."
+    elif node == "count":
+        threading.Thread(target=count_in_background, daemon=True).start()
+        message = "Counting in the background…"
+    return live_answer(message, FEATURES)
+
+
+def live_answer(message, features, step=None):
+    body = [{"type": "text", "style": "secondary", "text": "Marks on the timeline and redraws without a request."}]
+    if "overlays" in features:
+        body.append({"type": "row", "children": [
+            {"type": "button", "id": "mark", "title": "Mark the playhead", "icon": "flag", "style": "primary"},
+            {"type": "button", "id": "clear", "title": "Clear marks"},
+        ]})
+    else:
+        body.append({"type": "text", "style": "caption", "color": "orange", "text": "Overlays need a newer BashCut."})
+    if step is not None:
+        body.append({"type": "progress", "value": step / COUNT_STEPS, "label": f"{step} / {COUNT_STEPS}"})
+    body.append({"type": "button", "id": "count", "title": "Count to five in the background", "icon": "timer",
+                 "disabled": step is not None and step < COUNT_STEPS})
+    if message:
+        body.append({"type": "text", "style": "caption", "text": message})
+    if "viewUpdate" not in features:
+        body.append({"type": "text", "style": "caption", "color": "orange",
+                     "text": "This BashCut ignores background redraws (host feature viewUpdate)."})
+    return {"title": "Live", "state": {"message": message}, "body": body}
+
+
+COUNT_STEPS = 5
+COUNT_SECONDS = float(os.environ.get("VIEWS_EXAMPLE_COUNT_SECONDS", "0.5"))
+
+
+def count_in_background():
+    """Runs after the request answered: each viewUpdate is a whole view answer plus "view". At most about ten a
+    second count; send what is on screen, not every tick."""
+    for step in range(1, COUNT_STEPS + 1):
+        time.sleep(COUNT_SECONDS)
+        done = step == COUNT_STEPS
+        update = live_answer("Done: counted to five." if done else "Counting in the background…", FEATURES, step)
+        send({"type": "viewUpdate", "view": "live", **update, **({"notify": "Counted to five"} if done else {})})
+
+
+VIEWS = {"gallery": gallery, "voice": voice, "titleCard": title_card, "live": live}
 PLUGIN_ID = "bashcut.views-example"
 
-# ----------------------------------------------------------------------------------------------------- 5. Actions
+# ----------------------------------------------------------------------------------------------------- 6. Actions
 
 
 def hello_action(request):
     """A Tools button: actions of session plugins (API 8) can call BashCut too."""
     greeting = (request.params.get("options") or {}).get("greeting") or "Hello"
     timeline = request.call("context.get")
-    request.call("ui.notify", {"message": f"{greeting}! The project is at revision {timeline.get('rev')}."})
+    request.call("ui.action", {"action": "notify",
+                               "target": f"{greeting}! The project is at revision {timeline.get('rev')}."})
     return {"message": greeting}
 
 

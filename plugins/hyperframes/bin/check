@@ -1,0 +1,24 @@
+#!/bin/sh
+# Dependency probe: Node.js 22.19+, the pinned HyperFrames and GSAP, Chrome headless shell and the alpha encoder are
+# all there. Exits 0 with what it found, or 1 with what is missing.
+here="$(cd "$(dirname "$0")" && pwd)"
+. "$here/runtime.sh"
+if ! node="$("$here/find-node")"; then
+    echo "Node.js 22.19 or newer was not found." >&2
+    exit 1
+fi
+want="$("$node" -p 'require(process.argv[1]).dependencies.hyperframes' "$here/../runtime/package.template.json")"
+have="$("$node" -p 'require(process.argv[1]).version' "$runtime/node_modules/hyperframes/package.json" 2>/dev/null)"
+if [ "$have" != "$want" ] || [ ! -f "$gsap" ]; then
+    echo "HyperFrames $want is not installed (found: ${have:-none})." >&2
+    exit 1
+fi
+if [ -z "${HYPERFRAMES_BROWSER_PATH:-}" ] || [ ! -x "$HYPERFRAMES_BROWSER_PATH" ]; then
+    echo "Chrome headless shell for rendering is missing." >&2
+    exit 1
+fi
+if [ ! -x "$here/encode-alpha" ]; then
+    echo "bin/encode-alpha is missing (run build.sh)." >&2
+    exit 1
+fi
+echo "HyperFrames $have on Node.js $("$node" -v), Chrome at $HYPERFRAMES_BROWSER_PATH"

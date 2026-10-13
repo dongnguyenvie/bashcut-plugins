@@ -5,7 +5,7 @@
     "en": "AI Editor",
     "vi": "AI Editor"
   },
-  "version": "0.0.3",
+  "version": "0.0.4",
   "apiVersion": 4,
   "minApiVersion": 4,
   "entrypoint": "bin/provider",

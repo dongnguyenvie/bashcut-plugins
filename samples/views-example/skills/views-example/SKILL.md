@@ -6,12 +6,13 @@ description: Drive the Views Example plugin panel from the command line — rend
 # Views Example
 
 The plugin adds a panel to BashCut's left rail with `gallery` (every view component), a `voice` tab in the agent dock
-(generates speech with whichever voice plugin the user installed) and a `titleCard` form in a sheet.
+(generates speech with whichever voice plugin the user installed, or the one picked in it), a `titleCard` form in a
+sheet and `live` (timeline marks and a background count).
 
 ## Look at a view
 
 ```sh
-bashcut plugins views
+bashcut plugins list --views
 bashcut plugins view bashcut.views-example --view gallery --open
 ```
 
@@ -34,8 +35,25 @@ bashcut plugins view-event bashcut.views-example --view voice --node text --type
 bashcut plugins view-event bashcut.views-example --view voice --node speak
 ```
 
-The second command waits while the voice plugin works. It needs a `voice.synthesize` plugin (such as VieNeu TTS);
+To use one voice plugin, pick it (saved in the plugin's `provider` option, `plugins options bashcut.views-example`):
+
+```sh
+bashcut capabilities get voice.synthesize
+bashcut plugins view-event bashcut.views-example --view voice --node provider --type change --value <provider id>
+```
+
+The speak command waits while the voice plugin works. It needs a `voice.synthesize` plugin (such as VieNeu TTS);
 without one, the view says so — suggest `bashcut plugins search --capability voice.synthesize`.
+
+## Marks and background updates
+
+```sh
+bashcut plugins view-event bashcut.views-example --view live --node mark    # marks the playhead
+bashcut plugins overlays bashcut.views-example                              # lists the marks
+bashcut plugins view-event bashcut.views-example --view live --node clear
+```
+
+`--node count` starts a background count that redraws the view on its own; `plugins view` shows the latest state.
 
 ## Limits
 

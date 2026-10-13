@@ -1,7 +1,7 @@
 #!/bin/sh
 # Prints the path of a Node.js >= 22.19 for AI Editor, or exits 1. Shared by bin/check, bin/provider and bin/setup.
-# Order: the copy bin/setup installs in the plugin data folder, Homebrew, /usr/local, nvm (newest first), Volta,
-# then PATH. BashCut starts plugins with PATH=/usr/bin:/bin:/usr/sbin:/sbin (+ Homebrew), so nvm and Volta are
+# Order: the copies bin/setup installs in the shared data folder (newest first) and, from earlier versions, in the
+# plugin data folder, then Homebrew, /usr/local, nvm (newest first), Volta, then PATH. BashCut starts plugins with PATH=/usr/bin:/bin:/usr/sbin:/sbin (+ Homebrew), so nvm and Volta are
 # looked up by folder.
 data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.director}"
 
@@ -18,6 +18,11 @@ node_ok() {
 }
 
 candidates() {
+    if [ -n "${BASHCUT_SHARED_DATA:-}" ] && [ -d "$BASHCUT_SHARED_DATA/node" ]; then
+        # node-v22.20.0-darwin-arm64 → newest version first.
+        ls "$BASHCUT_SHARED_DATA/node" 2>/dev/null | grep '^node-v' | sed 's/^node-v//' |
+            sort -t. -k1,1nr -k2,2nr -k3,3nr | while read -r v; do echo "$BASHCUT_SHARED_DATA/node/node-v$v/bin/node"; done
+    fi
     echo "$data/node/bin/node"
     echo "/opt/homebrew/bin/node"
     echo "/usr/local/bin/node"

@@ -5,5 +5,5 @@ if node="$("$here/find-node")"; then
     echo "Node.js $("$node" -v) at $node"
     exit 0
 fi
-echo "Node.js 22.19 or newer was not found (plugin data folder, Homebrew, nvm, Volta)." >&2
+echo "Node.js 22.19 or newer was not found (BashCut's shared or plugin data folder, Homebrew, nvm, Volta)." >&2
 exit 1

@@ -20,12 +20,29 @@ struct PluginError: Error {
 
 struct Cancelled: Error {}
 
+/// The host features the session hello listed (API 8), such as "views.colorPicker" or "overlays". Check one before
+/// using what it names, so the plugin still works in an older BashCut. Empty over the one-shot transport.
+var hostFeatures = Set<String>()
+
 func send(_ message: JSON) {
     guard let data = try? JSONSerialization.data(withJSONObject: message, options: [.withoutEscapingSlashes]) else {
         FileHandle.standardError.write(Data("could not encode a response\n".utf8))
         return
     }
     FileHandle.standardOutput.write(data + Data("\n".utf8))
+}
+
+/// Redraws one of the plugin's views outside a request (session transport, host feature `viewUpdate`): `answer` is a
+/// whole view answer (`body`, `title`?, `state`?, `notify`?). BashCut draws it only while the view is on screen and
+/// drops updates beyond about ten a second; an older BashCut ignores the line.
+func viewUpdate(_ view: String, _ answer: JSON) {
+    send(answer.merging(["type": "viewUpdate", "view": view]) { _, new in new })
+}
+
+/// Replaces the plugin's marks on the timeline and viewer at any time (host feature `overlays`); `[]` clears them.
+/// From a request, `host.call("plugins.set-overlays", …)` does the same and reports a bad set.
+func sendOverlays(_ overlays: [JSON]) {
+    send(["type": "overlays", "overlays": overlays])
 }
 
 func readMessage() -> JSON? {
@@ -78,6 +95,31 @@ final class Host {
         }
         return reply["result"]
     }
+
+    /// Redraws the view that asked while the request still works (view requests): a progress bar, partial results.
+    func render(_ body: [JSON], title: String? = nil) throws {
+        var event: JSON = ["kind": "render", "body": body]
+        if let title { event["title"] = title }
+        try self.event(event)
+    }
+
+    /// Commands that run as jobs (voice.speak, plugins.invoke, export.start …) answer `{"job": id}`: polls
+    /// jobs.status until the job ends and returns its result. Other answers come back unchanged.
+    func waitJob(_ started: Any?, timeout: TimeInterval = 600, interval: TimeInterval = 0.4) throws -> Any? {
+        guard let job = (started as? JSON)?["job"] as? String else { return started }
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            let answer = try call("jobs.status", ["job": job]) as? JSON ?? [:]
+            let status = answer["job"] as? JSON ?? answer
+            switch status["state"] as? String {
+            case "completed": return status["result"]
+            case let state? where state == "failed" || state == "cancelled":
+                throw PluginError("job_\(state)", "\(status["error"] ?? "The job \(state)")")
+            default: Thread.sleep(forTimeInterval: interval)
+            }
+        }
+        throw PluginError("timeout", "The job \(job) did not end in \(Int(timeout)) s")
+    }
 }
 
 func respond(_ request: JSON, session: Session?) -> JSON {
@@ -118,7 +160,9 @@ final class Session {
             let next = backlog.isEmpty ? readMessage() : backlog.removeFirst()
             guard let message = next else { return }
             switch message["type"] as? String {
-            case "hello": send(["type": "hello", "apiVersion": message["apiVersion"] ?? 2])
+            case "hello":
+                hostFeatures.formUnion((message["features"] as? [Any] ?? []).map { "\($0)" })
+                send(["type": "hello", "apiVersion": message["apiVersion"] ?? 2])
             case "shutdown": return
             case "cancel", "callResult": continue
             default: send(respond(message, session: self))

@@ -12,15 +12,20 @@ Templates:
     hook         contributes.hooks subscribers (export.finished with pluginData, media.imported)
     options      options of every type, including a secret, read by an action
     chat-agent   an agent.chat session plugin: a tab in the agent dock that streams events and calls BashCut
+    views        a rail panel (contributes.container) with a panel, a dock tab and a sheet view, the request loop
+                 with call / wait_job / render helpers and the hello's host features (plugin API 8)
+    skills       a skill pack without code: agent skills only, no entrypoint (host feature skillsOnly, API 7)
+    library      a library pack without code: items for the library panels (a sound, a sticker, a text style, a
+                 look, a transition) in packs/<slug>/pack.json, no entrypoint
 
 Languages (--lang):
     swift   compiled by build.sh into a universal binary; nothing to install on users' Macs (default)
-    shell   POSIX sh and macOS built-ins (plutil reads the JSON); one-shot templates only, not chat-agent
+    shell   POSIX sh and macOS built-ins (plutil reads the JSON); one-shot templates only, not chat-agent or views
     node    plain ES modules; Node.js is found on the Mac or downloaded by the install recipe (bin/setup)
     python  standard library only; needs a python3, which the registry refuses (see "Rules for users who are
             not developers" in README.md): fine for private plugins, bring your own Python with uv to publish
 
---skill adds an agent skill (contributes.skills, plugin API 7): skills/<slug>/SKILL.md, a starting point that tells
+skills and library have no code, so they take no --lang. --skill adds an agent skill (contributes.skills, plugin API 7): skills/<slug>/SKILL.md, a starting point that tells
 agents when and how to use what the plugin adds. Fill it in before publishing.
 
 By default the plugin goes to plugins/<slug> with listing.json and an empty versions.json, ready for the registry.
@@ -44,10 +49,12 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 TEMPLATES = pathlib.Path(__file__).resolve().parent / "plugin-templates"
 REPO_URL = "https://github.com/dongnguyenvie/bashcut-plugins"
 
-TEMPLATE_NAMES = ("capability", "action", "hook", "options", "chat-agent")
+TEMPLATE_NAMES = ("capability", "action", "hook", "options", "chat-agent", "views", "skills", "library")
 LANGUAGES = {"swift": "Swift", "shell": "POSIX sh", "node": "JavaScript (Node.js)", "python": "Python"}
 PROVIDED_CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync")
-SESSION_TEMPLATES = {"chat-agent"}
+SESSION_TEMPLATES = {"chat-agent", "views"}
+# Packs without an entrypoint (host feature skillsOnly): nothing of them runs, so they have no language.
+DATA_TEMPLATES = {"skills", "library"}
 SLUG_PATTERN = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 # Names end up inside generated string literals of every language, so they stay plain.
 NAME_PATTERN = r"[^\"'\\`$\n\r\t{}]{1,80}"
@@ -59,8 +66,14 @@ SUMMARIES = {
     "options": ("Shows how plugin options work, including a secret API key.",
                 "Minh hoạ các loại tuỳ chọn của plugin, kể cả khoá API bí mật."),
     "chat-agent": ("A chat agent in BashCut's agent dock.", "Trợ lý trò chuyện trong agent dock của BashCut."),
+    "views": ("A panel in BashCut's left rail with a dock tab and a sheet.",
+              "Bảng điều khiển ở thanh bên trái của BashCut, kèm tab trong dock và một sheet."),
+    "skills": ("Agent skills for editing in BashCut.", "Skill cho agent khi dựng video trong BashCut."),
+    "library": ("Sounds, stickers, text styles, looks and transitions for BashCut's library.",
+                "Âm thanh, sticker, kiểu chữ, màu và chuyển cảnh cho thư viện BashCut."),
 }
 DEFAULT_CATEGORIES = {"voice.synthesize": "voice", "captions.transcribe": "captions", "chat-agent": "agents",
+                      "skills": "agents", "library": "effects",
                       "audio.beats": "audio", "audio.loudness": "audio", "audio.sync": "audio"}
 
 
@@ -95,9 +108,10 @@ def dependencies_for(lang):
     return []
 
 
-def contribution_for(template, plugin_id, name, capability):
+def contribution_for(template, plugin_id, name, capability, slug=""):
     """The template-specific part of the manifest: capabilities, providers, transport, options, contributes."""
-    action_id = f"{plugin_id}.add-marker" if template == "action" else f"{plugin_id}.show-options"
+    action_id = {"action": f"{plugin_id}.add-marker", "views": f"{plugin_id}.open-form"}.get(
+        template, f"{plugin_id}.show-options")
     if template == "capability":
         provider = f"{plugin_id}.{capability.split('.')[-1]}"
         return 2, {"capabilities": [capability],
@@ -139,14 +153,38 @@ def contribution_for(template, plugin_id, name, capability):
                                   "timeoutSeconds": 300}],
                    "options": [{"id": "greeting", "title": text("Greeting", "Lời chào"), "type": "string",
                                 "default": "Hello", "scope": "user"}]}
+    if template == "views":
+        return 8, {"transport": "session", "capabilities": [], "uses": ["audio.loudness"], "features": ["views"],
+                   "contributes": {
+                       "container": {"icon": "square.grid.2x2", "title": text(name[:24])},
+                       "views": [
+                           {"id": "main", "title": text(name[:40])},
+                           {"id": "media", "title": text("Media", "Media"), "location": "dock", "icon": "film"},
+                           {"id": "form", "title": text("Form", "Biểu mẫu"), "location": "sheet",
+                            "icon": "square.and.pencil"},
+                       ],
+                       "actions": [{"id": action_id, "title": text("Open the form…", "Mở biểu mẫu…"),
+                                    "icon": "square.and.pencil", "placements": ["menu.plugins"]}],
+                   }}
+    if template == "skills":
+        return 7, {"contributes": {"skills": []}}  # build_manifest adds the skill
+    if template == "library":
+        return 7, {"contributes": {"library": [{"path": f"packs/{slug}"}]}}
     raise ValueError(template)
 
 
 def build_manifest(args):
-    minimum, part = contribution_for(args.template, args.id, args.name, args.capability)
+    minimum, part = contribution_for(args.template, args.id, args.name, args.capability, args.slug)
     manifest = {"schema": "bashcut.plugin/1", "id": args.id, "name": text(args.name, args.name_vi),
                 "version": "0.0.1", "apiVersion": API_CURRENT, "minApiVersion": minimum, "entrypoint": "bin/provider",
                 "category": args.category}
+    if args.template in DATA_TEMPLATES:
+        # No entrypoint and nothing that runs: BashCut reads the skills and packs, Trust still pins every file.
+        del manifest["entrypoint"]
+        manifest.update(part)
+        if args.template == "skills" or getattr(args, "skill", False):
+            manifest["contributes"]["skills"] = [{"path": f"skills/{args.slug}"}]
+        return manifest
     if "transport" in part:
         manifest["transport"] = part.pop("transport")
     manifest["capabilities"] = part.pop("capabilities")
@@ -188,6 +226,8 @@ def render(source, values):
 
 def source_files(lang, template):
     """(destination, template file, executable) for the language runtime and the template's handlers."""
+    if template in DATA_TEMPLATES:
+        return [("tests/test_plugin.py", f"tests/{template}.py", False)]
     files = {
         "python": [("bin/provider", "python/provider", True), ("bin/bashcut_plugin.py", "python/bashcut_plugin.py", False),
                    ("bin/handlers.py", f"python/{template}.py", False)],
@@ -222,11 +262,14 @@ FILE_NOTES = {
     "bin/provider (built)": "the entrypoint BashCut runs, built by `build.sh` (not in git)",
     "tests/test_plugin.py": "smoke tests that run the entrypoint like BashCut; not shipped",
     "skills/": "the agent skill (`SKILL.md`): when and how agents should use this plugin; **fill it in**",
+    "packs/": "the library pack: `pack.json` (its items) and the files they name; **your items**",
+    "tests/test_plugin.py (data)": "checks the pack the way BashCut reads it; not shipped",
 }
 
 
 def readme(args, files, registry):
     rel = f"plugins/{args.slug}" if registry else str(args.folder)
+    data = args.template in DATA_TEMPLATES
     build = "./build.sh\n" if args.lang == "swift" else ""
     tests = f"cd {rel}\n{build}python3 -m unittest discover -s tests -v"
     if registry:
@@ -248,11 +291,18 @@ def readme(args, files, registry):
                  "Python with `uv` like `plugins/vieneu-tts`, or switch to Swift, shell or Node.\n")
     if args.lang == "swift":
         files = set(files) | {"bin/provider (built)"}
-    files = {"skills/" if path.startswith("skills/") else path for path in files}
+    files = {"skills/" if path.startswith("skills/") else "packs/" if path.startswith("packs/") else path
+             for path in files}
+    if data:
+        files = (files - {"tests/test_plugin.py"}) | {"tests/test_plugin.py (data)"}
     lines = [f"- `{path.split(' ')[0]}`: {FILE_NOTES[path]}" for path in sorted(files) if path in FILE_NOTES]
     page = render((TEMPLATES / "README.md").read_text(), {
         "PLAIN_NAME": args.name, "SUMMARY": args.summary, "ID": args.id, "TEMPLATE": args.template,
-        "LANG_NAME": LANGUAGES[args.lang], "FILES": "\n".join(lines), "TEST_COMMANDS": tests, "TRY_IT": try_it,
+        "WRITTEN_IN": "without code: no entrypoint, nothing runs (host feature `skillsOnly`, plugin API 7)" if data
+        else f"written in {LANGUAGES[args.lang]}",
+        "FILES": "\n".join(lines), "TEST_COMMANDS": tests, "TRY_IT": try_it,
+        "TEST_NOTE": "The tests read the skills and packs the way BashCut does." if data
+        else "The tests start the entrypoint the way BashCut does and send it sample requests.",
         "TRY_IT_AFTER": after, "PUBLISH": publish,
     })
     return re.sub(r"\n{3,}", "\n\n", page).rstrip("\n") + "\n"
@@ -301,12 +351,49 @@ def generate(args, registry, staging):
         }
         write("listing.json", json.dumps(listing, indent=2, ensure_ascii=False) + "\n")
         write("versions.json", json.dumps({"id": args.id, "listing": {}, "versions": []}, indent=2) + "\n")
-    if getattr(args, "skill", False):
+    if args.template == "library":
+        write(f"packs/{args.slug}/pack.json", json.dumps(library_pack(args), indent=2, ensure_ascii=False) + "\n")
+        write_click(staging / f"packs/{args.slug}/files/{args.slug}-click.wav")
+        written[f"packs/{args.slug}/files/{args.slug}-click.wav"] = staging / f"packs/{args.slug}/files"
+    if args.template == "skills" or getattr(args, "skill", False):
         write(f"skills/{args.slug}/SKILL.md", render((TEMPLATES / "skill/SKILL.md").read_text(), {
             "SLUG": args.slug, "NAME": args.name, "SUMMARY": args.summary, "ID": args.id,
         }))
     write("README.md", readme(args, set(written) | {"README.md"}, registry))
     return manifest
+
+
+def library_pack(args):
+    """One item of each common kind; `id`s carry the slug so they never clash with built-in or other plugins' items
+    (the format `library export-pack` writes; items as in `library add`)."""
+    slug = args.slug
+    return {"format": 1, "name": args.name, "items": [
+        {"id": f"{slug}-click", "kind": "audio", "name": "Click", "file": f"files/{slug}-click.wav",
+         "tags": ["sfx", "click"], "license": "CC0", "source": "generated by scripts/new-plugin.py",
+         "params": {"role": "sfx", "loopable": False}},
+        {"id": f"{slug}-star", "kind": "sticker", "name": "Star", "tags": ["emoji"], "params": {"emoji": "⭐"}},
+        {"id": f"{slug}-title", "kind": "text-preset", "name": "Big title", "tags": ["title"],
+         "params": {"textPreset": "hook-title", "text": "BIG TITLE"}},
+        {"id": f"{slug}-warm", "kind": "look", "name": "Warm", "tags": ["warm"],
+         "params": {"color": {"exposure": 0.05, "saturation": 1.1}}},
+        {"id": f"{slug}-zoom", "kind": "transition-preset", "name": "Quick zoom", "tags": ["fast"],
+         "params": {"kind": "zoom", "duration": 8, "easing": "out"}},
+    ]}
+
+
+def write_click(path):
+    """A 60 ms click (mono 16-bit 44.1 kHz WAV), made here so the template ships no binary file."""
+    import math
+    import struct
+    import wave
+    path.parent.mkdir(parents=True, exist_ok=True)
+    rate, count = 44100, 2646
+    samples = (int(20000 * math.exp(-i / 300) * math.sin(2 * math.pi * 2000 * i / rate)) for i in range(count))
+    with wave.open(str(path), "wb") as out:
+        out.setnchannels(1)
+        out.setsampwidth(2)
+        out.setframerate(rate)
+        out.writeframes(b"".join(struct.pack("<h", s) for s in samples))
 
 
 # --- checks and main ---------------------------------------------------------------------------------------------
@@ -341,7 +428,7 @@ def parse(argv):
     parser.add_argument("--name", help="display name (default: from the slug)")
     parser.add_argument("--name-vi", help="Vietnamese display name (default: the same as --name)")
     parser.add_argument("--id", help="plugin id (default: bashcut.<slug> in the registry, local.<slug> when private)")
-    parser.add_argument("--lang", choices=tuple(LANGUAGES), default="swift")
+    parser.add_argument("--lang", choices=tuple(LANGUAGES), help="the plugin's language (default: swift)")
     parser.add_argument("--capability", choices=PROVIDED_CAPABILITIES,
                         help="for --template capability (default: audio.beats)")
     parser.add_argument("--category", choices=CATEGORIES, help="category in plugin.json and listing.json")
@@ -357,6 +444,11 @@ def parse(argv):
         args.capability = args.capability or "audio.beats"
     elif args.capability:
         parser.error("--capability is only for --template capability")
+    if args.template in DATA_TEMPLATES:
+        if args.lang:
+            parser.error(f"--template {args.template} has no code, so it takes no --lang")
+    else:
+        args.lang = args.lang or "swift"
     if args.lang == "shell" and args.template in SESSION_TEMPLATES:
         parser.error(f"--template {args.template} needs the session transport; use --lang swift, node or python")
     args.name = args.name or title_from_slug(args.slug)
@@ -377,6 +469,10 @@ def parse(argv):
 def next_steps(args):
     rel = f"plugins/{args.slug}" if args.registry else str(args.folder)
     steps = []
+    if args.template == "skills":
+        steps.append(f"write {rel}/skills/{args.slug}/SKILL.md (add more skill folders to contributes.skills)")
+    if args.template == "library":
+        steps.append(f"replace the sample items in {rel}/packs/{args.slug}/pack.json with your own")
     if args.lang == "swift":
         steps.append(f"{rel}/build.sh                                  # build bin/provider")
     steps.append(f"python3 -m unittest discover -s {rel}/tests -v    # run the smoke tests")
@@ -402,7 +498,8 @@ def main(argv=None):
     args.folder.chmod(0o755)
     if args.registry and args.lang == "swift":
         ignore_build_output(args.slug)
-    print(f"Created {args.id} ({args.template}, {LANGUAGES[args.lang]}) in {args.folder}")
+    written_in = LANGUAGES[args.lang] if args.lang else "no code"
+    print(f"Created {args.id} ({args.template}, {written_in}) in {args.folder}")
     if args.lang == "python" and args.registry:
         print("note: the registry refuses a python3 dependency; bring a Python with uv (plugins/vieneu-tts) before "
               "publishing, or use --lang swift, shell or node", file=sys.stderr)

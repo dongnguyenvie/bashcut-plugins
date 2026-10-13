@@ -15,8 +15,26 @@ export class PluginError extends Error {
 
 class Cancelled extends Error {}
 
+/** The host features the session hello listed (API 8), such as "views.colorPicker" or "overlays". Check one before
+ * using what it names, so the plugin still works in an older BashCut: hostFeatures.has("views.fontPicker"). Empty
+ * over the one-shot transport and before the hello. */
+export const hostFeatures = new Set();
+
 function send(message) {
     process.stdout.write(JSON.stringify(message) + "\n");
+}
+
+/** Redraws one of the plugin's views outside a request (session transport, host feature `viewUpdate`): `answer` is
+ * a whole view answer ({body, title?, state?, notify?}). BashCut draws it only while the view is on screen and
+ * drops updates beyond about ten a second; an older BashCut ignores the line. */
+export function viewUpdate(view, answer) {
+    send({ type: "viewUpdate", view, ...answer });
+}
+
+/** Replaces the plugin's marks on the timeline and viewer at any time (host feature `overlays`); [] clears them.
+ * From a request, host.call("plugins.set-overlays", …) does the same and reports a bad set. */
+export function sendOverlays(overlays) {
+    send({ type: "overlays", overlays });
 }
 
 /** Lines from stdin, one at a time; null at the end. */
@@ -102,6 +120,29 @@ class Host {
         }
         return reply.result;
     }
+
+    /** Redraws the view that asked while the request still works (view requests): a progress bar, partial results. */
+    render(body, title) {
+        this.event(title ? { kind: "render", body, title } : { kind: "render", body });
+    }
+
+    /** Commands that run as jobs (voice.speak, plugins.invoke, export.start …) answer {job}: polls jobs.status until
+     * the job ends and returns its result. Other answers come back unchanged. */
+    async waitJob(started, timeoutSeconds = 600, intervalMs = 400) {
+        const job = started && typeof started === "object" ? started.job : undefined;
+        if (!job) return started;
+        const deadline = Date.now() + timeoutSeconds * 1000;
+        while (Date.now() < deadline) {
+            const answer = (await this.call("jobs.status", { job })) ?? {};
+            const status = answer.job ?? answer;
+            if (status.state === "completed") return status.result;
+            if (status.state === "failed" || status.state === "cancelled") {
+                throw new PluginError(`job_${status.state}`, String(status.error ?? `The job ${status.state}`));
+            }
+            await new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
+        throw new PluginError("timeout", `The job ${job} did not end in ${timeoutSeconds} s`);
+    }
 }
 
 async function respond(request, handler, session) {
@@ -140,7 +181,10 @@ class Session {
         for (;;) {
             const message = this.backlog.length ? this.backlog.shift() : await this.reader.message();
             if (message === null || message.type === "shutdown") return;
-            if (message.type === "hello") send({ type: "hello", apiVersion: message.apiVersion ?? 2 });
+            if (message.type === "hello") {
+                for (const feature of message.features ?? []) hostFeatures.add(String(feature));
+                send({ type: "hello", apiVersion: message.apiVersion ?? 2 });
+            }
             else if (message.type === "cancel" || message.type === "callResult") continue;
             else send(await respond(message, this.handler, this));
         }

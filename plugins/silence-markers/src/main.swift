@@ -1,9 +1,13 @@
 // Silence Markers: finds quiet stretches in the selected clip's audio, and either proposes a section marker at each
 // one or cuts them out of the clip.
 //
-// BashCut plugin API 2, one-shot transport: `provider rpc` reads one JSON request from stdin and writes one JSON
-// response. Audio is decoded with AVFoundation (any format macOS plays: mp4, mov, m4a, wav, mp3…) to 16 kHz mono
-// floats and measured in 10 ms windows. Nothing outside macOS is needed.
+// Two ways to find them. With BashCut's speech map (`media speech-map`, plugin API 8 session host channel) the gaps
+// come from the media's calibrated record: quiet and sound are split by the measured floor, and a clip whose noise
+// does not separate from its speech reports that instead of made-up silences. Otherwise (`detect: level`, an older
+// BashCut, or media not analysed yet) audio is decoded with AVFoundation (any format macOS plays) to 16 kHz mono
+// floats and measured in 10 ms windows against `thresholdDb`. Nothing outside macOS is needed.
+//
+// `provider rpc` answers one request (no host channel); `provider session` serves newline-delimited JSON.
 import AVFoundation
 import Foundation
 
@@ -79,6 +83,14 @@ func silences(_ samples: [Float], thresholdDb: Double, minimum: Double) -> [(Dou
     return found
 }
 
+/// How the silences were found, for the result's `detection` field.
+struct Detection {
+    var method: String
+    var speechMap: [String: Any]
+
+    var json: [String: Any] { ["method": method, "speechMap": speechMap] }
+}
+
 /// The selected clip, where its source range starts and ends, and the silences in it (seconds from its start).
 struct Analysis {
     let item: [String: Any]
@@ -91,13 +103,41 @@ struct Analysis {
     let thresholdDb: Double
     let ranges: [(Double, Double)]
     let length: Double
+    /// Source seconds where the clip starts, to report spans in the media's own time.
+    let sourceStart: Double
+    let detection: Detection
 
     var end: Int { at + duration }
     /// Timeline frame of a time measured from the clip's start in source seconds.
     func frame(_ seconds: Double) -> Int { at + Int((seconds / speed * projectFPS).rounded()) }
 }
 
-func analyze(_ params: [String: Any]) throws -> Analysis {
+/// Gaps from BashCut's speech map, clipped to `start…end` source seconds and measured from `start`; nil with the
+/// reason when the map is unavailable or does not separate speech from the floor.
+func speechMapGaps(
+    _ host: Host?, media: [String: Any], start: Double, end: Double, minimum: Double
+) -> (ranges: [(Double, Double)]?, report: [String: Any]) {
+    guard let host else { return (nil, ["used": false, "reason": "this BashCut cannot call the speech map"]) }
+    guard let id = media["id"] as? String else { return (nil, ["used": false, "reason": "the media has no ID"]) }
+    let map: [String: Any]
+    do { map = try host.call("media.speech-map", ["media": id]) } catch let failure as Failure {
+        return (nil, ["used": false, "reason": failure.message])
+    } catch { return (nil, ["used": false, "reason": error.localizedDescription]) }
+    let calibration = map["calibration"] as? [String: Any] ?? [:]
+    guard let gaps = map["gaps"] as? [[String: Any]] else {
+        let reason = map["reason"] as? String ?? "speech and floor do not separate"
+        return (nil, ["used": false, "reason": reason, "calibration": calibration])
+    }
+    let ranges: [(Double, Double)] = gaps.compactMap { gap in
+        guard let from = number(gap["start"]), let to = number(gap["end"]) else { return nil }
+        let clipped = (max(from, start), min(to, end))
+        guard clipped.1 - clipped.0 >= minimum else { return nil }
+        return (clipped.0 - start, clipped.1 - start)
+    }
+    return (ranges, ["used": true, "calibration": calibration])
+}
+
+func analyze(_ params: [String: Any], host: Host?) throws -> Analysis {
     let context = params["context"] as? [String: Any] ?? [:]
     let values = params["params"] as? [String: Any] ?? [:]
     guard let item = context["selection"] as? [String: Any], let media = context["media"] as? [String: Any],
@@ -112,25 +152,44 @@ func analyze(_ params: [String: Any]) throws -> Analysis {
     let end = start + Double(duration) / projectFPS * speed
     let thresholdDb = number(values["thresholdDb"]) ?? -40
     let minimum = (number(values["minSilenceMs"]) ?? 400) / 1000
-    let samples = try decode(path, start: start, end: end)
+    let detect = values["detect"] as? String ?? "auto"
+    var ranges: [(Double, Double)]?
+    var detection = Detection(method: "level", speechMap: ["used": false, "reason": "detect is level"])
+    if detect != "level" {
+        let found = speechMapGaps(host, media: media, start: start, end: end, minimum: minimum)
+        ranges = found.ranges
+        detection = Detection(method: found.ranges == nil ? "level" : "speechMap", speechMap: found.report)
+        if ranges == nil, detect == "speechMap" {
+            throw Failure(message: "no speech map: \(found.report["reason"] as? String ?? "unavailable")")
+        }
+    }
+    if ranges == nil {
+        ranges = silences(try decode(path, start: start, end: end), thresholdDb: thresholdDb, minimum: minimum)
+    }
     return Analysis(
         item: item, itemID: item["id"] as? String ?? "", at: Int(number(item["at"]) ?? 0), duration: duration,
         speed: speed, projectFPS: projectFPS, revision: number(project["rev"]).map { Int($0) },
-        thresholdDb: thresholdDb, ranges: silences(samples, thresholdDb: thresholdDb, minimum: minimum),
-        length: end - start)
+        thresholdDb: thresholdDb, ranges: ranges ?? [], length: end - start, sourceStart: start,
+        detection: detection)
 }
 
-func mark(_ params: [String: Any]) throws -> [String: Any] {
-    let analysis = try analyze(params)
+/// Rounds seconds to hundredths for reports.
+func hundredths(_ value: Double) -> Double { (value * 100).rounded() / 100 }
+
+func mark(_ params: [String: Any], host: Host?) throws -> [String: Any] {
+    let analysis = try analyze(params, host: host)
     let options = params["options"] as? [String: Any] ?? [:]
     let prefix = (options["labelPrefix"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Silence"
     let marks: [[String: Any]] = analysis.ranges.map { from, to in
         [
             "start": analysis.frame(from), "end": min(analysis.end, analysis.frame(to)),
-            "seconds": ((to - from) * 100).rounded() / 100,
+            "seconds": hundredths(to - from),
+            "sourceStart": hundredths(analysis.sourceStart + from), "sourceEnd": hundredths(analysis.sourceStart + to),
         ]
     }
-    guard !marks.isEmpty else { return ["message": "No silence found", "data": ["silences": []]] }
+    guard !marks.isEmpty else {
+        return ["message": "No silence found", "data": ["silences": [], "detection": analysis.detection.json]]
+    }
     let operations: [[String: Any]] = marks.map { mark in
         let seconds = mark["seconds"] as? Double ?? 0
         return [
@@ -140,17 +199,21 @@ func mark(_ params: [String: Any]) throws -> [String: Any] {
     }
     return [
         "label": "Mark silences", "baseRev": analysis.revision as Any, "operations": operations,
-        "message": "Marked \(marks.count) silences", "data": ["silences": marks],
-        "pluginData": ["lastRun": ["item": analysis.itemID, "count": marks.count, "thresholdDb": analysis.thresholdDb]],
+        "message": "Marked \(marks.count) silences", "data": ["silences": marks, "detection": analysis.detection.json],
+        "pluginData": ["lastRun": [
+            "item": analysis.itemID, "count": marks.count, "thresholdDb": analysis.thresholdDb,
+            "method": analysis.detection.method,
+        ]],
         "ui": ["reveal": marks[0]["start"] ?? analysis.at],
     ]
 }
 
 /// Cuts every silence out of the clip: split at both ends (keeping `paddingMs` of quiet on each side so words are
 /// not clipped) and ripple-delete the middle. Cuts run right to left, so a ripple never moves a cut still to come.
-/// Linked sound is split and deleted with the picture by BashCut.
-func remove(_ params: [String: Any]) throws -> [String: Any] {
-    let analysis = try analyze(params)
+/// Linked sound is split and deleted with the picture by BashCut. The result lists every removed span longest first,
+/// so long speechless lifts can be looked at before keeping the edit.
+func remove(_ params: [String: Any], host: Host?) throws -> [String: Any] {
+    let analysis = try analyze(params, host: host)
     let values = params["params"] as? [String: Any] ?? [:]
     let padding = (number(values["paddingMs"]) ?? 100) / 1000
     var cuts: [(Int, Int)] = []
@@ -160,7 +223,9 @@ func remove(_ params: [String: Any]) throws -> [String: Any] {
         let end = to >= analysis.length - 0.0001 ? analysis.end : analysis.frame(to - padding)
         if end - start >= 1 { cuts.append((max(analysis.at, start), min(analysis.end, end))) }
     }
-    guard !cuts.isEmpty else { return ["message": "No silence to remove", "data": ["removed": []]] }
+    guard !cuts.isEmpty else {
+        return ["message": "No silence to remove", "data": ["removed": [], "detection": analysis.detection.json]]
+    }
     if cuts.count == 1, cuts[0] == (analysis.at, analysis.end) { throw Failure(message: "the whole clip is silent") }
     var operations: [[String: Any]] = []
     var keep: String? = analysis.itemID
@@ -181,17 +246,78 @@ func remove(_ params: [String: Any]) throws -> [String: Any] {
     }
     let removedFrames = cuts.reduce(0) { $0 + $1.1 - $1.0 }
     let seconds = Double(removedFrames) / analysis.projectFPS
+    // Timeline frames are those before any cut; source seconds follow the clip's speed.
+    let removed: [[String: Any]] = cuts.sorted { $0.1 - $0.0 > $1.1 - $1.0 }.map { start, end in
+        let source = { (frame: Int) in
+            hundredths(analysis.sourceStart + Double(frame - analysis.at) / analysis.projectFPS * analysis.speed)
+        }
+        return [
+            "start": start, "end": end, "seconds": hundredths(Double(end - start) / analysis.projectFPS),
+            "sourceStart": source(start), "sourceEnd": source(end),
+        ]
+    }
     var result: [String: Any] = [
         "label": "Remove silences", "baseRev": analysis.revision as Any, "operations": operations,
-        "message": String(format: "Removed %d silences (%.1fs)", cuts.count, seconds),
-        "data": ["removed": cuts.map { ["start": $0.0, "end": $0.1] }, "seconds": seconds],
-        "pluginData": ["lastRun": ["item": analysis.itemID, "removed": cuts.count, "thresholdDb": analysis.thresholdDb]],
+        "message": String(format: "Removed %d silences (%.1fs, longest %.1fs)", cuts.count, seconds,
+                          removed.first?["seconds"] as? Double ?? 0),
+        "data": ["removed": removed, "seconds": hundredths(seconds), "detection": analysis.detection.json],
+        "pluginData": ["lastRun": [
+            "item": analysis.itemID, "removed": cuts.count, "thresholdDb": analysis.thresholdDb,
+            "method": analysis.detection.method,
+        ]],
     ]
     if let keep { result["ui"] = ["select": keep, "seek": analysis.at] }
     return result
 }
 
-func handle(_ request: [String: Any]) -> [String: Any] {
+/// Writes one JSON line to BashCut.
+func send(_ object: [String: Any]) {
+    guard let data = try? JSONSerialization.data(withJSONObject: object) else { return }
+    FileHandle.standardOutput.write(data + Data([0x0A]))
+}
+
+/// Reads one JSON line from BashCut; nil at the end of input.
+func receive() -> [String: Any]? {
+    while let line = readLine(strippingNewline: true) {
+        if let object = (try? JSONSerialization.jsonObject(with: Data(line.utf8))) as? [String: Any] { return object }
+    }
+    return nil
+}
+
+/// The session host channel of one request (API 8): runs BashCut commands while the request is open. Requests that
+/// arrive meanwhile wait in `queued`.
+final class Host {
+    let requestID: Any
+    var queued: [[String: Any]] = []
+    var cancelled = false
+    private var next = 0
+
+    init(requestID: Any) { self.requestID = requestID }
+
+    func call(_ method: String, _ params: [String: Any]) throws -> [String: Any] {
+        next += 1
+        let callID = "c\(next)"
+        send(["type": "call", "id": requestID, "callId": callID, "method": method, "params": params])
+        while let message = receive() {
+            switch message["type"] as? String {
+            case "callResult" where message["callId"] as? String == callID:
+                if let error = message["error"] as? [String: Any] {
+                    throw Failure(message: error["message"] as? String ?? "\(method) failed")
+                }
+                return message["result"] as? [String: Any] ?? [:]
+            case "cancel" where "\(message["id"] ?? "")" == "\(requestID)":
+                cancelled = true
+                throw Failure(message: "cancelled")
+            case "shutdown": exit(0)
+            case "request": queued.append(message)
+            default: continue
+            }
+        }
+        exit(0)
+    }
+}
+
+func handle(_ request: [String: Any], host: Host?) -> [String: Any] {
     let id = request["id"] ?? ""
     do {
         guard request["method"] as? String == "plugin.action" else {
@@ -199,8 +325,8 @@ func handle(_ request: [String: Any]) -> [String: Any] {
         }
         let params = request["params"] as? [String: Any] ?? [:]
         switch params["action"] as? String {
-        case "bashcut.silence-markers.mark": return ["id": id, "result": try mark(params)]
-        case "bashcut.silence-markers.remove": return ["id": id, "result": try remove(params)]
+        case "bashcut.silence-markers.mark": return ["id": id, "result": try mark(params, host: host)]
+        case "bashcut.silence-markers.remove": return ["id": id, "result": try remove(params, host: host)]
         default: throw Failure(message: "unknown action")
         }
     } catch let failure as Failure {
@@ -210,7 +336,22 @@ func handle(_ request: [String: Any]) -> [String: Any] {
     }
 }
 
-let line = readLine(strippingNewline: true) ?? ""
-let request = (try? JSONSerialization.jsonObject(with: Data(line.utf8))) as? [String: Any] ?? [:]
-let response = try JSONSerialization.data(withJSONObject: handle(request))
-FileHandle.standardOutput.write(response + Data([0x0A]))
+if CommandLine.arguments.dropFirst().first == "session" {
+    var pending: [[String: Any]] = []
+    while let message = pending.isEmpty ? receive() : pending.removeFirst() {
+        switch message["type"] as? String {
+        case "hello": send(["type": "hello", "apiVersion": 8])
+        case "shutdown": exit(0)
+        case "request":
+            // Only API 8 hosts give plugin actions a host channel.
+            let version = number(message["apiVersion"]) ?? 0
+            let host = version >= 8 ? Host(requestID: message["id"] ?? "") : nil
+            let response = handle(message, host: host)
+            if host?.cancelled != true { send(response) }
+            pending += host?.queued ?? []
+        default: continue
+        }
+    }
+} else {
+    send(handle(receive() ?? [:], host: nil))
+}

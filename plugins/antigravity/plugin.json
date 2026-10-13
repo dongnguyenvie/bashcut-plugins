@@ -3,7 +3,7 @@
   "id": "bashcut.antigravity",
   "name": {"en": "Antigravity", "vi": "Antigravity"},
   "author": {"name": "Luan Tran", "url": "https://github.com/luantran069"},
-  "version": "0.0.3",
+  "version": "0.0.4",
   "apiVersion": 5,
   "entrypoint": "bin/provider",
   "capabilities": ["agent.terminal"],
@@ -24,7 +24,7 @@
       "kind": "executable",
       "probe": {"executable": "bin/check"},
       "install": {
-        "summary": "Install Google's Antigravity CLI (agy) from antigravity.google into ~/.local/bin. The official installer is downloaded over HTTPS and run only after you approve this setup; your shell profile is not changed.",
+        "summary": "Install Google's Antigravity CLI (agy) from antigravity.google into ~/.local/bin. The official installer is downloaded over HTTPS and run only after you approve this setup; it may add ~/.local/bin to your shell PATH.",
         "command": {"executable": "bin/setup"}
       }
     }

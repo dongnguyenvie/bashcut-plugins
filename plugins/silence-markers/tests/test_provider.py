@@ -101,10 +101,95 @@ class ProviderTests(unittest.TestCase):
         self.assertEqual(ops[0]["op"], "split")
         self.assertEqual(ops[-1], {"op": "delete", "item": "c3", "ripple": True})
 
+    def test_remove_lists_spans_longest_first(self):
+        data = self.remove(minimum_ms=150, padding_ms=50)["result"]["data"]
+        seconds = [span["seconds"] for span in data["removed"]]
+        self.assertEqual(seconds, sorted(seconds, reverse=True))
+        self.assertAlmostEqual(data["removed"][0]["sourceStart"], 1.05, delta=0.04)
+        self.assertEqual(data["detection"]["method"], "level")
+
+    def test_one_shot_has_no_speech_map(self):
+        params = self.params()
+        params["params"]["detect"] = "auto"
+        detection = call(params)["result"]["data"]["detection"]
+        self.assertEqual(detection["method"], "level")
+        self.assertFalse(detection["speechMap"]["used"])
+
     def test_errors_are_reported(self):
         params = self.params()
         params["context"]["media"] = None
         self.assertEqual(call(params)["error"]["code"], "failed")
+
+
+class SessionTests(unittest.TestCase):
+    """The session transport with a fake BashCut that answers media.speech-map host calls."""
+
+    def setUp(self):
+        self.folder = pathlib.Path(tempfile.mkdtemp())
+        self.media = make_audio(self.folder)
+
+    def run_session(self, action, values, speech_map, api_version=8):
+        process = subprocess.Popen([str(PROVIDER), "session"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        calls = []
+
+        def send(message):
+            process.stdin.write(json.dumps(message) + "\n")
+            process.stdin.flush()
+
+        send({"type": "hello", "apiVersion": api_version, "host": "BashCut", "pluginId": "bashcut.silence-markers"})
+        self.assertEqual(json.loads(process.stdout.readline())["type"], "hello")
+        send({"type": "request", "id": "r1", "apiVersion": api_version, "method": "plugin.action", "params": {
+            "action": action, "params": values, "options": {},
+            "context": {
+                "project": {"rev": 4, "fps": [30, 1]},
+                "selection": {"id": "c1", "at": 100, "dur": 120, "in": 0},
+                "media": {"id": "m1", "fps": [30, 1], "absolutePath": str(self.media)},
+            }}})
+        while True:
+            message = json.loads(process.stdout.readline())
+            if message.get("type") == "call":
+                calls.append(message)
+                reply = {"type": "callResult", "callId": message["callId"]}
+                reply.update({"error": {"code": -32602, "message": speech_map}} if isinstance(speech_map, str)
+                             else {"result": speech_map})
+                send(reply)
+                continue
+            send({"type": "shutdown"})
+            process.wait(timeout=10)
+            process.stdin.close()
+            process.stdout.close()
+            return message, calls
+
+    def test_auto_uses_the_speech_map_gaps(self):
+        speech_map = {"calibration": {"separation": "clear"}, "gaps": [
+            {"start": 0.0, "end": 0.1}, {"start": 1.5, "end": 3.0}, {"start": 3.3, "end": 3.6}]}
+        response, calls = self.run_session(
+            "bashcut.silence-markers.remove", {"detect": "auto", "minSilenceMs": 200, "paddingMs": 0}, speech_map)
+        self.assertEqual(calls[0]["method"], "media.speech-map")
+        self.assertEqual(calls[0]["params"], {"media": "m1"})
+        data = response["result"]["data"]
+        self.assertEqual(data["detection"]["method"], "speechMap")
+        # 0.1 s at the start is below the minimum; 1.5–3.0 s comes before 3.3–3.6 s, longest first.
+        self.assertEqual([(span["start"], span["end"]) for span in data["removed"]], [(145, 190), (199, 208)])
+        self.assertEqual(data["removed"][0]["sourceStart"], 1.5)
+
+    def test_auto_falls_back_to_level_when_speech_does_not_separate(self):
+        speech_map = {"calibration": {"separation": "none"}, "gaps": None, "reason": "classes 0.8 dB apart"}
+        response, _ = self.run_session("bashcut.silence-markers.mark", {"detect": "auto"}, speech_map)
+        detection = response["result"]["data"]["detection"]
+        self.assertEqual(detection["method"], "level")
+        self.assertEqual(detection["speechMap"]["reason"], "classes 0.8 dB apart")
+        self.assertEqual(len(response["result"]["data"]["silences"]), 1)
+
+    def test_speech_map_only_reports_why_it_cannot(self):
+        response, _ = self.run_session(
+            "bashcut.silence-markers.mark", {"detect": "speechMap"}, "Media m1 has no measured sound")
+        self.assertIn("Media m1 has no measured sound", response["error"]["message"])
+
+    def test_older_hosts_get_no_host_calls(self):
+        response, calls = self.run_session("bashcut.silence-markers.mark", {}, {"gaps": []}, api_version=7)
+        self.assertEqual(calls, [])
+        self.assertEqual(response["result"]["data"]["detection"]["method"], "level")
 
 
 if __name__ == "__main__":

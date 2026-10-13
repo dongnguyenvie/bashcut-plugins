@@ -12,7 +12,7 @@ their SHA-256 before anything runs. Plugins use BashCut's out-of-process plugin 
 | [Whisper Captions](plugins/whisper-captions) | Captions from speech on Apple Silicon (Whisper large-v3 turbo via MLX, MIT): Vietnamese and about 100 languages, timed per word, split into even lines; `captions.transcribe` provider |
 | [VieNeu TTS](plugins/vieneu-tts) | Vietnamese voiceover on this Mac (VieNeu-TTS v3 Turbo, Apache-2.0): 25 voices, voice cloning; `voice.synthesize` provider |
 | [AI Editor](plugins/director) | BashCut's editing agent in the agent dock: chat with Claude, GPT, Gemini and others using your API key; it edits through BashCut's commands. Needs BashCut with plugin API 4; `agent.chat` provider |
-| [Pre-production](plugins/preproduction) | Agent skills for the work before the edit; `scene-prompt` turns a plot or scene idea into a cinematic prompt for AI video models (based on [cinematic-video-prompt-engineer](https://github.com/CyberJ0605/cinematic-video-prompt-engineer-skill), MIT) |
+| [Vlog](plugins/vlog) | Recipes for vlogs, one agent skill per topic (travel, food, daily, product review, product ad, talking head, podcast clips, tutorial) as sourced sample ranges the agent turns into an edit plan and review profile, plus ideate, plan, hook-script, publish and `scene-prompt` (AI video prompts, based on [cinematic-video-prompt-engineer](https://github.com/CyberJ0605/cinematic-video-prompt-engineer-skill), MIT); a library pack of vlog text styles, stickers and transitions |
 
 ## Layout
 
@@ -27,7 +27,8 @@ plugins/<slug>/listing.json   store listing: name and summary ({en, vi, …}), c
 plugins/<slug>/tests/         tests run by CI (not shipped)
 plugins/<slug>/build.sh       optional: builds compiled helpers or bundles (CI and package.py run it; not shipped)
 plugins/<slug>/src/           optional: sources for build.sh (not shipped)
-samples/<slug>/               examples for plugin authors (never published): samples/terminal-agent, samples/views-example
+samples/<slug>/               examples for plugin authors (never published): samples/terminal-agent, samples/views-example,
+                              samples/review-check-example
 scripts/new-plugin.py         creates a new plugin from a template (scripts/plugin-templates/)
 scripts/plugin_manifest.py    the manifest rules BashCut applies, and the category list
 scripts/package.py            zip + SHA-256 + signature; --register records the version in versions.json
@@ -126,6 +127,9 @@ protocol, smoke tests and a README.
 scripts/new-plugin.py my-voice --template capability --capability voice.synthesize --name "My Voice"
 scripts/new-plugin.py clip-tools --template action --lang shell
 scripts/new-plugin.py my-agent --template chat-agent --lang node --private --out ~/code
+scripts/new-plugin.py my-panel --template views --lang node
+scripts/new-plugin.py my-skills --template skills
+scripts/new-plugin.py party-pack --template library
 ```
 
 | Template | What you get |
@@ -135,11 +139,15 @@ scripts/new-plugin.py my-agent --template chat-agent --lang node --private --out
 | `hook` | `contributes.hooks` on `export.finished` (writes `pluginData`) and `media.imported` |
 | `options` | Options of every type, including a `secret`, read by an action |
 | `chat-agent` | An `agent.chat` session plugin: a tab in the agent dock that streams events and calls BashCut commands |
+| `views` | A rail panel (`contributes.container`) with a panel view, a dock tab and a sheet, an action that opens the sheet, and the request loop with `call`, `wait_job` / `waitJob` and `render` helpers (see [Panels and views](#panels-and-views)) |
+| `skills` | A skill pack without code: `skills/<slug>/SKILL.md` and no `entrypoint` (host feature `skillsOnly`, API 7) |
+| `library` | A library pack without code: `packs/<slug>/pack.json` with a sound (a generated WAV), a sticker, a text style, a look and a transition, no `entrypoint` |
 
 `--lang` picks the language: `swift` (default; `build.sh` compiles a universal binary, nothing to install for users),
-`shell` (sh and macOS built-ins; not for `chat-agent`), `node` (plain ES modules; the install recipe downloads Node.js
+`shell` (sh and macOS built-ins; not for `chat-agent` or `views`), `node` (plain ES modules; the install recipe downloads Node.js
 when the Mac has none) or `python` (standard library; fine for private plugins, but the registry refuses a `python3`
-dependency, see below). Your code goes in one handlers file; the protocol file next to it handles requests, errors,
+dependency, see below). `skills` and `library` have no code and take no `--lang`: BashCut never runs them, Trust
+still pins every file, and an app older than the `skillsOnly` feature lists them as invalid. Your code goes in one handlers file; the protocol file next to it handles requests, errors,
 progress, events and host calls.
 
 The plugin goes to `plugins/<slug>` with a `listing.json` and an empty `versions.json`. `--category` (one of
@@ -174,9 +182,28 @@ components (text, lists, buttons, inputs, images, audio…), BashCut draws them 
 back as `view.event`. The panel also lists the plugin's actions as Tools, its skills, the plugins it `requires` and the
 capabilities it `uses`.
 
-Start from [`samples/views-example`](samples/views-example): every component, events and state, and how to reuse other
-plugins from a view (generate speech with `voice.speak` through whichever voice plugin the user has, call another
-plugin's capability with `plugins.invoke`). `scripts/dev-link.sh samples/views-example` to try it.
+`scripts/new-plugin.py my-panel --template views --lang swift|node|python` makes one to start from: a panel view
+(state, a host call while the view shows progress, opening the sheet), a dock tab listing the project's media (rows
+drag onto the timeline with `file`; a row button measures loudness through another plugin with `plugins.invoke` and
+`wait_job`) and a sheet form that closes itself, with smoke tests that answer the host calls.
+
+[`samples/views-example`](samples/views-example) shows every component, events and state, and how to reuse other
+plugins from a view (generate speech with `voice.speak` through whichever voice plugin the user has, remember the
+choice in the plugin's own option with `plugins.option`, call another plugin's capability with `plugins.invoke`), plus
+marks on the timeline (`plugins.set-overlays`) and redraws outside a request (`viewUpdate` lines).
+`scripts/dev-link.sh samples/views-example` to try it.
+
+Newer parts are host features that the session `hello` lists in `features`: `views.colorPicker` and `views.fontPicker`
+(colour well, font menu), `views.drag`, `options.set`, `viewUpdate`, `overlays`, `inspector.when`, `voice.maxTakes`.
+Read them from the hello (`HOST_FEATURES` / `hostFeatures` in the templates' protocol file) and fall back, for example
+to a `textField`, when one is missing. List a feature in `plugin.json` `features` only when the plugin cannot work
+without it: an app that lacks it then refuses the whole plugin. `plugins/hyperframes` (its Inspector view) does this.
+`scripts/plugin_manifest.py` `view_problems(answer)` checks a view answer the way BashCut does.
+
+A plugin can also add its own checks to BashCut's review (plugin API 9): a `review.check` provider gets the project
+and returns issues (severity, frames, an optional fix) that `review run` lists next to the built-in ones, marked with
+the plugin. Start from [`samples/review-check-example`](samples/review-check-example): brand fonts and a call to action
+at the end, in one Python file.
 
 ## Rules for users who are not developers
 

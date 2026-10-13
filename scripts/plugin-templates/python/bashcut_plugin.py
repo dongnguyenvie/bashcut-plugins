@@ -8,6 +8,13 @@ stdout carries only protocol lines.
 import collections
 import json
 import sys
+import threading
+import time
+
+# The host features the session hello listed (API 8), such as "views.colorPicker" or "overlays". Check one before
+# using what it names, so the plugin still works in an older BashCut. Empty over the one-shot transport.
+HOST_FEATURES = set()
+_SEND_LOCK = threading.Lock()
 
 
 class PluginError(Exception):
@@ -24,8 +31,22 @@ class Cancelled(Exception):
 
 
 def send(message):
-    sys.stdout.write(json.dumps(message, ensure_ascii=False) + "\n")
-    sys.stdout.flush()
+    with _SEND_LOCK:  # a background thread may send view updates while a request answers
+        sys.stdout.write(json.dumps(message, ensure_ascii=False) + "\n")
+        sys.stdout.flush()
+
+
+def view_update(view, answer):
+    """Redraws one of the plugin's views outside a request (session transport, host feature `viewUpdate`): `answer`
+    is a whole view answer ({"body", "title"?, "state"?, "notify"?}). BashCut draws it only while the view is on
+    screen and drops updates beyond about ten a second; an older BashCut ignores the line."""
+    send({"type": "viewUpdate", "view": view, **answer})
+
+
+def send_overlays(overlays):
+    """Replaces the plugin's marks on the timeline and viewer at any time (host feature `overlays`); [] clears them.
+    From a request, host.call("plugins.set-overlays", …) does the same and reports a bad set."""
+    send({"type": "overlays", "overlays": overlays})
 
 
 class Host:
@@ -66,6 +87,30 @@ class Host:
             error = reply["error"]
             raise PluginError(str(error.get("code", "call_failed")), error.get("message", "BashCut refused the call"))
         return reply.get("result")
+
+    def render(self, body, title=None):
+        """Redraws the view that asked while the request still works (view requests): a progress bar, partial results."""
+        event = {"kind": "render", "body": body}
+        if title:
+            event["title"] = title
+        self.event(event)
+
+    def wait_job(self, started, timeout=600, interval=0.4):
+        """Commands that run as jobs (voice.speak, plugins.invoke, export.start …) answer {"job": id}: polls
+        jobs.status until the job ends and returns its result. Other answers come back unchanged."""
+        job = (started or {}).get("job") if isinstance(started, dict) else None
+        if not job:
+            return started
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            status = self.call("jobs.status", {"job": job}) or {}
+            status = status.get("job", status)
+            if status.get("state") == "completed":
+                return status.get("result")
+            if status.get("state") in ("failed", "cancelled"):
+                raise PluginError("job_" + status["state"], str(status.get("error") or f"The job {status['state']}"))
+            time.sleep(interval)
+        raise PluginError("timeout", f"The job {job} did not end in {timeout} s")
 
 
 def respond(request, handler, session=None):
@@ -119,6 +164,7 @@ class Session:
                 return
             kind = message.get("type")
             if kind == "hello":
+                HOST_FEATURES.update(str(feature) for feature in message.get("features") or [])
                 send({"type": "hello", "apiVersion": message.get("apiVersion", 2)})
             elif kind == "shutdown":
                 return

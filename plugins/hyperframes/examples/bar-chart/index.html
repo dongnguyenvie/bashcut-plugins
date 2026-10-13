@@ -1,0 +1,133 @@
+<!doctype html>
+<!-- A bar chart on a card whose bars rise one by one, each value counting up as its bar grows (items is a JSON array
+     of {label, value, at}: at = seconds from the start when that bar lands on its word). Transparent, 1080×1920,
+     5 s. Raw material: change the card, the bars, the units and the timing for the video. -->
+<!-- Pitfalls:
+  - Values sit over bars of a 780 px row: 6-character values (41,000) touch their neighbours from 6 bars, 4-character
+    ones (410K) from 8 bars when neighbouring bars are close in height. Set unit to K or M and round the values.
+  - Labels have the bar width + 40 px: at 8 bars "January" runs into "Feb"; use 3-letter labels from 6 bars up.
+  - Bars scale to the largest value: one under ~2% of it gets a bar under 10 px (300 next to 125,000 draws none) and
+    its number sits on the axis. Split the chart or plot the small ones on their own.
+  - Decimals follow the values (11.2 and 528.5 show one) unless decimals is set; locale vi-VN writes 528,5.
+  - The card spans top to top + 900 px: over captions low in the frame, raise it (top 360 ends at 1260).
+  - highlight counts from 0 (3 is the fourth bar); -1 leaves every bar grey.
+  - A bar rises for 0.5 s and lands on its at, but never starts before 0.3 s, so an at under 0.8 lands late; the last
+    at must be before data-duration − 0.5 (4.5 s at 5 s), where the card swings out.
+-->
+<html lang="en" data-composition-variables='[
+  {"id": "title", "type": "string", "label": "Title", "default": "Visitors per month"},
+  {"id": "items", "type": "string", "label": "Bars (JSON [{label, value, at}])", "default": "[{\"label\":\"Jan\",\"value\":120,\"at\":0.8},{\"label\":\"Feb\",\"value\":180,\"at\":1.3},{\"label\":\"Mar\",\"value\":260,\"at\":1.8},{\"label\":\"Apr\",\"value\":410,\"at\":2.3}]"},
+  {"id": "unit", "type": "string", "label": "Unit after each value, as written (\" ha\" keeps a space)", "default": "K"},
+  {"id": "decimals", "type": "number", "label": "Decimals (-1: as many as the values have, up to 2)", "default": -1},
+  {"id": "locale", "type": "string", "label": "Number format locale (vi-VN: 528,5)", "default": "en-US"},
+  {"id": "top", "type": "number", "label": "Card top (px; the card is 900 px tall)", "default": 460},
+  {"id": "highlight", "type": "number", "label": "Bar to highlight (index, -1 none)", "default": 3},
+  {"id": "accent", "type": "color", "label": "Highlight colour", "default": "#FFB020"},
+  {"id": "source", "type": "string", "label": "Source line (empty hides it)", "default": "Source: sample data"},
+  {"id": "background", "type": "color", "label": "Card colour", "default": "#0E1016"},
+  {"id": "text", "type": "color", "label": "Text colour", "default": "#FFFFFF"},
+  {"id": "secondary", "type": "color", "label": "Other bars colour", "default": "#585B63"},
+  {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
+]'>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root { --heading-font: "Helvetica Neue"; --body-font: "Helvetica Neue"; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+      #root { position: relative; width: 1080px; height: 1920px; perspective: 1600px;
+        font-family: var(--body-font), Arial, sans-serif; }
+      #card { position: absolute; left: 90px; top: 460px; width: 900px; height: 900px; padding: 56px 60px;
+        border-radius: 36px; background: color-mix(in srgb, var(--background) 86%, transparent); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+        color: var(--text); }
+      #title { font-family: var(--heading-font), Arial, sans-serif; font-size: 58px; font-weight: 800; letter-spacing: -0.02em; }
+      #bars { position: absolute; left: 60px; right: 60px; bottom: 130px; height: 560px; display: flex;
+        align-items: flex-end; gap: 28px; border-bottom: 3px solid color-mix(in srgb, var(--text) 25%, transparent); }
+      .col { flex: 1; height: 100%; position: relative; }
+      .bar { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 18px 18px 6px 6px;
+        background: var(--secondary); transform-origin: 50% 100%; }
+      .value { position: absolute; left: -20px; right: -20px; text-align: center; font-family: var(--heading-font), Arial, sans-serif; font-size: 46px; font-weight: 800;
+        font-variant-numeric: tabular-nums; }
+      .label { position: absolute; left: -20px; right: -20px; bottom: -66px; text-align: center; font-size: 36px;
+        font-weight: 600; color: color-mix(in srgb, var(--text) 80%, transparent); }
+      #source { position: absolute; left: 60px; bottom: 34px; font-size: 26px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="5" data-width="1080" data-height="1920">
+      <div id="card"><div id="title"></div><div id="bars"></div><div id="source"></div></div>
+    </div>
+    <script>
+      const v = window.__hyperframes.getVariables();
+      // Brand look (bin/graphic fills accent, background, text, secondary and the fonts from the project's brand). A
+      // font is a family or PostScript name on this Mac, System-<Weight> (San Francisco) or a font file in this folder.
+      const look = document.documentElement.style;
+      for (const key of ["accent", "background", "text", "secondary"]) if (v[key]) look.setProperty(`--${key}`, v[key]);
+      const faces = document.createElement("style");
+      for (const [key, slot] of [["headingFont", "--heading-font"], ["bodyFont", "--body-font"]]) {
+        const name = String(v[key] ?? "").trim();
+        if (!name) continue;
+        const file = /\.(ttf|otf|woff2?)$/i.test(name);
+        if (!name.startsWith("System-")) faces.textContent += `@font-face { font-family: "${key}"; src: ${file ? `url("${name}")` : `local("${name}")`}; }`;
+        look.setProperty(slot, name.startsWith("System-") ? "system-ui" : file ? `"${key}"` : `"${name}", "${key}"`);
+      }
+      document.head.appendChild(faces);
+      const items = JSON.parse(v.items);
+      document.getElementById("title").textContent = v.title;
+      const source = document.getElementById("source");
+      source.textContent = v.source;
+      source.style.display = v.source ? "block" : "none";
+      const max = Math.max(...items.map((item) => item.value)) || 1;
+      const bars = document.getElementById("bars");
+      const places = (n) => (String(n).split(".")[1] ?? "").length;
+      const decimals = Number(v.decimals) >= 0 ? Math.min(4, Math.round(Number(v.decimals))) : Math.min(2, Math.max(...items.map((item) => places(item.value))));
+      let numbers;
+      try {
+        numbers = new Intl.NumberFormat(v.locale || "en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      } catch {
+        numbers = new Intl.NumberFormat("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+      }
+      const format = (n) => `${numbers.format(n)}${v.unit}`;
+      // The exit lands on the composition's end, so a render stretched to a span (bin/graphic plan sets
+      // data-duration) holds until then.
+      const END = Number(document.querySelector('[data-composition-id="main"]').dataset.duration);
+      const tl = gsap.timeline({ paused: true });
+      const card = document.getElementById("card");
+      card.style.top = `${Number(v.top ?? 460)}px`;
+      tl.fromTo(card, { opacity: 0, y: 80, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "power3.out" }, 0);
+      items.forEach((item, i) => {
+        const col = document.createElement("div");
+        col.className = "col";
+        col.innerHTML = '<div class="bar"></div><div class="value"></div><div class="label"></div>';
+        const bar = col.querySelector(".bar");
+        const value = col.querySelector(".value");
+        const share = item.value / max;
+        bar.style.height = `${share * 86}%`;
+        if (i === v.highlight) bar.style.background = v.accent;
+        value.style.bottom = `calc(${share * 86}% + 14px)`;
+        value.textContent = format(0);
+        col.querySelector(".label").textContent = item.label;
+        col.querySelector(".label").setAttribute("data-layout-allow-overflow", "");
+        bars.appendChild(col);
+        // The bar finishes rising on its word (item.at).
+        const rise = 0.5;
+        const start = Math.max(0.3, item.at - rise);
+        tl.fromTo(bar, { scaleY: 0 }, { scaleY: 1, duration: rise, ease: "power2.out" }, start);
+        tl.fromTo(value, { opacity: 0, y: share * 480 }, { opacity: 1, y: 0, duration: rise, ease: "power2.out" }, start);
+        // Text cannot be tweened: one tl.set per frame.
+        const steps = Math.round(rise * 30);
+        for (let s = 0; s <= steps; s += 1) {
+          const t = 1 - Math.pow(1 - s / steps, 2);
+          tl.set(value, { textContent: format(item.value * t) }, start + (s / steps) * rise);
+        }
+      });
+      tl.to(card, { rotationY: -70, x: -260, opacity: 0, duration: 0.45, ease: "power2.in", transformOrigin: "0% 50%" }, END - 0.5);
+      tl.seek(0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

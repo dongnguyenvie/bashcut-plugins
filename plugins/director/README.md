@@ -38,13 +38,16 @@ named in the UI. Licenses of everything in the bundle are in `dist/THIRD-PARTY-N
 
 ## Dependency: Node.js 22.19+
 
-- `bin/check` (the probe) looks for `node` 22.19 or newer in `BASHCUT_PLUGIN_DATA/node/bin`, then `/opt/homebrew/bin`,
+- `bin/check` (the probe) looks for `node` 22.19 or newer in `BASHCUT_SHARED_DATA/node/node-v*/bin` (newest first),
+  then `BASHCUT_PLUGIN_DATA/node/bin` (where earlier versions installed it), `/opt/homebrew/bin`,
   `/usr/local/bin`, `~/.nvm/versions/node/*/bin` (newest first), `~/.volta/bin` and `PATH`. It exits 0 and prints
   `Node.js v22.x.y at <path>`, or exits 1 with the reason on stderr. `bin/provider` uses the same search
   (`bin/find-node`).
 - `bin/setup` (the install recipe) downloads the newest official Node.js 22 LTS for darwin-arm64 or darwin-x64 from
-  nodejs.org into `BASHCUT_PLUGIN_DATA/node`, after checking it against the release's `SHASUMS256.txt`, with
-  `::progress` lines. Running it again updates the copy.
+  nodejs.org into `BASHCUT_SHARED_DATA/node/<node-vX.Y.Z-darwin-arch>`, shared with other Node plugins (one folder
+  per version, never deleted by this script), after checking it against the release's `SHASUMS256.txt`, with
+  `::progress` lines; on an older BashCut without shared folders it uses `BASHCUT_PLUGIN_DATA/node`. Running it
+  again updates the copy and removes the one earlier versions kept in the plugin's own folder.
 
 ## Protocol (session transport, plugin API 4)
 
