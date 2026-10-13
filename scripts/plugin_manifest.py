@@ -55,9 +55,9 @@ FEATURE_PATTERN = r"[a-z][a-zA-Z0-9]*(?:[.-][a-zA-Z0-9]+)*"
 # not know draws "Needs a newer BashCut", so view_problems accepts unknown types.
 VIEW_NODE_TYPES = ("section", "row", "divider", "spacer", "text", "badge", "keyValue", "progress", "image",
                    "imageCompare", "audio", "list", "button", "textField", "textArea", "toggle", "picker", "slider",
-                   "colorPicker", "fontPicker")
+                   "colorPicker", "fontPicker", "grid")
 VIEW_INPUTS = {"textField", "textArea", "toggle", "picker", "slider", "colorPicker", "fontPicker"}
-VIEW_INTERACTIVE = VIEW_INPUTS | {"button", "list"}
+VIEW_INTERACTIVE = VIEW_INPUTS | {"button", "list", "grid"}
 MAX_VIEW_NODES, MAX_VIEW_DEPTH, MAX_LIST_ITEMS, MAX_PICKER_OPTIONS = 2000, 12, 500, 200
 HEX_COLOR_PATTERN = r"#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})"
 MAX_TAKES = 8
@@ -368,7 +368,7 @@ def view_problems(answer):
             ids.add(node_id)
         elif kind in VIEW_INTERACTIVE:
             problems.append(f"{where}: needs an id")
-        if kind == "list":
+        if kind in ("list", "grid"):
             items = node.get("items") or []
             if len(items) > MAX_LIST_ITEMS:
                 problems.append(f"{where}: at most {MAX_LIST_ITEMS} items")

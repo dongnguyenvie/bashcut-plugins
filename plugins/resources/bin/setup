@@ -1,0 +1,43 @@
+#!/bin/sh
+# Install recipe for Online Resources. BashCut runs it after the user approves, in the plugin's own environment:
+#   BASHCUT_PLUGIN_DATA  — kept across plugin updates: uv (when the Mac has none) and the virtual environment
+#   BASHCUT_SHARED_DATA  — shared with other Python plugins: uv's Python 3.12
+#   BASHCUT_SHARED_CACHE — shared with other Python plugins: uv's package cache (never cleaned here)
+# The venv holds what the fetch scripts import: Pillow, NumPy, fontTools and resvg. About 60 MB. Running it again
+# repairs or updates the install.
+set -eu
+data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.resources}"
+cache="${BASHCUT_PLUGIN_CACHE:-$HOME/Library/Caches/BashCut/PluginData/bashcut.resources}"
+pythons="${BASHCUT_SHARED_DATA:+$BASHCUT_SHARED_DATA/python}"
+packages="${BASHCUT_SHARED_CACHE:+$BASHCUT_SHARED_CACHE/uv}"
+mkdir -p "$data/bin" "$cache"
+export UV_CACHE_DIR="${packages:-$cache/uv}" UV_PYTHON_INSTALL_DIR="${pythons:-$data/python}" UV_NO_PROGRESS=1
+
+echo "::progress 0.05 Preparing uv"
+uv="$(command -v uv || true)"
+if [ -z "$uv" ]; then
+    uv="$data/bin/uv"
+    if [ ! -x "$uv" ]; then
+        arch="$(uname -m)"
+        [ "$arch" = "arm64" ] && arch=aarch64
+        tmp="$(mktemp -d)"
+        curl --fail --location --silent --show-error \
+            "https://github.com/astral-sh/uv/releases/latest/download/uv-$arch-apple-darwin.tar.gz" -o "$tmp/uv.tar.gz"
+        tar -xzf "$tmp/uv.tar.gz" -C "$tmp"
+        mv "$tmp/uv-$arch-apple-darwin/uv" "$uv"
+        rm -rf "$tmp"
+    fi
+fi
+"$uv" --version
+
+echo "::progress 0.20 Installing Python 3.12"
+python="$data/venv/bin/python3"
+if [ ! -x "$python" ] || ! "$python" -c "import sys; sys.exit(sys.version_info < (3, 10))" 2>/dev/null; then
+    rm -rf "$data/venv"
+    "$uv" venv --python 3.12 --python-preference only-managed "$data/venv"
+fi
+
+echo "::progress 0.50 Installing Pillow, NumPy, fontTools and resvg"
+"$uv" pip install --python "$python" --upgrade "pillow>=10.1" "numpy>=1.26" "fonttools>=4.40" "resvg-py>=0.5"
+if [ -z "$packages" ]; then "$uv" cache clean >/dev/null 2>&1 || true; fi
+echo "::progress 1.0 Online Resources is ready"
