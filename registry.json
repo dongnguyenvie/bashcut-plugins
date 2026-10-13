@@ -44,6 +44,22 @@
           "size": 64954,
           "downloadBytes": 0,
           "releasedAt": "2026-10-09"
+        },
+        {
+          "version": "0.0.4",
+          "apiVersion": 5,
+          "minApiVersion": 5,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/antigravity-v0.0.4/bashcut.antigravity-0.0.4.zip",
+          "sha256": "36e7d806102b422d033a4ac096c98b7fbce3efa68b1b14ed706e3603628420b8",
+          "signature": "ed25519:+d1UTAvG9J8BugeQlqWFmt3fldy/sxzCq3WInofEPx2riL876glPUkf6QczYNIIDYuLWlievqzlGFoWZWw9TCQ==",
+          "size": 65028,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-13"
         }
       ],
       "name": {
