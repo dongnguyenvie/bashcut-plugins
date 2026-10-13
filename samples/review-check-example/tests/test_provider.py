@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -18,12 +19,23 @@ def text(item_id, value, at, dur, font=None):
     return item
 
 
-def request(items, options=None, duration=300):
+def request(items, options=None, duration=300, as_file=False):
     project = {"tracks": [{"id": "v1", "kind": "video", "items": []}, {"id": "t1", "kind": "text", "items": items}]}
+    params = {"project": project, "revision": 4, "fps": 30, "duration": duration,
+              "width": 1080, "height": 1920, "options": options or {}}
+    if as_file:  # what BashCut sends for a project over 512 KiB
+        handle = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
+        json.dump(params.pop("project"), handle)
+        handle.close()
+        params["projectFile"] = handle.name
     message = {"id": "r1", "apiVersion": 9, "method": "review.check", "provider": "example.review-check.rules",
-               "params": {"project": project, "revision": 4, "fps": 30, "duration": duration,
-                          "width": 1080, "height": 1920, "options": options or {}}}
-    output = subprocess.run([PROVIDER, "rpc"], input=json.dumps(message), capture_output=True, text=True, check=True)
+               "params": params}
+    try:
+        output = subprocess.run([PROVIDER, "rpc"], input=json.dumps(message), capture_output=True, text=True,
+                                check=True)
+    finally:
+        if as_file:
+            os.unlink(params["projectFile"])
     answer = json.loads(output.stdout)
     assert answer["id"] == "r1"
     return answer["result"]["issues"]
@@ -49,6 +61,11 @@ class ReviewCheckExampleTests(unittest.TestCase):
         self.assertEqual([issue["id"] for issue in issues], ["font-a"])
         self.assertEqual(issues[0]["severity"], "warning")
         self.assertEqual(request(items), [])
+
+    def test_large_project_comes_as_a_file(self):
+        items = [text("a", "Một", 0, 30, "Comic Sans MS")]
+        issues = request(items, options={"fonts": "Inter"}, as_file=True)
+        self.assertEqual([issue["id"] for issue in issues], ["font-a", "cta"])
 
     def test_unknown_method(self):
         message = {"id": "r2", "apiVersion": 9, "method": "voice.synthesize", "params": {}}

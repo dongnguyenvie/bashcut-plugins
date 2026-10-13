@@ -51,10 +51,12 @@ def rpc(folder, method, params, provider=None):
 class Session:
     """The session transport (`provider session`): newline-delimited JSON in both directions."""
 
-    def __init__(self, folder):
+    def __init__(self, folder, features=()):
+        """`features`: the host features BashCut lists in its hello (API 8), such as "views.colorPicker"."""
         self.process = subprocess.Popen([str(ENTRYPOINT), "session"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE, text=True, cwd=ROOT, env=environment(folder))
-        self.send({"type": "hello", "apiVersion": MANIFEST["apiVersion"], "host": "BashCut", "pluginId": MANIFEST["id"]})
+        self.send({"type": "hello", "apiVersion": MANIFEST["apiVersion"], "host": "BashCut", "pluginId": MANIFEST["id"],
+                   "features": list(features)})
         hello = self.read()
         if hello.get("type") != "hello":
             raise AssertionError(f"expected hello, got {hello}")

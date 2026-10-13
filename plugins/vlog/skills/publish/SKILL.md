@@ -86,14 +86,16 @@ description.
 
 ## 6. Title, caption and hashtags
 
-Write them in the video's language. Hard caps come from the data; style is a sourced range you choose inside.
+Write them in the video's language. Hard caps come from the data; style is a sourced range you choose inside. The caps
+below come from `platforms get` once core's platform data carries them (fields `caption.maxChars`, `hashtags.max`,
+`description.maxChars`, `hashtags.ignoredAbove`); until a field is there, use the number in the table.
 
 | Item | From the data | Sample range (style) | Why it varies |
 |---|---|---|---|
-| YouTube / Shorts title | `title.maxChars` (hard), `title.visibleChars` | the number or question of the hook in the visible part; about 40 characters show on mobile, 60 on desktop (T17 §3) | the device most viewers use |
-| TikTok / Reels caption | no cap in the platform data yet: check the app | the hook line, one detail, a question or CTA; front-load it, the feed shows only the first line or two | where the "more" cut falls in each app |
-| Hashtags | not in the data | TikTok 3–5, Reels 3–8 (earlier vlog practice, T17 §3); YouTube tags 5–12 (T17 §3) | topic, place, format; a niche needs fewer, broader ones |
-| YouTube description | — | the sections with chapter times from `export chapters`, sources and credits | — |
+| YouTube / Shorts title | `title.maxChars` (hard, 100), `title.visibleChars` | the number or question of the hook in the visible part; about 40 characters show on mobile, 60 on desktop (T17 §3) | the device most viewers use |
+| TikTok / Reels caption | `caption.maxChars` (hard): TikTok 2200 (Content Posting API), Reels 2200 | the hook line, one detail, a question or CTA; front-load it, the feed shows only the first line or two | where the "more" cut falls in each app |
+| Hashtags | `hashtags.max` (hard): Reels 5 (Instagram, Dec 2025), TikTok no official cap; `hashtags.ignoredAbove`: YouTube/Shorts ignores all of them past 60 | TikTok 3–5, Reels 3–5 (earlier vlog practice 3–8, T17 §3, now capped at 5); YouTube tags 5–12 (T17 §3) | topic, place, format; a niche needs fewer, broader ones |
+| YouTube description | `description.maxChars` (hard, 5000) | the sections with chapter times from `export chapters`, sources and credits | — |
 
 - Only claims with a source: prices, addresses, names and numbers the video shows or the brief sources (T01 §7). Never
   invent facts.
@@ -106,3 +108,13 @@ Write them in the video's language. Hard caps come from the data; style is a sou
 Report: per output the file, length, bit rate and loudness from `export status`; the cover files and frame; the
 chapter list and any rule it fails; the title, caption and hashtags per platform; and which facts came from data
 (with their `checked` date) and which are ranges you chose.
+
+## 7. After posting
+
+- When the user posts, record the link: `bashcut export link --url URL --platform tiktok --posted-at YYYY-MM-DD
+  [--export ID]` (`export history` lists the exports with their IDs; the latest by default).
+- Later, with the platform's retention CSV or JSON: `bashcut outcomes import FILE [--export ID] [--platform …]`, then
+  `bashcut outcomes map [--export ID]`: per section the raw drops and lifts with the words heard around them (±4 s by
+  default). These are facts, not verdicts; hand them to `bc:self-learn` to propose lessons.
+- For variety across videos, `bashcut project history --limit 10` compares recent projects (looks, captions, music,
+  hook and cut numbers).

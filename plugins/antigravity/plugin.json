@@ -24,7 +24,7 @@
       "kind": "executable",
       "probe": {"executable": "bin/check"},
       "install": {
-        "summary": "Install Google's Antigravity CLI (agy) from antigravity.google into ~/.local/bin. The official installer is downloaded over HTTPS and run only after you approve this setup; your shell profile is not changed.",
+        "summary": "Install Google's Antigravity CLI (agy) from antigravity.google into ~/.local/bin. The official installer is downloaded over HTTPS and run only after you approve this setup; it may add ~/.local/bin to your shell PATH.",
         "command": {"executable": "bin/setup"}
       }
     }

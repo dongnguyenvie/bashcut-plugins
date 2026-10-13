@@ -40,7 +40,7 @@ import { spawnSync } from "node:child_process";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, extname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export class UsageError extends Error {}
@@ -709,10 +709,25 @@ export function briefApply(apply) {
 
 /** What a render depends on, so an unchanged graphic is not rendered again. */
 export function inputsHash(dir, variables, seconds, fps, codec) {
-    const page = readFileSync(join(dir, "index.html"), "utf8");
-    const data = existsSync(join(dir, "map-data.js")) ? readFileSync(join(dir, "map-data.js"), "utf8") : "";
-    return createHash("sha256").update(JSON.stringify([page, data, variables, Math.round(seconds * 100), fps, codec]))
-        .digest("hex").slice(0, 16);
+    // Every file the page can load counts (a shared chrome.js, map tiles, a logo), not only index.html: a change to
+    // any of them renders again. What rendering itself writes (gsap.min.js, movies, snapshots) is skipped; large files
+    // count by size and time.
+    const hash = createHash("sha256").update(JSON.stringify([variables, Math.round(seconds * 100), fps, codec]));
+    const walk = (folder, depth) => {
+        for (const name of readdirSync(folder).sort()) {
+            if (name.startsWith(".") || ["node_modules", "gsap.min.js", "snapshots", "renders"].includes(name)) continue;
+            const path = join(folder, name);
+            const info = statSync(path);
+            if (info.isDirectory()) {
+                if (depth < 3) walk(path, depth + 1);
+            } else if (!/\.(mov|mp4|m4v|webm)$/i.test(name)) {
+                hash.update(relative(dir, path));
+                hash.update(info.size > 4_000_000 ? `${info.size}:${info.mtimeMs}` : readFileSync(path));
+            }
+        }
+    };
+    walk(dir, 0);
+    return hash.digest("hex").slice(0, 16);
 }
 
 async function planGraphics(options) {

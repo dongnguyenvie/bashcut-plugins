@@ -42,12 +42,22 @@ class ProviderTests(unittest.TestCase):
         messages = session(self.request(options={"maxCharacters": 42}))
         self.assertEqual(messages[0], {"type": "hello", "apiVersion": 2})
         result = next(m for m in messages if m.get("id") == "r0" and "result" in m)["result"]
-        self.assertEqual(result, {"srtPath": "clip 1.srt", "wordsPath": "clip 1.words.json"})
+        self.assertEqual({k: result[k] for k in ("srtPath", "wordsPath", "segmentsPath")},
+                         {"srtPath": "clip 1.srt", "wordsPath": "clip 1.words.json",
+                          "segmentsPath": "clip 1.segments.json"})
+        self.assertEqual(result["reliable"], {"noSpeechProb": True, "avgLogprob": True, "compressionRatio": True})
+        # The credit line and the invented "Thank you." are left out.
+        self.assertEqual(result["droppedSegments"], 2)
         text = pathlib.Path(self.output, "clip 1.srt").read_text(encoding="utf-8")
         words = json.loads(pathlib.Path(self.output, "clip 1.words.json").read_text(encoding="utf-8"))
         self.assertEqual([w["text"] for w in words[:4]], ["Xin", "chào", "các", "bạn."])
         self.assertTrue(all(w["start"] <= w["end"] for w in words))
-        self.assertEqual((words[0]["confidence"], words[0]["noSpeechProb"]), (0.9, 0.0))
+        self.assertEqual((words[0]["confidence"], words[0]["noSpeechProb"], words[0]["avgLogprob"],
+                          words[0]["compressionRatio"]), (0.9, 0.0, -0.2, 1.2))
+        self.assertNotIn("Thank you.", text)
+        report = json.loads(pathlib.Path(self.output, "clip 1.segments.json").read_text(encoding="utf-8"))
+        self.assertEqual([row.get("dropped") for row in report["segments"]], [None, "credits", "avgLogprob"])
+        self.assertEqual(report["filter"]["minAvgLogprob"], -1.0)
         # Word for word with the caption text, so BashCut can use the timings as they are.
         captions = [block.split("\n", 2)[2] for block in text.strip().split("\n\n")]
         self.assertEqual(len(words), sum(len(line.split()) for line in captions))
@@ -57,6 +67,19 @@ class ProviderTests(unittest.TestCase):
         kinds = [m.get("type", "reply") for m in messages[1:]]
         self.assertEqual(kinds[-1], "reply")
         self.assertIn("progress", kinds)
+
+    def test_the_language_heard_is_returned_when_none_was_asked(self):
+        asked = next(m for m in session(self.request()) if m.get("id") == "r0" and "result" in m)["result"]
+        self.assertNotIn("language", asked)
+        heard = next(m for m in session(self.request(language="")) if m.get("id") == "r0" and "result" in m)["result"]
+        self.assertEqual(heard["language"], "vi")
+
+    def test_the_doubt_filter_can_be_turned_off(self):
+        session(self.request(options={"dropDoubtful": False}))
+        text = pathlib.Path(self.output, "clip 1.srt").read_text(encoding="utf-8")
+        self.assertIn("Thank you.", text)
+        session(self.request(options={"minAvgLogprob": -3.0}))
+        self.assertIn("Thank you.", pathlib.Path(self.output, "clip 1.srt").read_text(encoding="utf-8"))
 
     def test_a_range_transcribes_only_that_stretch_in_media_time(self):
         messages = session(self.request(startSeconds=2.5, endSeconds=5))
@@ -132,6 +155,39 @@ class CaptionShapeTests(unittest.TestCase):
         doubtful = {"text": "Hãy đăng ký kênh", "start": 5, "end": 7, "no_speech_prob": 0.5, "words": []}
         cues = whisper_provider.cues_from([spoken, doubtful], 42)
         self.assertEqual([text for _, _, text, _ in cues], ["Nhớ đăng ký kênh nha"])
+
+    def test_a_constant_no_speech_prob_is_not_passed_on_as_a_measurement(self):
+        # mlx-whisper large-v3 turbo: no_speech_prob 0.0 in every segment, real avg_logprob.
+        segments = [
+            {"text": "Xin chào", "start": 0, "end": 1, "no_speech_prob": 0.0, "avg_logprob": -0.25,
+             "compression_ratio": 1.0, "words": [word("Xin", 0, 0.4), word("chào", 0.4, 1)]},
+            {"text": "We're back.", "start": 3, "end": 4, "no_speech_prob": 0.0, "avg_logprob": -3.1,
+             "compression_ratio": 0.9, "words": [word("We're", 3, 3.5), word("back.", 3.5, 4)]},
+        ]
+        reliable = whisper_provider.reliability(segments)
+        self.assertEqual(reliable, {"noSpeechProb": False, "avgLogprob": True, "compressionRatio": True})
+        words = whisper_provider.word_timings(whisper_provider.cues_from(segments, 42))
+        self.assertEqual([w["text"] for w in words], ["Xin", "chào"])
+        self.assertNotIn("noSpeechProb", words[0])
+        self.assertEqual(words[0]["avgLogprob"], -0.25)
+
+    def test_missing_or_nan_scores_are_unreliable(self):
+        segments = [{"text": "a", "start": 0, "end": 1, "no_speech_prob": float("nan"), "avg_logprob": -0.2},
+                    {"text": "b", "start": 1, "end": 2, "no_speech_prob": 0.4, "avg_logprob": -0.3}]
+        self.assertEqual(whisper_provider.reliability(segments),
+                         {"noSpeechProb": False, "avgLogprob": True, "compressionRatio": False})
+        self.assertEqual(whisper_provider.reliability([]),
+                         {"noSpeechProb": False, "avgLogprob": False, "compressionRatio": False})
+
+    def test_repeated_text_is_dropped_by_compression_ratio(self):
+        loop = {"text": "đi đi đi đi đi đi đi đi", "start": 0, "end": 2, "avg_logprob": -0.4,
+                "compression_ratio": 3.4, "words": []}
+        real = {"text": "Hôm nay mình đi chợ", "start": 3, "end": 5, "avg_logprob": -0.3,
+                "compression_ratio": 1.2, "words": []}
+        cues = whisper_provider.cues_from([loop, real], 42)
+        self.assertEqual([text for _, _, text, _ in cues], ["Hôm nay mình đi chợ"])
+        kept = whisper_provider.cues_from([loop, real], 42, whisper_provider.doubt_options({"dropDoubtful": False}))
+        self.assertEqual(len(kept), 2)
 
     def test_timestamps(self):
         self.assertEqual(whisper_provider.timestamp(3725.5), "01:02:05,500")

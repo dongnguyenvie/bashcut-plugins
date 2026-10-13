@@ -45,6 +45,10 @@ BashCut starts `bin/provider rpc` with one JSON request on stdin and reads one J
             "projectRoot": "/…/my-video", "options": {"fonts": "Be Vietnam Pro", "ctaSeconds": 5}}}
 ```
 
+A project whose JSON is over 512 KiB comes as `"projectFile": "/…/review-project.json"` instead of `"project"` (the
+request limit is 1 MiB); BashCut removes the file once every check has answered. Read `project` when it is there and
+the file otherwise, as `load_project` does.
+
 ```json
 {"id": "…", "result": {"issues": [{"id": "cta", "title": "No call to action at the end",
   "detail": "…", "frame": 750, "endFrame": 900, "severity": "info", "fix": {"hint": "Add an end card…"}}]}}

@@ -21,10 +21,12 @@ sys.path.insert(0, str(SCRIPTS))
 spec = importlib.util.spec_from_file_location("new_plugin", SCRIPTS / "new-plugin.py")
 new_plugin = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(new_plugin)
-from plugin_manifest import manifest_problems, skill_problems  # noqa: E402
+from plugin_manifest import manifest_problems, skill_problems, view_problems  # noqa: E402
 
 CASES = [(template, lang) for template in new_plugin.TEMPLATE_NAMES for lang in new_plugin.LANGUAGES
-         if not (lang == "shell" and template in new_plugin.SESSION_TEMPLATES)]
+         if template not in new_plugin.DATA_TEMPLATES
+         and not (lang == "shell" and template in new_plugin.SESSION_TEMPLATES)]
+CASES += [(template, None) for template in sorted(new_plugin.DATA_TEMPLATES)]
 
 
 def node_available():
@@ -50,8 +52,9 @@ class TemplateTests(unittest.TestCase):
     def check(self, plugin, lang):
         manifest = json.loads((plugin / "plugin.json").read_text())
         self.assertEqual(manifest_problems(manifest), [])
+        self.assertEqual(skill_problems(plugin, manifest), [])
         self.assertFalse((plugin / "listing.json").exists(), "a plugin outside plugins/ has no listing")
-        text = "".join(p.read_text() for p in plugin.rglob("*") if p.is_file())
+        text = "".join(p.read_text() for p in plugin.rglob("*") if p.is_file() and p.suffix != ".wav")
         self.assertNotIn("{{", text)
         self.assertNotIn("@@", text)
         if lang == "swift":
@@ -68,7 +71,8 @@ class TemplateTests(unittest.TestCase):
     def test_every_template_and_language(self):
         for template, lang in CASES:
             with self.subTest(template=template, lang=lang):
-                self.check(make(self.root, f"{template}-{lang}", "--template", template, "--lang", lang), lang)
+                lang_args = ["--lang", lang] if lang else []
+                self.check(make(self.root, f"{template}-{lang or 'data'}", "--template", template, *lang_args), lang)
 
     def test_every_capability(self):
         for capability in new_plugin.PROVIDED_CAPABILITIES:
@@ -78,6 +82,59 @@ class TemplateTests(unittest.TestCase):
                     plugin = make(self.root, slug, "--template", "capability", "--capability", capability,
                                   "--lang", lang)
                     self.check(plugin, lang)
+
+
+class ViewsTemplateTests(unittest.TestCase):
+    """The views template's answers pass the view checks BashCut applies, with and without the newer components."""
+
+    def test_answers_follow_the_view_rules(self):
+        root = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, root, True)
+        plugin = make(root, "panel-python", "--template", "views", "--lang", "python")
+        manifest = json.loads((plugin / "plugin.json").read_text())
+        self.assertEqual(manifest["transport"], "session")
+        self.assertEqual([v.get("location", "panel") for v in manifest["contributes"]["views"]], ["panel", "dock", "sheet"])
+        self.assertNotIn("views.colorPicker", manifest["features"], "optional features stay out of features")
+        for features in ([], ["views", "views.colorPicker"]):
+            hello = {"type": "hello", "apiVersion": 9, "features": features}
+            lines = [hello] + [{"type": "request", "id": f"r{i}", "method": "view.render",
+                                "params": {"view": view, "values": {}, "state": None}}
+                               for i, view in enumerate(("main", "form"))] + [{"type": "shutdown"}]
+            out = subprocess.run([str(plugin / "bin/provider"), "session"], capture_output=True, text=True, timeout=60,
+                                 input="".join(json.dumps(line) + "\n" for line in lines))
+            replies = [json.loads(line) for line in out.stdout.splitlines()][1:]
+            self.assertEqual(len(replies), 2, out.stderr)
+            for reply in replies:
+                self.assertEqual(view_problems(reply["result"]), [], reply)
+
+
+class DataTemplateTests(unittest.TestCase):
+    def setUp(self):
+        self.root = pathlib.Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.root, True)
+
+    def test_skills_pack_has_no_entrypoint(self):
+        plugin = make(self.root, "my-skills", "--template", "skills")
+        manifest = json.loads((plugin / "plugin.json").read_text())
+        self.assertNotIn("entrypoint", manifest)
+        self.assertEqual(manifest["contributes"], {"skills": [{"path": "skills/my-skills"}]})
+        self.assertEqual((manifest["category"], manifest["minApiVersion"]), ("agents", 7))
+        self.assertFalse((plugin / "bin").exists())
+        self.assertIn("without code", (plugin / "README.md").read_text())
+
+    def test_library_pack_with_a_skill(self):
+        plugin = make(self.root, "party", "--template", "library", "--skill")
+        manifest = json.loads((plugin / "plugin.json").read_text())
+        self.assertEqual(set(manifest["contributes"]), {"library", "skills"})
+        pack = json.loads((plugin / "packs/party/pack.json").read_text())
+        self.assertEqual({item["kind"] for item in pack["items"]},
+                         {"audio", "sticker", "text-preset", "look", "transition-preset"})
+        self.assertTrue(all(item["id"].startswith("party-") for item in pack["items"]))
+        self.assertTrue((plugin / "packs/party/files/party-click.wav").is_file())
+
+    def test_data_templates_take_no_language(self):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            new_plugin.main(["x", "--template", "skills", "--lang", "python", "--out", str(self.root)])
 
 
 class BehaviourTests(unittest.TestCase):
@@ -97,6 +154,7 @@ class BehaviourTests(unittest.TestCase):
     def test_refuses_bad_input(self):
         for argv in (["Bad_Slug", "--template", "action"],
                      ["ok", "--template", "chat-agent", "--lang", "shell"],
+                     ["ok", "--template", "views", "--lang", "shell"],
                      ["ok", "--template", "action", "--capability", "audio.beats"],
                      ["ok", "--template", "action", "--name", 'Say "hi"']):
             with self.subTest(argv=argv), self.assertRaises(SystemExit), \

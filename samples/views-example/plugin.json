@@ -33,6 +33,19 @@
       },
       "type": "string",
       "default": "Xin chào"
+    },
+    {
+      "id": "provider",
+      "title": {
+        "en": "Voice plugin",
+        "vi": "Plugin giọng"
+      },
+      "help": {
+        "en": "The voice.synthesize provider the Voice tab uses; empty lets BashCut choose. The tab saves it.",
+        "vi": "Nhà cung cấp voice.synthesize mà tab Giọng nói dùng; để trống thì BashCut chọn. Tab tự lưu lựa chọn."
+      },
+      "type": "string",
+      "default": ""
     }
   ],
   "contributes": {
@@ -68,6 +81,13 @@
         },
         "location": "sheet",
         "icon": "textformat"
+      },
+      {
+        "id": "live",
+        "title": {
+          "en": "Live",
+          "vi": "Trực tiếp"
+        }
       }
     ],
     "actions": [

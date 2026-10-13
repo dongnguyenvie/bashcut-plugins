@@ -4,6 +4,8 @@
 BashCut runs it on `review measure` (or the Review sheet's Measure) with one JSON request on stdin:
   {"id", "apiVersion", "method": "review.check", "provider", "params": {"project", "revision", "fps", "duration",
    "width", "height", "projectRoot", "options"}}
+A project whose JSON is over 512 KiB comes as "projectFile" (the path of a private copy BashCut removes afterwards)
+instead of "project", so the request stays under the 1 MiB limit: read `project` when it is there, else the file.
 and expects one line back: {"id", "result": {"issues": [...]}} (or {"id", "error": {"code", "message"}}).
 
 Each issue: id, title, detail, frame (timeline frame), optional endFrame, severity (error | warning | info) and fix
@@ -72,8 +74,18 @@ def cta_issues(project, duration, fps, seconds):
     }]
 
 
+def load_project(params):
+    """The project JSON: inline as `project`, or in the file `projectFile` names when it is large."""
+    if isinstance(params.get("project"), dict):
+        return params["project"]
+    if params.get("projectFile"):
+        with open(params["projectFile"], encoding="utf-8") as file:
+            return json.load(file)
+    return {}
+
+
 def check(params):
-    project = params.get("project") or {}
+    project = load_project(params)
     options = params.get("options") or {}
     fps = float(params.get("fps") or 30)
     duration = int(params.get("duration") or 0)

@@ -28,7 +28,8 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   contributors (ODbL); `map-route` keeps the credit on screen.
 - **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
   `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
-  `cost-table`, `timeline`, `calendar`, `map-route`. All take the brand variables `bin/graphic` fills.
+  `cost-table`, `timeline`, `calendar`, `map-route`; mock screens (`mock-video-app`) and cards such as
+  `corner-curl-card`. All take the brand variables `bin/graphic` fills.
 - **The skill** `skills/hyperframes/SKILL.md`: the design → build → look → render → place → check loop, the
   composition rules, and moves that combine a graphic with BashCut's own layers (the speaker shrinking into a card).
 
