@@ -7,14 +7,15 @@
         "vi": "Gói đề xuất"
       },
       "summary": {
-        "en": "Everything most people need: captions from speech, Vietnamese voiceover, silence markers, scene prompts and the AI Editor.",
-        "vi": "Những gì hầu hết mọi người cần: phụ đề từ giọng nói, lồng tiếng tiếng Việt, đánh dấu im lặng, prompt cảnh quay và AI Editor."
+        "en": "Everything most people need: captions from speech, Vietnamese voiceover, silence markers, video recipes and scene prompts, animated graphics (HyperFrames) and the AI Editor.",
+        "vi": "Những gì hầu hết mọi người cần: phụ đề từ giọng nói, lồng tiếng tiếng Việt, đánh dấu im lặng, công thức dựng video và prompt cảnh quay, đồ hoạ chuyển động (HyperFrames) và AI Editor."
       },
       "plugins": [
         {"id": "bashcut.whisper-captions", "default": true},
         {"id": "bashcut.vieneu-tts", "default": true},
         {"id": "bashcut.silence-markers", "default": true},
-        {"id": "bashcut.preproduction", "default": true},
+        {"id": "bashcut.vlog", "default": true},
+        {"id": "bashcut.hyperframes", "default": true},
         {"id": "bashcut.director", "default": true},
         {"id": "bashcut.antigravity", "default": false}
       ]
