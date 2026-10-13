@@ -279,22 +279,6 @@
       "id": "bashcut.vieneu-tts",
       "versions": [
         {
-          "version": "0.0.3",
-          "apiVersion": 3,
-          "minApiVersion": 3,
-          "minAppVersion": "0.0.1",
-          "platforms": [
-            "macos-arm64",
-            "macos-x86_64"
-          ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vieneu-tts-v0.0.3/bashcut.vieneu-tts-0.0.3.zip",
-          "sha256": "d6b29edb2e8a0c4089be75e6ece79c628dcbc7f5f333b8c0d3f2faf4194eaf51",
-          "signature": "ed25519:/lfzhwh1sWYbGBo26kpcmceEXm1D1XjWpknS2xX0+HJBbpb6d5Yp34hs0pUglDZmB+3EeeRmcyS0YLy30DguBA==",
-          "size": 6798,
-          "downloadBytes": 1500000000,
-          "releasedAt": "2026-10-04"
-        },
-        {
           "version": "0.0.4",
           "apiVersion": 3,
           "minApiVersion": 3,
@@ -325,6 +309,22 @@
           "size": 7457,
           "downloadBytes": 1500000000,
           "releasedAt": "2026-10-09"
+        },
+        {
+          "version": "0.0.6",
+          "apiVersion": 3,
+          "minApiVersion": 3,
+          "minAppVersion": "0.0.1",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vieneu-tts-v0.0.6/bashcut.vieneu-tts-0.0.6.zip",
+          "sha256": "10c75d6609e105ed23ec9993ac7a3e2bd2ed74d6b7f8be57d08a7a17380698f2",
+          "signature": "ed25519:W7eHudqSTfdb1pSGExXnqkgbxT0//JFSuyylSGhl+U23PVsI/d4aBDzzc7ZXJCN39qem2OiPdCpxAMt/PJEpAA==",
+          "size": 7623,
+          "downloadBytes": 1500000000,
+          "releasedAt": "2026-10-13"
         }
       ],
       "name": {
