@@ -11,6 +11,8 @@
   - Pin tags never wrap and start 34 px right of the pin: a pin at x 864 shows only ~8 characters before the frame
     edge ("Hồ Tuyền Lâm" is cut). Use short labels (--points) for stops on the right.
   - drawAt + drawSeconds past data-duration − 0.5 (5.5 s at 6 s) pops the last pin during the swing-out.
+  - A narrated route lands each pin on its name: arriveAt ["@Hồ Gươm", "@chợ Đồng Xuân", "@Hồ Tây"] in graphic plan
+    (one entry per stop, rising); the line runs at its own speed between them.
 -->
 <html lang="en" data-composition-variables='[
   {"id": "title", "type": "string", "label": "Title (white)", "default": "Old Quarter"},
@@ -20,6 +22,7 @@
   {"id": "darkMap", "type": "boolean", "label": "Dark map (off: the normal OpenStreetMap colours)", "default": true},
   {"id": "drawAt", "type": "number", "label": "Route starts drawing (s)", "default": 0.6},
   {"id": "drawSeconds", "type": "number", "label": "Route draw length (s)", "default": 2.6},
+  {"id": "arriveAt", "type": "string", "label": "Seconds the line reaches each stop, a JSON list in stop order (the first is when it leaves); empty: drawAt + drawSeconds by distance", "default": ""},
   {"id": "background", "type": "color", "label": "Map base and tag colour", "default": "#0B0E14"},
   {"id": "text", "type": "color", "label": "Text colour", "default": "#FFFFFF"},
   {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
@@ -154,8 +157,22 @@
         pin.querySelector(".tag").textContent = p.label;
         if (!p.label) pin.querySelector(".tag").style.display = "none";
         pins.appendChild(pin);
-        return { pin, at: v.drawAt + (along[best] / total) * v.drawSeconds };
+        return { pin, frac: along[best] / total, at: v.drawAt + (along[best] / total) * v.drawSeconds };
       });
+      // arriveAt: the line reaches each stop on its own second (its name in the voice), leg by leg.
+      let arrive = [];
+      try {
+        arrive = v.arriveAt ? JSON.parse(v.arriveAt).map(Number) : [];
+      } catch {
+        arrive = [];
+      }
+      // Used only when the stops come in route order with rising times; otherwise the distance timing stays.
+      const legs = arrive.length === stops.length && arrive.every((t, i) => Number.isFinite(t) && (i === 0 || t > arrive[i - 1]))
+        && stops.every((s, i) => i === 0 || s.frac >= stops[i - 1].frac)
+        ? stops.map((s, i) => ({ frac: i === 0 ? 0 : s.frac, at: arrive[i] })) : null;
+      if (legs) stops.forEach((s, i) => { s.at = arrive[i]; });
+      const drawStart = legs ? legs[0].at : v.drawAt;
+      const drawEnd = legs ? legs[legs.length - 1].at : v.drawAt + v.drawSeconds;
 
       const xs = data.route.map((p) => p[0]);
       const ys = data.route.map((p) => p[1]);
@@ -169,14 +186,22 @@
       const END = Number(document.querySelector('[data-composition-id="main"]').dataset.duration);
       const tl = gsap.timeline({ paused: true });
       tl.fromTo(stage, { scale: 1.12 }, { scale: 1.0, duration: END - 0.6, ease: "sine.out" }, 0);
-      if (areas.length) tl.fromTo(areas, { opacity: 0 }, { opacity: 1, duration: 0.5, stagger: 0.2, ease: "power2.out" }, Math.max(0, v.drawAt - 0.3));
+      if (areas.length) tl.fromTo(areas, { opacity: 0 }, { opacity: 1, duration: 0.5, stagger: 0.2, ease: "power2.out" }, Math.max(0, drawStart - 0.3));
       tl.fromTo("#head > div", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.15, ease: "power3.out" }, 0.15);
-      tl.fromTo([line, glow], { strokeDashoffset: length }, { strokeDashoffset: 0, duration: v.drawSeconds, ease: "power1.inOut" }, v.drawAt);
+      if (legs) {
+        for (let i = 1; i < legs.length; i += 1) {
+          tl.fromTo([line, glow], { strokeDashoffset: length * (1 - legs[i - 1].frac) },
+            { strokeDashoffset: length * (1 - (i === legs.length - 1 ? 1 : legs[i].frac)), duration: legs[i].at - legs[i - 1].at,
+              ease: "power1.inOut", immediateRender: i === 1 }, legs[i - 1].at);
+        }
+      } else {
+        tl.fromTo([line, glow], { strokeDashoffset: length }, { strokeDashoffset: 0, duration: v.drawSeconds, ease: "power1.inOut" }, v.drawAt);
+      }
       for (const stop of stops) {
         tl.fromTo(stop.pin.querySelector(".dot"), { scale: 0 }, { scale: 1, duration: 0.35, ease: "back.out(3)" }, stop.at);
         tl.fromTo(stop.pin.querySelector(".tag"), { opacity: 0, x: -20 }, { opacity: 1, x: 0, duration: 0.3, ease: "power2.out" }, stop.at + 0.1);
       }
-      tl.fromTo(stat, { scale: 1 }, { scale: 1.08, duration: 0.14, yoyo: true, repeat: 1, ease: "power2.out", transformOrigin: "left center" }, v.drawAt + v.drawSeconds);
+      tl.fromTo(stat, { scale: 1 }, { scale: 1.08, duration: 0.14, yoyo: true, repeat: 1, ease: "power2.out", transformOrigin: "left center" }, drawEnd);
       // The card swings away in 3D, the way the reference explainers change scene.
       tl.to(root.children, { rotationY: -70, x: -260, opacity: 0, duration: 0.45, ease: "power2.in", transformOrigin: "0% 50%" }, END - 0.5);
       tl.seek(0);

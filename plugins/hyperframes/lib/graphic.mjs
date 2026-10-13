@@ -1,26 +1,27 @@
 // bin/graphic: one call that renders a HyperFrames composition and places it, and one that renders it again when its
 // data or the project's brand changes, so an agent never repeats render → wait → library add → place by hand.
 //
-//   place D [--at-frame F] [--duration N] [--track T] [--set k=v …] [--variables JSON] [--name N] [--fps N]
-//           [--codec hevc|prores] [--no-brand] [--dry-run]
+//   place D [--at-frame F] [--duration N] [--track T] [--set k=v …] [--variables JSON] [--frame JSON] [--name N]
+//           [--fps N] [--codec hevc|prores] [--no-brand] [--dry-run]
 //     Renders composition folder D with graphics.render (an example of this plugin is first copied to the project's
 //     graphics/<name>-<id>/ and the copy rendered), waits, adds the .mov as a sticker and places it full canvas
 //     (size 1 at 0.5,0.5) on the Overlay layer, then records the render inputs on the placed media
 //     (media.data.graphics, setMediaData). Prints {item, media, track, atFrame, frames, path, rev, brand, …}.
 //     --duration N (frames) is also the composition's length: its root data-duration is set to N while it renders, so
 //     an exit timed on the end plays at the end of the span; rerender keeps that length.
-//   rerender ITEM|MEDIA|--all [--set k=v …] [--unset k …] [--variables JSON] [--fps N] [--codec C] [--name N]
-//            [--brand | --no-brand] [--keep-length] [--dry-run]
+//   rerender ITEM|MEDIA|--all [--set k=v …] [--unset k …] [--variables JSON] [--frame JSON] [--fps N] [--codec C]
+//            [--name N] [--brand | --no-brand] [--keep-length] [--dry-run]
 //     Reads the recorded inputs, applies the changes and the current brand, renders again and, as ONE timeline
 //     apply, adds the new movie and points every item that used the old one at it (setSource), keeping each item's
 //     in-point. An item that played the whole old render plays the whole new one (its end moves; the result lists
 //     the length change); --keep-length keeps every length (cut to the new render when it is shorter).
 //
 //   examples [NAME]
-//     The examples as data: name, what it draws (its header comment), seconds, folder, and its own variables {id,
-//     type, label, default} (the brand ids it declares listed apart), so a graphic is chosen without reading HTML.
-//     With NAME also its known pitfalls (a `<!-- Pitfalls: - … -->` comment in the page) and the active lessons
-//     tagged block:NAME in BashCut's knowledge (`lessons`; skipped when BashCut cannot be reached).
+//     One short row per example: name, what it draws (the first sentence of its header comment), seconds and its
+//     own variables as "id:type" (the brand ids left out), enough to choose. With NAME the full row: the whole
+//     comment, folder, every variable {id, type, label, default}, the brand ids it declares, its known pitfalls (a
+//     `<!-- Pitfalls: - … -->` comment in the page) and the active lessons tagged block:NAME in BashCut's knowledge
+//     (`lessons`; skipped when BashCut cannot be reached).
 //   plan [--only g1,g2] [--force] [--no-apply] [--codec C] [--dry-run]
 //     Renders every plan.cut graphic that has `render` {composition, set, name, codec} and no up-to-date movie, each to
 //     the span plan check gives it (the composition's data-duration is set to it while it renders, so an exit timed
@@ -28,7 +29,14 @@
 //     their media IDs into plan.cut and runs plan apply — the whole picture of a plan in one call. A `set` value
 //     "@words" becomes the seconds from the graphic's start to where the voiceover says those words (plan check
 //     --words); inside a list or object given for a string variable, every "@words" string is replaced the same way.
-//     A composition path may be relative to the project folder. Prints {rendered, kept, apply}.
+//     A composition path may be relative to the project folder. render.frame is the frame (below); "@words" work
+//     in its callout.at too. Prints {rendered, kept, apply}.
+//
+// Frame (--frame JSON, render.frame): chrome drawn around any composition for the render only — backdrop
+// ("texture" | "plain"), fadeIn (s), drift (true), chip ("2/4"), credit ("© OpenStreetMap contributors"), callout
+// ({text, at, top}, *word* in the accent), scale (0.5–2.5) — so a series of cards shares one look without editing
+// their HTML (lib/frame.mjs). It is recorded with the inputs; rerender --frame changes keys (null drops one; --frame
+// null drops the frame).
 //
 // Variables: --set values are typed by the composition's declarations (number, boolean, string…); --variables takes
 // a JSON object (a list or object given for a string variable is stringified). An id the composition does not
@@ -42,6 +50,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkFrame, FRAME_VERSION, mergeFrame, withFrameMarkup } from "./frame.mjs";
 
 export class UsageError extends Error {}
 
@@ -53,7 +62,7 @@ const BRAND_MAP = {
 export const BRAND_IDS = Object.keys(BRAND_MAP);
 const FLAGS = new Set(["no-brand", "brand", "keep-length", "dry-run", "all", "force", "no-apply"]);
 const LISTS = new Set(["set", "unset"]);
-const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "name", "fps", "codec", "only"]);
+const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "frame", "name", "fps", "codec", "only"]);
 
 /** argv (after the node script) → {command, target, options}; options.set/unset are lists. */
 export function parseArgs(argv) {
@@ -97,7 +106,7 @@ export function parseArgs(argv) {
     if (options.brand && options["no-brand"]) throw new UsageError("--brand and --no-brand together");
     if (command === "plan") {
         if (target) throw new UsageError("plan takes no folder: it reads plan.cut.graphics");
-        for (const key of ["all", "keep-length", "brand", "at-frame", "duration", "track", "variables", "name"]) {
+        for (const key of ["all", "keep-length", "brand", "at-frame", "duration", "track", "variables", "frame", "name"]) {
             if (options[key] !== undefined && options[key] !== false) throw new UsageError(`--${key} is not for plan`);
         }
         if (options.set.length || options.unset.length) throw new UsageError("plan reads each graphic's render.set from plan.cut");
@@ -123,6 +132,26 @@ export function parseArgs(argv) {
         if (typeof options.variables !== "object" || options.variables === null || Array.isArray(options.variables)) {
             throw new UsageError("--variables must be a JSON object");
         }
+    }
+    if (options.frame !== undefined) {
+        let frame;
+        try {
+            frame = JSON.parse(options.frame);
+        } catch {
+            throw new UsageError("--frame must be a JSON object (or null to drop the frame)");
+        }
+        if (frame !== null) {
+            try {
+                if (command === "place") checkFrame(frame);
+                else checkFrame(Object.fromEntries(Object.entries(frame).filter(([, value]) => value !== null)));
+            } catch (error) {
+                throw new UsageError(error.message);
+            }
+            if (typeof frame.callout?.at === "string" || typeof frame.callout?.top === "string") {
+                throw new UsageError('"@words" in frame.callout work in graphic plan only; give seconds');
+            }
+        }
+        options.frame = frame;
     }
     return { command, target, options };
 }
@@ -190,9 +219,10 @@ export function brandVariables(brand, declared) {
 }
 
 /** Inputs recorded on a placed graphic's media, merged with a rerender's changes. */
-export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, name, brand } = {}) {
+export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, name, brand, frame } = {}) {
     const variables = { ...(recorded.variables ?? {}), ...explicit };
     for (const id of unset) delete variables[id];
+    const framed = mergeFrame(recorded.frame, frame);
     return {
         composition: recorded.composition,
         variables,
@@ -201,6 +231,7 @@ export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, n
         name: name ?? recorded.name,
         brand: brand ?? recorded.brand ?? true,
         ...(recorded.seconds ? { seconds: recorded.seconds } : {}),
+        ...(framed ? { frame: framed } : {}),
     };
 }
 
@@ -269,6 +300,7 @@ function record(inputs, render) {
         composition: inputs.composition, variables: inputs.variables, fps: inputs.fps, codec: inputs.codec,
         name: inputs.name, brand: inputs.brand, frames: render.frames,
         ...(inputs.seconds ? { seconds: inputs.seconds } : {}),
+        ...(inputs.frame ? { frame: inputs.frame } : {}),
     };
 }
 
@@ -448,14 +480,18 @@ async function renderNow(inputs, variables, dryRun, page) {
     throw new Error(`graphics.render job ${job} did not finish`);
 }
 
-/** Renders with the page's data-duration set to `inputs.seconds` when it has one (so the exit lands on the end). */
+/**
+ * Renders with the page's data-duration set to `inputs.seconds` when it has one (so the exit lands on the end) and
+ * the frame drawn around it when there is one.
+ */
 async function renderSpan(inputs, variables, dryRun) {
-    if (dryRun || !inputs.seconds) {
+    if (dryRun || (!inputs.seconds && !inputs.frame)) {
         const render = await renderNow(inputs, variables, dryRun);
         if (render.dryRun && inputs.seconds) render.dryRun.seconds = inputs.seconds;
+        if (render.dryRun && inputs.frame) render.dryRun.frame = inputs.frame;
         return render;
     }
-    return withDuration(inputs.composition, inputs.seconds, () => renderNow(inputs, variables, false));
+    return withPage(inputs.composition, { seconds: inputs.seconds, frame: inputs.frame }, () => renderNow(inputs, variables, false));
 }
 
 function lintNote(render, out) {
@@ -498,6 +534,7 @@ async function place(target, options) {
         fps: options.fps ?? Math.round(frameRate(project.format?.fps)), codec: options.codec ?? "hevc",
         brand: !options["no-brand"],
     };
+    if (options.frame) inputs.frame = checkFrame(options.frame) ?? undefined;
     // --duration also sets the composition's length, so its exit plays at the end of the span instead of being cut.
     if (options.duration !== undefined) {
         const frames = Number(options.duration);
@@ -568,7 +605,7 @@ export async function rerender(target, options) {
         const inputs = mergeInputs(recorded, {
             explicit: explicitVariables(declared, sets, given), unset: options.unset, fps: options.fps,
             codec: options.codec, name: options.name && safeName(options.name),
-            brand: options.brand ? true : options["no-brand"] ? false : undefined,
+            brand: options.brand ? true : options["no-brand"] ? false : undefined, frame: options.frame,
         });
         const { variables, brand } = await resolveVariables(inputs, project, warnings);
         const render = await renderSpan(inputs, variables, options["dry-run"]);
@@ -595,7 +632,11 @@ export async function rerender(target, options) {
 
 // MARK: examples
 
-/** The examples (or one) as data: what each draws, its length and the variables it takes besides the brand's. */
+/**
+ * The examples as one short row each (name, what it draws in its first sentence, seconds, its own variables as
+ * "id:type"), enough to choose; with NAME the full row: every variable's label and default, the brand ids it
+ * declares, its pitfalls and learned lessons.
+ */
 export async function examples(name) {
     const root = fileURLToPath(new URL("../examples/", import.meta.url));
     const names = readdirSync(root).filter((n) => existsSync(join(root, n, "index.html"))).sort();
@@ -605,17 +646,19 @@ export async function examples(name) {
         const about = (/<!--([\s\S]*?)-->/.exec(html)?.[1] ?? "").replace(/\s+/g, " ").trim();
         const { declared, duration } = readComposition(join(root, n));
         const own = declared.filter((d) => !BRAND_IDS.includes(d.id) && d.id !== "logo" && d.id !== "mascot");
+        if (!name) {
+            const first = /^.*?[.!?](?=\s|$)/.exec(about)?.[0] ?? about;
+            return { name: n, about: first, seconds: duration, variables: own.map((d) => `${d.id}:${d.type}`).join(" ") };
+        }
         const row = { name: n, about, seconds: duration, folder: join(root, n) };
         row.variables = own.map((d) => {
             const shown = typeof d.default === "string" && d.default.length > 160 ? `${d.default.slice(0, 160)}…` : d.default;
             return { id: d.id, type: d.type, label: d.label, default: shown };
         });
         row.brand = declared.filter((d) => BRAND_IDS.includes(d.id) || d.id === "logo" || d.id === "mascot").map((d) => d.id);
-        if (name) {
-            row.pitfalls = pitfalls(html);
-            const learned = await blockLessons(n);
-            if (learned) row.lessons = learned;
-        }
+        row.pitfalls = pitfalls(html);
+        const learned = await blockLessons(n);
+        if (learned) row.lessons = learned;
         return row;
     }));
 }
@@ -679,19 +722,21 @@ export function restorePage(dir) {
 }
 
 /**
- * Runs `work` with index.html's root data-duration set to `seconds` (a second root file would be a lint error and a
- * second entry point), then puts the page back.
+ * Runs `work` with index.html's root data-duration set to `seconds` and the frame drawn around the composition (a
+ * second root file would be a lint error and a second entry point), then puts the page back.
  */
-export async function withDuration(dir, seconds, work) {
+export async function withPage(dir, { seconds, frame } = {}, work) {
     restorePage(dir);
     const page = join(dir, "index.html");
-    const html = readFileSync(page, "utf8");
+    let html = readFileSync(page, "utf8");
     const root = /(data-composition-id="main"[^>]*\bdata-duration=")([\d.]+)(")/;
-    if (!root.test(html)) throw new Error(`${page} has no root with data-composition-id="main" and data-duration`);
+    if (seconds && !root.test(html)) throw new Error(`${page} has no root with data-composition-id="main" and data-duration`);
+    // Rounded down to the millisecond: the renderer rounds frames up, so 110 frames at 30 fps (3.667 s) stay 110.
+    if (seconds) html = html.replace(root, `$1${Math.floor(seconds * 1000) / 1000}$3`);
+    if (frame) html = withFrameMarkup(html, frame);
     copyFileSync(page, join(dir, BACKUP));
     try {
-        // Rounded down to the millisecond: the renderer rounds frames up, so 110 frames at 30 fps (3.667 s) stay 110.
-        writeFileSync(page, html.replace(root, `$1${Math.floor(seconds * 1000) / 1000}$3`));
+        writeFileSync(page, html);
         return await work();
     } finally {
         restorePage(dir);
@@ -708,11 +753,12 @@ export function briefApply(apply) {
 }
 
 /** What a render depends on, so an unchanged graphic is not rendered again. */
-export function inputsHash(dir, variables, seconds, fps, codec) {
+export function inputsHash(dir, variables, seconds, fps, codec, frame = null) {
     // Every file the page can load counts (a shared chrome.js, map tiles, a logo), not only index.html: a change to
     // any of them renders again. What rendering itself writes (gsap.min.js, movies, snapshots) is skipped; large files
     // count by size and time.
     const hash = createHash("sha256").update(JSON.stringify([variables, Math.round(seconds * 100), fps, codec]));
+    if (frame) hash.update(JSON.stringify([FRAME_VERSION, frame]));
     const walk = (folder, depth) => {
         for (const name of readdirSync(folder).sort()) {
             if (name.startsWith(".") || ["node_modules", "gsap.min.js", "snapshots", "renders"].includes(name)) continue;
@@ -760,23 +806,30 @@ async function planGraphics(options) {
         const dir = options["dry-run"] ? asGiven : await ownComposition(asGiven, root, `${entry.id}-${basename(asGiven)}`);
         const declared = readComposition(dir).declared;
         const asked = resolveWordTimes({ ...(entry.render.variables ?? {}), ...(entry.render.set ?? {}) }, row.words ?? []);
+        let frame;
+        try {
+            frame = checkFrame(resolveWordTimes(entry.render.frame, row.words ?? []));
+        } catch (error) {
+            throw new UsageError(`graphic ${entry.id}: ${error.message}`);
+        }
         const inputs = {
             composition: dir, variables: explicitVariables(declared, [], asked), name: safeName(entry.render.name ?? `${entry.id}-${basename(dir)}`),
             fps, codec: options.codec ?? entry.render.codec ?? "hevc", brand: entry.render.brand !== false,
+            ...(frame ? { frame } : {}),
         };
         const { variables, brand } = await resolveVariables(inputs, project, warnings);
         restorePage(dir);
-        const hash = inputsHash(dir, variables, seconds, fps, inputs.codec);
+        const hash = inputsHash(dir, variables, seconds, fps, inputs.codec, frame);
         const current = media.find((m) => m.id === entry.media);
         if (!options.force && current?.data?.graphics?.hash === hash) {
             kept.push(entry.id);
             continue;
         }
         if (options["dry-run"]) {
-            rendered.push({ id: entry.id, seconds, variables, brand });
+            rendered.push({ id: entry.id, seconds, variables, brand, ...(frame ? { frame } : {}) });
             continue;
         }
-        const render = await withDuration(dir, seconds, () => renderNow(inputs, variables, false));
+        const render = await withPage(dir, { seconds, frame }, () => renderNow(inputs, variables, false));
         const imported = await call(["media", "import", render.path, "--origin", "ai", "--base-rev", "last"]) ?? {};
         const id = imported.media ?? imported.files?.[0]?.media ?? imported.id;
         if (!id) throw new Error(`media import returned no media for ${render.path}: ${JSON.stringify(imported).slice(0, 300)}`);
