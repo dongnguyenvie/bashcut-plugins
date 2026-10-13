@@ -67,6 +67,22 @@ class ProviderTests(unittest.TestCase):
         error = next(m["error"] for m in messages if "error" in m)
         self.assertIn("Reference audio not found", error["message"])
 
+    def test_saved_clone_reference_comes_from_bashcut(self):
+        reference = os.path.join(self.output, "saved.wav")
+        with wave.open(reference, "wb") as audio:
+            audio.setnchannels(1)
+            audio.setsampwidth(2)
+            audio.setframerate(16000)
+            audio.writeframes(b"\x00\x00" * 16000)
+        saved = {"path": reference, "voice": "clone-nolan", "name": "Giọng Nolan", "language": "vi"}
+        # The saved clone wins over a stale referenceAudio option.
+        options = {"voice": "Hải Đăng", "referenceAudio": "/nonexistent/old.wav"}
+        allowed = session(self.synth(options=options, reference=saved, cloneConsent=True))
+        self.assertTrue(any(m.get("id") == "r0" and "result" in m for m in allowed))
+        missing = session(self.synth(reference={**saved, "path": "/nonexistent/saved.wav"}, cloneConsent=True))
+        error = next(m["error"] for m in missing if "error" in m)
+        self.assertIn("/nonexistent/saved.wav", error["message"])
+
     def test_one_shot_rpc(self):
         request = {"id": "x", "apiVersion": 2, **self.synth(takeCount=1)}
         output = subprocess.run([str(PROVIDER), "rpc"], input=json.dumps(request) + "\n", capture_output=True,
