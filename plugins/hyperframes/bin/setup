@@ -3,7 +3,7 @@
 #   1. Node.js 22: a Node.js 22.19+ already on this Mac is used; otherwise the newest official Node.js 22 LTS for this
 #      Mac is downloaded from nodejs.org into BASHCUT_SHARED_DATA/node/<version> (shared with other Node plugins),
 #      checked against the release's SHASUMS256.txt.
-#   2. HyperFrames and GSAP at the versions runtime/package.template.json pins, with `npm ci` and the lockfile next to
+#   2. HyperFrames, GSAP and KaTeX at the versions runtime/package.template.json pins, with `npm ci` and the lockfile next to
 #      it, into BASHCUT_PLUGIN_DATA/runtime.
 #   3. Chrome headless shell for rendering (HyperFrames' `browser ensure`), into BASHCUT_PLUGIN_CACHE/chrome.
 # `::progress` lines drive the progress bar. Running it again repairs or updates the install.
@@ -61,9 +61,9 @@ echo "Node.js $("$node" -v) at $node"
 PATH="$(dirname "$node"):$PATH"
 export PATH
 
-echo "::progress 0.20 Installing HyperFrames and GSAP (about 130 MB)"
+echo "::progress 0.20 Installing HyperFrames, GSAP and KaTeX (about 135 MB)"
 mkdir -p "$runtime"
-if ! cmp -s "$here/../runtime/package-lock.template.json" "$runtime/package-lock.json" || [ ! -f "$cli" ] || [ ! -f "$gsap" ]; then
+if ! cmp -s "$here/../runtime/package-lock.template.json" "$runtime/package-lock.json" || [ ! -f "$cli" ] || [ ! -f "$gsap" ] || [ ! -f "$katex" ]; then
     cp "$here/../runtime/package.template.json" "$runtime/package.json"
     cp "$here/../runtime/package-lock.template.json" "$runtime/package-lock.json"
     (cd "$runtime" && npm ci --no-audit --no-fund --loglevel=error)

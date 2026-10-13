@@ -293,6 +293,8 @@ elif command == "plugins invoke":
     if os.path.exists(page):
         found = re.search(r'data-composition-id="main"[^>]*data-duration="([\d.]+)"', open(page).read())
         entry["pageDuration"] = float(found.group(1)) if found else None
+        sized = re.search(r'data-composition-id="main"[^>]*data-width="(\d+)" data-height="(\d+)"', open(page).read())
+        entry["pageSize"] = [int(sized.group(1)), int(sized.group(2))] if sized else None
         framed = re.search(r'\(function build\(frame\)[\s\S]*?\}\)\((\{.*?\})\);</script>', open(page).read())
         entry["pageFrame"] = json.loads(framed.group(1)) if framed else None
     out = {"job": "job-1", "state": "running"}
@@ -825,6 +827,109 @@ class GraphicScriptTests(unittest.TestCase):
         variables = json.loads(out.stdout)["variables"]
         self.assertEqual(("fonts/Brand-Bold.otf", "Avenir Next"), (variables["headingFont"], variables["bodyFont"]))
         self.assertTrue((self.composition / "fonts" / "Brand-Bold.otf").is_file())
+
+    def diagram_project(self, width=1920, height=1080):
+        project = self.project()
+        project["format"] = {"width": width, "height": height, "fps": [30, 1]}
+        project["tracks"].append({"id": "vo", "kind": "audio", "role": "voiceover", "items": [
+            {"id": "l1", "at": 300, "dur": 60}, {"id": "l2", "at": 390, "dur": 75}, {"id": "l3", "at": 480, "dur": 90}]})
+        project["markers"] = [{"id": "m1", "at": 0, "kind": "section", "label": "Hook"},
+                              {"id": "m2", "at": 450, "kind": "section", "label": "How"}]
+        return project
+
+    def test_place_times_steps_on_voice_lines_from_a_data_file_at_the_project_canvas(self):
+        data = {"nodes": [{"id": "a", "label": "App"}, {"id": "b", "label": "API"}], "edges": [{"from": "a", "to": "b"}],
+                "steps": [{"focus": ["a"]}, {"focus": ["b"]}, {"at": "section:How", "focus": []}]}
+        (self.folder / "diagram.json").write_text(json.dumps(data))
+        flow = self.folder / "graphics" / "flow"
+        shutil.copytree(ROOT / "examples" / "flow-diagram", flow)
+        state = {"projects": [self.diagram_project(), self.diagram_project()]}
+        out, calls = self.run_graphic(state, "place", str(flow), "--set", f"data=@{self.folder / 'diagram.json'}",
+                                      "--steps-from-voice")
+        self.assertEqual(0, out.returncode, out.stderr)
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        self.assertEqual([1920, 1080], invoke["pageSize"])  # data-fit="canvas": rendered at the project's size
+        sent = json.loads(invoke["params"]["variables"]["data"])
+        # Starts 0.4 s (12 frames) before the first line (300), so the steps land 0.4 s, 3.4 s and 5 s in.
+        self.assertEqual([0.4, 3.4, 5.4], [s["at"] for s in sent["steps"]])
+        place = next(c for c in calls if c["args"][:2] == ["library", "place"])["args"]
+        self.assertEqual("288", place[place.index("--at-frame") + 1])
+        self.assertEqual(str(570 - 288 + 15), place[place.index("--duration") + 1])  # section How runs to the end, 570
+        self.assertIn('data-width="1080"', (flow / "index.html").read_text())  # the page is put back
+
+    def test_steps_beyond_the_voice_lines_are_refused_before_rendering(self):
+        data = {"nodes": [{"id": "a", "label": "A"}], "steps": [{"focus": ["a"]}] * 4}
+        (self.folder / "d.json").write_text(json.dumps(data))
+        state = {"projects": [self.diagram_project()]}
+        out, calls = self.run_graphic(state, "place", str(ROOT / "examples" / "mind-map"), "--set",
+                                      f"data=@{self.folder / 'd.json'}", "--steps-from", "voice", "--at-frame", "380")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("only 2 voice lines", json.loads(out.stderr)["error"])
+        self.assertEqual([], [c for c in calls if c["args"][:2] == ["plugins", "invoke"]])
+        out, _ = self.run_graphic(state, "place", str(ROOT / "examples" / "mind-map"), "--set", "data=@missing.json")
+        self.assertEqual(2, out.returncode)
+
+    def test_rerender_with_a_new_label_keeps_the_step_times(self):
+        recorded = {"nodes": [{"id": "a", "label": "App"}], "steps": [{"at": 1.2, "focus": ["a"]}]}
+        media = self.recorded_media({"data": json.dumps(recorded)})
+        flow = self.folder / "graphics" / "flow"
+        shutil.copytree(ROOT / "examples" / "flow-diagram", flow)
+        media["data"]["graphics"]["composition"] = str(flow)
+        item = {"id": "item-1", "at": 300, "dur": 165, "media": "media-old", "sourceIn": 0}
+        changed = {"nodes": [{"id": "a", "label": "Mobile app"}], "steps": [{"focus": ["a"]}]}
+        out, calls = self.run_graphic({"projects": [self.project(media=[media], items=[item])]}, "rerender", "item-1",
+                                      "--variables", json.dumps({"data": changed}))
+        self.assertEqual(0, out.returncode, out.stderr)
+        sent = json.loads(next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]["variables"]["data"])
+        self.assertEqual(("Mobile app", 1.2), (sent["nodes"][0]["label"], sent["steps"][0]["at"]))
+        self.assertEqual(1, len([c for c in calls if c["args"][:2] == ["timeline", "apply"]]))  # one undo step
+
+
+class DiagramLayoutTests(unittest.TestCase):
+    """lib/diagram.js lays diagrams out from data: no two node boxes may overlap (up to 12 nodes, 9:16 and 16:9)."""
+
+    SCRIPT = r"""
+const d = require(process.argv[1]);
+const words = ["Khách hàng", "API Gateway", "Auth", "Database", "Cache", "Queue", "Worker service", "Email",
+  "Thanh toán online", "CDN", "Analytics dashboard", "Search"];
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const area = d.areaFor(W, H, u, true);
+  for (let n = 1; n <= 12; n++) for (const shape of ["chain", "tree", "fan", "mesh"]) {
+    const nodes = Array.from({ length: n }, (_, i) => ({ id: "n" + i, label: words[i], icon: i % 3 ? undefined : "x" }));
+    const edges = [];
+    for (let i = 1; i < n; i++) edges.push({ from: "n" + (shape === "chain" ? i - 1 : shape === "fan" ? 0 : shape === "tree" ? Math.floor((i - 1) / 3) : Math.max(0, i - 1 - (i % 3))), to: "n" + i });
+    if (shape === "mesh" && n > 4) edges.push({ from: "n4", to: "n1" });
+    for (const kind of ["flow", "mind", "iso"]) {
+      const L = kind === "flow" ? d.flowLayout({ nodes, edges }, area, u) : kind === "mind" ? d.mindLayout({ nodes, edges }, area, u) : d.isoLayout({ nodes, edges }, area, u);
+      const outside = L.nodes.filter((b) => b.x - b.w / 2 < area.x - 1 || b.x + b.w / 2 > area.x + area.w + 1 || b.y - b.h / 2 < area.y - 1 || b.y + b.h / 2 > area.y + area.h + 1).length;
+      out.push({ W, kind, shape, n, count: L.nodes.length, overlaps: d.overlapping(L.nodes).length, outside, font: Math.min(...L.nodes.map((b) => b.font / u)) });
+    }
+  }
+  const c = d.canvasLayout({ nodes: words.map((w, i) => ({ id: "n" + i, label: w })), edges: words.slice(1).map((w, i) => ({ from: i < 3 ? "n0" : "n" + (1 + (i % 3)), to: "n" + (i + 1) })) }, W, H, 2);
+  out.push({ W, kind: "canvas", shape: "tree", n: 12, count: c.nodes.length, overlaps: d.overlapping(c.nodes).length, outside: 0, font: 99 });
+}
+console.log(JSON.stringify(out));
+"""
+
+    def test_no_two_nodes_overlap_up_to_twelve_nodes(self):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        out = subprocess.run([node, "-e", self.SCRIPT, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        rows = json.loads(out.stdout)
+        self.assertEqual(2 * 12 * 4 * 3 + 2, len(rows))
+        for row in rows:
+            self.assertEqual(row["n"], row["count"], row)
+            self.assertEqual(0, row["overlaps"], row)
+            self.assertEqual(0, row["outside"], row)
+            self.assertGreaterEqual(row["font"], 20, row)
+
+    def test_steps_without_times_are_spread_and_sorted(self):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        script = 'const d = require(process.argv[1]); console.log(JSON.stringify(d.timedSteps([{at: 4, focus: "b"}, {focus: ["a"]}, {focus: []}], 8).map((s) => [s.at, s.focus])))'
+        out = subprocess.run([node, "-e", script, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=30)
+        self.assertEqual([[0.9, ["a"]], [4, ["b"]], [4.1, []]], json.loads(out.stdout))
 
 
 @unittest.skipUnless(RUNTIME_DATA and RUNTIME_CACHE, "set HYPERFRAMES_TEST_DATA and HYPERFRAMES_TEST_CACHE to a setup install")

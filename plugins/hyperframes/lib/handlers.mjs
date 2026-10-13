@@ -9,7 +9,7 @@
 // extension), outputDirectory (from BashCut).
 // Result: path, codec, frames, fps, width, height, bytes, renderSeconds, encodeSeconds, lint {errors, warnings,
 // findings}.
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative } from "node:path";
 import { PluginError } from "./bashcut-plugin.mjs";
@@ -61,12 +61,28 @@ function settingsOf(params) {
     return { fps, codec, variables, output };
 }
 
-/** GSAP is not bundled in compositions: copy the pinned one next to a page that loads gsap.min.js locally. */
-function provideGsap(composition) {
+/**
+ * GSAP, KaTeX and the diagram script are not bundled in compositions: the pinned GSAP, KaTeX (script, style and its
+ * woff2 fonts, into katex/) and lib/diagram.js are copied next to a page that loads them locally, so a render needs no
+ * network.
+ */
+function provideScripts(composition) {
     const page = composition.file ?? join(composition.dir, "index.html");
     const html = readFileSync(page, "utf8");
+    const loads = (file) => new RegExp(`(src|href)=["']\\.?\\/?${file.replace(/[./]/g, "\\$&")}["']`).test(html);
     const target = join(composition.dir, "gsap.min.js");
-    if (/src=["']\.?\/?gsap\.min\.js["']/.test(html) && !existsSync(target)) copyFileSync(paths.gsap, target);
+    if (loads("gsap.min.js") && !existsSync(target)) copyFileSync(paths.gsap, target);
+    if (loads("diagram.js") && !existsSync(join(composition.dir, "diagram.js"))) copyFileSync(paths.diagram, join(composition.dir, "diagram.js"));
+    if (loads("katex/katex.min.js") && !existsSync(join(composition.dir, "katex", "katex.min.js"))) {
+        if (!existsSync(join(paths.katex, "katex.min.js"))) {
+            throw new PluginError("dependency_missing", "KaTeX is not installed: choose Install Dependencies for HyperFrames Graphics in Plugins");
+        }
+        mkdirSync(join(composition.dir, "katex", "fonts"), { recursive: true });
+        for (const file of ["katex.min.js", "katex.min.css"]) copyFileSync(join(paths.katex, file), join(composition.dir, "katex", file));
+        for (const font of readdirSync(join(paths.katex, "fonts")).filter((f) => f.endsWith(".woff2"))) {
+            copyFileSync(join(paths.katex, "fonts", font), join(composition.dir, "katex", "fonts", font));
+        }
+    }
 }
 
 async function lint(composition) {
@@ -91,7 +107,7 @@ async function render(params, host) {
     const composition = compositionOf(params);
     const { fps, codec, variables, output } = settingsOf(params);
     requireRuntime();
-    provideGsap(composition);
+    provideScripts(composition);
     const name = params.name ?? composition.name;
     const work = mkdtempSync(join(tmpdir(), "bashcut-hyperframes-"));
     try {
