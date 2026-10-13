@@ -1,0 +1,102 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.image-gen",
+  "name": {
+    "en": "Image Generation",
+    "vi": "Tạo ảnh"
+  },
+  "version": "0.0.1",
+  "apiVersion": 4,
+  "minApiVersion": 4,
+  "entrypoint": "bin/provider",
+  "transport": "session",
+  "category": "utilities",
+  "capabilities": [
+    "image.generate"
+  ],
+  "providers": [
+    {
+      "id": "bashcut.image-gen.api",
+      "capability": "image.generate",
+      "name": "Image Generation (your API key)",
+      "priority": 10,
+      "paid": true
+    }
+  ],
+  "dependencies": [],
+  "options": [
+    {
+      "id": "service",
+      "title": {
+        "en": "Service",
+        "vi": "Dịch vụ"
+      },
+      "type": "enum",
+      "choices": [
+        "gemini",
+        "openai"
+      ],
+      "choiceLabels": {
+        "gemini": {
+          "en": "Google Gemini",
+          "vi": "Google Gemini"
+        },
+        "openai": {
+          "en": "OpenAI (or OpenAI-compatible)",
+          "vi": "OpenAI (hoặc tương thích OpenAI)"
+        }
+      },
+      "default": "gemini",
+      "scope": "user",
+      "bindsSecrets": true,
+      "help": {
+        "en": "Who makes the pictures. Your key below is sent only to this service",
+        "vi": "Dịch vụ tạo ảnh. Khoá bên dưới chỉ gửi cho dịch vụ này"
+      }
+    },
+    {
+      "id": "apiKey",
+      "title": {
+        "en": "API key",
+        "vi": "Khoá API"
+      },
+      "type": "secret",
+      "scope": "user",
+      "help": {
+        "en": "Your Gemini or OpenAI key. It is kept in the macOS Keychain",
+        "vi": "Khoá Gemini hoặc OpenAI của bạn. Được lưu trong Keychain của macOS"
+      }
+    },
+    {
+      "id": "model",
+      "title": {
+        "en": "Model",
+        "vi": "Model"
+      },
+      "type": "string",
+      "default": "",
+      "scope": "user",
+      "maxLength": 200,
+      "help": {
+        "en": "Empty uses gemini-2.5-flash-image (Gemini) or gpt-image-1 (OpenAI)",
+        "vi": "Để trống dùng gemini-2.5-flash-image (Gemini) hoặc gpt-image-1 (OpenAI)"
+      }
+    },
+    {
+      "id": "endpoint",
+      "title": {
+        "en": "Endpoint",
+        "vi": "Địa chỉ"
+      },
+      "type": "string",
+      "default": "",
+      "scope": "user",
+      "maxLength": 500,
+      "bindsSecrets": true,
+      "help": {
+        "en": "Empty uses the service's own address. For OpenAI: any server with /v1/images/generations, such as a local model",
+        "vi": "Để trống dùng địa chỉ của dịch vụ. Với OpenAI: máy chủ bất kỳ có /v1/images/generations, ví dụ model chạy trên máy"
+      }
+    }
+  ]
+}
