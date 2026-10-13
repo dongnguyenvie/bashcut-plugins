@@ -27,8 +27,9 @@ voice takes, graphics or captions one by one with `timeline apply`. `P` is the H
 2. **The list.** `bashcut project set-data plan plan.json --merge --base-rev last` with `{cut: {…}}`:
    `voiceover` [{id, text, caption, section, pause}] (one line per sentence; `text` exactly as it should be heard,
    numbers spelled out; `caption` what the captions show instead, with digits),
-   `graphics` [{id, section, track: "main", render: {composition: "graphics/<name>", set: {…}}}] (one per section on
-   Main, the picture of the video; overlays such as a chip or a counter over the map without `track`), `captions`
+   `graphics` [{id, section, track: "main", render: {composition: "graphics/<name>", set: {…}, frame: {…}}}] (one
+   per section on Main, the picture of the video; overlays such as a counter over the map without `track`;
+   `frame` is the chrome every card shares, below), `captions`
    {from: "speech", preset, maxChars (the caption line length from the ranges below), style {positionY}}, `music`
    {media, volumeDb, duckDb}, `sfx` [{media, on: "<graphic id>", offset}], `review` {limits from the ranges below}. In `set`, a value `"@words"` becomes the seconds from the graphic's
    start to where the voice says those words: a row `{"label": "Hồ Tây", "value": 528, "at": "@năm trăm hai mươi
@@ -131,7 +132,10 @@ sits at the top of the 3–8 a minute band (T13 §3) because the widgets are the
 - **Frame chrome stays across scenes** (RC): the section chip and header bar, a small channel avatar or mascot in a
   corner when the user has one, a credit line while sourced data or archive pictures are on screen. Only the content
   swaps; the chrome is what makes the channel recognisable. Keep it in the platform's safe zone (`bashcut platforms
-  get <id>`).
+  get <id>`). Give every row the same `render.frame` instead of editing the widgets' HTML: `{"backdrop": "texture",
+  "drift": true, "chip": "2/4", "credit": "© OpenStreetMap contributors", "callout": {"text": "≈ *47 lần*", "at":
+  "@bốn mươi bảy"}, "scale": 1.2}` — the hook and recap leave out the chip; `map-route` lands each pin on its name
+  with `arriveAt` `["@…", "@…"]`.
 - **A mascot or character** only from the user's own image or a style they approved; no character is invented and
   presented as theirs.
 - **Scene changes**: the widget examples exit by swinging away in 3D; let the next card enter as one leaves

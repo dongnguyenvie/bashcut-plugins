@@ -293,6 +293,8 @@ elif command == "plugins invoke":
     if os.path.exists(page):
         found = re.search(r'data-composition-id="main"[^>]*data-duration="([\d.]+)"', open(page).read())
         entry["pageDuration"] = float(found.group(1)) if found else None
+        framed = re.search(r'\(function build\(frame\)[\s\S]*?\}\)\((\{.*?\})\);</script>', open(page).read())
+        entry["pageFrame"] = json.loads(framed.group(1)) if framed else None
     out = {"job": "job-1", "state": "running"}
 elif command == "jobs wait":
     out = {"job": {"id": "job-1", "state": "completed", "result": {"plugin": "bashcut.hyperframes",
@@ -531,12 +533,17 @@ class GraphicScriptTests(unittest.TestCase):
     def test_examples_list_their_own_variables_apart_from_the_brand(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "examples")
         self.assertEqual(0, out.returncode, out.stderr)
+        self.assertLess(len(out.stdout), 9000, "the list is short: one line per example")
         rows = {row["name"]: row for row in json.loads(out.stdout)}
         self.assertEqual(sorted(p.name for p in (ROOT / "examples").iterdir() if (p / "index.html").exists()), sorted(rows))
-        self.assertIn("items", [v["id"] for v in rows["bar-chart"]["variables"]])
-        self.assertNotIn("accent", [v["id"] for v in rows["bar-chart"]["variables"]])
-        self.assertIn("accent", rows["bar-chart"]["brand"])
+        self.assertIn("items:string", rows["bar-chart"]["variables"].split())
+        self.assertNotIn("accent", rows["bar-chart"]["variables"])
+        self.assertTrue(rows["bar-chart"]["about"].endswith("."))
         self.assertEqual([], calls, "no BashCut call")
+        out, _ = self.run_graphic({"projects": [self.project()], "fail": "knowledge lessons"}, "examples", "bar-chart")
+        row = json.loads(out.stdout)[0]
+        self.assertIn("items", [v["id"] for v in row["variables"]])
+        self.assertIn("accent", row["brand"])
         out, _ = self.run_graphic({"projects": [self.project()]}, "examples", "nope")
         self.assertEqual(2, out.returncode)
 
@@ -630,6 +637,46 @@ class GraphicScriptTests(unittest.TestCase):
         out, calls = self.run_graphic(state, "rerender", "item-1", "--set", "title=Mới")
         self.assertEqual(0, out.returncode, out.stderr)
         self.assertEqual(2.5, next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["pageDuration"])
+
+    def test_place_draws_the_frame_for_the_render_and_rerender_keeps_it(self):
+        page = (self.composition / "index.html").read_text()
+        frame = {"backdrop": "texture", "chip": "2/4", "callout": {"text": "*1,54 km*", "at": 1.2}, "scale": 1.3}
+        out, calls = self.run_graphic({"projects": [self.project(), self.project(rev=7)]}, "place", str(self.composition),
+                                      "--frame", json.dumps(frame))
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual(frame, next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["pageFrame"])
+        self.assertEqual(page, (self.composition / "index.html").read_text())  # put back afterwards
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        self.assertEqual(frame, recorded["frame"])
+        media = {**self.recorded_media({}), "data": {"graphics": {**self.recorded_media({})["data"]["graphics"], "frame": frame}}}
+        item = {"id": "item-1", "at": 0, "dur": 165, "media": "media-old", "sourceIn": 0}
+        out, calls = self.run_graphic({"projects": [self.project(media=[media], items=[item])]}, "rerender", "item-1",
+                                      "--frame", '{"chip": "3/4", "scale": null}')
+        self.assertEqual(0, out.returncode, out.stderr)
+        drawn = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["pageFrame"]
+        self.assertEqual({"backdrop": "texture", "chip": "3/4", "callout": {"text": "*1,54 km*", "at": 1.2}}, drawn)
+
+    def test_place_refuses_a_bad_frame_before_rendering(self):
+        for frame, words in (('{"chip": "1/4", "border": 2}', "border"), ('{"backdrop": "blur"}', "backdrop"),
+                             ('{"scale": 4}', "scale"), ('{"callout": {"text": "x", "at": "@hai"}}', "plan")):
+            out, calls = self.run_graphic({"projects": [self.project()]}, "place", str(self.composition), "--frame", frame)
+            self.assertEqual(2, out.returncode, frame)
+            self.assertIn(words, json.loads(out.stderr)["error"])
+            self.assertEqual([], calls)
+
+    def test_plan_frame_lands_its_callout_on_words_and_counts_in_the_hash(self):
+        graphics = [{"id": "g1", "on": "l1", "render": {"composition": "graphics/calendar", "set": {"title": "Hồ Tây"},
+                                                         "frame": {"chip": "1/4", "callout": {"text": "Hồ *Tây*", "at": "@hai mươi"}}}}]
+        state = {"projects": [self.plan_project(graphics=graphics)], "check": self.plan_check(), "projectFile": str(self.folder / "p.json")}
+        out, calls = self.run_graphic(state, "plan")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual({"chip": "1/4", "callout": {"text": "Hồ *Tây*", "at": 0.6}},
+                         next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["pageFrame"])
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        plain = {"projects": [self.plan_project()], "check": self.plan_check(), "projectFile": str(self.folder / "p.json")}
+        _, calls = self.run_graphic(plain, "plan")
+        other = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        self.assertNotEqual(recorded["hash"], other["hash"])
 
     def test_place_refuses_an_undeclared_variable_before_rendering(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "place", str(self.composition), "--set", "colour=#fff")
