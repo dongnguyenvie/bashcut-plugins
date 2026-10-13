@@ -5,7 +5,7 @@
     "en": "Whisper Captions",
     "vi": "Phụ đề Whisper"
   },
-  "version": "0.0.7",
+  "version": "0.0.8",
   "apiVersion": 7,
   "minApiVersion": 3,
   "entrypoint": "bin/provider",
