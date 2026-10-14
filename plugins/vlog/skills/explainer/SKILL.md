@@ -109,6 +109,7 @@ user see the structure.
   `"$P/bin/osm-map" --dir <project>/graphics/area --points "project;landmark;…" --legs star --amenities
   "school,hospital,mall,park" --radius 1000 [--places "…"]`. Every minute, km, count and "nearest" on screen is
   from its output, never counted or measured by hand; landmarks within ~6 km (a farther one gets its own `map-route`).
+  A kind in its `none` list is left off the legend; never say or show it as "0".
 - **4 Price and CTA**: `cost-table` or `stat-counter` with the price's source and date, then the CTA, 4–6 s.
 
 Ranges: hook 1–3 s on the price or a count ("4 trường trong 1 km"); 0–2 cuts a minute; `maxStillSeconds` as above.

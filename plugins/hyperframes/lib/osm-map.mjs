@@ -466,6 +466,9 @@ async function main() {
         centre: { lat: first.lat, lon: first.lon, label: first.label }, radiusM: options.radius, kinds: nearby.kinds,
         source: "Overpass API (OpenStreetMap data)",
     };
+    // A kind with nothing inside the radius is left out of the amenity-radius legend (showZero puts it back).
+    const none = nearby ? nearby.kinds.filter((k) => !k.count).map((k) => k.kind) : [];
+    if (none.length) Object.assign(around, { none, note: `nothing found within ${options.radius} m: ${none.join(", ")}; left out of the legend` });
     if (!options.dir) {
         const out = found.length ? { places: facts } : {};
         if (around) out.amenities = around;

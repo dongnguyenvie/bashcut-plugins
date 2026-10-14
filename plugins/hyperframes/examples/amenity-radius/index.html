@@ -16,8 +16,8 @@
   - Markers never overlap (amenity-map.js lays them out at the zoomed-in scale): places of one kind that would touch
     merge into one marker with a count badge, different kinds are nudged apart with a leader line to their place.
   - A tag that would leave the frame flips to the left of its pin; two landmarks closer than ~120 px still overlap.
-  - Up to 6 kinds fit the legend (2 columns on 9:16, 3 on 16:9); kinds with no place show 0 (leave them out of
-    --amenities when that is not the point).
+  - Up to 6 kinds fit the legend (2 columns on 9:16, 3 on 16:9). A kind with no place inside the radius is left out
+    of the legend: "0 hospitals" on screen reads as a claim. showZero puts it back when that is the point.
   - legText takes {min} and {km}; a leg without minutes (--route none) shows the km alone.
   - routeAt + legs × (legSeconds + 0.15) and amenitiesAt + 1.6 must end before data-duration − 0.5 (the swing-out).
 -->
@@ -32,6 +32,7 @@
   {"id": "routeAt", "type": "number", "label": "Routes start drawing (s)", "default": 0.6},
   {"id": "legSeconds", "type": "number", "label": "Seconds per route leg", "default": 1.1},
   {"id": "amenitiesAt", "type": "number", "label": "Radius circle and amenities appear (s)", "default": 3.4},
+  {"id": "showZero", "type": "boolean", "label": "Show kinds with no place in the radius as 0 (off: leave them out)", "default": false},
   {"id": "zoomIn", "type": "boolean", "label": "Camera moves onto the circle when the amenities come (off: one view for all)", "default": true},
   {"id": "darkMap", "type": "boolean", "label": "Dark map (off: the normal OpenStreetMap colours)", "default": true},
   {"id": "accent", "type": "color", "label": "Route and circle colour", "default": "#C6FF3D"},
@@ -148,7 +149,7 @@
       Object.assign(head.style, portrait
         ? { left: px(72), right: px(72), top: px(160), fontSize: px(88) }
         : { left: px(72), width: px(720), top: px(110), fontSize: px(76) });
-      const kinds = near.kinds.slice(0, 6);
+      const kinds = near.kinds.filter((k) => k.count > 0 || v.showZero === true).slice(0, 6);
       const legend = document.getElementById("legend");
       const columns = portrait ? 2 : Math.min(2, Math.max(1, kinds.length));
       const chipH = 116;
