@@ -206,6 +206,43 @@
       "hooks": []
     },
     {
+      "id": "bashcut.image-gen",
+      "versions": [
+        {
+          "version": "0.0.1",
+          "apiVersion": 4,
+          "minApiVersion": 4,
+          "minAppVersion": "0.0.23",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/image-gen-v0.0.1/bashcut.image-gen-0.0.1.zip",
+          "sha256": "472ac7dafaddd79d655f6081c5601bd6537128d5cd94ac4a1961f576c30e4f8a",
+          "signature": "ed25519:T5mgn2apIQeErn7K/koNkKIpbQlH4BhbUTm3y1wluATJSMZzhBEiuhesKxnXVc4GP+vdVlk6i/2y+/hS0CxsCQ==",
+          "size": 109984,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-14"
+        }
+      ],
+      "name": {
+        "en": "Image Generation",
+        "vi": "Tạo ảnh"
+      },
+      "summary": {
+        "en": "AI illustrations for your edit with your own Gemini or OpenAI key: every scene of a video in one batch, one locked style and the same character from your reference pictures, labelled as AI-generated. Provides image.generate for image generate and brand kit mascot poses.",
+        "vi": "Ảnh minh hoạ AI cho bản dựng bằng khoá Gemini hoặc OpenAI của bạn: mọi cảnh của video trong một lượt, một phong cách cố định và cùng một nhân vật theo ảnh tham chiếu, có nhãn ảnh tạo bằng AI. Cung cấp image.generate cho image generate và tư thế linh vật của bộ nhận diện."
+      },
+      "publisher": "bashcut",
+      "category": "utilities",
+      "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/image-gen",
+      "capabilities": [
+        "image.generate"
+      ],
+      "actions": [],
+      "hooks": []
+    },
+    {
       "id": "bashcut.silence-markers",
       "versions": [
         {
