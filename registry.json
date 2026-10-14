@@ -186,6 +186,22 @@
           "size": 226395,
           "downloadBytes": 400000000,
           "releasedAt": "2026-10-13"
+        },
+        {
+          "version": "0.0.3",
+          "apiVersion": 8,
+          "minApiVersion": 7,
+          "minAppVersion": "0.0.23",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/hyperframes-v0.0.3/bashcut.hyperframes-0.0.3.zip",
+          "sha256": "73982ea6376a3e53bdd86ae6f4b118d241f15dec2c2517c63019f1034237a655",
+          "signature": "ed25519:tW0HvHpO91C72VF/+DsElJ7dUUsVIEgabE/oipvKYd+iObw/mOkkd/gxLwzdfWZ7E4bpgwMBCxty97CkeS7ODg==",
+          "size": 304943,
+          "downloadBytes": 400000000,
+          "releasedAt": "2026-10-14"
         }
       ],
       "name": {
