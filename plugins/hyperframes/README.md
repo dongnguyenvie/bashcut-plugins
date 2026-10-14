@@ -19,6 +19,7 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   length changed, which the result reports). Both fill the standard variables (`accent`, `background`, `text`,
   `secondary`, `headingFont`, `bodyFont`, `disclosure`) from the project's `brand`, explicit values winning, so a brand
   change restyles placed graphics with `rerender --all --brand`. Uses `$BASHCUT_CLI`, else `bashcut` on PATH.
+  A composition that declares `mascot` gets the brand's mascot pose (`--set pose=thinking`; five examples have one).
 - **`bin/hf`**: the pinned HyperFrames CLI with telemetry off and the plugin's own Chrome: `catalog`, `add`, `lint`,
   `check`, `snapshot` (frames to look at, optionally against a reference video), `docs`.
 - **`bin/osm-map`**: an OpenStreetMap map and a route for a composition: tiles (cached in the plugin cache folder)

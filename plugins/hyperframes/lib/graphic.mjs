@@ -52,6 +52,7 @@
 // declare is refused. Brand: the project's `brand` (bashcut project get) fills the standard ids the composition
 // declares — accent, background, text, secondary (palette), headingFont, bodyFont (fonts), disclosure — and
 // explicit values win. A brand font in the project's fonts folder is copied into the composition's fonts/ folder.
+// A declared `logo` / `mascot` gets the brand's logo / mascot pose copied in; `--set pose=thinking` picks the pose.
 // Uses $BASHCUT_CLI, else `bashcut` on PATH.
 import { spawnSync } from "node:child_process";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
@@ -69,6 +70,9 @@ const BRAND_MAP = {
     disclosure: ["disclosure"],
 };
 export const BRAND_IDS = Object.keys(BRAND_MAP);
+// What the brand fills besides BRAND_IDS: its logo, its mascot and the mascot's pose (`mascotPose` is the older name).
+const BRAND_SLOTS = ["logo", "mascot", "pose", "mascotPose"];
+const POSE_IDS = ["pose", "mascotPose"];
 const FLAGS = new Set(["no-brand", "brand", "keep-length", "dry-run", "all", "force", "no-apply", "steps-from-voice"]);
 const LISTS = new Set(["set", "unset"]);
 const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "frame", "name", "fps", "codec", "only", "steps-from"]);
@@ -202,6 +206,8 @@ export function explicitVariables(declared, sets = [], variables = {}, warnings 
     const known = () => Object.keys(types).join(", ") || "none";
     const out = {};
     const put = (id, value, fromText) => {
+        // `pose` and `mascotPose` are one variable: either name reaches a composition that declares the other.
+        if (!types[id] && POSE_IDS.includes(id)) id = POSE_IDS.find((p) => types[p]) ?? id;
         const type = types[id];
         if (!type && warnings && BRAND_IDS.includes(id)) {
             warnings.push(`the composition declares no ${id}; that brand value is left out`);
@@ -547,26 +553,36 @@ async function resolveLogo(variables, brand, declared, dir, warnings) {
     return true;
 }
 
-/** The mascot pose a composition asks for: its `mascotPose` (given or declared), else "default", else the first. */
+/** The pose given with --set pose=… (or the older mascotPose), else undefined. */
+function askedPose(variables) {
+    return variables.pose ?? variables.mascotPose;
+}
+
+/** The mascot pose a composition asks for: its `pose` (given or declared), else "default", else the first. */
 export function mascotPose(poses, declared, variables) {
     const names = Object.keys(poses ?? {}).sort();
     if (names.length === 0) return null;
-    const asked = variables.mascotPose ?? declared.find((d) => d.id === "mascotPose")?.default;
+    const asked = askedPose(variables) ?? declared.find((d) => POSE_IDS.includes(d.id))?.default;
     if (asked && names.includes(asked)) return asked;
     return names.includes("default") ? "default" : names[0];
 }
 
 /**
- * Brand mascot: when the composition declares `mascot` (type image), the kit's pose sticker named by `mascotPose`
- * (else "default", else the first) is copied next to it as brand-mascot-<pose>.<ext>.
+ * Brand mascot: when the composition declares `mascot` (type image), the kit's pose sticker named by `pose`
+ * (else "default", else the first) is copied next to it as brand-mascot-<pose>.<ext>. Without poses in the brand the
+ * slot stays empty and the composition hides it.
  */
 async function resolveMascot(variables, brand, declared, dir, warnings) {
     if (!declared.some((d) => d.id === "mascot") || variables.mascot) return false;
     const poses = brand?.mascot;
     const pose = mascotPose(poses, declared, variables);
-    if (!pose) return false;
-    if (variables.mascotPose && variables.mascotPose !== pose) {
-        warnings.push(`the brand has no mascot pose ${variables.mascotPose} (it has: ${Object.keys(poses).sort().join(", ")}); ${pose} is used`);
+    const asked = askedPose(variables);
+    if (!pose) {
+        if (asked) warnings.push(`the brand has no mascot poses, so pose ${asked} shows nothing (add one: bashcut library brand-pose)`);
+        return false;
+    }
+    if (asked && asked !== pose) {
+        warnings.push(`the brand has no mascot pose ${asked} (it has: ${Object.keys(poses).sort().join(", ")}); ${pose} is used`);
     }
     let source;
     try {
@@ -771,6 +787,7 @@ export async function rerender(target, options) {
         if (unknown.length && !options.all) throw new UsageError(`the composition declares no variable ${unknown.join(", ")}`);
         // With --all, a change applies to the graphics that declare it.
         const ids = new Set(declared.map((d) => d.id));
+        if (POSE_IDS.some((id) => ids.has(id))) POSE_IDS.forEach((id) => ids.add(id));
         const sets = options.all ? options.set.filter((pair) => ids.has(pair.split("=")[0])) : options.set;
         const given = options.all && options.variables
             ? Object.fromEntries(Object.entries(options.variables).filter(([key]) => ids.has(key))) : options.variables;
@@ -829,17 +846,20 @@ export async function examples(name) {
         const html = readFileSync(join(root, n, "index.html"), "utf8");
         const about = (/<!--([\s\S]*?)-->/.exec(html)?.[1] ?? "").replace(/\s+/g, " ").trim();
         const { declared, duration } = readComposition(join(root, n));
-        const own = declared.filter((d) => !BRAND_IDS.includes(d.id) && d.id !== "logo" && d.id !== "mascot");
+        const own = declared.filter((d) => !BRAND_IDS.includes(d.id) && !BRAND_SLOTS.includes(d.id));
         if (!name) {
             const first = /^.*?[.!?](?=\s|$)/.exec(about)?.[0] ?? about;
-            return { name: n, about: first, seconds: duration, variables: own.map((d) => `${d.id}:${d.type}`).join(" ") };
+            const brief = { name: n, about: first, seconds: duration, variables: own.map((d) => `${d.id}:${d.type}`).join(" ") };
+            // A mascot slot is filled from the brand (pose by --set pose=…), so it is not one of the variables.
+            if (declared.some((d) => d.id === "mascot")) brief.mascot = true;
+            return brief;
         }
         const row = { name: n, about, seconds: duration, folder: join(root, n) };
         row.variables = own.map((d) => {
             const shown = typeof d.default === "string" && d.default.length > 160 ? `${d.default.slice(0, 160)}…` : d.default;
             return { id: d.id, type: d.type, label: d.label, default: shown };
         });
-        row.brand = declared.filter((d) => BRAND_IDS.includes(d.id) || d.id === "logo" || d.id === "mascot").map((d) => d.id);
+        row.brand = declared.filter((d) => BRAND_IDS.includes(d.id) || BRAND_SLOTS.includes(d.id)).map((d) => d.id);
         row.pitfalls = pitfalls(html);
         const learned = await blockLessons(n);
         if (learned) row.lessons = learned;
