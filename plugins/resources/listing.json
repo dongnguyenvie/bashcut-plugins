@@ -1,0 +1,19 @@
+{
+  "name": {
+    "en": "Online Resources",
+    "vi": "Tài nguyên trực tuyến"
+  },
+  "summary": {
+    "en": "Search and download stock photos and video, music, sound effects, illustrations, emoji, logos, fonts and LUTs from open sources into your library, in one sheet. The same fetch scripts the AI editor uses, so what you download is found by the agent first.",
+    "vi": "Tìm và tải ảnh, video stock, nhạc, hiệu ứng âm thanh, minh hoạ, emoji, logo, phông chữ và LUT từ các nguồn mở vào thư viện, trong một bảng. Dùng chung script tải với AI biên tập, nên những gì bạn tải agent sẽ thấy trước."
+  },
+  "publisher": "bashcut",
+  "category": "utilities",
+  "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/resources",
+  "minAppVersion": "0.0.23",
+  "platforms": [
+    "macos-arm64",
+    "macos-x86_64"
+  ],
+  "downloadBytes": 400000
+}

@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- A number that matters, counted up on a dark glass card with a line that draws as it climbs. Transparent,
-     1080×1920, 3.5 s. Raw material: change the card, the chart, the easing and the timing for the video. -->
+     1080×1920, 3.5 s. The brand's mascot, when the project has one, peeks over the card's top-right corner. Raw material: change the card, the chart, the easing and the timing for the video. -->
 <!-- Pitfalls:
   - countSeconds under ~0.8 s blurs the digits into noise; 1.2–2 s reads, longer than the sentence drags.
   - Numbers past seven digits overflow the 860 px card at 84 px; shorten them (1.2M) instead of shrinking the type.
@@ -8,6 +8,8 @@
   - Over bright footage the glass card needs the dark background colour; a light card loses the white value.
   - Decimals follow from and to (11.2 counts with one decimal) unless decimals is set; locale vi-VN writes 11,2 and
     528,5; unit goes after the number as written (" ha", " km", "%").
+  - The mascot stands 210 px above the card's top edge (x 750–960): keep top over ~260 so it stays in frame, and
+    keep other graphics out of that corner.
 -->
 <html lang="en" data-composition-variables='[
   {"id": "label", "type": "string", "label": "Label", "default": "Average Views"},
@@ -24,7 +26,9 @@
   {"id": "background", "type": "color", "label": "Card colour", "default": "#16181E"},
   {"id": "text", "type": "color", "label": "Text colour", "default": "#FFFFFF"},
   {"id": "headingFont", "type": "font", "label": "Heading font (empty keeps the design font)", "default": ""},
-  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""}
+  {"id": "bodyFont", "type": "font", "label": "Body font (empty keeps the design font)", "default": ""},
+  {"id": "mascot", "type": "image", "label": "Mascot picture (bin/graphic copies the brand pose; empty hides it)", "default": ""},
+  {"id": "pose", "type": "string", "label": "Brand mascot pose (--set pose=thinking)", "default": "default"}
 ]'>
   <head>
     <meta charset="UTF-8" />
@@ -44,12 +48,16 @@
       #trend { position: absolute; top: 44px; right: 48px; padding: 6px 18px; border-radius: 999px; font-size: 30px;
         font-weight: 700; color: var(--background); }
       svg { position: absolute; left: 48px; bottom: 36px; width: 764px; height: 150px; overflow: visible; }
+      #mascot { position: absolute; right: 10px; bottom: 100%; margin-bottom: -20px; width: 230px; height: 230px;
+        object-fit: contain; object-position: 50% 100%; transform-origin: 50% 100%; display: none;
+        filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35)); }
       #line { fill: none; stroke-width: 9; stroke-linecap: round; filter: drop-shadow(0 0 10px currentColor); }
     </style>
   </head>
   <body>
     <div id="root" data-composition-id="main" data-start="0" data-duration="3.5" data-width="1080" data-height="1920">
       <div id="card">
+        <img id="mascot" alt="" />
         <div id="label"></div><div id="value"></div><div id="trend"></div>
         <svg viewBox="0 0 764 150"><path id="line" d="M0 120 C 90 120, 110 40, 190 60 S 300 140, 380 90 S 520 10, 600 50 S 700 40, 764 20" /></svg>
       </div>
@@ -99,6 +107,13 @@
       const END = Number(document.querySelector('[data-composition-id="main"]').dataset.duration);
       const tl = gsap.timeline({ paused: true });
       tl.fromTo(card, { opacity: 0, y: 60, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, ease: "power3.out" }, 0);
+      // The brand's mascot (a pose bin/graphic copied in) hops up onto the card's corner; it leaves with the card.
+      const mascot = document.getElementById("mascot");
+      if (v.mascot) {
+        mascot.src = v.mascot;
+        mascot.style.display = "block";
+        tl.fromTo(mascot, { scale: 0, y: 40, rotation: 8 }, { scale: 1, y: 0, rotation: 0, duration: 0.4, ease: "back.out(2.2)" }, 0.3);
+      }
       tl.fromTo(line, { strokeDashoffset: length }, { strokeDashoffset: 0, duration: v.countSeconds, ease: "power2.out" }, START);
       // Text cannot be tweened: one tl.set per frame keeps every frame a pure function of time.
       const steps = Math.round(v.countSeconds * 30);

@@ -1,0 +1,420 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.resources",
+  "name": {
+    "en": "Online Resources",
+    "vi": "Tài nguyên trực tuyến"
+  },
+  "version": "0.0.1",
+  "apiVersion": 8,
+  "minApiVersion": 8,
+  "transport": "session",
+  "entrypoint": "bin/provider",
+  "category": "utilities",
+  "author": {
+    "name": "BashCut"
+  },
+  "features": [
+    "views.grid"
+  ],
+  "capabilities": [],
+  "dependencies": [
+    {
+      "id": "python",
+      "name": "Python 3.12 with Pillow, NumPy, fontTools, resvg and rlottie",
+      "kind": "python",
+      "probe": {
+        "executable": "bin/check",
+        "arguments": []
+      },
+      "install": {
+        "summary": "Download uv (when the Mac has none) and a private Python 3.12, then install Pillow, NumPy, fontTools, resvg and rlottie for the fetch scripts (about 65 MB). Your Mac's Python is not used.",
+        "command": {
+          "executable": "bin/setup",
+          "arguments": []
+        }
+      },
+      "estimatedBytes": 90000000
+    }
+  ],
+  "options": [
+    {
+      "id": "pexelsKey",
+      "title": {
+        "en": "Pexels API key",
+        "vi": "API key Pexels"
+      },
+      "help": {
+        "en": "Free at pexels.com/api; photos and video",
+        "vi": "Miễn phí tại pexels.com/api; ảnh và video"
+      },
+      "type": "string",
+      "secret": true,
+      "scope": "user"
+    },
+    {
+      "id": "pixabayKey",
+      "title": {
+        "en": "Pixabay API key",
+        "vi": "API key Pixabay"
+      },
+      "help": {
+        "en": "Free at pixabay.com/api/docs; photos and video",
+        "vi": "Miễn phí tại pixabay.com/api/docs; ảnh và video"
+      },
+      "type": "string",
+      "secret": true,
+      "scope": "user"
+    },
+    {
+      "id": "freesoundKey",
+      "title": {
+        "en": "Freesound API key",
+        "vi": "API key Freesound"
+      },
+      "help": {
+        "en": "Free at freesound.org/apiv2/apply; sound effects",
+        "vi": "Miễn phí tại freesound.org/apiv2/apply; hiệu ứng âm thanh"
+      },
+      "type": "string",
+      "secret": true,
+      "scope": "user"
+    }
+  ],
+  "contributes": {
+    "container": {
+      "icon": "globe",
+      "title": {
+        "en": "Online",
+        "vi": "Trực tuyến"
+      }
+    },
+    "views": [
+      {
+        "id": "browse",
+        "title": {
+          "en": "Online resources",
+          "vi": "Tài nguyên trực tuyến"
+        },
+        "location": "sheet",
+        "icon": "globe"
+      }
+    ],
+    "actions": [
+      {
+        "id": "bashcut.resources.open",
+        "title": {
+          "en": "Online resources…",
+          "vi": "Tài nguyên trực tuyến…"
+        },
+        "icon": "globe",
+        "placements": [
+          "menu.plugins",
+          "panel.media",
+          "panel.audio",
+          "panel.stickers",
+          "panel.text",
+          "panel.filters"
+        ]
+      },
+      {
+        "id": "bashcut.resources.search",
+        "title": {
+          "en": "Search online resources…",
+          "vi": "Tìm tài nguyên trực tuyến…"
+        },
+        "icon": "magnifyingglass",
+        "placements": [
+          "menu.plugins"
+        ],
+        "params": [
+          {
+            "id": "kind",
+            "title": {
+              "en": "Kind",
+              "vi": "Loại"
+            },
+            "type": "enum",
+            "choices": [
+              "photo",
+              "video",
+              "music",
+              "sfx",
+              "illustration",
+              "emoji",
+              "logo",
+              "font",
+              "lut",
+              "lottie"
+            ],
+            "default": "photo",
+            "choiceLabels": {
+              "photo": {
+                "en": "Photos",
+                "vi": "Ảnh"
+              },
+              "video": {
+                "en": "Videos",
+                "vi": "Video"
+              },
+              "music": {
+                "en": "Music",
+                "vi": "Nhạc"
+              },
+              "sfx": {
+                "en": "Sound effects",
+                "vi": "Hiệu ứng âm thanh"
+              },
+              "illustration": {
+                "en": "Illustrations",
+                "vi": "Minh hoạ"
+              },
+              "emoji": {
+                "en": "Emoji",
+                "vi": "Emoji"
+              },
+              "logo": {
+                "en": "Logos",
+                "vi": "Logo"
+              },
+              "font": {
+                "en": "Fonts",
+                "vi": "Phông chữ"
+              },
+              "lut": {
+                "en": "LUTs",
+                "vi": "LUT"
+              },
+              "lottie": {
+                "en": "Lottie",
+                "vi": "Lottie"
+              }
+            }
+          },
+          {
+            "id": "query",
+            "title": {
+              "en": "Search for",
+              "vi": "Tìm"
+            },
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "source",
+            "title": {
+              "en": "Source (auto: keyless unless a key is set)",
+              "vi": "Nguồn (auto: không cần key trừ khi đã đặt key)"
+            },
+            "type": "string",
+            "default": "auto"
+          },
+          {
+            "id": "page",
+            "title": {
+              "en": "Page",
+              "vi": "Trang"
+            },
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9,
+            "default": 1
+          },
+          {
+            "id": "orientation",
+            "title": {
+              "en": "Orientation (photos, videos)",
+              "vi": "Hướng (ảnh, video)"
+            },
+            "type": "enum",
+            "choices": [
+              "any",
+              "portrait",
+              "landscape",
+              "square"
+            ],
+            "default": "any"
+          },
+          {
+            "id": "text",
+            "title": {
+              "en": "Sample text (fonts)",
+              "vi": "Chữ mẫu (phông)"
+            },
+            "type": "string",
+            "default": ""
+          }
+        ]
+      },
+      {
+        "id": "bashcut.resources.download",
+        "title": {
+          "en": "Download online resources…",
+          "vi": "Tải tài nguyên trực tuyến…"
+        },
+        "icon": "arrow.down.to.line",
+        "placements": [
+          "menu.plugins"
+        ],
+        "params": [
+          {
+            "id": "kind",
+            "title": {
+              "en": "Kind",
+              "vi": "Loại"
+            },
+            "type": "enum",
+            "choices": [
+              "photo",
+              "video",
+              "music",
+              "sfx",
+              "illustration",
+              "emoji",
+              "logo",
+              "font",
+              "lut",
+              "lottie"
+            ],
+            "default": "photo",
+            "choiceLabels": {
+              "photo": {
+                "en": "Photos",
+                "vi": "Ảnh"
+              },
+              "video": {
+                "en": "Videos",
+                "vi": "Video"
+              },
+              "music": {
+                "en": "Music",
+                "vi": "Nhạc"
+              },
+              "sfx": {
+                "en": "Sound effects",
+                "vi": "Hiệu ứng âm thanh"
+              },
+              "illustration": {
+                "en": "Illustrations",
+                "vi": "Minh hoạ"
+              },
+              "emoji": {
+                "en": "Emoji",
+                "vi": "Emoji"
+              },
+              "logo": {
+                "en": "Logos",
+                "vi": "Logo"
+              },
+              "font": {
+                "en": "Fonts",
+                "vi": "Phông chữ"
+              },
+              "lut": {
+                "en": "LUTs",
+                "vi": "LUT"
+              },
+              "lottie": {
+                "en": "Lottie",
+                "vi": "Lottie"
+              }
+            }
+          },
+          {
+            "id": "query",
+            "title": {
+              "en": "Search for",
+              "vi": "Tìm"
+            },
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "ids",
+            "title": {
+              "en": "Result ids (comma separated)",
+              "vi": "Id kết quả (cách nhau bởi dấu phẩy)"
+            },
+            "type": "string",
+            "default": ""
+          },
+          {
+            "id": "source",
+            "title": {
+              "en": "Source (auto: keyless unless a key is set)",
+              "vi": "Nguồn (auto: không cần key trừ khi đã đặt key)"
+            },
+            "type": "string",
+            "default": "auto"
+          },
+          {
+            "id": "scope",
+            "title": {
+              "en": "Save to",
+              "vi": "Lưu vào"
+            },
+            "type": "enum",
+            "choices": [
+              "project",
+              "user"
+            ],
+            "default": "project",
+            "choiceLabels": {
+              "project": {
+                "en": "This project",
+                "vi": "Project này"
+              },
+              "user": {
+                "en": "My library (this Mac)",
+                "vi": "Thư viện của tôi (máy này)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "bashcut.resources.fetch",
+        "title": {
+          "en": "Run a fetch script…",
+          "vi": "Chạy script tải…"
+        },
+        "icon": "terminal",
+        "placements": [
+          "menu.plugins"
+        ],
+        "params": [
+          {
+            "id": "script",
+            "title": {
+              "en": "Script",
+              "vi": "Script"
+            },
+            "type": "enum",
+            "choices": [
+              "stock",
+              "audio",
+              "luts",
+              "fonts",
+              "font",
+              "illustrations",
+              "emoji",
+              "logos",
+              "facts",
+              "lottie"
+            ],
+            "default": "stock"
+          },
+          {
+            "id": "args",
+            "title": {
+              "en": "Flags, as on the command line",
+              "vi": "Cờ, như trên dòng lệnh"
+            },
+            "type": "string",
+            "default": "--help"
+          }
+        ]
+      }
+    ]
+  }
+}

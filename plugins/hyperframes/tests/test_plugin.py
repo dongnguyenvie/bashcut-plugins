@@ -4,7 +4,9 @@
 
 Build first when the plugin has a build.sh. These tests use only the Python standard library and are not shipped.
 """
+import hashlib
 import json
+import math
 import os
 import pathlib
 import re
@@ -233,6 +235,164 @@ class OsmMapTests(unittest.TestCase):
         out = self.run_map("--places", "")
         self.assertIn("--dir", out.stderr, "an empty --places is no places")
 
+    def run_module(self, body):
+        """`body` run with osm-map.mjs's exports in scope; returns what it prints as JSON."""
+        script = "import('" + (ROOT / "lib" / "osm-map.mjs").as_uri() + "').then((m) => {" + body + "})"
+        with tempfile.TemporaryDirectory() as folder:
+            node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True,
+                                  env=environment(folder)).stdout.strip()
+            if not node:
+                self.skipTest("Node.js is not installed")
+            out = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, timeout=30,
+                                 env=environment(folder))
+        self.assertEqual(0, out.returncode, out.stderr)
+        return json.loads(out.stdout)
+
+    # Around 21.0655,105.8255: 0.001° of latitude is ~111 m.
+    PLACES = [
+        {"type": "node", "id": 1, "lat": 21.0662, "lon": 105.8255, "tags": {"amenity": "school", "name": "Quang An"}},
+        {"type": "way", "id": 2, "center": {"lat": 21.0663, "lon": 105.8256},
+         "tags": {"amenity": "school", "name": "Quang An"}},
+        {"type": "way", "id": 3, "center": {"lat": 21.0700, "lon": 105.8255}, "tags": {"amenity": "kindergarten"}},
+        {"type": "node", "id": 4, "lat": 21.0800, "lon": 105.8255, "tags": {"amenity": "school", "name": "Far"}},
+        {"type": "way", "id": 5, "center": {"lat": 21.0630, "lon": 105.8255}, "tags": {"leisure": "park"}},
+        {"type": "relation", "id": 6, "center": {"lat": 21.0600, "lon": 105.8255},
+         "tags": {"leisure": "park", "name": "Lakeside"}},
+        {"type": "node", "id": 7, "lat": 21.0656, "lon": 105.8255, "tags": {"amenity": "cafe", "name": "Not asked"}},
+    ]
+
+    def test_one_overpass_query_asks_for_every_kind_around_the_point(self):
+        query = self.run_module("console.log(JSON.stringify(m.overpassQuery(['school', 'park', 'hospital'],"
+                                " {lat: 21.0655, lon: 105.8255}, 1000)));")
+        self.assertEqual(1, query.count("out center"), "one query for all kinds")
+        self.assertIn('nwr["amenity"~"^(school)$"](around:1000,21.06550,105.82550);', query)
+        self.assertIn('nwr["leisure"~"^(park)$"]', query)
+        self.assertIn('nwr["healthcare"~"^(hospital)$"]', query)
+        self.assertTrue(query.startswith("[out:json][timeout:"), query)
+
+    def test_amenities_are_counted_inside_the_radius_and_the_nearest_named(self):
+        result = self.run_module(
+            "const r = m.countAmenities(" + json.dumps(self.PLACES) + ", ['school', 'park', 'hospital'],"
+            " {lat: 21.0655, lon: 105.8255}, 1000); console.log(JSON.stringify(r));")
+        kinds = {k["kind"]: k for k in result["kinds"]}
+        self.assertEqual(1, kinds["school"]["count"], "the same name twice within 300 m is one place; Far is out")
+        self.assertEqual("Quang An", kinds["school"]["nearest"]["name"])
+        self.assertAlmostEqual(0.08, kinds["school"]["nearest"]["km"], delta=0.01)
+        self.assertEqual(2, kinds["park"]["count"], "a way or relation counts by its centre")
+        self.assertEqual("Lakeside", kinds["park"]["nearest"]["name"], "the nearest named one, past an unnamed park")
+        self.assertEqual({"kind": "hospital", "count": 0, "nearest": None}, kinds["hospital"])
+        self.assertEqual(["school", "park", "park"], [marker["kind"] for marker in result["markers"]])
+        self.assertNotIn("Not asked", json.dumps(result), "kinds not asked for are left out")
+
+    def test_amenity_tags_are_strict_and_a_clinic_tagged_hospital_counts_as_clinic(self):
+        tags = {
+            "sos": {"amenity": "hospital", "healthcare": "hospital", "name": "Phòng Khám Y Tế Nha Khoa Quốc Tế SOS"},
+            "general": {"amenity": "hospital", "name": "Bệnh viện Đa khoa Hồng Ngọc"},
+            "dentist": {"amenity": "hospital", "healthcare": "dentist", "name": "Smile"},
+            "dental speciality": {"healthcare": "hospital", "healthcare:speciality": "orthodontics;dentistry"},
+            "pharmacy": {"amenity": "pharmacy", "healthcare": "pharmacy"},
+            "school": {"amenity": "school", "name": "Trường THPT chuyên Ngoại ngữ"},
+            "language centre": {"amenity": "school", "name": "Trung tâm Anh ngữ ILA"},
+            "driving": {"amenity": "school", "name": "Trường dạy lái xe Hà Nội"},
+            "mall": {"shop": "department_store"},
+            "supermarket": {"shop": "supermarket"},
+            "park": {"leisure": "park"},
+            "private park": {"leisure": "park", "access": "private"},
+            "garden": {"leisure": "garden"},
+            "playground": {"leisure": "playground"},
+        }
+        kinds = ["hospital", "clinic", "pharmacy", "school", "language_school", "driving_school", "mall", "supermarket",
+                 "park", "playground"]
+        found = self.run_module("const tags = " + json.dumps(tags) + "; const kinds = " + json.dumps(kinds) + ";"
+                                "console.log(JSON.stringify(Object.fromEntries(Object.entries(tags)"
+                                ".map(([k, t]) => [k, kinds.filter((kind) => m.isKind(t, kind))]))));")
+        self.assertEqual({
+            "sos": ["clinic"], "general": ["hospital"], "dentist": ["clinic"], "dental speciality": ["clinic"],
+            "pharmacy": ["pharmacy"], "school": ["school"], "language centre": ["language_school"],
+            "driving": ["driving_school"], "mall": ["mall"], "supermarket": ["supermarket"], "park": ["park"],
+            "private park": [], "garden": [], "playground": ["playground"],
+        }, found)
+        query = self.run_module("console.log(JSON.stringify(m.overpassQuery(['clinic'], {lat: 21, lon: 105}, 500)));")
+        self.assertIn('nwr["amenity"~"^(hospital)$"]', query, "clinic also asks for places tagged hospital")
+        query = self.run_module("console.log(JSON.stringify(m.overpassQuery(['hospital'], {lat: 21, lon: 105}, 500)));")
+        self.assertNotIn("clinic", query)
+
+    def test_a_dental_clinic_tagged_hospital_is_not_counted_as_a_hospital(self):
+        places = [{"type": "way", "id": 9, "center": {"lat": 21.0680, "lon": 105.8255},
+                   "tags": {"amenity": "hospital", "healthcare": "hospital", "name": "Nha Khoa SOS"}}]
+        result = self.run_module("const r = m.countAmenities(" + json.dumps(places) + ", ['hospital', 'clinic'],"
+                                 " {lat: 21.0655, lon: 105.8255}, 1000); console.log(JSON.stringify(r));")
+        self.assertEqual([("hospital", 0), ("clinic", 1)], [(k["kind"], k["count"]) for k in result["kinds"]])
+        self.assertEqual(["clinic"], [marker["kind"] for marker in result["markers"]])
+
+    def test_amenity_markers_land_on_canvas_pixels(self):
+        result = self.run_module(
+            "const centre = {lat: 21.0655, lon: 105.8255, label: 'Home'};"
+            "const local = ([x, y]) => [x - 1000, y - 2000];"
+            "const r = m.placeAmenities([{lat: 21.0655, lon: 105.8355, kind: 'park', name: 'East', km: 1.04}],"
+            " centre, 1000, 15, local);"
+            "console.log(JSON.stringify(r));")
+        scale = 256 * 2 ** 15
+        x = (105.8255 + 180) / 360 * scale - 1000
+        mpp = 2 * math.pi * 6378137 * math.cos(math.radians(21.0655)) / scale
+        self.assertAlmostEqual(x, result["centre"]["x"], places=3)
+        self.assertEqual("Home", result["centre"]["label"])
+        self.assertAlmostEqual(1000 / mpp, result["radius"], delta=0.1)
+        marker = result["markers"][0]
+        self.assertAlmostEqual(0.01 / 360 * scale, marker["x"] - result["centre"]["x"], places=3)
+        self.assertAlmostEqual(result["centre"]["y"], marker["y"], places=6)
+        self.assertEqual({"kind": "park", "name": "East", "km": 1.04}, {k: marker[k] for k in ("kind", "name", "km")})
+
+    def test_a_route_line_is_cut_into_one_line_per_leg(self):
+        legs = self.run_module(
+            "console.log(JSON.stringify(m.splitLine([[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]],"
+            " [{lat: 0, lon: 0}, {lat: 0.1, lon: 2.1}, {lat: 0, lon: 4}])));")
+        self.assertEqual([[[0, 0], [0, 1], [0, 2]], [[0, 2], [0, 3], [0, 4]]], legs)
+
+    def test_rejects_unknown_amenities_a_bad_radius_and_a_bad_leg_shape(self):
+        out = self.run_map("--points", "21.03,105.83,A", "--amenities", "school,spaceport")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("spaceport", out.stderr)
+        self.assertIn("hospital", out.stderr, "the error lists the kinds there are")
+        out = self.run_map("--points", "21.03,105.83,A", "--amenities", "school", "--radius", "20000")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("--radius", out.stderr)
+        with tempfile.TemporaryDirectory() as target:
+            out = self.run_map("--dir", target, "--points", "21.03,105.83,A;21.04,105.84,B", "--legs", "ring")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("--legs", out.stderr)
+
+    def test_amenities_print_counts_from_the_cache_without_the_network(self):
+        query = self.run_module("console.log(JSON.stringify(m.overpassQuery(['school', 'park'],"
+                                " {lat: 21.0655, lon: 105.8255}, 1000)));")
+        with tempfile.TemporaryDirectory() as folder:
+            env = environment(folder)
+            cached = pathlib.Path(env["BASHCUT_PLUGIN_CACHE"], "osm-amenities")
+            cached.mkdir(parents=True)
+            name = hashlib.sha256(query.encode()).hexdigest()[:20] + ".json"
+            (cached / name).write_text(json.dumps(self.PLACES))
+            env["OSM_OVERPASS_URL"] = "http://127.0.0.1:9/api/interpreter"  # nothing listens: a cache miss would fail
+            out = subprocess.run([str(ROOT / "bin" / "osm-map"), "--points", "21.0655,105.8255,Home",
+                                  "--amenities", "school,park", "--radius", "1000"],
+                                 capture_output=True, text=True, env=env, timeout=30)
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual([("school", 1), ("park", 2)],
+                         [(k["kind"], k["count"]) for k in result["amenities"]["kinds"]])
+        self.assertEqual("Home", result["amenities"]["centre"]["label"])
+        self.assertIn("OpenStreetMap", result["attribution"])
+
+    def test_amenity_radius_reads_the_data_osm_map_writes(self):
+        html = (ROOT / "examples" / "amenity-radius" / "index.html").read_text()
+        self.assertIn('<script src="map-data.js"></script>', html)
+        self.assertIn("data.attribution", html)
+        self.assertIn('data-fit="canvas"', html)
+        stand_in = (ROOT / "examples" / "amenity-radius" / "map-data.js").read_text()
+        self.assertIn("© OpenStreetMap contributors", stand_in)
+        data = json.loads(stand_in[stand_in.index("{"):stand_in.rindex("}") + 1])
+        self.assertTrue(data["amenities"]["markers"] and data["amenities"]["radius"] > 0)
+        self.assertTrue(all(len(leg["line"]) > 1 for leg in data["legs"]))
+
     def test_map_route_reads_the_data_osm_map_writes(self):
         html = (ROOT / "examples" / "map-route" / "index.html").read_text()
         self.assertIn('<script src="map-data.js"></script>', html)
@@ -270,6 +430,25 @@ class RenderParamTests(unittest.TestCase):
         response = self.render({"composition": str(composition)})  # the test data folder is empty
         self.assertEqual(response["error"]["code"], "dependency_missing")
 
+    def test_lottie_web_is_copied_next_to_a_page_that_loads_it(self):
+        data, cache = pathlib.Path(self.folder, "data"), pathlib.Path(self.folder, "cache")
+        modules = data / "runtime" / "node_modules"
+        for path, text in [(modules / "hyperframes/bin/hyperframes.mjs", "process.exit(1);\n"), (cache / "chrome/path", "/no/chrome"),
+                           (modules / "gsap/dist/gsap.min.js", "// gsap\n")]:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+        composition = pathlib.Path(self.folder, "accent")
+        shutil.copytree(ROOT / "examples" / "lottie", composition)
+        response = self.render({"composition": str(composition)})
+        self.assertEqual("dependency_missing", response["error"]["code"])
+        self.assertIn("lottie-web", response["error"]["message"])
+        player = modules / "lottie-web/build/player/lottie_svg.min.js"
+        player.parent.mkdir(parents=True)
+        player.write_text("// lottie\n")
+        response = self.render({"composition": str(composition)})
+        self.assertEqual("render_failed", response["error"]["code"])  # the fake CLI cannot render
+        self.assertEqual("// lottie\n", (composition / "lottie.min.js").read_text())
+
 
 FAKE_CLI = r"""#!/usr/bin/env python3
 import json, os, sys
@@ -293,6 +472,8 @@ elif command == "plugins invoke":
     if os.path.exists(page):
         found = re.search(r'data-composition-id="main"[^>]*data-duration="([\d.]+)"', open(page).read())
         entry["pageDuration"] = float(found.group(1)) if found else None
+        sized = re.search(r'data-composition-id="main"[^>]*data-width="(\d+)" data-height="(\d+)"', open(page).read())
+        entry["pageSize"] = [int(sized.group(1)), int(sized.group(2))] if sized else None
         framed = re.search(r'\(function build\(frame\)[\s\S]*?\}\)\((\{.*?\})\);</script>', open(page).read())
         entry["pageFrame"] = json.loads(framed.group(1)) if framed else None
     out = {"job": "job-1", "state": "running"}
@@ -320,7 +501,8 @@ elif command == "plan apply":
     entry["patch"] = json.loads(option("--patch")) if option("--patch") else None
     out = {"ok": True, "rev": 11, "clips": 0}
 elif command == "library get":
-    out = {"id": args[2], "kind": "sticker", "fileURL": "file://" + state["logo"]} if state.get("logo") else {"id": args[2]}
+    file = state.get("files", {}).get(args[2]) or state.get("logo")
+    out = {"id": args[2], "kind": "sticker", "fileURL": "file://" + file} if file else {"id": args[2]}
 else:
     out = {}
 state.setdefault("calls", []).append(entry)
@@ -533,7 +715,7 @@ class GraphicScriptTests(unittest.TestCase):
     def test_examples_list_their_own_variables_apart_from_the_brand(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "examples")
         self.assertEqual(0, out.returncode, out.stderr)
-        self.assertLess(len(out.stdout), 9000, "the list is short: one line per example")
+        self.assertLess(len(out.stdout), 9600, "the list is short: one line per example")
         rows = {row["name"]: row for row in json.loads(out.stdout)}
         self.assertEqual(sorted(p.name for p in (ROOT / "examples").iterdir() if (p / "index.html").exists()), sorted(rows))
         self.assertIn("items:string", rows["bar-chart"]["variables"].split())
@@ -544,6 +726,12 @@ class GraphicScriptTests(unittest.TestCase):
         row = json.loads(out.stdout)[0]
         self.assertIn("items", [v["id"] for v in row["variables"]])
         self.assertIn("accent", row["brand"])
+        self.assertTrue(rows["stat-counter"]["mascot"])
+        self.assertNotIn("pose", rows["stat-counter"]["variables"])
+        out, _ = self.run_graphic({"projects": [self.project()], "fail": "knowledge lessons"}, "examples", "paper-card")
+        row = json.loads(out.stdout)[0]
+        self.assertEqual({"mascot", "pose"}, {"mascot", "pose"} & set(row["brand"]))
+        self.assertNotIn("pose", [v["id"] for v in row["variables"]])
         out, _ = self.run_graphic({"projects": [self.project()]}, "examples", "nope")
         self.assertEqual(2, out.returncode)
 
@@ -736,6 +924,69 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertTrue((composition / "brand-mascot-wave.png").exists())
         self.assertIn(["library", "get", "sticker-wave"], [c["args"] for c in calls])
 
+    def test_set_pose_picks_the_brand_pose_and_a_missing_one_lists_the_poses(self):
+        composition = self.folder / "graphics" / "stat"
+        shutil.copytree(ROOT / "examples" / "stat-counter", composition)
+        files = {}
+        for pose in ("default", "thinking", "pointing"):
+            files[f"sticker-{pose}"] = str(self.folder / f"{pose}.png")
+            pathlib.Path(files[f"sticker-{pose}"]).write_bytes(pose.encode())
+        brand = {**self.brand, "mascot": {p: f"sticker-{p}" for p in ("default", "thinking", "pointing")}}
+        state = {"projects": [self.project(brand=brand)], "files": files}
+        out, _ = self.run_graphic(state, "place", str(composition), "--set", "pose=thinking", "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual("brand-mascot-thinking.png", result["variables"]["mascot"])
+        self.assertEqual(b"thinking", (composition / "brand-mascot-thinking.png").read_bytes())
+        self.assertNotIn("warnings", result)
+        out, _ = self.run_graphic(state, "place", str(composition), "--set", "pose=waving", "--dry-run")
+        result = json.loads(out.stdout)
+        self.assertEqual("brand-mascot-default.png", result["variables"]["mascot"])
+        self.assertIn("default, pointing, thinking", result["warnings"][0])
+        # A brand without poses leaves the slot empty (the page hides it) and says why only when a pose was asked.
+        out, _ = self.run_graphic({"projects": [self.project(brand=self.brand)]}, "place", str(composition), "--dry-run")
+        result = json.loads(out.stdout)
+        self.assertNotIn("mascot", result["variables"])
+        self.assertNotIn("warnings", result)
+        out, _ = self.run_graphic({"projects": [self.project(brand=self.brand)]}, "place", str(composition), "--set", "pose=thinking", "--dry-run")
+        self.assertIn("no mascot poses", json.loads(out.stdout)["warnings"][0])
+
+    def test_rerender_all_with_a_new_brand_redraws_every_mascot_in_one_apply(self):
+        old, new = self.folder / "old.png", self.folder / "new.png"
+        old.write_bytes(b"old")
+        new.write_bytes(b"new")
+        media, items = [], []
+        for index, (example, pose) in enumerate((("stat-counter", "thinking"), ("checklist-card", None), ("lower-third", "pointing"))):
+            composition = self.folder / "graphics" / example
+            shutil.copytree(ROOT / "examples" / example, composition)
+            (composition / "brand-mascot-default.png").write_bytes(b"old")  # what the first place copied in
+            recorded = self.recorded_media({"pose": pose} if pose else {})
+            recorded["id"] = f"media-{index}"
+            recorded["data"]["graphics"]["composition"] = str(composition)
+            media.append(recorded)
+            items.append({"id": f"item-{index}", "media": f"media-{index}", "at": index * 200, "dur": 165, "in": 0})
+        brand = {**self.brand, "mascot": {"default": "new-default", "thinking": "new-thinking"}}
+        state = {"projects": [self.project(media=media, items=items, brand=brand)],
+                 "files": {"new-default": str(new), "new-thinking": str(new)}}
+        out, calls = self.run_graphic(state, "rerender", "--all", "--brand", "--set", "pose=default")
+        self.assertEqual(0, out.returncode, out.stderr)
+        renders = [c["params"]["variables"] for c in calls if c["args"][:2] == ["plugins", "invoke"]]
+        # --set pose=default reaches every graphic with a mascot; each one gets the new brand's file.
+        self.assertEqual(["brand-mascot-default.png"] * 3, [r["mascot"] for r in renders])
+        for example in ("stat-counter", "checklist-card", "lower-third"):
+            self.assertEqual(b"new", (self.folder / "graphics" / example / "brand-mascot-default.png").read_bytes())
+        applies = [c for c in calls if c["args"][:2] == ["timeline", "apply"]]
+        self.assertEqual(1, len(applies), "one undo step")
+        self.assertEqual(["item-0", "item-1", "item-2"], [op["item"] for op in applies[0]["ops"] if op["op"] == "setSource"])
+        recorded = [op["patch"]["graphics"]["variables"] for op in applies[0]["ops"] if op["op"] == "setMediaData"]
+        self.assertTrue(all("mascot" not in r for r in recorded), "the brand's mascot is not frozen into the inputs")
+        # Without --set, each keeps its recorded pose; one the new brand lacks falls back with the poses listed.
+        out, calls = self.run_graphic(state, "rerender", "--all", "--brand")
+        self.assertEqual(0, out.returncode, out.stderr)
+        renders = [c["params"]["variables"]["mascot"] for c in calls if c["args"][:2] == ["plugins", "invoke"]]
+        self.assertEqual(["brand-mascot-thinking.png", "brand-mascot-default.png", "brand-mascot-default.png"], renders)
+        self.assertTrue(any("pointing" in w and "default, thinking" in w for w in json.loads(out.stdout)["warnings"]))
+
     def test_place_without_brand(self):
         state = {"projects": [self.project(brand=self.brand)]}
         out, calls = self.run_graphic(state, "place", str(self.composition), "--no-brand", "--dry-run")
@@ -825,6 +1076,214 @@ class GraphicScriptTests(unittest.TestCase):
         variables = json.loads(out.stdout)["variables"]
         self.assertEqual(("fonts/Brand-Bold.otf", "Avenir Next"), (variables["headingFont"], variables["bodyFont"]))
         self.assertTrue((self.composition / "fonts" / "Brand-Bold.otf").is_file())
+
+    def test_a_file_path_value_is_copied_next_to_the_composition(self):
+        lottie = self.folder / "graphics" / "lottie"
+        shutil.copytree(ROOT / "examples" / "lottie", lottie)
+        pick = self.folder / "project" / "media" / "lottie" / "check-ua-checkmark.json"
+        pick.parent.mkdir(parents=True)
+        pick.write_text('{"fr": 30}')
+        state = {"projects": [self.project()]}
+        out, _ = self.run_graphic(state, "place", str(lottie), "--set", f"file={pick}", "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual("check-ua-checkmark.json", json.loads(out.stdout)["variables"]["file"])
+        self.assertEqual('{"fr": 30}', (lottie / pick.name).read_text())
+        out, _ = self.run_graphic(state, "place", "lottie", "--set", f"file={pick}", "--dry-run")
+        self.assertEqual(str(pick), json.loads(out.stdout)["variables"]["file"])  # a plugin example is left alone
+        self.assertFalse((ROOT / "examples" / "lottie" / pick.name).exists())
+
+    def diagram_project(self, width=1920, height=1080):
+        project = self.project()
+        project["format"] = {"width": width, "height": height, "fps": [30, 1]}
+        project["tracks"].append({"id": "vo", "kind": "audio", "role": "voiceover", "items": [
+            {"id": "l1", "at": 300, "dur": 60}, {"id": "l2", "at": 390, "dur": 75}, {"id": "l3", "at": 480, "dur": 90}]})
+        project["markers"] = [{"id": "m1", "at": 0, "kind": "section", "label": "Hook"},
+                              {"id": "m2", "at": 450, "kind": "section", "label": "How"}]
+        return project
+
+    def test_place_times_steps_on_voice_lines_from_a_data_file_at_the_project_canvas(self):
+        data = {"nodes": [{"id": "a", "label": "App"}, {"id": "b", "label": "API"}], "edges": [{"from": "a", "to": "b"}],
+                "steps": [{"focus": ["a"]}, {"focus": ["b"]}, {"at": "section:How", "focus": []}]}
+        (self.folder / "diagram.json").write_text(json.dumps(data))
+        flow = self.folder / "graphics" / "flow"
+        shutil.copytree(ROOT / "examples" / "flow-diagram", flow)
+        state = {"projects": [self.diagram_project(), self.diagram_project()]}
+        out, calls = self.run_graphic(state, "place", str(flow), "--set", f"data=@{self.folder / 'diagram.json'}",
+                                      "--steps-from-voice")
+        self.assertEqual(0, out.returncode, out.stderr)
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        self.assertEqual([1920, 1080], invoke["pageSize"])  # data-fit="canvas": rendered at the project's size
+        sent = json.loads(invoke["params"]["variables"]["data"])
+        # Starts 0.4 s (12 frames) before the first line (300), so the steps land 0.4 s, 3.4 s and 5 s in.
+        self.assertEqual([0.4, 3.4, 5.4], [s["at"] for s in sent["steps"]])
+        place = next(c for c in calls if c["args"][:2] == ["library", "place"])["args"]
+        self.assertEqual("288", place[place.index("--at-frame") + 1])
+        self.assertEqual(str(570 - 288 + 15), place[place.index("--duration") + 1])  # section How runs to the end, 570
+        self.assertIn('data-width="1080"', (flow / "index.html").read_text())  # the page is put back
+
+    def test_steps_beyond_the_voice_lines_are_refused_before_rendering(self):
+        data = {"nodes": [{"id": "a", "label": "A"}], "steps": [{"focus": ["a"]}] * 4}
+        (self.folder / "d.json").write_text(json.dumps(data))
+        state = {"projects": [self.diagram_project()]}
+        out, calls = self.run_graphic(state, "place", str(ROOT / "examples" / "mind-map"), "--set",
+                                      f"data=@{self.folder / 'd.json'}", "--steps-from", "voice", "--at-frame", "380")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("only 2 voice lines", json.loads(out.stderr)["error"])
+        self.assertEqual([], [c for c in calls if c["args"][:2] == ["plugins", "invoke"]])
+        out, _ = self.run_graphic(state, "place", str(ROOT / "examples" / "mind-map"), "--set", "data=@missing.json")
+        self.assertEqual(2, out.returncode)
+
+    def test_rerender_with_a_new_label_keeps_the_step_times(self):
+        recorded = {"nodes": [{"id": "a", "label": "App"}], "steps": [{"at": 1.2, "focus": ["a"]}]}
+        media = self.recorded_media({"data": json.dumps(recorded)})
+        flow = self.folder / "graphics" / "flow"
+        shutil.copytree(ROOT / "examples" / "flow-diagram", flow)
+        media["data"]["graphics"]["composition"] = str(flow)
+        item = {"id": "item-1", "at": 300, "dur": 165, "media": "media-old", "sourceIn": 0}
+        changed = {"nodes": [{"id": "a", "label": "Mobile app"}], "steps": [{"focus": ["a"]}]}
+        out, calls = self.run_graphic({"projects": [self.project(media=[media], items=[item])]}, "rerender", "item-1",
+                                      "--variables", json.dumps({"data": changed}))
+        self.assertEqual(0, out.returncode, out.stderr)
+        sent = json.loads(next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]["variables"]["data"])
+        self.assertEqual(("Mobile app", 1.2), (sent["nodes"][0]["label"], sent["steps"][0]["at"]))
+        self.assertEqual(1, len([c for c in calls if c["args"][:2] == ["timeline", "apply"]]))  # one undo step
+
+
+class DiagramLayoutTests(unittest.TestCase):
+    """lib/diagram.js lays diagrams out from data: no two node boxes may overlap (up to 12 nodes, 9:16 and 16:9)."""
+
+    SCRIPT = r"""
+const d = require(process.argv[1]);
+const words = ["Khách hàng", "API Gateway", "Auth", "Database", "Cache", "Queue", "Worker service", "Email",
+  "Thanh toán online", "CDN", "Analytics dashboard", "Search"];
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const area = d.areaFor(W, H, u, true);
+  for (let n = 1; n <= 12; n++) for (const shape of ["chain", "tree", "fan", "mesh"]) {
+    const nodes = Array.from({ length: n }, (_, i) => ({ id: "n" + i, label: words[i], icon: i % 3 ? undefined : "x" }));
+    const edges = [];
+    for (let i = 1; i < n; i++) edges.push({ from: "n" + (shape === "chain" ? i - 1 : shape === "fan" ? 0 : shape === "tree" ? Math.floor((i - 1) / 3) : Math.max(0, i - 1 - (i % 3))), to: "n" + i });
+    if (shape === "mesh" && n > 4) edges.push({ from: "n4", to: "n1" });
+    for (const kind of ["flow", "mind", "iso"]) {
+      const L = kind === "flow" ? d.flowLayout({ nodes, edges }, area, u) : kind === "mind" ? d.mindLayout({ nodes, edges }, area, u) : d.isoLayout({ nodes, edges }, area, u);
+      const outside = L.nodes.filter((b) => b.x - b.w / 2 < area.x - 1 || b.x + b.w / 2 > area.x + area.w + 1 || b.y - b.h / 2 < area.y - 1 || b.y + b.h / 2 > area.y + area.h + 1).length;
+      out.push({ W, kind, shape, n, count: L.nodes.length, overlaps: d.overlapping(L.nodes).length, outside, font: Math.min(...L.nodes.map((b) => b.font / u)) });
+    }
+  }
+  const c = d.canvasLayout({ nodes: words.map((w, i) => ({ id: "n" + i, label: w })), edges: words.slice(1).map((w, i) => ({ from: i < 3 ? "n0" : "n" + (1 + (i % 3)), to: "n" + (i + 1) })) }, W, H, 2);
+  out.push({ W, kind: "canvas", shape: "tree", n: 12, count: c.nodes.length, overlaps: d.overlapping(c.nodes).length, outside: 0, font: 99 });
+}
+console.log(JSON.stringify(out));
+"""
+
+    def test_no_two_nodes_overlap_up_to_twelve_nodes(self):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        out = subprocess.run([node, "-e", self.SCRIPT, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        rows = json.loads(out.stdout)
+        self.assertEqual(2 * 12 * 4 * 3 + 2, len(rows))
+        for row in rows:
+            self.assertEqual(row["n"], row["count"], row)
+            self.assertEqual(0, row["overlaps"], row)
+            self.assertEqual(0, row["outside"], row)
+            self.assertGreaterEqual(row["font"], 20, row)
+
+    def test_flow_runs_the_canvas_way_and_a_long_edge_goes_round_the_middle_node(self):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        script = r"""
+const d = require(process.argv[1]);
+const data = { nodes: ["req", "check", "fraud", "pay", "bank", "mail"].map((id) => ({ id, label: id === "pay" ? "Payment gateway" : id })),
+  edges: [["req", "check"], ["check", "fraud"], ["check", "pay"], ["fraud", "pay"], ["pay", "bank"], ["pay", "mail"]].map(([from, to]) => ({ from, to })) };
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const L = d.flowLayout(data, d.areaFor(W, H, u, true, true), u);
+  const fraud = L.nodes.find((n) => n.id === "fraud");
+  const via = L.edges.find((e) => e.from === "check" && e.to === "pay").via ?? [];
+  out.push({ direction: L.direction, via: via.length, clear: via.every((w) => d.overlapping([w, fraud]).length === 0) });
+}
+console.log(JSON.stringify(out));
+"""
+        out = subprocess.run([node, "-e", script, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=30)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual([{"direction": "tb", "via": 1, "clear": True}, {"direction": "lr", "via": 1, "clear": True}], json.loads(out.stdout))
+
+    def test_steps_without_times_are_spread_and_sorted(self):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        script = 'const d = require(process.argv[1]); console.log(JSON.stringify(d.timedSteps([{at: 4, focus: "b"}, {focus: ["a"]}, {focus: []}], 8).map((s) => [s.at, s.focus])))'
+        out = subprocess.run([node, "-e", script, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=30)
+        self.assertEqual([[0.9, ["a"]], [4, ["b"]], [4.1, []]], json.loads(out.stdout))
+
+
+class AmenityLayoutTests(unittest.TestCase):
+    """lib/amenity-map.js lays amenity markers out: no two icons overlap at the scale they are seen at."""
+
+    SCRIPT = r"""
+const a = require(process.argv[1]);
+// A fixed pseudo-random spread (no Math.random: the layout must be the same every run).
+let seed = 7;
+const next = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const kinds = ["school", "hospital", "mall", "park", "clinic", "supermarket"];
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const size = 46 * u;
+  for (const [n, spread, scale] of [[10, 40, 2.7], [30, 60, 2.7], [60, 112, 1.2], [24, 8, 3.5], [40, 112, 0.6]]) {
+    const markers = Array.from({ length: n }, (_, i) => ({ x: 500 + (next() - 0.5) * 2 * spread,
+      y: 800 + (next() - 0.5) * 2 * spread, kind: kinds[i % kinds.length], km: Math.round(next() * 1000) / 1000 }));
+    // The project's dot and its name tag to the right of it.
+    const tag = { x: 500, y: 800, left: 40 * u, top: -30 * u, w: 180 * u, h: 60 * u };
+    const fixed = [{ x: 500, y: 800, r: 30 * u }, tag];
+    const layout = a.declutter(markers, scale, size, fixed);
+    const again = a.declutter(markers, scale, size, fixed);
+    const onDot = layout.filter((l, i) => l.shown
+      && Math.hypot(markers[i].x * scale + l.dx - 500 * scale, markers[i].y * scale + l.dy - 800 * scale) < 30 * u + size / 2 - 0.5).length;
+    const onTag = layout.filter((l, i) => {
+      const [x, y] = [markers[i].x * scale + l.dx, markers[i].y * scale + l.dy];
+      const [x0, y0] = [500 * scale + tag.left, 800 * scale + tag.top];
+      return l.shown && Math.hypot(x - Math.max(x0, Math.min(x0 + tag.w, x)), y - Math.max(y0, Math.min(y0 + tag.h, y))) < size / 2 - 0.5;
+    }).length;
+    out.push({ W, n, spread, overlaps: a.overlapping(markers, layout, scale, size).length, onDot, onTag,
+      counted: layout.reduce((sum, l) => sum + l.count, 0), shown: layout.filter((l) => l.shown).length,
+      same: JSON.stringify(layout) === JSON.stringify(again),
+      merged: layout.every((l, i) => !l.shown || layout.every((m, j) => j === i || !m.shown || markers[j].kind !== markers[i].kind
+        || Math.hypot((markers[j].x - markers[i].x) * scale, (markers[j].y - markers[i].y) * scale) >= size)) });
+  }
+}
+// Two kinds on one spot: both stay, nudged apart; three schools within a few metres: one marker counting 3.
+const pair = a.declutter([{ x: 0, y: 0, kind: "school", km: 0.1 }, { x: 0, y: 0, kind: "mall", km: 0.2 }], 2, 46);
+const three = a.declutter([0, 1, 2].map((i) => ({ x: i * 3, y: 0, kind: "school", km: i / 10 })), 2, 46);
+console.log(JSON.stringify({ out, pair, three }));
+"""
+
+    def run_layout(self):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        out = subprocess.run([node, "-e", self.SCRIPT, str(ROOT / "lib" / "amenity-map.js")], capture_output=True,
+                             text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        return json.loads(out.stdout)
+
+    def test_no_two_markers_overlap_in_9_16_and_16_9(self):
+        result = self.run_layout()
+        self.assertEqual(10, len(result["out"]))
+        for row in result["out"]:
+            self.assertEqual(0, row["overlaps"], row)
+            self.assertEqual(0, row["onDot"], f"a marker covers the project's dot: {row}")
+            self.assertEqual(0, row["onTag"], f"a marker hides under the project's name: {row}")
+            self.assertEqual(row["n"], row["counted"], f"every place is counted once: {row}")
+            self.assertTrue(row["same"], f"deterministic: {row}")
+            self.assertTrue(row["merged"], f"places of one kind that would touch are one marker: {row}")
+        self.assertLess(result["out"][3]["shown"], 24, "a tight spread merges")
+
+    def test_same_kind_merges_with_a_count_and_kinds_apart_get_a_leader_offset(self):
+        result = self.run_layout()
+        pair, three = result["pair"], result["three"]
+        self.assertTrue(pair[0]["shown"] and pair[1]["shown"])
+        self.assertGreaterEqual(math.hypot(pair[1]["dx"] - pair[0]["dx"], pair[1]["dy"] - pair[0]["dy"]), 46 - 0.5)
+        self.assertEqual([True, False, False], [m["shown"] for m in three])
+        self.assertEqual(3, three[0]["count"])
+        self.assertEqual((0, 0), (three[0]["dx"], three[0]["dy"]), "a lone marker stays on its place")
 
 
 @unittest.skipUnless(RUNTIME_DATA and RUNTIME_CACHE, "set HYPERFRAMES_TEST_DATA and HYPERFRAMES_TEST_CACHE to a setup install")

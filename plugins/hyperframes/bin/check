@@ -1,6 +1,6 @@
 #!/bin/sh
-# Dependency probe: Node.js 22.19+, the pinned HyperFrames and GSAP, Chrome headless shell and the alpha encoder are
-# all there. Exits 0 with what it found, or 1 with what is missing.
+# Dependency probe: Node.js 22.19+, the pinned HyperFrames, GSAP, KaTeX and lottie-web, Chrome headless shell and the
+# alpha encoder are all there. Exits 0 with what it found, or 1 with what is missing.
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/runtime.sh"
 if ! node="$("$here/find-node")"; then
@@ -9,7 +9,7 @@ if ! node="$("$here/find-node")"; then
 fi
 want="$("$node" -p 'require(process.argv[1]).dependencies.hyperframes' "$here/../runtime/package.template.json")"
 have="$("$node" -p 'require(process.argv[1]).version' "$runtime/node_modules/hyperframes/package.json" 2>/dev/null)"
-if [ "$have" != "$want" ] || [ ! -f "$gsap" ]; then
+if [ "$have" != "$want" ] || [ ! -f "$gsap" ] || [ ! -f "$katex" ] || [ ! -f "$lottie" ]; then
     echo "HyperFrames $want is not installed (found: ${have:-none})." >&2
     exit 1
 fi

@@ -1,0 +1,18 @@
+{
+  "name": {
+    "en": "Image Generation",
+    "vi": "Tạo ảnh"
+  },
+  "summary": {
+    "en": "AI illustrations for your edit with your own Gemini or OpenAI key: every scene of a video in one batch, one locked style and the same character from your reference pictures, labelled as AI-generated. Provides image.generate for image generate and brand kit mascot poses.",
+    "vi": "Ảnh minh hoạ AI cho bản dựng bằng khoá Gemini hoặc OpenAI của bạn: mọi cảnh của video trong một lượt, một phong cách cố định và cùng một nhân vật theo ảnh tham chiếu, có nhãn ảnh tạo bằng AI. Cung cấp image.generate cho image generate và tư thế linh vật của bộ nhận diện."
+  },
+  "publisher": "bashcut",
+  "category": "utilities",
+  "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/image-gen",
+  "minAppVersion": "0.0.23",
+  "platforms": [
+    "macos-arm64",
+    "macos-x86_64"
+  ]
+}

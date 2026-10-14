@@ -19,17 +19,30 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   length changed, which the result reports). Both fill the standard variables (`accent`, `background`, `text`,
   `secondary`, `headingFont`, `bodyFont`, `disclosure`) from the project's `brand`, explicit values winning, so a brand
   change restyles placed graphics with `rerender --all --brand`. Uses `$BASHCUT_CLI`, else `bashcut` on PATH.
+  A composition that declares `mascot` gets the brand's mascot pose (`--set pose=thinking`; five examples have one).
 - **`bin/hf`**: the pinned HyperFrames CLI with telemetry off and the plugin's own Chrome: `catalog`, `add`, `lint`,
   `check`, `snapshot` (frames to look at, optionally against a reference video), `docs`.
 - **`bin/osm-map`**: an OpenStreetMap map and a route for a composition: tiles (cached in the plugin cache folder)
   and `map-data.js` in canvas pixels, plus `km`, `minutes` and per-stop legs as JSON. Routes from OSRM on
   routing.openstreetmap.de (FOSSGIS); tiles from tile.openstreetmap.org with the plugin's User-Agent, two at a time,
   under the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Map data © OpenStreetMap
-  contributors (ODbL); `map-route` keeps the credit on screen.
+  contributors (ODbL); `map-route` and `amenity-radius` keep the credit on screen. `--amenities` counts schools,
+  hospitals, malls, parks… around the first point with one Overpass API query (90 s timeout, cached, same User-Agent).
+  Strict tags (`AMENITIES` and `EXCLUDE` in `lib/osm-map.mjs`): `hospital` = `amenity=hospital` or
+  `healthcare=hospital` but never a clinic, doctor, dentist or pharmacy, by tag or by name ("Phòng khám", "Nha khoa",
+  "Dental"…), which counts as `clinic` when asked; `school` = `amenity=school` without driving or language centres
+  (`driving_school`, `language_school`); `mall` = `shop=mall|department_store` (not `supermarket`); `park` =
+  `leisure=park`, not private ones, gardens or playgrounds.
 - **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
   `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
-  `cost-table`, `timeline`, `calendar`, `map-route`; mock screens (`mock-video-app`) and cards such as
-  `corner-curl-card`. All take the brand variables `bin/graphic` fills.
+  `cost-table`, `timeline`, `calendar`, `map-route`, `amenity-radius`; mock screens (`mock-video-app`) and cards such as
+  `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, and
+  `big-canvas`, one hand-drawn canvas for a whole video with a camera path) and science widgets (`formula` with
+  KaTeX, `matrix-grid`, `scale-compare`); `lottie` plays one Lottie accent picked with resources'
+  `fetch_lottie.py`. All take the brand variables `bin/graphic` fills. Those with `data-fit="canvas"` render at the
+  project's size (9:16 or 16:9); the diagrams share `lib/diagram.js` and `amenity-radius` uses `lib/amenity-map.js`
+  (markers that would touch merge into a count or are nudged apart with a leader line), which `graphics.render` copies
+  next to the page like GSAP.
 - **The skill** `skills/hyperframes/SKILL.md`: the design → build → look → render → place → check loop, the
   composition rules, and moves that combine a graphic with BashCut's own layers (the speaker shrinking into a card).
 
@@ -39,8 +52,9 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
 
 1. Node.js 22.19+: one already on the Mac (Homebrew, nvm, Volta, BashCut's shared folder), or the official Node.js 22
    LTS from nodejs.org, checked against its SHA-256, into `BASHCUT_SHARED_DATA/node`.
-2. HyperFrames 0.8.140 and GSAP 3.14.2 with `npm ci` from `runtime/package-lock.template.json` into
-   `BASHCUT_PLUGIN_DATA/runtime` (about 130 MB).
+2. HyperFrames 0.8.140, GSAP 3.14.2, KaTeX 0.16.47 and lottie-web 5.13.0 (MIT; copied into a `formula` or
+   `lottie` composition at render, so it needs no network) with `npm ci` from `runtime/package-lock.template.json`
+   into `BASHCUT_PLUGIN_DATA/runtime` (about 135 MB).
 3. Chrome headless shell (HyperFrames' `browser ensure`) into `BASHCUT_PLUGIN_CACHE/chrome` (about 210 MB).
 
 No FFmpeg is needed: HyperFrames writes RGBA PNG frames and `bin/encode-alpha` (built from `src/encode-alpha.swift`

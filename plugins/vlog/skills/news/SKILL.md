@@ -100,6 +100,8 @@ at 3.4 s sits in the pause after the first sentence).
 
 - Every claim, number, date and name has a source in the script beats (`bashcut.vlog:hook-script`): the outlet, the
   official page, the document. No source, or sources that disagree: say so or leave it out.
+- Background figures (population, GDP, dates, places): one `fetch_facts.py` call (`bc:motion-graphics`) first; its
+  source URL is the on-screen credit. The news itself comes from the outlet, never from it.
 - The date of the news is said or shown; a story older than a few days says when it happened ("ngày 30/8").
 - Quotes verbatim, the speaker named with role and date; a translated quote says "(lời dịch)"; never shorten a quote
   so it says something else.

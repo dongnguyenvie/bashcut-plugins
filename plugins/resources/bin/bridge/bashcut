@@ -1,0 +1,3 @@
+#!/bin/sh
+# The fetch scripts' `bashcut` while the plugin runs them: forwards the words to the plugin session (src/bridge.py).
+exec "${BASHCUT_RESOURCES_PYTHON:-python3}" "$(dirname "$0")/../../src/bridge.py" "$@"
