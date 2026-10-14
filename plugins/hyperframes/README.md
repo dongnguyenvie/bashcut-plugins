@@ -25,10 +25,11 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   and `map-data.js` in canvas pixels, plus `km`, `minutes` and per-stop legs as JSON. Routes from OSRM on
   routing.openstreetmap.de (FOSSGIS); tiles from tile.openstreetmap.org with the plugin's User-Agent, two at a time,
   under the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Map data © OpenStreetMap
-  contributors (ODbL); `map-route` keeps the credit on screen.
+  contributors (ODbL); `map-route` and `amenity-radius` keep the credit on screen. `--amenities` counts schools,
+  hospitals, malls, parks… around the first point with one Overpass API query (90 s timeout, cached, same User-Agent).
 - **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
   `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
-  `cost-table`, `timeline`, `calendar`, `map-route`; mock screens (`mock-video-app`) and cards such as
+  `cost-table`, `timeline`, `calendar`, `map-route`, `amenity-radius`; mock screens (`mock-video-app`) and cards such as
   `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, and
   `big-canvas`, one hand-drawn canvas for a whole video with a camera path) and science widgets (`formula` with
   KaTeX, `matrix-grid`, `scale-compare`). All take the brand variables `bin/graphic` fills. Those with
