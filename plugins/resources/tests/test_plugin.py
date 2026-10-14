@@ -164,6 +164,9 @@ class PluginTests(unittest.TestCase):
         self.assertEqual(found["state"]["query"], "coffee")
         self.assertEqual(find(found["body"], "query")["value"], "coffee")
         self.assertIsNotNone(find(found["body"], "results"))
+        skeleton = find(host.renders[-1], "loading")  # the render while the search ran
+        self.assertEqual(len(skeleton["items"]), resources.SKELETON_TILES)
+        self.assertEqual(plugin_manifest.view_problems({"body": host.renders[-1]}), [])
 
     def test_lottie_tab_saves_picks_into_the_project_not_the_library(self):
         lottie = resources.module("fetch_lottie")

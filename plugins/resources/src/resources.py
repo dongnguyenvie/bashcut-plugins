@@ -103,6 +103,7 @@ SOURCE_NAMES = {
     "fontsource": ("Fontsource",) * 2, "gmic": ("G'MIC",) * 2, "rawtherapee": ("RawTherapee",) * 2,
     "useanimations": ("useAnimations",) * 2, "lottiefiles": ("LottieFiles",) * 2,
 }
+SKELETON_TILES = 12  # placeholder tiles while a search runs
 # Searches the empty sheet offers as buttons, per kind (search words stay English: the sources are).
 EXAMPLES = {
     "photo": ["coffee", "city at night", "mountains"], "video": ["ocean waves", "street food", "timelapse"],
@@ -796,8 +797,9 @@ def browse(params, state, values, event, host):
                 rows = download(host, options, "lut", query, [], source, "user")
                 message = (rows[0].get("output") or "").splitlines()[-1:] or [""]
                 message = message[0][:300]
-            host.render(body_of(locale, kind, source, query, scope, orientation, sample, found, selected,
-                                tr("working", locale), busy=True))
+            # A new search: placeholder tiles where the results will be, not the old results.
+            host.render(body_of(locale, kind, source, query, scope, orientation, sample, None, selected,
+                                tr("working", locale), busy=True, skeleton=True))
             found = search(host, options, kind, query, source, 1, orientation, sample)
             selected = []
             message = message if node == "fetchLuts" else ""
@@ -855,7 +857,8 @@ def browse(params, state, values, event, host):
     return answer
 
 
-def body_of(locale, kind, source, query, scope, orientation, sample, found, selected, message, busy=False):
+def body_of(locale, kind, source, query, scope, orientation, sample, found, selected, message, busy=False,
+            skeleton=False):
     kinds = [{"value": k, "label": tr(k, locale)} for k in KINDS]
     sources = [{"value": s, "label": source_name(s, locale)} for s in KINDS[kind]["sources"]]
     controls = [
@@ -883,6 +886,11 @@ def body_of(locale, kind, source, query, scope, orientation, sample, found, sele
         body.append({"type": "text", "text": message, "style": "caption"})
     cell, aspect = KINDS[kind]["cell"], KINDS[kind]["aspect"]
     audio_kind = kind in ("music", "sfx")
+    if skeleton:
+        icon = "waveform" if audio_kind else ("textformat" if kind == "font" else "photo")
+        body.append({"type": "grid", "id": "loading", "cellWidth": cell, "aspect": aspect,
+                     "items": [{"id": f"loading-{n}", "icon": icon, "title": "…"} for n in range(SKELETON_TILES)]})
+        return body
     if found and found.get("library"):
         body.append({"type": "section", "title": f"{tr('library', locale)} ({len(found['library'])})", "children": [
             {"type": "grid", "id": "library", "cellWidth": cell, "aspect": aspect, "items": [
