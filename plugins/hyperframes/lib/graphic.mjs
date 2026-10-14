@@ -585,6 +585,22 @@ async function resolveMascot(variables, brand, declared, dir, warnings) {
     return true;
 }
 
+/**
+ * A value that is an absolute path to a file (a lottie pick in media/lottie, a picture) is copied next to the
+ * composition and becomes its file name: the render serves only the composition folder. Plugin examples are left alone.
+ */
+export function resolveFiles(variables, declared, dir) {
+    const real = realpathSync(dir);
+    if (real.startsWith(realpathSync(fileURLToPath(new URL("../", import.meta.url))) + "/")) return;
+    for (const { id, type } of declared) {
+        const value = variables[id];
+        if (!["string", "image"].includes(type) || typeof value !== "string" || !value.startsWith("/")) continue;
+        if (!existsSync(value) || !statSync(value).isFile()) continue;
+        if (dirname(realpathSync(value)) !== real) copyFileSync(value, join(dir, basename(value)));
+        variables[id] = basename(value);
+    }
+}
+
 async function resolveVariables(inputs, project, warnings) {
     const composition = readComposition(inputs.composition);
     const fromBrand = inputs.brand ? brandVariables(project.brand, composition.declared) : {};
@@ -598,6 +614,7 @@ async function resolveVariables(inputs, project, warnings) {
         applied.push("mascot");
     }
     await resolveFonts(variables, inputs.composition, warnings);
+    resolveFiles(variables, composition.declared, inputs.composition);
     const width = project.format?.width;
     const height = project.format?.height;
     delete inputs.canvas;
@@ -676,7 +693,7 @@ export async function ownComposition(dir, projectRoot, slot) {
     const copy = join(projectRoot, "graphics", safeName(slot));
     if (!existsSync(join(copy, "index.html"))) {
         mkdirSync(dirname(copy), { recursive: true });
-        cpSync(real, copy, { recursive: true, filter: (from) => !["gsap.min.js", "diagram.js", "katex"].includes(basename(from)) });
+        cpSync(real, copy, { recursive: true, filter: (from) => !["gsap.min.js", "diagram.js", "katex", "lottie.min.js"].includes(basename(from)) });
     }
     return copy;
 }

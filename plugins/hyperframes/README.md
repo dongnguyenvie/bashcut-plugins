@@ -31,9 +31,10 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   `cost-table`, `timeline`, `calendar`, `map-route`; mock screens (`mock-video-app`) and cards such as
   `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, and
   `big-canvas`, one hand-drawn canvas for a whole video with a camera path) and science widgets (`formula` with
-  KaTeX, `matrix-grid`, `scale-compare`). All take the brand variables `bin/graphic` fills. Those with
-  `data-fit="canvas"` render at the project's size (9:16 or 16:9); the diagrams share `lib/diagram.js`, which
-  `graphics.render` copies next to the page like GSAP.
+  KaTeX, `matrix-grid`, `scale-compare`); `lottie` plays one Lottie accent picked with resources'
+  `fetch_lottie.py`. All take the brand variables `bin/graphic` fills. Those with `data-fit="canvas"` render at the
+  project's size (9:16 or 16:9); the diagrams share `lib/diagram.js`, which `graphics.render` copies next to the
+  page like GSAP.
 - **The skill** `skills/hyperframes/SKILL.md`: the design → build → look → render → place → check loop, the
   composition rules, and moves that combine a graphic with BashCut's own layers (the speaker shrinking into a card).
 
@@ -43,9 +44,9 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
 
 1. Node.js 22.19+: one already on the Mac (Homebrew, nvm, Volta, BashCut's shared folder), or the official Node.js 22
    LTS from nodejs.org, checked against its SHA-256, into `BASHCUT_SHARED_DATA/node`.
-2. HyperFrames 0.8.140, GSAP 3.14.2 and KaTeX 0.16.47 (MIT; copied into a `formula` composition at render, so
-   it needs no network) with `npm ci` from `runtime/package-lock.template.json` into
-   `BASHCUT_PLUGIN_DATA/runtime` (about 130 MB).
+2. HyperFrames 0.8.140, GSAP 3.14.2, KaTeX 0.16.47 and lottie-web 5.13.0 (MIT; copied into a `formula` or
+   `lottie` composition at render, so it needs no network) with `npm ci` from `runtime/package-lock.template.json`
+   into `BASHCUT_PLUGIN_DATA/runtime` (about 135 MB).
 3. Chrome headless shell (HyperFrames' `browser ensure`) into `BASHCUT_PLUGIN_CACHE/chrome` (about 210 MB).
 
 No FFmpeg is needed: HyperFrames writes RGBA PNG frames and `bin/encode-alpha` (built from `src/encode-alpha.swift`

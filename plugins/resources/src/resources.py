@@ -36,7 +36,7 @@ PAGE = 24
 MAX_RESULTS = 200
 SCRIPT_NAMES = {"stock": "fetch_stock", "audio": "fetch_audio", "luts": "fetch_luts", "fonts": "fetch_fonts",
                 "font": "fetch_font", "illustrations": "fetch_illustrations", "emoji": "fetch_emoji",
-                "logos": "fetch_logos", "facts": "fetch_facts"}
+                "logos": "fetch_logos", "facts": "fetch_facts", "lottie": "fetch_lottie"}
 KEYS = {"pexelsKey": "PEXELS_API_KEY", "pixabayKey": "PIXABAY_API_KEY", "freesoundKey": "FREESOUND_API_KEY"}
 
 # kind → library kind, sources (the first is the default), grid cell shape
@@ -53,11 +53,15 @@ KINDS = {
     "logo": {"library": "sticker", "sources": ["simple-icons"], "cell": 90, "aspect": 1},
     "font": {"library": "text-preset", "sources": ["fontsource"], "cell": 170, "aspect": 3},
     "lut": {"library": "look", "sources": ["gmic,rawtherapee", "gmic", "rawtherapee"], "cell": 170, "aspect": 3},
+    # The library refuses Lottie stickers: a download is a project file for the HyperFrames lottie widget.
+    "lottie": {"library": None, "sources": ["all", "useanimations", "noto", "lottiefiles"], "cell": 120,
+               "aspect": 1},
 }
 LABELS = {
     "photo": ("Photos", "Ảnh"), "video": ("Videos", "Video"), "music": ("Music", "Nhạc"),
     "sfx": ("Sound effects", "Hiệu ứng âm thanh"), "illustration": ("Illustrations", "Minh hoạ"),
     "emoji": ("Emoji", "Emoji"), "logo": ("Logos", "Logo"), "font": ("Fonts", "Phông chữ"), "lut": ("LUTs", "LUT"),
+    "lottie": ("Lottie", "Lottie"),
 }
 TEXT = {
     "title": ("Online resources", "Tài nguyên trực tuyến"),
@@ -256,6 +260,8 @@ def fetch_previews(urls):
 # --- the library: what is there first, and which results it already holds ---------------------------------------
 
 def library_items(host, kind, query=None, tag=None, limit=500):
+    if not KINDS[kind]["library"]:
+        return []
     params = {"kind": KINDS[kind]["library"], "limit": limit, "offset": 0}
     if query:
         params["query"] = query
@@ -429,6 +435,40 @@ def search_emoji(host, query, source):
     return source, items, None
 
 
+def project_folder(host, *parts):
+    """A folder of the open project (beside its file, as HyperFrames' graphics/), or None without a project."""
+    with contextlib.suppress(PluginError):
+        context = host.call("cli", {"argv": ["context", "get"]}) or {}
+        project = context.get("project") if isinstance(context, dict) else None
+        if isinstance(project, str) and project.startswith("/"):
+            return Path(project).parent.joinpath(*parts)
+    return None
+
+
+def search_lottie(host, query, source):
+    dest = cache_dir("lottie", slug(query))
+    out, err, status = run_script("fetch_lottie", ["--words", query, "--dest", dest, "--count", PAGE,
+                                                   "--source", source])
+    if status:
+        raise fail_from(err, "lottie search failed")
+    rows = json.loads((dest / "lottie.json").read_text())
+    saved = project_folder(host, "media", "lottie")
+    items = []
+    for row in rows:
+        if not row.get("n"):
+            continue
+        short = module("fetch_lottie").SOURCES[row["source"]]["short"]
+        there = saved / f"{row['slot']}-{short}-{slug(row['id'])}.json" if saved else None
+        path = str(dest / row["file"]) if row.get("file") else ""
+        bits = [row["source"], f"{row['seconds']} s" if row.get("seconds") else None, row.get("license")]
+        items.append({"id": f"{row['slot']}={row['n']}", "title": row.get("name"),
+                      "subtitle": " · ".join(str(b) for b in bits if b),
+                      "preview": path if Path(path).exists() else None,
+                      "license": row.get("license"), "author": row.get("author"), "page": row.get("page"),
+                      "inLibrary": str(there) if there and there.exists() else None})
+    return source, items, None
+
+
 def search_illustrations(host, query, source):
     dest = cache_dir("illustrations", slug(query))
     slots = dest / "slots.txt"
@@ -516,7 +556,7 @@ def search(host, options, kind, query, source=None, page=1, orientation="any", t
     source = resolve_source(kind, source or "")
     page = max(1, int(page or 1))
     with working(host, options, "Searching"):
-        library = library_first(host, kind, query) if query and kind not in ("lut",) else []
+        library = library_first(host, kind, query) if query and kind not in ("lut", "lottie") else []
         sheet = None
         if kind in ("photo", "video"):
             used, items, more = search_stock(host, kind, query, source, page, orientation)
@@ -528,6 +568,8 @@ def search(host, options, kind, query, source=None, page=1, orientation="any", t
             used, items, more = search_illustrations(host, query, source)
         elif kind == "logo":
             used, items, more = search_logos(host, query)
+        elif kind == "lottie":
+            used, items, more = search_lottie(host, query, source)
         elif kind == "font":
             used, items, more, sheet = search_fonts(query, text)
         else:
@@ -563,6 +605,10 @@ def download(host, options, kind, query, ids, source=None, scope="project", orie
             return [{"output": out.strip()[-500:]}]
         if kind == "font":
             out, err, status = run_script("fetch_fonts", ["--pick", ",".join(ids), "--scope", scope])
+        elif kind == "lottie":
+            folder = project_folder(host, "media", "lottie") or cache_dir("lottie", "picked")
+            out, err, status = run_script("fetch_lottie", ["--dest", cache_dir("lottie", slug(query)), "--pick",
+                                                           ";".join(ids), "--save-to", folder])
         elif kind == "logo":
             out, err, status = run_script("fetch_logos", ["--brands", ",".join(ids), "--scope", scope,
                                                           "--dest", cache_dir("logos", "png")])
@@ -668,8 +714,10 @@ def handle(method, params, host):
     if action == "download":
         rows = download(host, options, args.get("kind") or "photo", args.get("query"), args.get("ids"),
                         args.get("source"), args.get("scope") or "project")
-        saved = sum(1 for r in rows if r.get("libraryId") or r.get("output"))
-        return {"message": f"Saved {saved} of {len(rows)} to the library", "data": {"items": rows}}
+        lottie = args.get("kind") == "lottie"  # project files: the library refuses Lottie
+        saved = sum(1 for r in rows if r.get("libraryId") or r.get("output") or (lottie and r.get("file")))
+        where = "the project (media/lottie)" if lottie else "the library"
+        return {"message": f"Saved {saved} of {len(rows)} to {where}", "data": {"items": rows}}
     if action == "fetch":
         ran = fetch(host, options, args.get("script"), args.get("args"))
         return {"message": (ran["output"].strip().splitlines() or ["(no output)"])[-1][:300], "data": ran}
@@ -740,13 +788,17 @@ def browse(params, state, values, event, host):
                 done = {f"{r.get('slot')}={r.get('n')}": r.get("libraryId") for r in rows if r.get("libraryId")}
             if kind == "logo":
                 done = {r.get("slug"): r.get("libraryId") for r in rows if r.get("libraryId")}
+            if kind == "lottie":
+                done = {f"{r.get('slot')}={r.get('n')}": r.get("file") for r in rows if r.get("file")}
             if kind == "font":
                 done = {str(r.get("n")): r.get("libraryId") or "saved" for r in rows if not r.get("error")}
             found = {**found, "items": [{**i, "inLibrary": done.get(i["id"]) or i.get("inLibrary")}
                                         for i in found["items"]]}
             errors = [r.get("error") for r in rows if r.get("error")]
-            message = (f"{len(done)} saved to the library" if not str(locale).startswith("vi")
-                       else f"Đã lưu {len(done)} mục vào thư viện") + (f" · {errors[0]}" if errors else "")
+            where = ("the project (media/lottie)", "project (media/lottie)") if kind == "lottie" else (
+                "the library", "thư viện")
+            message = (f"{len(done)} saved to {where[0]}" if not str(locale).startswith("vi")
+                       else f"Đã lưu {len(done)} mục vào {where[1]}") + (f" · {errors[0]}" if errors else "")
             selected = []
     except PluginError as error:
         message = error.message
