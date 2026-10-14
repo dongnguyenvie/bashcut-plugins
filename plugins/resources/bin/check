@@ -1,4 +1,4 @@
 #!/bin/sh
 # Dependency probe: the private environment runs Python 3.10+ with the fetch scripts' packages.
 data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.resources}"
-exec "$data/venv/bin/python3" -c 'import sys, PIL, numpy, fontTools, resvg_py; sys.exit(sys.version_info < (3, 10))' 2>/dev/null
+exec "$data/venv/bin/python3" -c 'import sys, PIL, numpy, fontTools, resvg_py, rlottie_python; sys.exit(sys.version_info < (3, 10))' 2>/dev/null

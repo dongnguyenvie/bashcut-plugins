@@ -15,6 +15,7 @@ export const paths = {
     cli: join(data, "runtime/node_modules/hyperframes/bin/hyperframes.mjs"),
     gsap: join(data, "runtime/node_modules/gsap/dist/gsap.min.js"),
     katex: join(data, "runtime/node_modules/katex/dist"),
+    lottie: join(data, "runtime/node_modules/lottie-web/build/player/lottie_svg.min.js"),
     chromePathFile: join(cache, "chrome/path"),
     encoder: join(pluginDir, "bin/encode-alpha"),
     diagram: join(pluginDir, "lib/diagram.js"),

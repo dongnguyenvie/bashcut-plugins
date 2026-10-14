@@ -20,8 +20,8 @@ import resources  # noqa: E402
 
 
 class FakeHost:
-    def __init__(self, library=()):
-        self.library, self.calls, self.renders = list(library), [], []
+    def __init__(self, library=(), project=None):
+        self.library, self.calls, self.renders, self.project = list(library), [], [], project
 
     def call(self, method, params=None):
         self.calls.append((method, params))
@@ -32,6 +32,8 @@ class FakeHost:
             if argv[:2] == ["library", "add"]:
                 wanted = argv[argv.index("--id") + 1]
                 return {"item": {"id": wanted, "reference": f"project:{wanted}"}}
+            if argv[:2] == ["context", "get"] and self.project:
+                return {"project": self.project}
             return {"argv": argv}
         return {}
 
@@ -143,6 +145,45 @@ class PluginTests(unittest.TestCase):
         cell = next(i for i in find(saved["body"], "results")["items"] if i["id"] == "pixabay-12")
         self.assertEqual(cell["libraryItem"], "project:pixabay-12")
         self.assertIn("1 saved", saved["state"]["message"])
+
+    def test_lottie_tab_saves_picks_into_the_project_not_the_library(self):
+        lottie = resources.module("fetch_lottie")
+        shared, project = tempfile.mkdtemp(), Path(tempfile.mkdtemp())
+        animation = Path(shared) / "check.json"
+        animation.write_text('{"v": "5.6.5", "fr": 30, "ip": 0, "op": 30, "w": 32, "h": 32, "layers": []}')
+        rows = [{"key": "ua-checkmark", "source": "useanimations", "id": "checkmark", "name": "Checkmark",
+                 "tags": ["check"], "order": 0}]
+
+        def strip(text, out, tile=220):
+            out.write_bytes(b"png")
+            return {"fps": 30.0, "frames": 30, "seconds": 1.0, "width": 32, "height": 32}
+        for name, value in (("ingest", lambda refresh=False, fetch=None: (rows, None)),
+                            ("lottiefiles", lambda *a, **k: []), ("lottie_file", lambda row, fetch=None: animation),
+                            ("frame_strip", strip), ("draw_sheets", lambda shown, dest, slots: [])):
+            patcher = mock.patch.object(lottie, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        host = FakeHost(project=str(project / "Demo.bashcut"))
+        params = {"view": "browse", "locale": "en", "options": {}}
+        values = {"kind": "lottie", "query": "check", "source": "all"}
+        found = resources.handle("view.event", {**params, "state": {}, "values": values,
+                                                "event": {"node": "search", "type": "click"}}, host)
+        self.assertEqual(plugin_manifest.view_problems(found), [])
+        cell = find(found["body"], "results")["items"][0]
+        self.assertEqual((cell["id"], cell["title"], cell["subtitle"]), ("check=1", "Checkmark",
+                                                                         "useanimations · 1.0 s · MIT"))
+        self.assertNotIn("library.list", [m for m, _ in host.calls])  # no library kind for Lottie
+        picked = resources.handle("view.event", {**params, "state": found["state"], "values": values,
+                                                 "event": {"node": "results", "type": "select", "value": "check=1"}},
+                                  host)
+        saved = resources.handle("view.event", {**params, "state": picked["state"], "values": values,
+                                                "event": {"node": "download", "type": "click"}}, host)
+        self.assertTrue((project / "media/lottie/check-ua-checkmark.json").is_file())
+        self.assertEqual(find(saved["body"], "results")["items"][0]["badge"], "In library")
+        self.assertIn("1 saved to the project", saved["state"]["message"])
+        self.assertFalse(any(p and p.get("argv", [""])[0] == "library" for m, p in host.calls if m == "cli"))
+        again = resources.search(host, {}, "lottie", "check", "all")
+        self.assertEqual(again["items"][0]["inLibrary"], str(project / "media/lottie/check-ua-checkmark.json"))
 
     def test_session_transport(self):
         out = subprocess.run([str(ROOT / "bin" / "provider"), "session"], input="\n".join(json.dumps(m) for m in [

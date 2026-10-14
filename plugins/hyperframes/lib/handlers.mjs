@@ -62,9 +62,9 @@ function settingsOf(params) {
 }
 
 /**
- * GSAP, KaTeX and the diagram script are not bundled in compositions: the pinned GSAP, KaTeX (script, style and its
- * woff2 fonts, into katex/) and lib/diagram.js are copied next to a page that loads them locally, so a render needs no
- * network.
+ * GSAP, KaTeX, lottie-web and the diagram script are not bundled in compositions: the pinned GSAP, KaTeX (script, style
+ * and its woff2 fonts, into katex/), lottie-web's SVG player (as lottie.min.js) and lib/diagram.js are copied next to a
+ * page that loads them locally, so a render needs no network.
  */
 function provideScripts(composition) {
     const page = composition.file ?? join(composition.dir, "index.html");
@@ -73,6 +73,12 @@ function provideScripts(composition) {
     const target = join(composition.dir, "gsap.min.js");
     if (loads("gsap.min.js") && !existsSync(target)) copyFileSync(paths.gsap, target);
     if (loads("diagram.js") && !existsSync(join(composition.dir, "diagram.js"))) copyFileSync(paths.diagram, join(composition.dir, "diagram.js"));
+    if (loads("lottie.min.js") && !existsSync(join(composition.dir, "lottie.min.js"))) {
+        if (!existsSync(paths.lottie)) {
+            throw new PluginError("dependency_missing", "lottie-web is not installed: choose Install Dependencies for HyperFrames Graphics in Plugins");
+        }
+        copyFileSync(paths.lottie, join(composition.dir, "lottie.min.js"));
+    }
     if (loads("katex/katex.min.js") && !existsSync(join(composition.dir, "katex", "katex.min.js"))) {
         if (!existsSync(join(paths.katex, "katex.min.js"))) {
             throw new PluginError("dependency_missing", "KaTeX is not installed: choose Install Dependencies for HyperFrames Graphics in Plugins");

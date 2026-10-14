@@ -21,14 +21,14 @@
   "dependencies": [
     {
       "id": "python",
-      "name": "Python 3.12 with Pillow, NumPy, fontTools and resvg",
+      "name": "Python 3.12 with Pillow, NumPy, fontTools, resvg and rlottie",
       "kind": "python",
       "probe": {
         "executable": "bin/check",
         "arguments": []
       },
       "install": {
-        "summary": "Download uv (when the Mac has none) and a private Python 3.12, then install Pillow, NumPy, fontTools and resvg for the fetch scripts (about 60 MB). Your Mac's Python is not used.",
+        "summary": "Download uv (when the Mac has none) and a private Python 3.12, then install Pillow, NumPy, fontTools, resvg and rlottie for the fetch scripts (about 65 MB). Your Mac's Python is not used.",
         "command": {
           "executable": "bin/setup",
           "arguments": []
@@ -144,7 +144,8 @@
               "emoji",
               "logo",
               "font",
-              "lut"
+              "lut",
+              "lottie"
             ],
             "default": "photo",
             "choiceLabels": {
@@ -183,6 +184,10 @@
               "lut": {
                 "en": "LUTs",
                 "vi": "LUT"
+              },
+              "lottie": {
+                "en": "Lottie",
+                "vi": "Lottie"
               }
             }
           },
@@ -268,7 +273,8 @@
               "emoji",
               "logo",
               "font",
-              "lut"
+              "lut",
+              "lottie"
             ],
             "default": "photo",
             "choiceLabels": {
@@ -307,6 +313,10 @@
               "lut": {
                 "en": "LUTs",
                 "vi": "LUT"
+              },
+              "lottie": {
+                "en": "Lottie",
+                "vi": "Lottie"
               }
             }
           },
@@ -389,7 +399,8 @@
               "illustrations",
               "emoji",
               "logos",
-              "facts"
+              "facts",
+              "lottie"
             ],
             "default": "stock"
           },

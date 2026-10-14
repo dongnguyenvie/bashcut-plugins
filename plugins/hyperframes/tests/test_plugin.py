@@ -389,6 +389,25 @@ class RenderParamTests(unittest.TestCase):
         response = self.render({"composition": str(composition)})  # the test data folder is empty
         self.assertEqual(response["error"]["code"], "dependency_missing")
 
+    def test_lottie_web_is_copied_next_to_a_page_that_loads_it(self):
+        data, cache = pathlib.Path(self.folder, "data"), pathlib.Path(self.folder, "cache")
+        modules = data / "runtime" / "node_modules"
+        for path, text in [(modules / "hyperframes/bin/hyperframes.mjs", "process.exit(1);\n"), (cache / "chrome/path", "/no/chrome"),
+                           (modules / "gsap/dist/gsap.min.js", "// gsap\n")]:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+        composition = pathlib.Path(self.folder, "accent")
+        shutil.copytree(ROOT / "examples" / "lottie", composition)
+        response = self.render({"composition": str(composition)})
+        self.assertEqual("dependency_missing", response["error"]["code"])
+        self.assertIn("lottie-web", response["error"]["message"])
+        player = modules / "lottie-web/build/player/lottie_svg.min.js"
+        player.parent.mkdir(parents=True)
+        player.write_text("// lottie\n")
+        response = self.render({"composition": str(composition)})
+        self.assertEqual("render_failed", response["error"]["code"])  # the fake CLI cannot render
+        self.assertEqual("// lottie\n", (composition / "lottie.min.js").read_text())
+
 
 FAKE_CLI = r"""#!/usr/bin/env python3
 import json, os, sys
@@ -1016,6 +1035,21 @@ class GraphicScriptTests(unittest.TestCase):
         variables = json.loads(out.stdout)["variables"]
         self.assertEqual(("fonts/Brand-Bold.otf", "Avenir Next"), (variables["headingFont"], variables["bodyFont"]))
         self.assertTrue((self.composition / "fonts" / "Brand-Bold.otf").is_file())
+
+    def test_a_file_path_value_is_copied_next_to_the_composition(self):
+        lottie = self.folder / "graphics" / "lottie"
+        shutil.copytree(ROOT / "examples" / "lottie", lottie)
+        pick = self.folder / "project" / "media" / "lottie" / "check-ua-checkmark.json"
+        pick.parent.mkdir(parents=True)
+        pick.write_text('{"fr": 30}')
+        state = {"projects": [self.project()]}
+        out, _ = self.run_graphic(state, "place", str(lottie), "--set", f"file={pick}", "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual("check-ua-checkmark.json", json.loads(out.stdout)["variables"]["file"])
+        self.assertEqual('{"fr": 30}', (lottie / pick.name).read_text())
+        out, _ = self.run_graphic(state, "place", "lottie", "--set", f"file={pick}", "--dry-run")
+        self.assertEqual(str(pick), json.loads(out.stdout)["variables"]["file"])  # a plugin example is left alone
+        self.assertFalse((ROOT / "examples" / "lottie" / pick.name).exists())
 
     def diagram_project(self, width=1920, height=1080):
         project = self.project()

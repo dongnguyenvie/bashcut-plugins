@@ -3,8 +3,8 @@
 #   BASHCUT_PLUGIN_DATA  — kept across plugin updates: uv (when the Mac has none) and the virtual environment
 #   BASHCUT_SHARED_DATA  — shared with other Python plugins: uv's Python 3.12
 #   BASHCUT_SHARED_CACHE — shared with other Python plugins: uv's package cache (never cleaned here)
-# The venv holds what the fetch scripts import: Pillow, NumPy, fontTools and resvg. About 60 MB. Running it again
-# repairs or updates the install.
+# The venv holds what the fetch scripts import: Pillow, NumPy, fontTools, resvg and rlottie (Lottie sheet frames).
+# About 65 MB. Running it again repairs or updates the install.
 set -eu
 data="${BASHCUT_PLUGIN_DATA:-$HOME/Library/Application Support/BashCut/PluginData/bashcut.resources}"
 cache="${BASHCUT_PLUGIN_CACHE:-$HOME/Library/Caches/BashCut/PluginData/bashcut.resources}"
@@ -37,7 +37,8 @@ if [ ! -x "$python" ] || ! "$python" -c "import sys; sys.exit(sys.version_info <
     "$uv" venv --python 3.12 --python-preference only-managed "$data/venv"
 fi
 
-echo "::progress 0.50 Installing Pillow, NumPy, fontTools and resvg"
-"$uv" pip install --python "$python" --upgrade "pillow>=10.1" "numpy>=1.26" "fonttools>=4.40" "resvg-py>=0.5"
+echo "::progress 0.50 Installing Pillow, NumPy, fontTools, resvg and rlottie"
+"$uv" pip install --python "$python" --upgrade "pillow>=10.1" "numpy>=1.26" "fonttools>=4.40" "resvg-py>=0.5" \
+    "rlottie-python>=1.3"
 if [ -z "$packages" ]; then "$uv" cache clean >/dev/null 2>&1 || true; fi
 echo "::progress 1.0 Online Resources is ready"

@@ -26,14 +26,14 @@
   "dependencies": [
     {
       "id": "hyperframes",
-      "name": "HyperFrames 0.8.140, GSAP, KaTeX and Chrome headless shell",
+      "name": "HyperFrames 0.8.140, GSAP, KaTeX, lottie-web and Chrome headless shell",
       "kind": "executable",
       "probe": {
         "executable": "bin/check",
         "arguments": []
       },
       "install": {
-        "summary": "Install HyperFrames 0.8.140 (Apache-2.0), GSAP 3.14.2 and KaTeX 0.16.47 (MIT) with npm into the plugin's data folder (about 130 MB) and download the Chrome headless shell it renders with (about 210 MB). A Node.js 22.19 or newer already on this Mac is used; otherwise the official Node.js 22 LTS is downloaded from nodejs.org and checked against its SHA-256. Telemetry stays off.",
+        "summary": "Install HyperFrames 0.8.140 (Apache-2.0), GSAP 3.14.2, KaTeX 0.16.47 and lottie-web 5.13.0 (MIT) with npm into the plugin's data folder (about 135 MB) and download the Chrome headless shell it renders with (about 210 MB). A Node.js 22.19 or newer already on this Mac is used; otherwise the official Node.js 22 LTS is downloaded from nodejs.org and checked against its SHA-256. Telemetry stays off.",
         "command": {
           "executable": "bin/setup",
           "arguments": []
