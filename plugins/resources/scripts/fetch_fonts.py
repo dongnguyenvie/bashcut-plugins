@@ -420,7 +420,8 @@ def draw_sheet(rows, text, role, folder):
     folder.mkdir(parents=True, exist_ok=True)
     spec = ROLES[role]
     width, pad, label_h = 1080, 28, 46
-    label = ImageFont.load_default(size=22)
+    from fetch_stock import label_font
+    label = label_font(22)
     probe = ImageDraw.Draw(Image.new("RGB", (1, 1)))
     blocks = []
     for row in rows:

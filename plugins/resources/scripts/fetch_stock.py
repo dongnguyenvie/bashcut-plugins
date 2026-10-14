@@ -608,9 +608,25 @@ def video_frames(video, stem):
     return [str(path)]
 
 
+# Sheet labels hold the user's words, often Vietnamese: Pillow's own font has no ă, ơ, ư or tone marks.
+LABEL_FONTS = ("/System/Library/Fonts/SFNS.ttf", "/System/Library/Fonts/Supplemental/Arial.ttf",
+               "/System/Library/Fonts/Supplemental/Arial Unicode.ttf")
+
+
+def label_font(size):
+    """A macOS system font with Vietnamese for sheet labels, else Pillow's own."""
+    from PIL import ImageFont
+    for path in LABEL_FONTS:
+        try:
+            return ImageFont.truetype(path, size)
+        except OSError:
+            continue
+    return ImageFont.load_default(size=size)
+
+
 def draw_sheets(rows, dest, slots_per_sheet):
     """Contact sheets: one row of numbered tiles per slot; returns the sheet paths."""
-    from PIL import Image, ImageDraw, ImageFont, ImageOps
+    from PIL import Image, ImageDraw, ImageOps
 
     tile_w, tile_h, label_h, pad = 220, 220, 22, 6
     by_slot = {}
@@ -618,7 +634,7 @@ def draw_sheets(rows, dest, slots_per_sheet):
         if row.get("n"):
             by_slot.setdefault(row["slot"], []).append(row)
     names, paths = list(by_slot), []
-    font = ImageFont.load_default(size=15)
+    font = label_font(15)
     for page in range(0, len(names), slots_per_sheet):
         group = names[page:page + slots_per_sheet]
         columns = max(len(by_slot[n]) for n in group)
