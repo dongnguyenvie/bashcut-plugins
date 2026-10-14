@@ -5,7 +5,8 @@
     (stop i on section marker i); without stops it visits the root, then each branch, evenly.
   - Each stop draws its node's branch from its at and finishes before the camera leaves; give a stop ≥ 2 s (a
     branch of 3 nodes draws in ~1.5 s). The end zoom-out takes the last ~12% (2–3.2 s).
-  - size 2 (default) keeps labels ≥ ~36 px at the end zoom-out on 9:16; size 3 fits ~20 nodes but labels get small.
+  - size 2 (default) keeps labels ≥ ~45 px at the end zoom-out on 9:16 (~37 px on 16:9); size 3 fits ~20 nodes but
+    labels get small. A stop frames its branch where its note leaves room, panning or zooming out so no label is cut.
   - A 60 s render (1,800 frames) takes about a minute: one place call, wait for it.
 -->
 <html lang="en" data-composition-variables='[

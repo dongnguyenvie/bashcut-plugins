@@ -76,8 +76,12 @@
         return { nodes, edges };
     }
 
-    /** Layer of each node: longest path from the sources (Kahn's order; a cycle is broken at its first node). */
-    function layering(nodes, edges) {
+    /**
+     * Layer of each node: longest path from the sources (Kahn's order; a cycle is broken at its first node). With
+     * `dummies`, an edge that skips layers gets a waypoint in each layer between its ends, ordered with the nodes, so
+     * it runs through a slot of its own instead of through the nodes of those layers.
+     */
+    function layering(nodes, edges, { dummies = false } = {}) {
         const out = new Map(nodes.map((n) => [n.id, []]));
         const indeg = new Map(nodes.map((n) => [n.id, 0]));
         for (const e of edges) {
@@ -102,15 +106,31 @@
         const count = Math.max(...layer.values()) + 1;
         const rows = Array.from({ length: count }, () => []);
         for (const n of nodes) rows[layer.get(n.id)].push(n.id);
+        const near = new Map(nodes.map((n) => [n.id, []]));
+        const link = (a, b) => {
+            near.get(a).push(b);
+            near.get(b).push(a);
+        };
+        const waypoints = new Map();
+        edges.forEach((e, k) => {
+            const la = layer.get(e.from);
+            const lb = layer.get(e.to);
+            if (!dummies || lb - la < 2) return link(e.from, e.to);
+            const chain = [];
+            for (let l = la + 1; l < lb; l += 1) {
+                const id = `\u0000${k}:${l}`;
+                layer.set(id, l);
+                near.set(id, []);
+                rows[l].push(id);
+                chain.push(id);
+            }
+            [e.from, ...chain, e.to].forEach((id, i, all) => i && link(all[i - 1], id));
+            waypoints.set(k, chain);
+        });
         // Order inside a layer by the mean position of the nodes it links to in the layers before (two sweeps).
         const pos = new Map();
         const place = () => rows.forEach((row) => row.forEach((id, i) => pos.set(id, (i + 0.5) / row.length)));
         place();
-        const near = new Map(nodes.map((n) => [n.id, []]));
-        for (const e of edges) {
-            near.get(e.to).push(e.from);
-            near.get(e.from).push(e.to);
-        }
         for (let sweep = 0; sweep < 2; sweep += 1) {
             for (let r = 1; r < rows.length; r += 1) {
                 const mean = (id) => {
@@ -121,7 +141,7 @@
                 place();
             }
         }
-        return { rows, layer };
+        return { rows, layer, waypoints };
     }
 
     function overlaps(a, b, gap = 0) {
@@ -193,7 +213,7 @@
     function flowLayout(data, area, unit, direction) {
         const { nodes, edges } = readData(data);
         if (!nodes.length) return { nodes: [], edges: [], unit, direction: "lr" };
-        const { rows, layer } = layering(nodes, edges);
+        const { rows, layer, waypoints } = layering(nodes, edges, { dummies: true });
         const byId = new Map(nodes.map((n) => [n.id, n]));
         const widest = Math.max(...rows.map((r) => r.length));
         const build = (dir) => {
@@ -205,29 +225,36 @@
             const bw = Math.min(lr ? cellMain * 0.74 : cellCross * 0.86, 470 * unit);
             const bh = Math.min(lr ? cellCross * 0.76 : cellMain * 0.6, 230 * unit);
             const out = [];
+            const ways = [];
             rows.forEach((row, r) => {
                 row.forEach((id, i) => {
-                    const n = sizeNode(byId.get(id), bw, bh, unit);
                     const along = (r + 0.5) * cellMain;
                     const across = (i + 0.5 + (widest - row.length) / 2) * cellCross;
+                    // A waypoint is a small box: separate() keeps it off the nodes like any other.
+                    const n = byId.has(id) ? sizeNode(byId.get(id), bw, bh, unit) : { id, w: 36 * unit, h: 36 * unit, way: true };
                     n.x = area.x + (lr ? along : across);
                     n.y = area.y + (lr ? across : along);
                     n.depth = layer.get(id);
-                    out.push(n);
+                    (n.way ? ways : out).push(n);
                 });
             });
-            return { nodes: out, edges, unit, direction: dir, minFont: Math.min(...out.map((n) => n.font)) };
+            return { nodes: out, ways, edges, unit, direction: dir, minFont: Math.min(...out.map((n) => n.font)) };
         };
         let chosen;
         if (direction === "lr" || direction === "tb") chosen = build(direction);
         else {
+            // The canvas's own way (left→right on 16:9, top→down on 9:16) unless its labels get small and the other
+            // way's are clearly larger.
             const lr = build("lr");
             const tb = build("tb");
             const prefer = area.w >= area.h ? lr : tb;
             const other = prefer === lr ? tb : lr;
-            chosen = other.minFont > prefer.minFont * 1.15 ? other : prefer;
+            chosen = prefer.minFont < 30 * unit && other.minFont > prefer.minFont * 1.15 ? other : prefer;
         }
-        separate(chosen.nodes, area, 12 * unit);
+        separate([...chosen.nodes, ...chosen.ways], area, 12 * unit);
+        const wayById = new Map(chosen.ways.map((w) => [w.id, w]));
+        chosen.edges = edges.map((e, k) => (waypoints.has(k) ? { ...e, via: waypoints.get(k).map((id) => wayById.get(id)) } : e));
+        delete chosen.ways;
         return chosen;
     }
 
@@ -335,7 +362,7 @@
         const fit = (mapping) => {
             const grid = new Map();
             rows.forEach((row, r) => row.forEach((id, i) => {
-                const j = i - (row.length - 1) / 2;
+                const j = (i - (row.length - 1) / 2) * (mapping === "axis" ? 1.5 : 1);
                 grid.set(id, mapping === "axis" ? { gx: r, gy: j } : { gx: r + j * 0.75, gy: r - j * 0.75 });
             }));
             const keys = [...grid.values()];
@@ -393,20 +420,97 @@
         return { x: n.x + dx * k, y: n.y + dy * k };
     }
 
-    function edgePath(a, b, kind, direction, sketch, seed, unit) {
-        if (kind === "iso") {
-            const c = a.cell;
-            const ax = a.x;
-            const ay = a.y + a.dy;
-            const bx = b.x;
-            const by = b.y + b.dy;
-            const dx = (bx - ax) / c;
-            const dy = (by - ay) / c;
-            const alpha = (dx + 2 * dy) / 2;
-            const mx = ax + alpha * c;
-            const my = ay + alpha * c * 0.5;
-            return `M${ax},${ay} L${mx},${my} L${bx},${by}`;
+    /** Whether the segment p→q crosses the box r (centre x, y; w, h). */
+    function segmentHits(p, q, r) {
+        const x0 = r.x - r.w / 2;
+        const x1 = r.x + r.w / 2;
+        const y0 = r.y - r.h / 2;
+        const y1 = r.y + r.h / 2;
+        let t0 = 0;
+        let t1 = 1;
+        const dx = q.x - p.x;
+        const dy = q.y - p.y;
+        for (const [num, den] of [[p.x - x0, -dx], [x1 - p.x, dx], [p.y - y0, -dy], [y1 - p.y, dy]]) {
+            if (den === 0) {
+                if (num < 0) return false;
+            } else {
+                const t = num / den;
+                if (den < 0) t0 = Math.max(t0, t);
+                else t1 = Math.min(t1, t);
+            }
         }
+        return t0 < t1;
+    }
+
+    function pointToSegment(p, a, b) {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const t = dx || dy ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy))) : 0;
+        return Math.hypot(p.x - a.x - t * dx, p.y - a.y - t * dy);
+    }
+
+    /** Whether the segments p0→p1 and q0→q1 cross away from their ends. */
+    function segmentsCross(p0, p1, q0, q1) {
+        const side = (a, b, c) => Math.sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+        return side(p0, p1, q0) * side(p0, p1, q1) < 0 && side(q0, q1, p0) * side(q0, q1, p1) < 0;
+    }
+
+    /**
+     * An isometric connector from block top to block top along the grid axes: one corner (either axis first), two (a
+     * step a quarter, half or three quarters of the way), or straight when every grid route runs under a block. It
+     * takes the route whose legs cross the fewest blocks and labels (the joined blocks' own labels too) and that stays
+     * inside `bounds` (the safe area) and runs along or across no connector drawn before (`taken`: their points; the new
+     * route is added), the simpler one on a tie.
+     */
+    function isoPath(a, b, others, bounds, taken = []) {
+        const p = { x: a.x, y: a.y + a.dy };
+        const q = { x: b.x, y: b.y + b.dy };
+        const dx = q.x - p.x;
+        const dy = q.y - p.y;
+        // d = u·(1, ½) + v·(−1, ½): the two grid axes on screen.
+        const u = (dx + 2 * dy) / 2;
+        const v = (2 * dy - dx) / 2;
+        const U = (k) => ({ x: k, y: k / 2 });
+        const V = (k) => ({ x: -k, y: k / 2 });
+        const at = (...steps) => steps.reduce((o, s) => ({ x: o.x + s.x, y: o.y + s.y }), p);
+        const routes = [[at(U(u))], [at(V(v))]];
+        for (const t of [0.5, 0.25, 0.75]) routes.push([at(U(u * t)), at(U(u * t), V(v))], [at(V(v * t)), at(V(v * t), U(u))]);
+        routes.push([]);
+        const score = (corners, i) => {
+            const pts = [p, ...corners, q];
+            let hits = 0;
+            for (const n of others) {
+                // The block (its top face and sides; not the two the connector joins) and its label plate.
+                const lift = n.size * n.lift * 2;
+                const block = { x: n.x, y: n.y + n.dy + lift / 2, w: n.size * 2, h: n.size + lift };
+                const label = { x: n.x, y: n.y + n.h / 2 - n.labelH / 2, w: n.labelW, h: n.labelH };
+                for (const r of n === a || n === b ? [label] : [block, label]) {
+                    for (let k = 1; k < pts.length; k += 1) hits += segmentHits(pts[k - 1], pts[k], r);
+                }
+            }
+            const out = corners.some((m) => m.x < bounds.x || m.x > bounds.x + bounds.w || m.y < bounds.y || m.y > bounds.y + bounds.h);
+            // Shared legs (a bus no one can read) and crossings with the connectors already drawn.
+            let shared = 0;
+            for (const line of taken) {
+                for (let k = 1; k < pts.length; k += 1) {
+                    for (let j = 1; j < line.length; j += 1) {
+                        const [s0, s1, t0, t1] = [pts[k - 1], pts[k], line[j - 1], line[j]];
+                        // A corner of one on the other's leg reads as a junction.
+                        const corner = (k < pts.length - 1 && pointToSegment(s1, t0, t1) < 8) || (j < line.length - 1 && pointToSegment(t1, s0, s1) < 8);
+                        const near = corner || [0.25, 0.5, 0.75].some((f) => pointToSegment({ x: s0.x + (s1.x - s0.x) * f, y: s0.y + (s1.y - s0.y) * f }, t0, t1) < 6);
+                        if (near) shared += 1;
+                        else if (segmentsCross(s0, s1, t0, t1)) shared += 0.3;
+                    }
+                }
+            }
+            return hits * 10 + (out ? 100 : 0) + shared * 4 + i * 0.1;
+        };
+        const best = routes.map((r, i) => ({ r, s: score(r, i) })).sort((x, y) => x.s - y.s)[0].r;
+        taken.push([p, ...best, q]);
+        return `M${p.x},${p.y} ${best.map((m) => `L${m.x},${m.y}`).join(" ")} L${q.x},${q.y}`;
+    }
+
+    function edgePath(a, b, kind, direction, sketch, seed, unit, via) {
         let p;
         let q;
         let c1;
@@ -414,6 +518,19 @@
         if (kind === "flow") {
             const lr = direction === "lr";
             const forward = lr ? b.x > a.x + 1 : b.y > a.y + 1;
+            if (forward && via?.length) {
+                // Through the waypoints of a long edge: one S-curve per layer, leaving and entering along the flow.
+                const pts = [lr ? { x: a.x + a.w / 2, y: a.y } : { x: a.x, y: a.y + a.h / 2 }, ...via.map((w) => ({ x: w.x, y: w.y })),
+                    lr ? { x: b.x - b.w / 2, y: b.y } : { x: b.x, y: b.y - b.h / 2 }];
+                let d = `M${pts[0].x},${pts[0].y}`;
+                for (let i = 1; i < pts.length; i += 1) {
+                    const s0 = pts[i - 1];
+                    const s1 = pts[i];
+                    const m = lr ? (s1.x - s0.x) / 2 : (s1.y - s0.y) / 2;
+                    d += lr ? ` C${s0.x + m},${s0.y} ${s1.x - m},${s1.y} ${s1.x},${s1.y}` : ` C${s0.x},${s0.y + m} ${s1.x},${s1.y - m} ${s1.x},${s1.y}`;
+                }
+                return d;
+            }
             if (forward) {
                 p = lr ? { x: a.x + a.w / 2, y: a.y } : { x: a.x, y: a.y + a.h / 2 };
                 q = lr ? { x: b.x - b.w / 2, y: b.y } : { x: b.x, y: b.y - b.h / 2 };
@@ -468,7 +585,9 @@
     const CSS = `
 .dg-layer { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
 .dg-title { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--heading-font), Arial, sans-serif;
-  font-weight: 800; color: var(--text); letter-spacing: -0.01em; text-shadow: 0 3px 18px rgba(0,0,0,.45); }
+  font-weight: 800; color: var(--text); letter-spacing: -0.01em; line-height: 1.15; }
+.dg-title span { display: inline-block; padding: .16em .55em .2em; border-radius: .35em; box-shadow: 0 .2em .6em rgba(0,0,0,.28);
+  background: color-mix(in srgb, var(--background) 90%, transparent); }
 .dg-node { position: absolute; display: flex; align-items: center; justify-content: center; gap: .35em; opacity: 0; }
 .dg-plate { position: absolute; inset: 0; border-radius: var(--dg-radius); background: color-mix(in srgb, var(--background) 92%, transparent);
   box-shadow: 0 14px 34px rgba(0,0,0,.35); border: var(--dg-border) solid color-mix(in srgb, var(--text) 22%, transparent); }
@@ -517,11 +636,14 @@
         return { W, H, unit: Math.min(W, H) / 1080, END: Number(rootEl.dataset.duration) || 6 };
     }
 
-    /** The area a diagram fills: inside 72 px, under the title, above a phone's caption band on 9:16. */
-    function areaFor(W, H, unit, hasTitle) {
+    /**
+     * The area a diagram fills: inside 72 px, under the title, above a phone's caption band on 9:16 and, on 16:9,
+     * above the band the step notes take.
+     */
+    function areaFor(W, H, unit, hasTitle, hasNotes = false) {
         const portrait = H > W;
         const top = (hasTitle ? (portrait ? 0.15 : 0.17) : portrait ? 0.1 : 0.08) * H;
-        const bottom = (portrait ? 0.76 : 0.92) * H;
+        const bottom = (portrait ? 0.76 : hasNotes ? 0.8 : 0.92) * H;
         return { x: 72 * unit, y: top, w: W - 144 * unit, h: bottom - top };
     }
 
@@ -551,7 +673,7 @@
         if (sketch) rootEl.classList.add("dg-sketch");
         rootEl.style.setProperty("--dg-border", `${3 * unit}px`);
         rootEl.style.setProperty("--dg-radius", `${(kind === "mind" ? 40 : 22) * unit}px`);
-        const area = areaFor(W, H, unit, Boolean(title));
+        const area = areaFor(W, H, unit, Boolean(title), (data.steps ?? []).some((s) => s.note));
         const layout = kind === "flow" ? flowLayout(data, area, unit, data.direction) : kind === "mind" ? mindLayout(data, area, unit) : isoLayout(data, area, unit);
         const byId = new Map(layout.nodes.map((n) => [n.id, n]));
         if (kind === "iso") layout.nodes.forEach((n) => (n.cell = layout.cell));
@@ -563,10 +685,12 @@
         };
 
         if (title) {
-            const t = el("div", { class: "dg-title", text: title }, rootEl);
+            // On a plate in the node colour: the title stays readable over any footage, dark text or light.
+            const t = el("div", { class: "dg-title" }, rootEl);
+            el("span", { text: title }, t);
             const portrait = H > W;
             t.style.top = `${(portrait ? 0.075 : 0.05) * H}px`;
-            t.style.fontSize = `${Math.min(64 * unit, ((W - 160 * unit) / Math.max(1, textWidth(title, 1))))}px`;
+            t.style.fontSize = `${Math.min(64 * unit, ((W - 160 * unit) / Math.max(1, textWidth(title, 1) + 1.1)))}px`;
             t.style.padding = `0 ${72 * unit}px`;
             fromToState(tl, t, { opacity: 0, y: 30 * unit }, { opacity: 1, y: 0 }, 0.15, 0.5, "power3.out");
         }
@@ -643,10 +767,12 @@
 
         // Edges: drawn on once both ends are there.
         const edgeParts = [];
+        const taken = [];
         layout.edges.forEach((e, i) => {
             const a = byId.get(e.from);
             const b = byId.get(e.to);
-            const d = edgePath(a, b, kind, layout.direction, sketch, `${e.from}>${e.to}`, unit);
+            const d = kind === "iso" ? isoPath(a, b, layout.nodes, { x: 60 * unit, y: 60 * unit, w: W - 120 * unit, h: H - 120 * unit }, taken)
+                : edgePath(a, b, kind, layout.direction, sketch, `${e.from}>${e.to}`, unit, e.via);
             const base = el("path", { d, fill: "none", stroke: "var(--text)", "stroke-opacity": kind === "iso" ? 0.55 : 0.7, "stroke-width": (kind === "iso" ? 7 : 5) * unit, "stroke-linecap": "round", "stroke-linejoin": "round" }, edgeLayer, true);
             const hot = el("path", { d, fill: "none", stroke: "var(--accent)", "stroke-width": (kind === "iso" ? 9 : 7) * unit, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0 }, edgeLayer, true);
             const length = base.getTotalLength();
@@ -758,10 +884,10 @@
 
     // MARK: big canvas
 
-    /** The camera frame (centre and scale) that shows box b on a W × H screen. */
-    function frameBox(b, W, H, maxScale, noteSide) {
-        const s = Math.min((W * 0.84) / b.w, (H * (noteSide ? 0.54 : 0.74)) / b.h, maxScale);
-        return { cx: b.x + b.w / 2, cy: b.y + b.h / 2 + (noteSide * H * 0.13) / s, s };
+    /** The camera frame (centre and scale) that shows box b in the screen band y0…y1 (px) of a W × H screen. */
+    function frameBox(b, W, H, maxScale, y0 = 0, y1 = H) {
+        const s = Math.min((W * 0.9) / b.w, ((y1 - y0) * 0.9) / b.h, maxScale);
+        return { cx: b.x + b.w / 2, cy: b.y + b.h / 2 - ((y0 + y1) / 2 - H / 2) / s, s };
     }
 
     function unionBox(nodes, pad) {
@@ -776,10 +902,12 @@
     function canvasLayout(data, W, H, size) {
         const k = Math.max(1.2, Math.min(4, Number(size) || 2));
         // A tall canvas is kept squarer than the screen: a radial map uses the width, and the end view (width-bound
-        // on 9:16) keeps its labels larger.
-        const worldW = W >= H ? Math.min(W * k, H * k * 1.6) : W * k;
-        const worldH = W >= H ? H * k : Math.min(H * k, W * k * 1.25);
-        const unit = Math.min(worldW, worldH) / 1080;
+        // on 9:16) keeps its labels larger. A wide one leaves out the summary band, so the end view fills the width.
+        const worldW = W * k;
+        const worldH = W >= H ? H * k * (data.summary ? 0.8 : 1) : Math.min(H * k, W * k * 1.25);
+        // Labels are laid out 1.25× (16:9: 1.35×) larger than a screen's: the end view shows the whole map at ~1/k and they stay
+        // ≥ ~40 px at 1080 wide.
+        const unit = (Math.min(worldW, worldH) / 1080) * (W >= H ? 1.35 : 1.25);
         const area = { x: 80 * unit, y: 80 * unit, w: worldW - 160 * unit, h: worldH - 160 * unit };
         const layout = mindLayout(data, area, unit);
         return { ...layout, worldW, worldH, k, unit };
@@ -802,7 +930,8 @@
         const t = world.tree;
         const view = el("div", { class: "dg-layer", style: `width:${worldW}px;height:${worldH}px;transform-origin:0 0;` }, rootEl);
         view.setAttribute("data-layout-allow-overflow", "");
-        const paper = el("div", { class: "dg-layer", style: `width:${worldW}px;height:${worldH}px;background-color:var(--background);background-image:radial-gradient(color-mix(in srgb, var(--text) 16%, transparent) ${2.2 * unit}px, transparent ${2.6 * unit}px);background-size:${44 * unit}px ${44 * unit}px;` }, view);
+        // The paper runs a canvas past each edge: the camera frames a branch near the edge without showing its end.
+        const paper = el("div", { class: "dg-layer", style: `left:${-worldW}px;top:${-worldH}px;width:${worldW * 3}px;height:${worldH * 3}px;background-color:var(--background);background-image:radial-gradient(color-mix(in srgb, var(--text) 16%, transparent) ${2.2 * unit}px, transparent ${2.6 * unit}px);background-size:${44 * unit}px ${44 * unit}px;` }, view);
         paper.setAttribute("data-layout-allow-overflow", "");
         const under = el("div", { class: "dg-layer", style: `width:${worldW}px;height:${worldH}px` }, view);
         const svg = el("svg", { class: "dg-layer", width: worldW, height: worldH, viewBox: `0 0 ${worldW} ${worldH}` }, view, true);
@@ -875,60 +1004,99 @@
             return start + dur * 0.45;
         };
 
-        // Camera.
-        // The end view shows the whole canvas (above the summary note when there is one); the paper colour fills the
-        // frame around it. A stop's view stays inside the canvas and zooms in at most 0.8 (labels ~1.5× their size).
+        // Camera. A stop frames its branch (the root stop: the root and its children) centred in the part of the screen
+        // its note leaves free; the note takes the band (top or bottom) that covers fewer labels already drawn. The end
+        // view frames the whole map above the summary note. Zoom in at most 0.8 (labels ~1.5× their size at the end).
         rootEl.style.background = "var(--background)";
-        const noteRoom = data.summary ? 0.8 : 1;
-        const overviewScale = Math.min(W / worldW, (H * noteRoom) / worldH) * 0.98;
-        const overview = { cx: worldW / 2, cy: worldH / 2 + (H * (1 - noteRoom)) / 2 / overviewScale, s: overviewScale };
         const maxScale = 0.8;
-        const cover = Math.max(W / worldW, H / worldH);
-        const inside = (f) => {
-            const sc = Math.max(f.s, cover);
-            return {
-                s: sc,
-                cx: Math.min(Math.max(f.cx, W / (2 * sc)), worldW - W / (2 * sc)),
-                cy: Math.min(Math.max(f.cy, H / (2 * sc)), worldH - H / (2 * sc)),
-            };
+        const portrait = H > W;
+        const noteFont = 40 * screenUnit;
+        const noteHeight = (text, font, maxW) => {
+            const lines = wrap(text, maxW - font * 1.8, font, 6)?.length ?? 3;
+            return lines * font * 1.2 + font * 1.4;
         };
-        const frames = stops.map((s) => {
-            let noteSide = 0;
+        // Screen bands a note can take, and what is left for the picture: [noteTop, freeTop, freeBottom].
+        const bands = (h) => ({
+            bottom: [H * (portrait ? 0.7 : 0.94) - h, H * 0.05, H * (portrait ? 0.7 : 0.94) - h - 24 * screenUnit],
+            top: [H * 0.06, H * 0.06 + h + 24 * screenUnit, H * (portrait ? 0.86 : 0.95)],
+        });
+        const toScreen = (f, n) => ({ x: W / 2 + (n.x - f.cx) * f.s, y: H / 2 + (n.y - f.cy) * f.s, w: n.w * f.s, h: n.h * f.s });
+        const all = world.nodes;
+        const summaryH = data.summary ? noteHeight(data.summary, 44 * screenUnit, W * 0.74) : 0;
+        const summaryTop = H * (portrait ? 0.86 : 0.95) - summaryH;
+        const overview = frameBox(unionBox(all, 40 * unit), W, H, maxScale, H * 0.04, data.summary ? summaryTop - 20 * screenUnit : H * 0.96);
+        // A frame on box in the band y0…y1 that leaves no label cut at the screen's edge: the smallest pan (the branch
+        // staying in the band) that takes every cut label in or pushes it out, zooming out step by step (never below the
+        // end view) until one does.
+        const frameWith = (box, y0, y1, others) => {
+            const m = 12 * screenUnit;
+            const cuts = (g) => others.filter((n) => {
+                const r = toScreen(g, n);
+                const inside = r.x - r.w / 2 >= 0 && r.x + r.w / 2 <= W && r.y - r.h / 2 >= 0 && r.y + r.h / 2 <= H;
+                // Off by the margin: a sketched outline wobbles past its box.
+                const outside = r.x + r.w / 2 <= -m || r.x - r.w / 2 >= W + m || r.y + r.h / 2 <= -m || r.y - r.h / 2 >= H + m;
+                return !inside && !outside;
+            });
+            const settle = (b, scale) => {
+                const f = frameBox(b, W, H, scale, y0, y1);
+                const s0 = toScreen(f, { x: b.x + b.w / 2, y: b.y + b.h / 2, w: b.w, h: b.h });
+                const lim = { l: s0.x - s0.w / 2 - m, r: W - m - (s0.x + s0.w / 2), u: s0.y - s0.h / 2 - y0, d: y1 - (s0.y + s0.h / 2) };
+                // Screen moves of the content that put a label's edge on the screen's edge (in, with a margin, or out).
+                const xs = [0];
+                const ys = [0];
+                for (const n of others) {
+                    const r = toScreen(f, n);
+                    xs.push(W - m - (r.x + r.w / 2), W + m - (r.x - r.w / 2) + 1, m - (r.x - r.w / 2), -m - (r.x + r.w / 2) - 1);
+                    ys.push(H - m - (r.y + r.h / 2), H + m - (r.y - r.h / 2) + 1, m - (r.y - r.h / 2), -m - (r.y + r.h / 2) - 1);
+                }
+                let best = null;
+                for (const dx of xs.filter((v) => v >= -lim.l && v <= lim.r)) {
+                    for (const dy of ys.filter((v) => v >= -lim.u && v <= lim.d)) {
+                        const g = { ...f, cx: f.cx - dx / f.s, cy: f.cy - dy / f.s };
+                        const score = cuts(g).length * 1e6 + Math.hypot(dx, dy);
+                        if (!best || score < best.score) best = { g, score };
+                    }
+                }
+                return best;
+            };
+            let best = settle(box, maxScale);
+            for (let scale = best.g.s * 0.92; best.score >= 1e6 && scale >= overview.s; scale *= 0.92) {
+                const next = settle(box, scale);
+                if (next.score < best.score) best = next;
+            }
+            return best.g;
+        };
+        const drawnBefore = new Set();
+        const frames = stops.map((s, i) => {
             let box;
+            let focusIds = [];
             if (Array.isArray(s.focus) && s.focus.length === 4) box = { x: s.focus[0] * worldW, y: s.focus[1] * worldH, w: s.focus[2] * worldW, h: s.focus[3] * worldH };
             else if (byId.has(String(s.focus))) {
                 const id = String(s.focus);
-                const group = id === t.top ? [byId.get(id), ...t.children.get(id).map((k) => byId.get(k))] : subtree(id).map((k) => byId.get(k));
-                box = unionBox(group, 60 * unit);
-                // The note goes on the screen side away from the root, so it never covers the centre of the map.
-                if (s.note) noteSide = byId.get(t.top).y > box.y + box.h / 2 + 1 ? -1 : 1;
-            } else box = { x: 0, y: 0, w: worldW, h: worldH };
-            if (s.note && !noteSide) noteSide = 1;
-            let f = frameBox(box, W, H, maxScale, noteSide);
-            if (typeof s.zoom === "number" && s.zoom > 0) f.s = overview.s * s.zoom;
-            f = inside(f);
-            // Keeping the view inside the canvas can undo the room made for the note: then the note takes the other
-            // band, or the view zooms out until one band is clear of the branch.
-            if (s.note) {
-                // The branch and the root (usually in view next to it) both stay clear of the note.
-                const r = byId.get(t.top);
-                const y0 = Math.min(box.y, r.y - r.h / 2);
-                const y1 = Math.max(box.y + box.h, r.y + r.h / 2);
-                const clear = (g, side) => {
-                    const top = H / 2 + (y0 - g.cy) * g.s;
-                    const bottom = H / 2 + (y1 - g.cy) * g.s;
-                    const band = side < 0 ? [H * 0.05, H * 0.23] : [H * (H > W ? 0.66 : 0.7), H * (H > W ? 0.84 : 0.95)];
-                    return bottom < band[0] || top > band[1];
-                };
-                for (let k = 0; k < 6 && !clear(f, noteSide); k += 1) {
-                    if (clear(f, -noteSide)) noteSide = -noteSide;
-                    else {
-                        const sc = f.s * 0.85;
-                        f = inside({ cx: box.x + box.w / 2, cy: box.y + box.h / 2 + (noteSide * H * 0.13) / sc, s: sc });
-                    }
-                }
+                focusIds = id === t.top ? [id, ...t.children.get(id)] : subtree(id);
+                // Only what is on the canvas by the end of the stop: the root stop draws the root alone.
+                const there = focusIds.filter((k) => drawnBefore.has(k) || plan[i].includes(k));
+                box = unionBox((there.length ? there : focusIds).map((k) => byId.get(k)), 50 * unit);
+            } else box = unionBox(all, 40 * unit);
+            // Labels on screen by the end of this stop that are not the branch.
+            const visible = all.filter((n) => (drawnBefore.has(n.id) || plan[i].includes(n.id)) && !focusIds.includes(n.id));
+            let f;
+            if (!s.note) f = frameWith(box, H * 0.05, H * 0.95, visible);
+            else {
+                const h = noteHeight(s.note, noteFont, W * 0.72);
+                const options = Object.entries(bands(h)).map(([side, [noteTop, y0, y1]]) => {
+                    const g = frameWith(box, y0, y1, visible);
+                    // They may sit under the note.
+                    const hits = visible.map((n) => toScreen(g, n)).filter((r) => r.x + r.w / 2 > W * 0.12 && r.x - r.w / 2 < W * 0.88
+                        && r.y + r.h / 2 > noteTop && r.y - r.h / 2 < noteTop + h).length;
+                    return { side, noteTop, g, hits };
+                });
+                const pick = options.sort((a, b) => a.hits - b.hits || (a.side === "bottom" ? -1 : 1))[0];
+                f = pick.g;
+                s.noteTop = pick.noteTop;
             }
-            s.noteSide = noteSide;
+            if (typeof s.zoom === "number" && s.zoom > 0) f.s = overview.s * s.zoom;
+            plan[i].forEach((id) => drawnBefore.add(id));
             return f;
         });
         const place = (f) => ({ x: W / 2 - f.cx * f.s, y: H / 2 - f.cy * f.s, scale: f.s });
@@ -954,7 +1122,7 @@
             for (const id of ids) at = drawNode(byId.get(id), at, each);
             if (s.note) {
                 const note = el("div", { class: "dg-note", text: s.note }, rootEl);
-                note.style.cssText += `font-size:${40 * screenUnit}px;max-width:${W * 0.72}px;left:${W * 0.14}px;top:${s.noteSide < 0 ? H * 0.07 : H * (H > W ? 0.68 : 0.72)}px;transform:rotate(-2deg)`;
+                note.style.cssText += `font-size:${noteFont}px;max-width:${W * 0.72}px;left:${W * 0.14}px;top:${s.noteTop}px;transform:rotate(-2deg)`;
                 fromToState(tl, note, { opacity: 0, y: 40 * screenUnit, rotation: -6 }, { opacity: 1, y: 0, rotation: -2 }, Math.min(at, next - 0.8), 0.4, "back.out(1.7)");
                 fromToState(tl, note, { opacity: 1 }, { opacity: 0 }, next - 0.35, 0.3);
             }
@@ -963,7 +1131,7 @@
         for (const id of rest) late = drawNode(byId.get(id), late, 0.5);
         if (data.summary) {
             const note = el("div", { class: "dg-note", text: data.summary }, rootEl);
-            note.style.cssText += `font-size:${44 * screenUnit}px;max-width:${W * 0.74}px;left:${W * 0.13}px;top:${H * 0.83}px;transform:rotate(-2deg)`;
+            note.style.cssText += `font-size:${44 * screenUnit}px;max-width:${W * 0.74}px;left:${W * 0.13}px;top:${summaryTop}px;transform:rotate(-2deg)`;
             fromToState(tl, note, { opacity: 0, y: 40 * screenUnit }, { opacity: 1, y: 0 }, outAt + 0.9, 0.45, "back.out(1.7)");
             fromToState(tl, note, { opacity: 1 }, { opacity: 0 }, END - 0.5, 0.4);
         }

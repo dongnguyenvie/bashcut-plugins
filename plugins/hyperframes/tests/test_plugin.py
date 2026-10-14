@@ -1189,6 +1189,26 @@ console.log(JSON.stringify(out));
             self.assertEqual(0, row["outside"], row)
             self.assertGreaterEqual(row["font"], 20, row)
 
+    def test_flow_runs_the_canvas_way_and_a_long_edge_goes_round_the_middle_node(self):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        script = r"""
+const d = require(process.argv[1]);
+const data = { nodes: ["req", "check", "fraud", "pay", "bank", "mail"].map((id) => ({ id, label: id === "pay" ? "Payment gateway" : id })),
+  edges: [["req", "check"], ["check", "fraud"], ["check", "pay"], ["fraud", "pay"], ["pay", "bank"], ["pay", "mail"]].map(([from, to]) => ({ from, to })) };
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const L = d.flowLayout(data, d.areaFor(W, H, u, true, true), u);
+  const fraud = L.nodes.find((n) => n.id === "fraud");
+  const via = L.edges.find((e) => e.from === "check" && e.to === "pay").via ?? [];
+  out.push({ direction: L.direction, via: via.length, clear: via.every((w) => d.overlapping([w, fraud]).length === 0) });
+}
+console.log(JSON.stringify(out));
+"""
+        out = subprocess.run([node, "-e", script, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=30)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual([{"direction": "tb", "via": 1, "clear": True}, {"direction": "lr", "via": 1, "clear": True}], json.loads(out.stdout))
+
     def test_steps_without_times_are_spread_and_sorted(self):
         node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
         script = 'const d = require(process.argv[1]); console.log(JSON.stringify(d.timedSteps([{at: 4, focus: "b"}, {focus: ["a"]}, {focus: []}], 8).map((s) => [s.at, s.focus])))'

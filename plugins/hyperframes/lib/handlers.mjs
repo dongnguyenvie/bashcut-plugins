@@ -72,8 +72,10 @@ function provideScripts(composition) {
     const loads = (file) => new RegExp(`(src|href)=["']\\.?\\/?${file.replace(/[./]/g, "\\$&")}["']`).test(html);
     const target = join(composition.dir, "gsap.min.js");
     if (loads("gsap.min.js") && !existsSync(target)) copyFileSync(paths.gsap, target);
+    // The shared scripts are the plugin's: a copy older than the plugin's is replaced, so a rerender gets layout fixes.
     for (const [file, from] of [["diagram.js", paths.diagram], ["amenity-map.js", paths.amenityMap]]) {
-        if (loads(file) && !existsSync(join(composition.dir, file))) copyFileSync(from, join(composition.dir, file));
+        const copy = join(composition.dir, file);
+        if (loads(file) && (!existsSync(copy) || !readFileSync(copy).equals(readFileSync(from)))) copyFileSync(from, copy);
     }
     if (loads("lottie.min.js") && !existsSync(join(composition.dir, "lottie.min.js"))) {
         if (!existsSync(paths.lottie)) {
