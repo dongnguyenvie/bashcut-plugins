@@ -243,6 +243,49 @@
       "hooks": []
     },
     {
+      "id": "bashcut.resources",
+      "versions": [
+        {
+          "version": "0.0.1",
+          "apiVersion": 8,
+          "minApiVersion": 8,
+          "minAppVersion": "0.0.23",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/resources-v0.0.1/bashcut.resources-0.0.1.zip",
+          "sha256": "30c5432d1f976f75e0aa1d3801aca1c4e29fb672c25a6fc4d674af27b461959c",
+          "signature": "ed25519:OVz//uO4Jba3PC8Ra3YR+btv9Q5po3UmBRGEirDltGQJz4S8fkuX9JQbD18gKBJgNRGupZBg05omAYEYzAbEDw==",
+          "size": 88575,
+          "downloadBytes": 400000,
+          "releasedAt": "2026-10-14"
+        }
+      ],
+      "name": {
+        "en": "Online Resources",
+        "vi": "Tài nguyên trực tuyến"
+      },
+      "summary": {
+        "en": "Search and download stock photos and video, music, sound effects, illustrations, emoji, logos, fonts and LUTs from open sources into your library, in one sheet. The same fetch scripts the AI editor uses, so what you download is found by the agent first.",
+        "vi": "Tìm và tải ảnh, video stock, nhạc, hiệu ứng âm thanh, minh hoạ, emoji, logo, phông chữ và LUT từ các nguồn mở vào thư viện, trong một bảng. Dùng chung script tải với AI biên tập, nên những gì bạn tải agent sẽ thấy trước."
+      },
+      "publisher": "bashcut",
+      "author": {
+        "name": "BashCut"
+      },
+      "category": "utilities",
+      "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/resources",
+      "capabilities": [],
+      "actions": [
+        "bashcut.resources.open",
+        "bashcut.resources.search",
+        "bashcut.resources.download",
+        "bashcut.resources.fetch"
+      ],
+      "hooks": []
+    },
+    {
       "id": "bashcut.silence-markers",
       "versions": [
         {
