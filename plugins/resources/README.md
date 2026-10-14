@@ -10,6 +10,10 @@ library refuses Lottie stickers). The library is searched
 first and results already in it are marked; downloads are saved with tags (and audio is measured), so the agent finds
 them with `library list` before fetching anything.
 
+Every filter in the search row is labelled (Type, Source, Orientation, and Save to by the download button). Photo and
+video searches start with the project's orientation (portrait for a 9:16 project), and an empty sheet offers three
+example searches for the chosen type. While a search runs, placeholder tiles stand where the results will be.
+
 One implementation for people and agents: `scripts/fetch_*.py` are the fetchers the agent kit runs (its skills keep
 thin shims that run these files), and every button is an action:
 
