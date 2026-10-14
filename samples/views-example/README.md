@@ -26,7 +26,9 @@ places a view can live:
 It also has a Tools action (**Say hello**) that calls BashCut while it runs, a skill for agents, and
 `requires` on the built-in `bashcut.audio-analysis` plugin.
 
-It is a sample: never published to the registry (the registry refuses `python3` plugins for end users).
+It is a sample: never published to the registry (the registry refuses `python3` plugins for end users). Its manifest
+has `"category": "sample"`, so BashCut hides it (rail, menus, Plugins) until **Settings › General › Developer mode** is on;
+the command line and agents still reach it.
 
 ## Try it
 

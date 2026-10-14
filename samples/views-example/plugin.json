@@ -5,11 +5,11 @@
     "en": "Views Example",
     "vi": "Ví dụ giao diện"
   },
-  "version": "0.0.1",
+  "version": "0.0.2",
   "apiVersion": 8,
   "entrypoint": "bin/provider",
   "transport": "session",
-  "category": "utilities",
+  "category": "sample",
   "capabilities": [],
   "dependencies": [],
   "requires": [

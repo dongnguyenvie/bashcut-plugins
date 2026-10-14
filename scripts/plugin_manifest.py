@@ -18,8 +18,9 @@ API_CURRENT = 9
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")
 # Plugin categories, in BashCut's display order (PluginCategory in the app). listing.json and plugin.json may only
-# name one of these; scripts/build-registry.py --check rejects anything else.
-CATEGORIES = ("agents", "captions", "voice", "audio", "color", "effects", "export", "utilities")
+# name one of these; scripts/build-registry.py --check rejects anything else. "sample" marks the examples in samples/:
+# BashCut hides them unless Settings > General > Developer mode is on (the app shows them under Utilities otherwise).
+CATEGORIES = ("agents", "captions", "voice", "audio", "color", "effects", "export", "utilities", "sample")
 OPTION_TYPES = ("string", "enum", "number", "integer", "bool", "file", "secret")
 PLACEMENTS = {
     "menu.plugins", "toolbar", "clip.context", "track.context", "timeline.context", "media.context",
