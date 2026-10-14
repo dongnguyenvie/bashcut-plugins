@@ -64,7 +64,6 @@ LABELS = {
     "lottie": ("Lottie", "Lottie"),
 }
 TEXT = {
-    "title": ("Online resources", "Tài nguyên trực tuyến"),
     "search": ("Search", "Tìm"),
     "placeholder": ("coffee, whoosh, figma…", "cà phê, whoosh, figma…"),
     "library": ("In your library", "Đã có trong thư viện"),
@@ -72,20 +71,55 @@ TEXT = {
     "inLibrary": ("In library", "Đã có"),
     "download": ("Download to Library", "Tải về thư viện"),
     "more": ("Load more", "Xem thêm"),
-    "empty": ("Search to see results.", "Tìm để xem kết quả."),
+    "empty": ("Search free photos, videos, music, sound effects, stickers and fonts.",
+              "Tìm ảnh, video, nhạc, hiệu ứng âm thanh, sticker và phông chữ miễn phí."),
+    "try": ("Try:", "Thử:"),
+    "type": ("Type", "Loại"),
+    "source": ("Source", "Nguồn"),
+    "scope": ("Save to", "Lưu vào"),
     "none": ("Nothing found.", "Không tìm thấy."),
     "scope.project": ("This project", "Project này"), "scope.user": ("My library (this Mac)", "Thư viện của tôi"),
     "sample": ("Sample text", "Chữ mẫu"),
     "fetchLuts": ("Fetch LUT packs", "Tải các gói LUT"),
     "orientation": ("Orientation", "Hướng"),
+    "orientation.any": ("Any orientation", "Mọi hướng"), "orientation.portrait": ("Portrait", "Dọc"),
+    "orientation.landscape": ("Landscape", "Ngang"), "orientation.square": ("Square", "Vuông"),
     "preview": ("Preview", "Nghe thử"),
     "selected": ("selected", "đã chọn"),
     "working": ("Working…", "Đang xử lý…"),
 }
 
 
+# Readable names for the source picker; a source without one shows its id.
+SOURCE_NAMES = {
+    "auto": ("Any free source", "Mọi nguồn miễn phí"), "free": ("Free (no key)", "Miễn phí (không cần key)"),
+    "both": ("Noto + OpenMoji", "Noto + OpenMoji"), "all": ("All sources", "Mọi nguồn"),
+    "gmic,rawtherapee": ("G'MIC + RawTherapee", "G'MIC + RawTherapee"), "wikimedia": ("Wikimedia Commons",) * 2,
+    "openverse": ("Openverse",) * 2, "nasa": ("NASA",) * 2, "archive": ("Internet Archive",) * 2,
+    "documentary": ("Documentary archives", "Kho tư liệu"), "pexels": ("Pexels",) * 2, "pixabay": ("Pixabay",) * 2,
+    "freesound": ("Freesound",) * 2, "mixkit": ("Mixkit",) * 2, "open-peeps": ("Open Peeps",) * 2,
+    "open-doodles": ("Open Doodles",) * 2, "humaaans": ("Humaaans",) * 2, "undraw": ("unDraw",) * 2,
+    "noto": ("Noto",) * 2, "openmoji": ("OpenMoji",) * 2, "simple-icons": ("Simple Icons",) * 2,
+    "fontsource": ("Fontsource",) * 2, "gmic": ("G'MIC",) * 2, "rawtherapee": ("RawTherapee",) * 2,
+    "useanimations": ("useAnimations",) * 2, "lottiefiles": ("LottieFiles",) * 2,
+}
+# Searches the empty sheet offers as buttons, per kind (search words stay English: the sources are).
+EXAMPLES = {
+    "photo": ["coffee", "city at night", "mountains"], "video": ["ocean waves", "street food", "timelapse"],
+    "music": ["lofi", "upbeat", "piano"], "sfx": ["whoosh", "click", "pop"],
+    "illustration": ["person", "working", "celebrate"], "emoji": ["fire", "heart", "laugh"],
+    "logo": ["figma", "youtube", "github"], "font": ["serif", "handwriting", "display"], "lut": [],
+    "lottie": ["loading", "check", "arrow"],
+}
+
+
 def tr(key, locale):
     pair = TEXT.get(key) or LABELS.get(key) or (key, key)
+    return pair[1] if str(locale or "").startswith("vi") else pair[0]
+
+
+def source_name(source, locale):
+    pair = SOURCE_NAMES.get(source) or (source, source)
     return pair[1] if str(locale or "").startswith("vi") else pair[0]
 
 
@@ -737,7 +771,7 @@ def browse(params, state, values, event, host):
     if node == "query" and isinstance(value, str):  # Return in the field (or plugins view-event --value)
         query = value.strip()
     scope = values.get("scope") or state.get("scope") or "project"
-    orientation = values.get("orientation") or state.get("orientation") or "any"
+    orientation = values.get("orientation") or state.get("orientation") or project_orientation(params)
     sample = values.get("sample") or state.get("sample") or ""
     selected = list(state.get("selected") or [])
     found = state.get("found")
@@ -746,18 +780,24 @@ def browse(params, state, values, event, host):
     if node == "kind" and kind != state.get("kind"):
         source, found, selected, message = KINDS[kind]["sources"][0], None, [], ""
         reset["source"] = source
+    if isinstance(node, str) and node.startswith("example.") and node[8:].isdigit():
+        examples = EXAMPLES.get(kind) or []
+        if int(node[8:]) < len(examples):
+            query = examples[int(node[8:])]
+            reset["query"] = query
+            node = "search"
     run_search = (node in ("search",) or (node == "query" and kind_of_event == "submit")
                   or (node == "kind" and query) or (node == "source" and query and found))
     try:
         if run_search or (node == "fetchLuts") or (kind == "lut" and found is None and node is None):
             if node == "fetchLuts":
                 host.render(body_of(locale, kind, source, query, scope, orientation, sample, found, selected,
-                                    tr("working", locale), busy=True), tr("title", locale))
+                                    tr("working", locale), busy=True))
                 rows = download(host, options, "lut", query, [], source, "user")
                 message = (rows[0].get("output") or "").splitlines()[-1:] or [""]
                 message = message[0][:300]
             host.render(body_of(locale, kind, source, query, scope, orientation, sample, found, selected,
-                                tr("working", locale), busy=True), tr("title", locale))
+                                tr("working", locale), busy=True))
             found = search(host, options, kind, query, source, 1, orientation, sample)
             selected = []
             message = message if node == "fetchLuts" else ""
@@ -765,7 +805,7 @@ def browse(params, state, values, event, host):
             selected = [s for s in selected if s != value] if value in selected else selected + [value]
         elif node == "results" and kind_of_event == "click" and value == "more" and found and found.get("next"):
             host.render(body_of(locale, kind, source, query, scope, orientation, sample, found, selected,
-                                tr("working", locale), busy=True), tr("title", locale))
+                                tr("working", locale), busy=True))
             more = search(host, options, kind, found["query"], found.get("source") or source, found["next"],
                           orientation, sample)
             found = {**found, "items": found["items"] + more["items"], "next": more["next"], "page": more["page"]}
@@ -781,7 +821,7 @@ def browse(params, state, values, event, host):
                                                 for i in found["items"]]}
         elif node == "download" and selected and found:
             host.render(body_of(locale, kind, source, query, scope, orientation, sample, found, selected,
-                                tr("working", locale), busy=True), tr("title", locale))
+                                tr("working", locale), busy=True))
             rows = download(host, options, kind, found["query"], selected, found.get("source") or source, scope)
             done = {r.get("id"): r.get("libraryId") for r in rows if r.get("libraryId")}
             if kind in ("emoji", "illustration"):  # picked by slot=n: the lines carry slot and n
@@ -804,7 +844,8 @@ def browse(params, state, values, event, host):
         message = error.message
     state = {"kind": kind, "source": source, "query": query, "scope": scope, "orientation": orientation,
              "sample": sample, "selected": selected, "found": found, "message": message}
-    answer = {"title": tr("title", locale), "state": state,
+    # No title of its own: the sheet header already says "Online resources".
+    answer = {"state": state,
               "body": body_of(locale, kind, source, query, scope, orientation, sample, found, selected, message)}
     if reset:
         for component in answer["body"]:
@@ -816,16 +857,17 @@ def browse(params, state, values, event, host):
 
 def body_of(locale, kind, source, query, scope, orientation, sample, found, selected, message, busy=False):
     kinds = [{"value": k, "label": tr(k, locale)} for k in KINDS]
-    sources = [{"value": s, "label": s} for s in KINDS[kind]["sources"]]
+    sources = [{"value": s, "label": source_name(s, locale)} for s in KINDS[kind]["sources"]]
     controls = [
-        {"type": "picker", "id": "kind", "label": "", "value": kind, "options": kinds},
+        {"type": "picker", "id": "kind", "label": tr("type", locale), "value": kind, "options": kinds},
         {"type": "textField", "id": "query", "placeholder": tr("placeholder", locale), "submit": True,
          **({"value": found["query"]} if found and found.get("query") else {})},
-        {"type": "picker", "id": "source", "label": "", "value": source, "options": sources},
+        {"type": "picker", "id": "source", "label": tr("source", locale), "value": source, "options": sources},
     ]
     if kind in ("photo", "video"):
-        controls.append({"type": "picker", "id": "orientation", "label": "", "value": orientation,
-                         "options": ["any", "portrait", "landscape", "square"]})
+        controls.append({"type": "picker", "id": "orientation", "label": tr("orientation", locale),
+                         "value": orientation, "options": [{"value": o, "label": tr(f"orientation.{o}", locale)}
+                                                           for o in ("any", "portrait", "landscape", "square")]})
     controls.append({"type": "button", "id": "search", "title": tr("search", locale), "icon": "magnifyingglass",
                      "style": "primary", "disabled": busy})
     body = [{"type": "row", "children": controls}]
@@ -867,15 +909,30 @@ def body_of(locale, kind, source, query, scope, orientation, sample, found, sele
                 "selected": selected, "empty": tr("none", locale)}
         if found.get("next"):
             grid["more"] = tr("more", locale)
-        body.append({"type": "section", "title": f"{tr('results', locale)} · {found.get('source')}",
+        body.append({"type": "section",
+                     "title": f"{tr('results', locale)} · {source_name(found.get('source'), locale)}",
                      "children": [grid]})
         if kind != "lut":
             body.append({"type": "row", "children": [
                 {"type": "text", "text": f"{len(selected)} {tr('selected', locale)}", "style": "secondary"},
-                {"type": "picker", "id": "scope", "label": "", "value": scope,
+                {"type": "picker", "id": "scope", "label": tr("scope", locale), "value": scope,
                  "options": [{"value": s, "label": tr(f"scope.{s}", locale)} for s in ("project", "user")]},
                 {"type": "button", "id": "download", "title": f"{tr('download', locale)} ({len(selected)})",
                  "icon": "arrow.down.to.line", "style": "primary", "disabled": busy or not selected}]})
     else:
         body.append({"type": "text", "text": tr("empty", locale), "style": "secondary"})
+        examples = EXAMPLES.get(kind) or []
+        if examples:
+            body.append({"type": "row", "children": [{"type": "text", "text": tr("try", locale), "style": "secondary"}]
+                         + [{"type": "button", "id": f"example.{n}", "title": text, "icon": "magnifyingglass",
+                             "disabled": busy} for n, text in enumerate(examples)]})
     return body
+
+
+def project_orientation(params):
+    """The first orientation of a photo or video search: the project's shape (portrait for 9:16), else any."""
+    project = ((params.get("context") or {}).get("project") or {})
+    width, height = project.get("width"), project.get("height")
+    if not isinstance(width, int) or not isinstance(height, int) or width <= 0 or height <= 0:
+        return "any"
+    return "portrait" if height > width else "landscape" if width > height else "square"

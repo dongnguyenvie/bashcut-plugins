@@ -146,6 +146,25 @@ class PluginTests(unittest.TestCase):
         self.assertEqual(cell["libraryItem"], "project:pixabay-12")
         self.assertIn("1 saved", saved["state"]["message"])
 
+    def test_the_empty_sheet_labels_its_filters_and_offers_example_searches(self):
+        host = FakeHost()
+        params = {"view": "browse", "locale": "en", "options": {},
+                  "context": {"project": {"width": 1080, "height": 1920}}}
+        first = resources.handle("view.render", {**params, "values": {}}, host)
+        self.assertEqual(plugin_manifest.view_problems(first), [])
+        self.assertNotIn("title", first)  # the sheet header already names the view
+        pickers = {n["id"]: n for n in first["body"][0]["children"] if n["type"] == "picker"}
+        self.assertEqual({k: v["label"] for k, v in pickers.items()},
+                         {"kind": "Type", "source": "Source", "orientation": "Orientation"})
+        self.assertEqual(pickers["source"]["options"][0]["label"], "Any free source")
+        self.assertEqual(pickers["orientation"]["value"], "portrait")  # a 9:16 project
+        self.assertEqual(find(first["body"], "example.0")["title"], "coffee")
+        found = resources.handle("view.event", {**params, "state": first["state"], "values": {"kind": "photo"},
+                                                "event": {"node": "example.0", "type": "click"}}, host)
+        self.assertEqual(found["state"]["query"], "coffee")
+        self.assertEqual(find(found["body"], "query")["value"], "coffee")
+        self.assertIsNotNone(find(found["body"], "results"))
+
     def test_lottie_tab_saves_picks_into_the_project_not_the_library(self):
         lottie = resources.module("fetch_lottie")
         shared, project = tempfile.mkdtemp(), Path(tempfile.mkdtemp())
