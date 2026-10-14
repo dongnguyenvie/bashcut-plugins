@@ -101,6 +101,18 @@ why (`bashcut.vlog:plan` §3).
 Each voiceover line's `section` makes the section markers on apply (labels from `plan.sections`), so review and the
 user see the structure.
 
+**A housing project (bất động sản)**, 35–60 s vertical, in four sections:
+- **1 The project**: its photo or render, 3–5 s with a drift. A generated or illustrative picture says so on screen
+  ("Ảnh tạo bằng AI · dự án minh hoạ"): `bashcut image disclose` labels every `generated` picture (review warns
+  `ai-undisclosed` until it does), and `amenity-radius` keeps its `disclosure` line up for an illustrative project.
+- **2 Routes to the landmarks, 3 amenities**: one `amenity-radius` graphic, 8–10 s, from one call on its copy:
+  `"$P/bin/osm-map" --dir <project>/graphics/area --points "project;landmark;…" --legs star --amenities
+  "school,hospital,mall,park" --radius 1000 [--places "…"]`. Every minute, km, count and "nearest" on screen is
+  from its output, never counted or measured by hand; landmarks within ~6 km (a farther one gets its own `map-route`).
+- **4 Price and CTA**: `cost-table` or `stat-counter` with the price's source and date, then the CTA, 4–6 s.
+
+Ranges: hook 1–3 s on the price or a count ("4 trường trong 1 km"); 0–2 cuts a minute; `maxStillSeconds` as above.
+
 ## The widgets
 
 One widget per section, chosen by what the words say, built from the HyperFrames examples (step 1 above); each row
@@ -113,6 +125,7 @@ holds; read `bashcut.hyperframes:hyperframes` only to design something the examp
 | a comparison, a trend, a ranking | bars that rise with their values | `bar-chart` |
 | a day plan, a history, the steps of a process | stops that light up in order | `timeline` |
 | a place, a route, distances, travel times | a map with the route drawn and the minutes and km | `map-route` after `bin/osm-map` |
+| what is around a place (schools, hospitals, malls, parks) | routes, a radius circle and counts per kind | `amenity-radius` after `bin/osm-map --amenities` |
 | conditions, rules, what to bring, what to check | items that tick one by one | `checklist-card` |
 | one number that matters | the number counting up | `stat-counter` |
 | a quote, a law article, a definition | a full-frame card with lines that build | `paper-card` |

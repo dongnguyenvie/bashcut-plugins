@@ -4,7 +4,9 @@
 
 Build first when the plugin has a build.sh. These tests use only the Python standard library and are not shipped.
 """
+import hashlib
 import json
+import math
 import os
 import pathlib
 import re
@@ -232,6 +234,123 @@ class OsmMapTests(unittest.TestCase):
     def test_places_alone_need_no_folder(self):
         out = self.run_map("--places", "")
         self.assertIn("--dir", out.stderr, "an empty --places is no places")
+
+    def run_module(self, body):
+        """`body` run with osm-map.mjs's exports in scope; returns what it prints as JSON."""
+        script = "import('" + (ROOT / "lib" / "osm-map.mjs").as_uri() + "').then((m) => {" + body + "})"
+        with tempfile.TemporaryDirectory() as folder:
+            node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True,
+                                  env=environment(folder)).stdout.strip()
+            if not node:
+                self.skipTest("Node.js is not installed")
+            out = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, timeout=30,
+                                 env=environment(folder))
+        self.assertEqual(0, out.returncode, out.stderr)
+        return json.loads(out.stdout)
+
+    # Around 21.0655,105.8255: 0.001° of latitude is ~111 m.
+    PLACES = [
+        {"type": "node", "id": 1, "lat": 21.0662, "lon": 105.8255, "tags": {"amenity": "school", "name": "Quang An"}},
+        {"type": "way", "id": 2, "center": {"lat": 21.0663, "lon": 105.8256},
+         "tags": {"amenity": "school", "name": "Quang An"}},
+        {"type": "way", "id": 3, "center": {"lat": 21.0700, "lon": 105.8255}, "tags": {"amenity": "kindergarten"}},
+        {"type": "node", "id": 4, "lat": 21.0800, "lon": 105.8255, "tags": {"amenity": "school", "name": "Far"}},
+        {"type": "way", "id": 5, "center": {"lat": 21.0630, "lon": 105.8255}, "tags": {"leisure": "park"}},
+        {"type": "relation", "id": 6, "center": {"lat": 21.0600, "lon": 105.8255},
+         "tags": {"leisure": "park", "name": "Lakeside"}},
+        {"type": "node", "id": 7, "lat": 21.0656, "lon": 105.8255, "tags": {"amenity": "cafe", "name": "Not asked"}},
+    ]
+
+    def test_one_overpass_query_asks_for_every_kind_around_the_point(self):
+        query = self.run_module("console.log(JSON.stringify(m.overpassQuery(['school', 'park', 'hospital'],"
+                                " {lat: 21.0655, lon: 105.8255}, 1000)));")
+        self.assertEqual(1, query.count("out center"), "one query for all kinds")
+        self.assertIn('nwr["amenity"~"^(school)$"](around:1000,21.06550,105.82550);', query)
+        self.assertIn('nwr["leisure"~"^(park)$"]', query)
+        self.assertIn('nwr["healthcare"~"^(hospital)$"]', query)
+        self.assertTrue(query.startswith("[out:json][timeout:"), query)
+
+    def test_amenities_are_counted_inside_the_radius_and_the_nearest_named(self):
+        result = self.run_module(
+            "const r = m.countAmenities(" + json.dumps(self.PLACES) + ", ['school', 'park', 'hospital'],"
+            " {lat: 21.0655, lon: 105.8255}, 1000); console.log(JSON.stringify(r));")
+        kinds = {k["kind"]: k for k in result["kinds"]}
+        self.assertEqual(1, kinds["school"]["count"], "the same name twice within 300 m is one place; Far is out")
+        self.assertEqual("Quang An", kinds["school"]["nearest"]["name"])
+        self.assertAlmostEqual(0.08, kinds["school"]["nearest"]["km"], delta=0.01)
+        self.assertEqual(2, kinds["park"]["count"], "a way or relation counts by its centre")
+        self.assertEqual("Lakeside", kinds["park"]["nearest"]["name"], "the nearest named one, past an unnamed park")
+        self.assertEqual({"kind": "hospital", "count": 0, "nearest": None}, kinds["hospital"])
+        self.assertEqual(["school", "park", "park"], [marker["kind"] for marker in result["markers"]])
+        self.assertNotIn("Not asked", json.dumps(result), "kinds not asked for are left out")
+
+    def test_amenity_markers_land_on_canvas_pixels(self):
+        result = self.run_module(
+            "const centre = {lat: 21.0655, lon: 105.8255, label: 'Home'};"
+            "const local = ([x, y]) => [x - 1000, y - 2000];"
+            "const r = m.placeAmenities([{lat: 21.0655, lon: 105.8355, kind: 'park', name: 'East', km: 1.04}],"
+            " centre, 1000, 15, local);"
+            "console.log(JSON.stringify(r));")
+        scale = 256 * 2 ** 15
+        x = (105.8255 + 180) / 360 * scale - 1000
+        mpp = 2 * math.pi * 6378137 * math.cos(math.radians(21.0655)) / scale
+        self.assertAlmostEqual(x, result["centre"]["x"], places=3)
+        self.assertEqual("Home", result["centre"]["label"])
+        self.assertAlmostEqual(1000 / mpp, result["radius"], delta=0.1)
+        marker = result["markers"][0]
+        self.assertAlmostEqual(0.01 / 360 * scale, marker["x"] - result["centre"]["x"], places=3)
+        self.assertAlmostEqual(result["centre"]["y"], marker["y"], places=6)
+        self.assertEqual({"kind": "park", "name": "East", "km": 1.04}, {k: marker[k] for k in ("kind", "name", "km")})
+
+    def test_a_route_line_is_cut_into_one_line_per_leg(self):
+        legs = self.run_module(
+            "console.log(JSON.stringify(m.splitLine([[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]],"
+            " [{lat: 0, lon: 0}, {lat: 0.1, lon: 2.1}, {lat: 0, lon: 4}])));")
+        self.assertEqual([[[0, 0], [0, 1], [0, 2]], [[0, 2], [0, 3], [0, 4]]], legs)
+
+    def test_rejects_unknown_amenities_a_bad_radius_and_a_bad_leg_shape(self):
+        out = self.run_map("--points", "21.03,105.83,A", "--amenities", "school,spaceport")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("spaceport", out.stderr)
+        self.assertIn("hospital", out.stderr, "the error lists the kinds there are")
+        out = self.run_map("--points", "21.03,105.83,A", "--amenities", "school", "--radius", "20000")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("--radius", out.stderr)
+        with tempfile.TemporaryDirectory() as target:
+            out = self.run_map("--dir", target, "--points", "21.03,105.83,A;21.04,105.84,B", "--legs", "ring")
+        self.assertEqual(2, out.returncode, out.stderr)
+        self.assertIn("--legs", out.stderr)
+
+    def test_amenities_print_counts_from_the_cache_without_the_network(self):
+        query = self.run_module("console.log(JSON.stringify(m.overpassQuery(['school', 'park'],"
+                                " {lat: 21.0655, lon: 105.8255}, 1000)));")
+        with tempfile.TemporaryDirectory() as folder:
+            env = environment(folder)
+            cached = pathlib.Path(env["BASHCUT_PLUGIN_CACHE"], "osm-amenities")
+            cached.mkdir(parents=True)
+            name = hashlib.sha256(query.encode()).hexdigest()[:20] + ".json"
+            (cached / name).write_text(json.dumps(self.PLACES))
+            env["OSM_OVERPASS_URL"] = "http://127.0.0.1:9/api/interpreter"  # nothing listens: a cache miss would fail
+            out = subprocess.run([str(ROOT / "bin" / "osm-map"), "--points", "21.0655,105.8255,Home",
+                                  "--amenities", "school,park", "--radius", "1000"],
+                                 capture_output=True, text=True, env=env, timeout=30)
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual([("school", 1), ("park", 2)],
+                         [(k["kind"], k["count"]) for k in result["amenities"]["kinds"]])
+        self.assertEqual("Home", result["amenities"]["centre"]["label"])
+        self.assertIn("OpenStreetMap", result["attribution"])
+
+    def test_amenity_radius_reads_the_data_osm_map_writes(self):
+        html = (ROOT / "examples" / "amenity-radius" / "index.html").read_text()
+        self.assertIn('<script src="map-data.js"></script>', html)
+        self.assertIn("data.attribution", html)
+        self.assertIn('data-fit="canvas"', html)
+        stand_in = (ROOT / "examples" / "amenity-radius" / "map-data.js").read_text()
+        self.assertIn("© OpenStreetMap contributors", stand_in)
+        data = json.loads(stand_in[stand_in.index("{"):stand_in.rindex("}") + 1])
+        self.assertTrue(data["amenities"]["markers"] and data["amenities"]["radius"] > 0)
+        self.assertTrue(all(len(leg["line"]) > 1 for leg in data["legs"]))
 
     def test_map_route_reads_the_data_osm_map_writes(self):
         html = (ROOT / "examples" / "map-route" / "index.html").read_text()
@@ -536,7 +655,7 @@ class GraphicScriptTests(unittest.TestCase):
     def test_examples_list_their_own_variables_apart_from_the_brand(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "examples")
         self.assertEqual(0, out.returncode, out.stderr)
-        self.assertLess(len(out.stdout), 9000, "the list is short: one line per example")
+        self.assertLess(len(out.stdout), 9600, "the list is short: one line per example")
         rows = {row["name"]: row for row in json.loads(out.stdout)}
         self.assertEqual(sorted(p.name for p in (ROOT / "examples").iterdir() if (p / "index.html").exists()), sorted(rows))
         self.assertIn("items:string", rows["bar-chart"]["variables"].split())
