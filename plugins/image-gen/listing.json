@@ -10,7 +10,7 @@
   "publisher": "bashcut",
   "category": "utilities",
   "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/image-gen",
-  "minAppVersion": "0.0.1",
+  "minAppVersion": "0.0.23",
   "platforms": [
     "macos-arm64",
     "macos-x86_64"
