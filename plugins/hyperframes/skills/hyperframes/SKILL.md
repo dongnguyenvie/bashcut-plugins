@@ -113,8 +113,9 @@ add-lesson … --tags block:NAME`).
 After a brand change, `rerender --all --brand` restyles every placed graphic in one edit. Fonts: a family or
 PostScript name on this Mac, `System-<Weight>`, or a project font (`bashcut fonts import` a .ttf/.otf, not .ttc),
 copied into the composition's `fonts/`. A composition that declares `logo` (type image) gets the kit's logo sticker
-copied in as `brand-logo.<ext>`; one that declares `mascot` (type image) gets the kit's mascot pose named by its
-`mascotPose` (else `default`, else the first) as `brand-mascot-<pose>.<ext>` (`paper-card` shows it). A mascot
+copied in as `brand-logo.<ext>`; one that declares `mascot` (type image) gets the kit's mascot pose picked by
+`--set pose=thinking` (else `default`, else the first; a missing one warns with the poses the brand has) as
+`brand-mascot-<pose>.<ext>` (`paper-card`, `stat-counter`, `checklist-card`, `keyword-pop`, `lower-third`). A mascot
 picture with a background: `bashcut image cutout <sticker or file> --crop`, look at it, then `bashcut library add
 --kind sticker --file <path>` and set that ID as the pose in the Brand panel.
 

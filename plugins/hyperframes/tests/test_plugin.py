@@ -322,7 +322,8 @@ elif command == "plan apply":
     entry["patch"] = json.loads(option("--patch")) if option("--patch") else None
     out = {"ok": True, "rev": 11, "clips": 0}
 elif command == "library get":
-    out = {"id": args[2], "kind": "sticker", "fileURL": "file://" + state["logo"]} if state.get("logo") else {"id": args[2]}
+    file = state.get("files", {}).get(args[2]) or state.get("logo")
+    out = {"id": args[2], "kind": "sticker", "fileURL": "file://" + file} if file else {"id": args[2]}
 else:
     out = {}
 state.setdefault("calls", []).append(entry)
@@ -546,6 +547,12 @@ class GraphicScriptTests(unittest.TestCase):
         row = json.loads(out.stdout)[0]
         self.assertIn("items", [v["id"] for v in row["variables"]])
         self.assertIn("accent", row["brand"])
+        self.assertTrue(rows["stat-counter"]["mascot"])
+        self.assertNotIn("pose", rows["stat-counter"]["variables"])
+        out, _ = self.run_graphic({"projects": [self.project()], "fail": "knowledge lessons"}, "examples", "paper-card")
+        row = json.loads(out.stdout)[0]
+        self.assertEqual({"mascot", "pose"}, {"mascot", "pose"} & set(row["brand"]))
+        self.assertNotIn("pose", [v["id"] for v in row["variables"]])
         out, _ = self.run_graphic({"projects": [self.project()]}, "examples", "nope")
         self.assertEqual(2, out.returncode)
 
@@ -737,6 +744,69 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertIn("mascot", result["brand"])
         self.assertTrue((composition / "brand-mascot-wave.png").exists())
         self.assertIn(["library", "get", "sticker-wave"], [c["args"] for c in calls])
+
+    def test_set_pose_picks_the_brand_pose_and_a_missing_one_lists_the_poses(self):
+        composition = self.folder / "graphics" / "stat"
+        shutil.copytree(ROOT / "examples" / "stat-counter", composition)
+        files = {}
+        for pose in ("default", "thinking", "pointing"):
+            files[f"sticker-{pose}"] = str(self.folder / f"{pose}.png")
+            pathlib.Path(files[f"sticker-{pose}"]).write_bytes(pose.encode())
+        brand = {**self.brand, "mascot": {p: f"sticker-{p}" for p in ("default", "thinking", "pointing")}}
+        state = {"projects": [self.project(brand=brand)], "files": files}
+        out, _ = self.run_graphic(state, "place", str(composition), "--set", "pose=thinking", "--dry-run")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual("brand-mascot-thinking.png", result["variables"]["mascot"])
+        self.assertEqual(b"thinking", (composition / "brand-mascot-thinking.png").read_bytes())
+        self.assertNotIn("warnings", result)
+        out, _ = self.run_graphic(state, "place", str(composition), "--set", "pose=waving", "--dry-run")
+        result = json.loads(out.stdout)
+        self.assertEqual("brand-mascot-default.png", result["variables"]["mascot"])
+        self.assertIn("default, pointing, thinking", result["warnings"][0])
+        # A brand without poses leaves the slot empty (the page hides it) and says why only when a pose was asked.
+        out, _ = self.run_graphic({"projects": [self.project(brand=self.brand)]}, "place", str(composition), "--dry-run")
+        result = json.loads(out.stdout)
+        self.assertNotIn("mascot", result["variables"])
+        self.assertNotIn("warnings", result)
+        out, _ = self.run_graphic({"projects": [self.project(brand=self.brand)]}, "place", str(composition), "--set", "pose=thinking", "--dry-run")
+        self.assertIn("no mascot poses", json.loads(out.stdout)["warnings"][0])
+
+    def test_rerender_all_with_a_new_brand_redraws_every_mascot_in_one_apply(self):
+        old, new = self.folder / "old.png", self.folder / "new.png"
+        old.write_bytes(b"old")
+        new.write_bytes(b"new")
+        media, items = [], []
+        for index, (example, pose) in enumerate((("stat-counter", "thinking"), ("checklist-card", None), ("lower-third", "pointing"))):
+            composition = self.folder / "graphics" / example
+            shutil.copytree(ROOT / "examples" / example, composition)
+            (composition / "brand-mascot-default.png").write_bytes(b"old")  # what the first place copied in
+            recorded = self.recorded_media({"pose": pose} if pose else {})
+            recorded["id"] = f"media-{index}"
+            recorded["data"]["graphics"]["composition"] = str(composition)
+            media.append(recorded)
+            items.append({"id": f"item-{index}", "media": f"media-{index}", "at": index * 200, "dur": 165, "in": 0})
+        brand = {**self.brand, "mascot": {"default": "new-default", "thinking": "new-thinking"}}
+        state = {"projects": [self.project(media=media, items=items, brand=brand)],
+                 "files": {"new-default": str(new), "new-thinking": str(new)}}
+        out, calls = self.run_graphic(state, "rerender", "--all", "--brand", "--set", "pose=default")
+        self.assertEqual(0, out.returncode, out.stderr)
+        renders = [c["params"]["variables"] for c in calls if c["args"][:2] == ["plugins", "invoke"]]
+        # --set pose=default reaches every graphic with a mascot; each one gets the new brand's file.
+        self.assertEqual(["brand-mascot-default.png"] * 3, [r["mascot"] for r in renders])
+        for example in ("stat-counter", "checklist-card", "lower-third"):
+            self.assertEqual(b"new", (self.folder / "graphics" / example / "brand-mascot-default.png").read_bytes())
+        applies = [c for c in calls if c["args"][:2] == ["timeline", "apply"]]
+        self.assertEqual(1, len(applies), "one undo step")
+        self.assertEqual(["item-0", "item-1", "item-2"], [op["item"] for op in applies[0]["ops"] if op["op"] == "setSource"])
+        recorded = [op["patch"]["graphics"]["variables"] for op in applies[0]["ops"] if op["op"] == "setMediaData"]
+        self.assertTrue(all("mascot" not in r for r in recorded), "the brand's mascot is not frozen into the inputs")
+        # Without --set, each keeps its recorded pose; one the new brand lacks falls back with the poses listed.
+        out, calls = self.run_graphic(state, "rerender", "--all", "--brand")
+        self.assertEqual(0, out.returncode, out.stderr)
+        renders = [c["params"]["variables"]["mascot"] for c in calls if c["args"][:2] == ["plugins", "invoke"]]
+        self.assertEqual(["brand-mascot-thinking.png", "brand-mascot-default.png", "brand-mascot-default.png"], renders)
+        self.assertTrue(any("pointing" in w and "default, thinking" in w for w in json.loads(out.stdout)["warnings"]))
 
     def test_place_without_brand(self):
         state = {"projects": [self.project(brand=self.brand)]}
