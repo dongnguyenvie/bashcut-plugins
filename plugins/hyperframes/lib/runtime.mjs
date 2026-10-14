@@ -19,6 +19,7 @@ export const paths = {
     chromePathFile: join(cache, "chrome/path"),
     encoder: join(pluginDir, "bin/encode-alpha"),
     diagram: join(pluginDir, "lib/diagram.js"),
+    amenityMap: join(pluginDir, "lib/amenity-map.js"),
 };
 
 /** The environment HyperFrames runs in: telemetry off, the plugin's Chrome, this Node.js first on PATH. */

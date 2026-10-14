@@ -28,6 +28,11 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   under the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Map data © OpenStreetMap
   contributors (ODbL); `map-route` and `amenity-radius` keep the credit on screen. `--amenities` counts schools,
   hospitals, malls, parks… around the first point with one Overpass API query (90 s timeout, cached, same User-Agent).
+  Strict tags (`AMENITIES` and `EXCLUDE` in `lib/osm-map.mjs`): `hospital` = `amenity=hospital` or
+  `healthcare=hospital` but never a clinic, doctor, dentist or pharmacy, by tag or by name ("Phòng khám", "Nha khoa",
+  "Dental"…), which counts as `clinic` when asked; `school` = `amenity=school` without driving or language centres
+  (`driving_school`, `language_school`); `mall` = `shop=mall|department_store` (not `supermarket`); `park` =
+  `leisure=park`, not private ones, gardens or playgrounds.
 - **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
   `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
   `cost-table`, `timeline`, `calendar`, `map-route`, `amenity-radius`; mock screens (`mock-video-app`) and cards such as
@@ -35,8 +40,9 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   `big-canvas`, one hand-drawn canvas for a whole video with a camera path) and science widgets (`formula` with
   KaTeX, `matrix-grid`, `scale-compare`); `lottie` plays one Lottie accent picked with resources'
   `fetch_lottie.py`. All take the brand variables `bin/graphic` fills. Those with `data-fit="canvas"` render at the
-  project's size (9:16 or 16:9); the diagrams share `lib/diagram.js`, which `graphics.render` copies next to the
-  page like GSAP.
+  project's size (9:16 or 16:9); the diagrams share `lib/diagram.js` and `amenity-radius` uses `lib/amenity-map.js`
+  (markers that would touch merge into a count or are nudged apart with a leader line), which `graphics.render` copies
+  next to the page like GSAP.
 - **The skill** `skills/hyperframes/SKILL.md`: the design → build → look → render → place → check loop, the
   composition rules, and moves that combine a graphic with BashCut's own layers (the speaker shrinking into a card).
 

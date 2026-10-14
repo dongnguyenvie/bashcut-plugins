@@ -709,7 +709,7 @@ export async function ownComposition(dir, projectRoot, slot) {
     const copy = join(projectRoot, "graphics", safeName(slot));
     if (!existsSync(join(copy, "index.html"))) {
         mkdirSync(dirname(copy), { recursive: true });
-        cpSync(real, copy, { recursive: true, filter: (from) => !["gsap.min.js", "diagram.js", "katex", "lottie.min.js"].includes(basename(from)) });
+        cpSync(real, copy, { recursive: true, filter: (from) => !["gsap.min.js", "diagram.js", "amenity-map.js", "katex", "lottie.min.js"].includes(basename(from)) });
     }
     return copy;
 }
