@@ -34,6 +34,7 @@ PHOTO_META = {'metadata': {}, 'files': [
     {'name': 'huge.png', 'size': '50000000', 'format': 'PNG'}, {'name': 'small.jpg', 'size': '200000'}]}
 
 
+@unittest.skipIf(PIL is None, 'Pillow not installed')  # the fake archive serves JPEG thumbnails
 class ArchiveTests(unittest.TestCase):
     def setUp(self):
         self.stock = load('stock-images/fetch_stock.py')
