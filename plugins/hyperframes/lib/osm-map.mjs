@@ -19,9 +19,13 @@
 // is) with its km; same-named duplicates within 300 m count once. With --dir, MAP_DATA.amenities holds the centre,
 // the radius in pixels, a marker per place {x, y, kind, name, km} and `detail`, sharper tiles around the circle
 // for a zoom onto it (amenity-radius); without --dir only the counts are printed.
-// Kinds (their OSM tags in AMENITIES): school, kindergarten, university, hospital, clinic, pharmacy, mall,
-// supermarket, market, park, playground, gym, restaurant, cafe, bank, metro, station, bus. Answers are cached in the
-// plugin cache folder (osm-amenities/).
+// Kinds (their OSM tags in AMENITIES, what each leaves out in EXCLUDE): school, kindergarten, university,
+// language_school, driving_school, hospital, clinic, pharmacy, mall, supermarket, market, park, playground, gym,
+// restaurant, cafe, bank, metro, station, bus. A hospital is amenity=hospital or healthcare=hospital, never a clinic,
+// doctor, dentist or pharmacy (by its tags or a name such as "Phòng khám", "Nha khoa", "Dental"): those count as
+// clinic when it is asked for. A school is amenity=school without driving or language centres; a mall is
+// shop=mall|department_store (supermarkets are their own kind); a park is leisure=park, not a private one, a garden
+// or a playground. Answers are cached in the plugin cache folder (osm-amenities/).
 // Prints the same summary (without tiles and route) as JSON. Routes come from routing.openstreetmap.de (OSRM run by
 // FOSSGIS); "none" joins the points with straight lines (km as the crow flies, no minutes). The map shows
 // OpenStreetMap data: keep "© OpenStreetMap contributors" on screen while it is visible.
@@ -43,8 +47,10 @@ export const AMENITIES = {
     school: [{ amenity: "school" }],
     kindergarten: [{ amenity: "kindergarten" }],
     university: [{ amenity: "university|college" }],
+    language_school: [{ amenity: "language_school" }],
+    driving_school: [{ amenity: "driving_school" }],
     hospital: [{ amenity: "hospital" }, { healthcare: "hospital" }],
-    clinic: [{ amenity: "clinic|doctors" }],
+    clinic: [{ amenity: "clinic|doctors|dentist" }, { healthcare: "clinic|doctors|dentist" }],
     pharmacy: [{ amenity: "pharmacy" }],
     mall: [{ shop: "mall|department_store" }],
     supermarket: [{ shop: "supermarket" }],
@@ -58,6 +64,29 @@ export const AMENITIES = {
     metro: [{ railway: "station", station: "subway|light_rail|monorail" }, { railway: "station", subway: "yes" }],
     station: [{ railway: "station|halt" }],
     bus: [{ highway: "bus_stop" }],
+};
+
+const CLINICAL = "clinic|doctors|dentist|pharmacy|laboratory|optometrist|physiotherapist";
+/**
+ * What a kind leaves out though its AMENITIES row matches (mappers tag a dental practice amenity=hospital, a language
+ * centre amenity=school): a rule matches when one of its tags has one of its values (a "a;b" value counts each part)
+ * or the name has one of its words. `into` is the kind such a place counts as instead, when that kind is asked for.
+ */
+export const EXCLUDE = {
+    hospital: [{
+        into: "clinic",
+        tags: { amenity: CLINICAL, healthcare: CLINICAL, "healthcare:speciality": "dentistry|orthodontics|optometry" },
+        name: /phòng khám|phòng mạch|nha khoa|nhà thuốc|\b(clinic|dental|dentist|dentistry|polyclinic|pharmacy)\b/i,
+    }],
+    school: [
+        { into: "driving_school", tags: { school: "driving" }, name: /lái xe|sát hạch|\bdriving\b/i },
+        {
+            into: "language_school",
+            tags: { school: "language" },
+            name: /trung tâm (ngoại ngữ|anh ngữ|tiếng)|\b(language (school|cent(er|re))|english (cent(er|re)|school))\b/i,
+        },
+    ],
+    park: [{ tags: { access: "private|no" } }],
 };
 
 function pluginVersion() {
@@ -328,15 +357,30 @@ async function places(queries) {
     return out;
 }
 
+/** The kinds whose places another kind may take over (a clinic tagged hospital comes with the hospital rows). */
+const sources = (kind) => [kind, ...Object.keys(EXCLUDE).filter((from) => from !== kind && EXCLUDE[from].some((r) => r.into === kind))];
+
 /** One Overpass query for every kind: places within `radius` metres of `centre`, ways and relations by their centre. */
 export function overpassQuery(kinds, centre, radius) {
     const around = `(around:${Math.round(radius)},${centre.lat.toFixed(5)},${centre.lon.toFixed(5)})`;
-    const rows = new Set(kinds.flatMap((kind) => AMENITIES[kind].map((row) => `nwr${Object.entries(row)
+    const rows = new Set(kinds.flatMap(sources).flatMap((kind) => AMENITIES[kind].map((row) => `nwr${Object.entries(row)
         .map(([key, values]) => `["${key}"~"^(${values})$"]`).join("")}${around};`)));
     return `[out:json][timeout:25];\n(\n${[...rows].join("\n")}\n);\nout center tags qt;`;
 }
 
 const matches = (tags, row) => Object.entries(row).every(([key, values]) => values.split("|").includes(tags?.[key]));
+const excludes = (tags, rule) => Object.entries(rule.tags ?? {}).some(([key, values]) =>
+    String(tags?.[key] ?? "").split(";").some((part) => values.split("|").includes(part.trim())))
+    || Boolean(rule.name && tags?.name && rule.name.test(tags.name));
+
+/** Whether a place with these tags counts as `kind`: its row matches and no EXCLUDE rule does, or another kind's rule
+ *  sends it here. */
+export function isKind(tags, kind) {
+    const own = AMENITIES[kind].some((row) => matches(tags, row));
+    if (own && !(EXCLUDE[kind] ?? []).some((rule) => excludes(tags, rule))) return true;
+    return sources(kind).slice(1).some((from) => AMENITIES[from].some((row) => matches(tags, row))
+        && EXCLUDE[from].some((rule) => rule.into === kind && excludes(tags, rule)));
+}
 
 /** Overpass elements → per kind {kind, count, nearest {name, km}} and one marker per place, nearest first. */
 export function countAmenities(elements, kinds, centre, radius) {
@@ -344,7 +388,7 @@ export function countAmenities(elements, kinds, centre, radius) {
     const counted = kinds.map((kind) => {
         const found = [];
         for (const element of elements) {
-            if (!AMENITIES[kind].some((row) => matches(element.tags, row))) continue;
+            if (!isKind(element.tags, kind)) continue;
             const lat = element.lat ?? element.center?.lat;
             const lon = element.lon ?? element.center?.lon;
             if (lat === undefined || lon === undefined) continue;

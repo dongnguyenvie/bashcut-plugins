@@ -284,6 +284,47 @@ class OsmMapTests(unittest.TestCase):
         self.assertEqual(["school", "park", "park"], [marker["kind"] for marker in result["markers"]])
         self.assertNotIn("Not asked", json.dumps(result), "kinds not asked for are left out")
 
+    def test_amenity_tags_are_strict_and_a_clinic_tagged_hospital_counts_as_clinic(self):
+        tags = {
+            "sos": {"amenity": "hospital", "healthcare": "hospital", "name": "Phòng Khám Y Tế Nha Khoa Quốc Tế SOS"},
+            "general": {"amenity": "hospital", "name": "Bệnh viện Đa khoa Hồng Ngọc"},
+            "dentist": {"amenity": "hospital", "healthcare": "dentist", "name": "Smile"},
+            "dental speciality": {"healthcare": "hospital", "healthcare:speciality": "orthodontics;dentistry"},
+            "pharmacy": {"amenity": "pharmacy", "healthcare": "pharmacy"},
+            "school": {"amenity": "school", "name": "Trường THPT chuyên Ngoại ngữ"},
+            "language centre": {"amenity": "school", "name": "Trung tâm Anh ngữ ILA"},
+            "driving": {"amenity": "school", "name": "Trường dạy lái xe Hà Nội"},
+            "mall": {"shop": "department_store"},
+            "supermarket": {"shop": "supermarket"},
+            "park": {"leisure": "park"},
+            "private park": {"leisure": "park", "access": "private"},
+            "garden": {"leisure": "garden"},
+            "playground": {"leisure": "playground"},
+        }
+        kinds = ["hospital", "clinic", "pharmacy", "school", "language_school", "driving_school", "mall", "supermarket",
+                 "park", "playground"]
+        found = self.run_module("const tags = " + json.dumps(tags) + "; const kinds = " + json.dumps(kinds) + ";"
+                                "console.log(JSON.stringify(Object.fromEntries(Object.entries(tags)"
+                                ".map(([k, t]) => [k, kinds.filter((kind) => m.isKind(t, kind))]))));")
+        self.assertEqual({
+            "sos": ["clinic"], "general": ["hospital"], "dentist": ["clinic"], "dental speciality": ["clinic"],
+            "pharmacy": ["pharmacy"], "school": ["school"], "language centre": ["language_school"],
+            "driving": ["driving_school"], "mall": ["mall"], "supermarket": ["supermarket"], "park": ["park"],
+            "private park": [], "garden": [], "playground": ["playground"],
+        }, found)
+        query = self.run_module("console.log(JSON.stringify(m.overpassQuery(['clinic'], {lat: 21, lon: 105}, 500)));")
+        self.assertIn('nwr["amenity"~"^(hospital)$"]', query, "clinic also asks for places tagged hospital")
+        query = self.run_module("console.log(JSON.stringify(m.overpassQuery(['hospital'], {lat: 21, lon: 105}, 500)));")
+        self.assertNotIn("clinic", query)
+
+    def test_a_dental_clinic_tagged_hospital_is_not_counted_as_a_hospital(self):
+        places = [{"type": "way", "id": 9, "center": {"lat": 21.0680, "lon": 105.8255},
+                   "tags": {"amenity": "hospital", "healthcare": "hospital", "name": "Nha Khoa SOS"}}]
+        result = self.run_module("const r = m.countAmenities(" + json.dumps(places) + ", ['hospital', 'clinic'],"
+                                 " {lat: 21.0655, lon: 105.8255}, 1000); console.log(JSON.stringify(r));")
+        self.assertEqual([("hospital", 0), ("clinic", 1)], [(k["kind"], k["count"]) for k in result["kinds"]])
+        self.assertEqual(["clinic"], [marker["kind"] for marker in result["markers"]])
+
     def test_amenity_markers_land_on_canvas_pixels(self):
         result = self.run_module(
             "const centre = {lat: 21.0655, lon: 105.8255, label: 'Home'};"
@@ -1153,6 +1194,76 @@ console.log(JSON.stringify(out));
         script = 'const d = require(process.argv[1]); console.log(JSON.stringify(d.timedSteps([{at: 4, focus: "b"}, {focus: ["a"]}, {focus: []}], 8).map((s) => [s.at, s.focus])))'
         out = subprocess.run([node, "-e", script, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=30)
         self.assertEqual([[0.9, ["a"]], [4, ["b"]], [4.1, []]], json.loads(out.stdout))
+
+
+class AmenityLayoutTests(unittest.TestCase):
+    """lib/amenity-map.js lays amenity markers out: no two icons overlap at the scale they are seen at."""
+
+    SCRIPT = r"""
+const a = require(process.argv[1]);
+// A fixed pseudo-random spread (no Math.random: the layout must be the same every run).
+let seed = 7;
+const next = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const kinds = ["school", "hospital", "mall", "park", "clinic", "supermarket"];
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const size = 46 * u;
+  for (const [n, spread, scale] of [[10, 40, 2.7], [30, 60, 2.7], [60, 112, 1.2], [24, 8, 3.5], [40, 112, 0.6]]) {
+    const markers = Array.from({ length: n }, (_, i) => ({ x: 500 + (next() - 0.5) * 2 * spread,
+      y: 800 + (next() - 0.5) * 2 * spread, kind: kinds[i % kinds.length], km: Math.round(next() * 1000) / 1000 }));
+    // The project's dot and its name tag to the right of it.
+    const tag = { x: 500, y: 800, left: 40 * u, top: -30 * u, w: 180 * u, h: 60 * u };
+    const fixed = [{ x: 500, y: 800, r: 30 * u }, tag];
+    const layout = a.declutter(markers, scale, size, fixed);
+    const again = a.declutter(markers, scale, size, fixed);
+    const onDot = layout.filter((l, i) => l.shown
+      && Math.hypot(markers[i].x * scale + l.dx - 500 * scale, markers[i].y * scale + l.dy - 800 * scale) < 30 * u + size / 2 - 0.5).length;
+    const onTag = layout.filter((l, i) => {
+      const [x, y] = [markers[i].x * scale + l.dx, markers[i].y * scale + l.dy];
+      const [x0, y0] = [500 * scale + tag.left, 800 * scale + tag.top];
+      return l.shown && Math.hypot(x - Math.max(x0, Math.min(x0 + tag.w, x)), y - Math.max(y0, Math.min(y0 + tag.h, y))) < size / 2 - 0.5;
+    }).length;
+    out.push({ W, n, spread, overlaps: a.overlapping(markers, layout, scale, size).length, onDot, onTag,
+      counted: layout.reduce((sum, l) => sum + l.count, 0), shown: layout.filter((l) => l.shown).length,
+      same: JSON.stringify(layout) === JSON.stringify(again),
+      merged: layout.every((l, i) => !l.shown || layout.every((m, j) => j === i || !m.shown || markers[j].kind !== markers[i].kind
+        || Math.hypot((markers[j].x - markers[i].x) * scale, (markers[j].y - markers[i].y) * scale) >= size)) });
+  }
+}
+// Two kinds on one spot: both stay, nudged apart; three schools within a few metres: one marker counting 3.
+const pair = a.declutter([{ x: 0, y: 0, kind: "school", km: 0.1 }, { x: 0, y: 0, kind: "mall", km: 0.2 }], 2, 46);
+const three = a.declutter([0, 1, 2].map((i) => ({ x: i * 3, y: 0, kind: "school", km: i / 10 })), 2, 46);
+console.log(JSON.stringify({ out, pair, three }));
+"""
+
+    def run_layout(self):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        out = subprocess.run([node, "-e", self.SCRIPT, str(ROOT / "lib" / "amenity-map.js")], capture_output=True,
+                             text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        return json.loads(out.stdout)
+
+    def test_no_two_markers_overlap_in_9_16_and_16_9(self):
+        result = self.run_layout()
+        self.assertEqual(10, len(result["out"]))
+        for row in result["out"]:
+            self.assertEqual(0, row["overlaps"], row)
+            self.assertEqual(0, row["onDot"], f"a marker covers the project's dot: {row}")
+            self.assertEqual(0, row["onTag"], f"a marker hides under the project's name: {row}")
+            self.assertEqual(row["n"], row["counted"], f"every place is counted once: {row}")
+            self.assertTrue(row["same"], f"deterministic: {row}")
+            self.assertTrue(row["merged"], f"places of one kind that would touch are one marker: {row}")
+        self.assertLess(result["out"][3]["shown"], 24, "a tight spread merges")
+
+    def test_same_kind_merges_with_a_count_and_kinds_apart_get_a_leader_offset(self):
+        result = self.run_layout()
+        pair, three = result["pair"], result["three"]
+        self.assertTrue(pair[0]["shown"] and pair[1]["shown"])
+        self.assertGreaterEqual(math.hypot(pair[1]["dx"] - pair[0]["dx"], pair[1]["dy"] - pair[0]["dy"]), 46 - 0.5)
+        self.assertEqual([True, False, False], [m["shown"] for m in three])
+        self.assertEqual(3, three[0]["count"])
+        self.assertEqual((0, 0), (three[0]["dx"], three[0]["dy"]), "a lone marker stays on its place")
 
 
 @unittest.skipUnless(RUNTIME_DATA and RUNTIME_CACHE, "set HYPERFRAMES_TEST_DATA and HYPERFRAMES_TEST_CACHE to a setup install")
