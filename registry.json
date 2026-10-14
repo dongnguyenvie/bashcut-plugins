@@ -444,22 +444,6 @@
       "id": "bashcut.vlog",
       "versions": [
         {
-          "version": "0.0.3",
-          "apiVersion": 7,
-          "minApiVersion": 7,
-          "minAppVersion": "0.0.21",
-          "platforms": [
-            "macos-arm64",
-            "macos-x86_64"
-          ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vlog-v0.0.3/bashcut.vlog-0.0.3.zip",
-          "sha256": "7c31b4757f5e5d04342a75db88ab4ee87e769a27a4c59ac9049dc61204c47a49",
-          "signature": "ed25519:AK0EFBRrTbS0jNCxBxiMZzCeWZDDnZMWgjEzVKlLmh31WIIdRyc3G1mt7BTugnfaewbeCdt/+KQke+FOPoedBg==",
-          "size": 282200,
-          "downloadBytes": 0,
-          "releasedAt": "2026-10-13"
-        },
-        {
           "version": "0.0.4",
           "apiVersion": 7,
           "minApiVersion": 7,
@@ -488,6 +472,22 @@
           "sha256": "11d9ffe73ef95096990bbbc063e408ebc184535afa0006da1b9d309ac8326348",
           "signature": "ed25519:hTfJK3gmZndmh2mQ97rrou2Y521R5K1lCevPpmxa3s3MhzGel62lWB82xpIgX3mzBWmXd5qlXmfSHGk5pLXGDA==",
           "size": 283346,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-14"
+        },
+        {
+          "version": "0.0.6",
+          "apiVersion": 7,
+          "minApiVersion": 7,
+          "minAppVersion": "0.0.23",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/vlog-v0.0.6/bashcut.vlog-0.0.6.zip",
+          "sha256": "cdb4257aad4c8f2efa95732259eff20aaf529c12688db425b5e46ca8e87cc43e",
+          "signature": "ed25519:jKT3N/r3Bm5QU2Ae5KNndbftUC4XMXamaduJ2RUOHJVZR41+i52710sIqW2GCUkB5wvayKV+5L7JSI0c7WdUDQ==",
+          "size": 283382,
           "downloadBytes": 0,
           "releasedAt": "2026-10-14"
         }
