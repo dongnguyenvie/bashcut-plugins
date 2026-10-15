@@ -10,7 +10,7 @@
   "publisher": "bashcut",
   "category": "effects",
   "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/hyperframes",
-  "minAppVersion": "0.0.23",
+  "minAppVersion": "0.0.24",
   "platforms": [
     "macos-arm64",
     "macos-x86_64"
