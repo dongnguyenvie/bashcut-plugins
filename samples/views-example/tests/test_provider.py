@@ -342,7 +342,7 @@ class BrowserTests(unittest.TestCase):
         inspector = picked["result"]["body"][0]["children"][2]
         self.assertIn("Licence", json.dumps(inspector))
         self.session.view("browser", state=picked["result"]["state"], event={"node": "add", "type": "click"})
-        self.assertIn(("library.place", {"id": "project:views-example-ember"}), self.session.calls)
+        self.assertIn(("library.place", {"id": "project:views-example-ember", "atFrame": 12, "baseRev": "last"}), self.session.calls)
 
 
 class ActionTests(unittest.TestCase):

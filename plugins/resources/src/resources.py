@@ -865,7 +865,7 @@ def browse(params, state, values, event, host):
                 if ":" not in str(reference) or not KINDS[kind]["library"]:
                     message = tr("noTimeline", locale)
                 else:
-                    host.call("library.place", {"id": reference})
+                    host.call("library.place", place_params(reference, params))
                     message = tr("added", locale)
             else:
                 message = tr("savedUser" if scope == "user" else "savedProject", locale)
@@ -878,6 +878,15 @@ def browse(params, state, values, event, host):
     if reset:
         set_values(body, reset)
     return {"state": state, "body": body, **answer}
+
+
+def place_params(reference, params):
+    """library.place at the playhead the request saw (a free layer when the main one is taken there)."""
+    placed = {"id": reference, "baseRev": "last"}
+    playhead = (params.get("context") or {}).get("playhead")
+    if isinstance(playhead, int) and playhead >= 0:
+        placed["atFrame"] = playhead
+    return placed
 
 
 def set_values(nodes, values):

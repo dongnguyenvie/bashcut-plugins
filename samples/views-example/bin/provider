@@ -509,7 +509,8 @@ def browser(request, state, values, event):
             saved[name] = reference
             answer["libraryItem"] = reference
             if node == "add":  # the button places at the playhead; a drop is placed by BashCut where it landed
-                request.call("library.place", {"id": reference})
+                playhead = int((request.params.get("context") or {}).get("playhead") or 0)
+                request.call("library.place", {"id": reference, "atFrame": playhead, "baseRev": "last"})
     tiles = [{"id": name, "title": name.title(), "image": swatch_file(name, rgb, (160, 90)),
               **({"libraryItem": saved[name], "badge": "Saved", "badgeColor": "green"} if name in saved else {})}
              for name, rgb in SWATCHES[group]]

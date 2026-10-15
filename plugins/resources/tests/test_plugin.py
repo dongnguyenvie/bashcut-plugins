@@ -134,7 +134,7 @@ class PluginTests(unittest.TestCase):
     def test_the_browser_searches_and_shows_the_licence_before_adding(self):
         host = FakeHost()
         params = {"view": "browse", "locale": "en", "options": {},
-                  "context": {"project": {"width": 1920, "height": 1080}}}
+                  "context": {"project": {"width": 1920, "height": 1080}, "playhead": 48}}
         first = resources.handle("view.render", {**params, "values": {}}, host)
         self.assertEqual(plugin_manifest.view_problems(first), [])
         split = first["body"][0]
@@ -164,7 +164,7 @@ class PluginTests(unittest.TestCase):
         self.assertEqual(facts["Fit"], "Cropped to fill a 16:9 frame")
         added = resources.handle("view.event", {**params, "state": picked["state"], "values": values,
                                                 "event": {"node": "addTimeline", "type": "click"}}, host)
-        self.assertIn(("library.place", {"id": "project:pixabay-12"}), host.calls)
+        self.assertIn(("library.place", {"id": "project:pixabay-12", "baseRev": "last", "atFrame": 48}), host.calls)
         self.assertEqual(added["state"]["message"], "Added to the timeline")
         cell = next(i for i in find(added["body"], "results")["items"] if i["id"] == "pixabay-12")
         self.assertEqual(cell["libraryItem"], "project:pixabay-12")
