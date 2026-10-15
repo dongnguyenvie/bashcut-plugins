@@ -569,6 +569,22 @@ class RenderParamTests(unittest.TestCase):
         response = self.render({"composition": str(ROOT / "examples" / "keyword-pop"), "codec": "h264"})
         self.assertEqual(response["error"]["code"], "invalid_params")
 
+    def test_bad_underlay_is_refused(self):
+        composition = str(ROOT / "examples" / "keyword-pop")
+        for underlay in ({"path": "backdrop.png", "x": 0, "y": 0}, {"path": str(pathlib.Path(self.folder, "none.png")), "x": 0, "y": 0},
+                         {"path": composition + "/index.html", "x": "left", "y": 0},
+                         {"path": composition + "/index.html", "x": 0, "y": 0, "drift": [1]}):
+            response = self.render({"composition": composition, "underlay": underlay})
+            self.assertEqual(response["error"]["code"], "invalid_params", underlay)
+
+    def test_underlay_reaches_the_encoder(self):
+        script = (f"import('{ROOT}/lib/handlers.mjs').then((h) => console.log(JSON.stringify(h.underlayArgs("
+                  "{path: '/b.png', x: -160, y: -160, fadeIn: 0.6, drift: [-60, 45], seconds: 5}))))")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual(["--under", "/b.png", "--under-at", "-160,-160", "--under-fade", "0.6", "--under-drift", "-60,45",
+                          "--under-span", "5"], json.loads(out.stdout))
+
     def test_missing_runtime_asks_for_install(self):
         composition = pathlib.Path(self.folder, "card")
         shutil.copytree(ROOT / "examples" / "keyword-pop", composition)
@@ -1114,6 +1130,162 @@ writeFileSync(join(out, "contact-sheet.jpg"), "jpg");
             self.assertEqual(2, out.returncode, frame)
             self.assertIn(words, json.loads(out.stderr)["error"])
             self.assertEqual([], calls)
+
+    def seed_backdrop(self, backdrop="texture", variables=None):
+        """A baked backdrop already in the plugin cache for the calendar copy, so no Chrome is needed."""
+        script = (f"import('{ROOT}/lib/graphic.mjs').then((g) => {{ const c = g.readComposition({json.dumps(str(self.composition))});"
+                  f"const html = require('fs').readFileSync({json.dumps(str(self.composition / 'index.html'))}, 'utf8');"
+                  f"console.log(g.backdropKey({json.dumps(backdrop)}, {{width: c.width, height: c.height}}, html, {json.dumps(variables or {})})); }})")
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        folder = self.folder / "cache" / "backdrops"
+        folder.mkdir(parents=True, exist_ok=True)
+        baked = folder / f"{out.stdout.strip()}.png"
+        baked.write_bytes(b"png")
+        return baked
+
+    def test_a_texture_backdrop_is_baked_and_drawn_under_the_frames_not_in_the_page(self):
+        baked = self.seed_backdrop()
+        frame = {"backdrop": "texture", "fadeIn": 0.6, "drift": True, "chip": "2/4"}
+        out, calls = self.run_graphic({"projects": [self.project(), self.project(rev=7)]}, "place", str(self.composition),
+                                      "--no-brand", "--duration", "150", "--frame", json.dumps(frame))
+        self.assertEqual(0, out.returncode, out.stderr)
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        # The page keeps the chip and the drift of the widget; the backdrop and its fade go to the encoder.
+        self.assertEqual({"drift": True, "chip": "2/4", "baked": "texture"}, invoke["pageFrame"])
+        self.assertEqual({"path": str(baked), "x": -160, "y": -160, "fadeIn": 0.6, "drift": [-60, 45], "seconds": 5},
+                         invoke["params"]["underlay"])
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        self.assertEqual(frame, recorded["frame"], "the recorded frame is the one asked for")
+
+    def test_a_backdrop_that_cannot_be_baked_is_drawn_in_the_page_with_a_warning(self):
+        frame = {"backdrop": "paper", "chip": "1/2"}
+        out, calls = self.run_graphic({"projects": [self.project(), self.project(rev=7)]}, "place", str(self.composition),
+                                      "--no-brand", "--frame", json.dumps(frame))
+        self.assertEqual(0, out.returncode, out.stderr)
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        self.assertEqual(frame, invoke["pageFrame"])
+        self.assertNotIn("underlay", invoke["params"])
+        self.assertTrue(any("paper backdrop is drawn in the page" in w for w in json.loads(out.stdout)["warnings"]))
+
+    def test_a_plain_backdrop_stays_in_the_page(self):
+        out, calls = self.run_graphic({"projects": [self.project(), self.project(rev=7)]}, "place", str(self.composition),
+                                      "--no-brand", "--frame", '{"backdrop": "plain"}')
+        self.assertEqual(0, out.returncode, out.stderr)
+        invoke = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])
+        self.assertEqual({"backdrop": "plain"}, invoke["pageFrame"])
+        self.assertNotIn("underlay", invoke["params"])
+
+    def test_place_draft_renders_at_15_fps_and_records_the_draft(self):
+        self.render.update({"fps": 15, "frames": 83})
+        out, calls = self.run_graphic({"projects": [self.project(), self.project(rev=7)]}, "place", str(self.composition), "--draft")
+        self.assertEqual(0, out.returncode, out.stderr)
+        params = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]
+        self.assertEqual((15, True), (params["fps"], params["draft"]))
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        self.assertEqual((30, True), (recorded["fps"], recorded["draft"]), "the full fps is kept for the final render")
+        self.assertTrue(json.loads(out.stdout)["draft"])
+
+    def test_draft_and_final_usage(self):
+        for args in (("place", str(self.composition), "--final"), ("rerender", "--all", "--draft", "--final"),
+                     ("plan", "--draft", "--fps", "30"), ("plan", "--snapshot", "1", "--draft")):
+            out, calls = self.run_graphic({"projects": [self.project()]}, *args)
+            self.assertEqual(2, out.returncode, args)
+            self.assertEqual([], calls)
+
+    def draft_media(self, media_id, draft=True, frames=83):
+        media = self.recorded_media({"title": media_id}, frames=frames)
+        media["id"] = media_id
+        media["fps"] = [15, 1] if draft else [30, 1]
+        if draft:
+            media["data"]["graphics"]["draft"] = True
+        return media
+
+    def test_rerender_all_final_swaps_every_draft_in_one_apply(self):
+        media = [self.draft_media("media-d1"), self.draft_media("media-d2"), self.draft_media("media-f", draft=False, frames=165)]
+        items = [{"id": "a", "media": "media-d1", "at": 0, "dur": 165, "in": 0},
+                 {"id": "b", "media": "media-d2", "at": 300, "dur": 60, "in": 15},
+                 {"id": "c", "media": "media-f", "at": 600, "dur": 165, "in": 0}]
+        project = self.project(rev=20, media=media, items=items)
+        out, calls = self.run_graphic({"projects": [project, project]}, "rerender", "--all", "--final")
+        self.assertEqual(0, out.returncode, out.stderr)
+        invokes = [c["params"] for c in calls if c["args"][:2] == ["plugins", "invoke"]]
+        self.assertEqual([(30, False), (30, False)], [(p["fps"], p.get("draft", False)) for p in invokes], "drafts only, at full fps")
+        applies = [c for c in calls if c["args"][:2] == ["timeline", "apply"]]
+        self.assertEqual(1, len(applies), "one undo step")
+        self.assertIn("Final graphics", applies[0]["args"])
+        sources = {op["item"]: op["sourceIn"] for op in applies[0]["ops"] if op["op"] == "setSource"}
+        self.assertEqual({"a": 0, "b": 30}, sources, "half a second into the 15 fps draft is half a second into the final")
+        recorded = [op["patch"]["graphics"] for op in applies[0]["ops"] if op["op"] == "setMediaData"]
+        self.assertTrue(all("draft" not in r for r in recorded))
+        # Nothing left to finalise: nothing rendered, nothing applied.
+        finals = [self.draft_media("media-f", draft=False, frames=165)]
+        project = self.project(media=finals, items=[items[2]])
+        out, calls = self.run_graphic({"projects": [project]}, "rerender", "--all", "--final")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual({"graphics": [], "drafts": 0}, json.loads(out.stdout))
+        self.assertFalse(any(c["args"][:2] in (["plugins", "invoke"], ["timeline", "apply"]) for c in calls))
+
+    def test_rerender_of_a_draft_stays_a_draft(self):
+        project = self.project(media=[self.draft_media("media-d1")], items=[{"id": "a", "media": "media-d1", "at": 0, "dur": 165, "in": 0}])
+        out, calls = self.run_graphic({"projects": [project, project]}, "rerender", "a", "--set", "title=Mới")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual(15, next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]["fps"])
+
+    def test_plan_draft_is_kept_until_final(self):
+        first = {"projects": [self.plan_project()], "check": self.plan_check(), "projectFile": str(self.folder / "p.json")}
+        out, calls = self.run_graphic(first, "plan", "--draft")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual((["g1"], True), (result["drafts"], result["rendered"][0]["draft"]))
+        self.assertEqual(15, next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]["fps"])
+        recorded = next(c for c in calls if c["args"][:2] == ["timeline", "apply"])["ops"][0]["patch"]["graphics"]
+        media = {"id": "media-calendar", "data": {"graphics": recorded}}
+        graphics = [{"id": "g1", "on": "l1", "media": "media-calendar", "render": {
+            "composition": "graphics/calendar", "set": {"title": "Hồ Tây", "month": "@hai mươi"}}}]
+        again = {"projects": [self.plan_project(media=[media], graphics=graphics)], "check": self.plan_check(),
+                 "projectFile": str(self.folder / "p.json")}
+        out, calls = self.run_graphic(again, "plan")
+        self.assertEqual(({"rendered": [], "kept": ["g1"], "drafts": ["g1"]}), {k: json.loads(out.stdout)[k] for k in ("rendered", "kept", "drafts")})
+        self.assertFalse(any(c["args"][:2] == ["plugins", "invoke"] for c in calls))
+        out, calls = self.run_graphic(again, "plan", "--final")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual(["g1"], [r["id"] for r in json.loads(out.stdout)["rendered"]])
+        params = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]
+        self.assertEqual(30, params["fps"])
+        self.assertNotIn("draft", params)
+
+    def test_a_scene_slice_hash_keeps_only_the_times_it_shows(self):
+        script = f"""import('{ROOT}/lib/graphic.mjs').then((g) => {{
+const data = (pay, label) => JSON.stringify({{nodes: [{{id: 'app', at: 2}}, {{id: 'api', at: 9}}, {{id: 'pay', label, at: pay}}, {{id: 'db', at: 30}}],
+  edges: [{{from: 'app', to: 'api'}}]}});
+const key = (pay, label, t0, total = 42) => JSON.stringify(g.sliceVariables({{data: data(pay, label), t0, total, recap: 39}}, {{t0, seconds: 7}}));
+console.log(JSON.stringify({{
+  earlier: key(23, 'Pay', 7) === key(24.5, 'Pay', 7),
+  own: key(23, 'Pay', 21) === key(24.5, 'Pay', 21),
+  later: key(23, 'Pay', 35) === key(24.5, 'Pay', 35),
+  crossing: key(23, 'Pay', 7) === key(5, 'Pay', 7),
+  label: key(23, 'Pay', 7) === key(23, 'Payment', 7),
+  total: key(23, 'Pay', 7, 42) === key(23, 'Pay', 7, 44),
+  lastSliceTotal: key(23, 'Pay', 35, 42) === key(23, 'Pay', 35, 44),
+}}));
+}})"""
+        out = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        # Moving "pay" from 23 to 24.5 s changes the slice it lands in, not the one before nor the one from 35 s (whose
+        # active step is db at 30 s, so pay is only an order there). Crossing another node or a new label changes it.
+        self.assertEqual({"earlier": True, "own": False, "later": True, "crossing": False, "label": False, "total": True,
+                          "lastSliceTotal": False}, json.loads(out.stdout))
+
+    def test_the_hash_ignores_scripts_the_render_copies_in(self):
+        folder = self.folder / "graphics" / "diagram"
+        shutil.copytree(ROOT / "examples" / "growing-diagram", folder)
+        script = (f"import('{ROOT}/lib/graphic.mjs').then((g) => console.log(g.inputsHash({json.dumps(str(folder))}, {{}}, 5, 30, 'hevc')))")
+        before = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60).stdout
+        shutil.copy(ROOT / "lib" / "diagram.js", folder / "diagram.js")  # what the first render copies in
+        after = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60).stdout
+        self.assertTrue(before.strip())
+        self.assertEqual(before, after, "a second plan keeps the row")
 
     def test_plan_frame_lands_its_callout_on_words_and_counts_in_the_hash(self):
         graphics = [{"id": "g1", "on": "l1", "render": {"composition": "graphics/calendar", "set": {"title": "Hồ Tây"},
@@ -1683,6 +1855,33 @@ class LiveRenderTests(unittest.TestCase):
             self.assertEqual(result["lint"]["errors"], 0)
             self.assertGreater(pathlib.Path(result["path"]).stat().st_size, 10_000)
 
+
+    def test_renders_a_draft_over_an_underlay(self):
+        import struct
+        import zlib
+        with tempfile.TemporaryDirectory() as folder:
+            composition = pathlib.Path(folder, "keyword")
+            shutil.copytree(ROOT / "examples" / "keyword-pop", composition)
+            output = pathlib.Path(folder, "out")
+            output.mkdir()
+            # A 1400×2240 opaque PNG: a baked backdrop 160 px larger than the frame on every side.
+            width, height = 1400, 2240
+            rows = b"".join(b"\x00" + bytes([20, 30, 40]) * width for _ in range(height))
+            chunk = lambda kind, data: struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+            under = pathlib.Path(folder, "backdrop.png")
+            under.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+                              + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b""))
+            env = {**environment(folder), "BASHCUT_PLUGIN_DATA": RUNTIME_DATA, "BASHCUT_PLUGIN_CACHE": RUNTIME_CACHE}
+            request = {"id": "r1", "apiVersion": MANIFEST["apiVersion"], "method": "graphics.render",
+                       "provider": "bashcut.hyperframes.render",
+                       "params": {"composition": str(composition), "outputDirectory": str(output), "fps": 15, "draft": True,
+                                  "variables": {"keyword": "Boost"}, "name": "boost",
+                                  "underlay": {"path": str(under), "x": -160, "y": -160, "fadeIn": 0.5}}}
+            out = subprocess.run([str(ENTRYPOINT), "rpc"], input=json.dumps(request) + "\n", capture_output=True,
+                                 text=True, cwd=ROOT, env=env, timeout=300)
+            result = json.loads(out.stdout)["result"]
+            self.assertEqual((result["frames"], result["fps"], result["draft"]), (36, 15, True))
+            self.assertGreater(pathlib.Path(result["path"]).stat().st_size, 10_000)
 
 if __name__ == "__main__":
     unittest.main()
