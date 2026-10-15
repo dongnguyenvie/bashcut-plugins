@@ -1,6 +1,6 @@
 ---
 name: podcast-clips
-description: Recipe for cutting shorts from a long podcast, interview, livestream or talk in BashCut (long → short) — classify the source, propose about twice the clips needed by quote (media resolve-range, selects set), the standalone test, a blind second pass with publish/review/drop verdicts, the user picks, one sibling project per kept clip (project derive), then each is edited as a talking-head short; length, padding and hook ranges with sources. Use after bashcut.vlog:plan picked podcast-clips, or when the user has a long recording and wants several short clips from it. Triggers: "cắt podcast", "cắt clip ngắn từ video dài", "cắt shorts từ livestream", "clip podcast", "highlight phỏng vấn", "podcast clips", "long to short", "repurpose", "cắt nhiều clip".
+description: Recipe for shorts cut from a long podcast, interview, livestream or talk: clips proposed by quote, the standalone test, a blind second pass, the user picks, one derived project per clip. Use after bashcut.vlog:plan picks podcast-clips. Triggers: "cắt podcast", "cắt clip ngắn từ video dài", "cắt shorts từ livestream", "long to short".
 ---
 
 # Podcast clips (long → short)

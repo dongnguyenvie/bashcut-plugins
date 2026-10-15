@@ -1,6 +1,6 @@
 ---
 name: travel
-description: Recipe for a travel vlog or travel guide in BashCut, vertical by default — hook with a cost or time number, numbered place sections with place cards, a cost recap and a save/follow CTA; pacing, text, sound and look intent and the review profile to set. Use after bashcut.vlog:plan picked travel, or when the user edits footage of a trip, a city, places or a route. Triggers: "vlog du lịch", "review chuyến đi", "đi Đà Lạt", "48h ở", "lịch trình", "travel vlog", "travel guide", "ăn chơi ở", "check-in".
+description: Recipe for a travel vlog or guide, vertical by default: a cost or time hook, numbered place sections with place cards, a cost recap and a save CTA. Use after bashcut.vlog:plan picks travel, or for footage of a trip, city or route. Triggers: "vlog du lịch", "review chuyến đi", "48h ở", "lịch trình", "travel vlog", "check-in".
 ---
 
 # Travel vlog
@@ -10,9 +10,7 @@ edit plan and the review profile with `bashcut.vlog:plan`, then edit with `bc:ed
 
 ## Ranges
 
-Outputs: vertical → `reels`, `tiktok`, `shorts`; landscape for YouTube → `youtube-1080`. The ranges are starting
-points: a measured reference profile (`bc:style-study`) replaces every range it measures, and the recipe only fills
-what it does not measure (T07 §7, T15 §7). Write each chosen range, its source and its reason in the plan.
+Outputs: vertical → `reels`, `tiktok`, `shorts`; landscape for YouTube → `youtube-1080`. Ranges follow `bashcut.vlog:plan` (a measured reference replaces them).
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -82,8 +80,7 @@ and never named as the real place.
 ## Sound
 
 Upbeat music bed under the voice (ducked, level from the range above); natural sound of each place for the first
-second of its section; a whoosh on the whips. Loudness is each output's own target (`bashcut platforms get`); do not
-set it here (`bc:audio-mix`).
+second of its section; a whoosh on the whips. Loudness: plan §4, never set here (`bc:audio-mix`).
 
 ## Look
 

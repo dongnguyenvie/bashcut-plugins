@@ -1,6 +1,6 @@
 ---
 name: talking-head
-description: Recipe for a talking-head video in BashCut (one person to camera — opinion, story time, tips, a podcast clip) — the strongest line first, tight cuts on speech, a punch-in every 4–6 s, word-by-word captions and keyword pops, B-roll on claims; the review profile for one camera (jump cuts measured, fixed with punch-ins). Use after bashcut.vlog:plan picked talking-head, or when the footage is mostly one person speaking. Triggers: "video nói chuyện", "nói trước camera", "talking head", "chia sẻ quan điểm", "story time", "podcast", "tips", "kể chuyện".
+description: Recipe for one person talking to camera (opinion, story time, tips): the strongest line first, tight cuts on speech, punch-ins every 4–6 s, word-by-word captions, B-roll on claims. Use after bashcut.vlog:plan picks talking-head. Triggers: "video nói chuyện", "nói trước camera", "talking head", "chia sẻ quan điểm", "story time".
 ---
 
 # Talking head
@@ -10,9 +10,7 @@ edit plan and the review profile with `bashcut.vlog:plan`, then edit with `bc:ed
 
 ## Ranges
 
-Outputs: vertical → `shorts`, `tiktok`, `reels`; landscape → `youtube-1080`. The ranges are starting points: a
-measured reference profile (`bc:style-study`) replaces every range it measures, and the recipe only fills what it does
-not measure (T07 §7, T15 §7). Write each chosen range, its source and its reason in the plan.
+Outputs: vertical → `shorts`, `tiktok`, `reels`; landscape → `youtube-1080`. Ranges follow `bashcut.vlog:plan` (a measured reference replaces them).
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -64,8 +62,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 ## Text, sound, look
 
 - Captions word by word (highlight), bold-outline, mid-low in the frame; keywords in `vlog-keyword`.
-- Sound: the voice is everything — clean and even; music very low or none; a subtle whoosh on punch-ins. Loudness is
-  each output's own target (`bashcut platforms get`).
+- Sound: the voice is everything — clean and even; music very low or none; a subtle whoosh on punch-ins.
 - Look intent: natural skin, eyes bright, background a little darker than the face. Measure first (`bc:color-grade`).
 
 ## Review notes

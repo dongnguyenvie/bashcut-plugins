@@ -47,11 +47,14 @@ is normalized to its own output's target (`bashcut platforms get`), never one nu
 
 ## Adding a recipe
 
-Copy a topic skill to `skills/<topic>/SKILL.md` (front matter `name` = folder name, `description` with "Use when …"
-and `Triggers:`), keep its sections (Ranges, Structure, Cuts and motion, Rhythm, transitions and graphics, Shots,
+Copy a topic skill to `skills/<topic>/SKILL.md` (front matter `name` = folder name, `description` of at most
+about 350 characters: what it is for, "Use after bashcut.vlog:plan picks …" and up to 8 `Triggers:`, since every agent
+session loads it), keep its sections (Ranges, Structure, Cuts and motion, Rhythm, transitions and graphics, Shots,
 Text, sound, look, Review notes), add a row to the table in `plan` and above, and list it in `plugin.json` ›
 `contributes.skills` (at most 16). Ranges rows are check → sample range (with its source) → why it varies → what to
-measure, using only commands in BashCut's command reference. Review keys are listed in `plan` (core has no defaults:
+measure, using only commands in BashCut's command reference. Rules every recipe shares (reference profiles,
+loudness, fonts, labels, sponsorship) live in `plan` §4: point there instead of repeating them. Review keys are
+`bc:review`'s (core has no defaults:
 an unset key means no check, or info only); `severities` maps a check ID or prefix, or `provider:`, to `error`,
 `warning`, `info` or `off`; outputs are export preset names.
 
@@ -62,7 +65,8 @@ an unset key means no check, or info only); `severities` maps a check ID or pref
   (commit `53bdce3`) by CyberJ0605, MIT License — the license is in
   [`skills/scene-prompt/LICENSE-upstream`](skills/scene-prompt/LICENSE-upstream). Changes: translated from
   Chinese to English (`SKILL.md` and every reference), renamed to `scene-prompt`, a BashCut section and description added (moved from the withdrawn Pre-production plugin), "Cinematic Translation Rules" moved to
-  `references/cinematic_translation_rules.md` so `SKILL.md` stays under BashCut's 64 KB limit, and the upstream
+  `references/cinematic_translation_rules.md`, `SKILL.md` condensed (its rules kept, the parts the references
+  already hold replaced by pointers to them) so agents load fewer tokens, and the upstream
   `agents/openai.yaml`, evaluation videos and README left out. To update, translate the upstream changes to
   `SKILL.md` and `references/` into English (keeping the section labels of
   this copy) and repeat the other changes.

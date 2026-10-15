@@ -1,6 +1,6 @@
 ---
 name: publish
-description: Finish a vlog in BashCut for posting — read each output's platform facts (platforms get: length, bit rate, title limits, cover aspect, chapter and disclosure rules, each with its source), one export per output with its caption mode, a separate cut for another shape, cover candidates checked at phone size (export cover, then look), YouTube chapters from section markers (export chapters), and the post title, caption and hashtags sized from data plus sourced ranges. Use when the edit passed review and the user wants to post it, export for TikTok, Reels, Shorts or YouTube, or needs a title, caption, hashtags, chapters or a cover. Triggers: "xuất video", "đăng TikTok", "đăng Reels", "đăng Shorts", "đăng YouTube", "caption đăng bài", "hashtag", "thumbnail", "ảnh bìa", "chương YouTube", "xuất nhiều bản".
+description: Finish a reviewed vlog for posting: platform facts, one export per output, cover candidates checked at phone size, YouTube chapters, post title, caption and hashtags. Use when the edit passed review and the user wants to post or export. Triggers: "xuất video", "đăng TikTok", "đăng Reels", "đăng YouTube", "hashtag", "ảnh bìa", "chương YouTube".
 ---
 
 # Publish

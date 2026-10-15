@@ -1,6 +1,6 @@
 ---
 name: food
-description: Recipe for a food vlog or food review in BashCut, vertical by default — the bite or pour as the hook with the price, place and price card, quick process inserts, tasting with reactions, verdict and address, CTA; pacing, close-up and slow-motion moves, sound and look intent and the review profile. Use after bashcut.vlog:plan picked food, or when the footage is eating, cooking, a restaurant or a street food stall. Triggers: "review món", "review quán", "vlog ăn uống", "food review", "món ngon", "ăn gì", "mukbang", "nấu ăn", "street food".
+description: Recipe for a food vlog or review, vertical by default: the bite or pour with the price as the hook, place card, process inserts, tasting reactions, verdict and address. Use after bashcut.vlog:plan picks food, or for eating, cooking or a stall. Triggers: "review món", "review quán", "vlog ăn uống", "food review", "mukbang", "nấu ăn".
 ---
 
 # Food vlog
@@ -10,9 +10,7 @@ edit plan and the review profile with `bashcut.vlog:plan`, then edit with `bc:ed
 
 ## Ranges
 
-Outputs: vertical → `tiktok`, `reels`, `shorts`. The ranges are starting points: a measured reference profile
-(`bc:style-study`) replaces every range it measures, and the recipe only fills what it does not measure
-(T07 §7, T15 §7). Write each chosen range, its source and its reason in the plan.
+Outputs: vertical → `tiktok`, `reels`, `shorts`. Ranges follow `bashcut.vlog:plan` (a measured reference replaces them).
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -72,7 +70,7 @@ fallback when the headroom allows it.
 
 - Text: price always on screen; one keyword sticker per bite at most.
 - Sound: keep the real sizzle, crunch and slurp up front (ASMR moments: music dips under them); short pop/ding on
-  price tags (`bc:audio-mix` for finding SFX). Loudness is each output's own target (`bashcut platforms get`).
+  price tags (`bc:audio-mix` for finding SFX).
 - Look intent: warm, rich colour, appetising; never green-tinted or grey; highlights on sauce kept. Measure first
   (`bc:color-grade`); no fixed numbers.
 

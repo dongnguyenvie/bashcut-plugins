@@ -1,6 +1,6 @@
 ---
 name: product-review
-description: Recipe for a product review or unboxing in BashCut — verdict or price question as the hook, what it is, three points with pros and cons, a verdict card with the price, CTA; hero shots, detail inserts, the review profile and disclosure of sponsorship. Use after bashcut.vlog:plan picked product-review, or when the footage is a product, an unboxing or a comparison. Triggers: "review sản phẩm", "đập hộp", "unboxing", "có nên mua", "đáng tiền không", "so sánh", "trên tay", "review điện thoại", "review mỹ phẩm".
+description: Recipe for a product review or unboxing: a verdict or price-question hook, what it is, three points with pros and cons, a verdict card with the price, sponsorship disclosed. Use after bashcut.vlog:plan picks product-review. Triggers: "review sản phẩm", "đập hộp", "unboxing", "có nên mua", "đáng tiền không", "so sánh".
 ---
 
 # Product review
@@ -10,9 +10,7 @@ edit plan and the review profile with `bashcut.vlog:plan`, then edit with `bc:ed
 
 ## Ranges
 
-Outputs: vertical → `tiktok`, `reels`, `shorts`; long-form review → `youtube-1080`. The ranges are starting points: a
-measured reference profile (`bc:style-study`) replaces every range it measures, and the recipe only fills what it does
-not measure (T07 §7, T15 §7). Write each chosen range, its source and its reason in the plan.
+Outputs: vertical → `tiktok`, `reels`, `shorts`; long-form review → `youtube-1080`. Ranges follow `bashcut.vlog:plan` (a measured reference replaces them).
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -70,8 +68,7 @@ the spec as text.
 
 - Every number on screen (price, battery hours, weight). Pros green, cons red (`vlog-pro`, `vlog-con`).
 - Sponsored or gifted: say so in the first seconds and add `vlog-disclosure` ("Hợp tác cùng …") — ask the user.
-- Sound: light music under the voice; click/pop on stickers; real sound of the product when it has one. Loudness is
-  each output's own target (`bashcut platforms get`).
+- Sound: light music under the voice; click/pop on stickers; real sound of the product when it has one.
 - Look intent: true-to-life colour (the product's real colour matters more than mood), clean whites. Measure first
   (`bc:color-grade`); grade the product shots to match each other.
 
