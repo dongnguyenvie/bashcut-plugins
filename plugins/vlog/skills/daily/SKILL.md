@@ -1,6 +1,6 @@
 ---
 name: daily
-description: Recipe for a daily-life vlog in BashCut ("a day in my life", routines, study or work with me) — time-stamped moments in order, a calm pace with room to breathe, voiceover or captions as a diary, a soft look; the review profile that lets slower shots pass. Use after bashcut.vlog:plan picked daily, or when the footage is one day or routine of one person. Triggers: "a day in my life", "một ngày của tôi", "vlog đời thường", "daily vlog", "routine", "morning routine", "study with me", "work with me", "cuối tuần của tôi".
+description: Recipe for a daily-life vlog (a day in my life, routines, study or work with me): time-stamped moments in order, a calm pace, diary voiceover or captions, a soft look. Use after bashcut.vlog:plan picks daily. Triggers: "a day in my life", "một ngày của tôi", "vlog đời thường", "daily vlog", "morning routine", "study with me".
 ---
 
 # Daily vlog
@@ -10,9 +10,7 @@ edit plan and the review profile with `bashcut.vlog:plan`, then edit with `bc:ed
 
 ## Ranges
 
-Outputs: vertical → `tiktok`, `reels`, `shorts`; long-form (YouTube, 4–10 min) → `youtube-1080`. The ranges are
-starting points: a measured reference profile (`bc:style-study`) replaces every range it measures, and the recipe only
-fills what it does not measure (T07 §7, T15 §7). Write each chosen range, its source and its reason in the plan.
+Outputs: vertical → `tiktok`, `reels`, `shorts`; long-form (YouTube, 4–10 min) → `youtube-1080`. Ranges follow `bashcut.vlog:plan` (a measured reference replaces them).
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -67,7 +65,7 @@ cue (clock, phone, sky). Missing time cues: put the time stamps on screen.
 
 - A diary voice: short sentences, first person, present tense; captions small and low.
 - Sound: one calm music bed for the whole video, ducked under speech; keep room tone and small sounds (cup, door).
-  Loudness is each output's own target (`bashcut platforms get`).
+ 
 - Look intent: soft and bright, gentle contrast, a little warmth; consistent between indoor and outdoor. Measure first
   (`bc:color-grade`).
 

@@ -1,6 +1,6 @@
 ---
 name: ideate
-description: Find the angle of a vlog in BashCut before planning — footage first (media inventory, contact sheets, described shots, transcripts), 3–5 angles each backed by real shots and a source, research only when it changes the choice, "nothing solid" when nothing holds, a 3-hook screen per idea against actual shots, a decision table with a recommendation, then the project brief written with `project set-data brief` (each field stated, inferred or confirmed, with its source). Use before bashcut.vlog:plan when the user has footage but no clear angle, asks what to make, wants ideas, titles or a topic, or the brief is empty. Triggers: "làm video gì", "ý tưởng video", "góc kể", "nên kể gì", "chủ đề", "brainstorm", "lên ý tưởng", "footage này làm được gì", "ideas", "what should I make".
+description: Find a vlog's angle before planning: footage first, 3–5 angles backed by real shots, research only when it changes the choice, hooks screened against shots, then the brief. Use before bashcut.vlog:plan when there is no clear angle or brief. Triggers: "làm video gì", "ý tưởng video", "góc kể", "nên kể gì", "brainstorm", "footage này làm được gì".
 ---
 
 # Ideate: find the angle

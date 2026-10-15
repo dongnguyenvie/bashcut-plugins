@@ -1,6 +1,6 @@
 ---
 name: tutorial
-description: Recipe for a tutorial or tool demo in BashCut — the result first, then the presenter, numbered steps with step cards, zooms onto what is clicked, waiting sped up, limits and next steps; landscape for YouTube with a vertical cut for Shorts, and the review profile that lets screen shots hold longer. Use after bashcut.vlog:plan picked tutorial, or when the footage is a screen recording, an app demo or a how-to. Triggers: "video hướng dẫn", "tutorial", "demo phần mềm", "giới thiệu tool", "cách làm", "từng bước", "how to", "quay màn hình", "hướng dẫn sử dụng".
+description: Recipe for a tutorial or tool demo: the result first, numbered steps with step cards, zooms onto what is clicked, waiting sped up, limits and next steps; landscape plus a vertical cut. Use after bashcut.vlog:plan picks tutorial. Triggers: "video hướng dẫn", "tutorial", "demo phần mềm", "cách làm", "từng bước", "quay màn hình".
 ---
 
 # Tutorial and tool demo
@@ -12,9 +12,7 @@ with a presenter" section has the layout).
 ## Ranges
 
 Outputs: landscape → `youtube-1080`, plus `shorts` for a vertical cut; vertical-first (a 30–60 s tip) → `shorts`,
-`tiktok`, `reels`. The ranges are starting points: a measured reference profile (`bc:style-study`) replaces every
-range it measures, and the recipe only fills what it does not measure (T07 §7, T15 §7). Write each chosen range, its
-source and its reason in the plan.
+`tiktok`, `reels`. Ranges follow `bashcut.vlog:plan` (a measured reference replaces them).
 
 | Check (review key) | Sample range | Why it varies | Measure with |
 |---|---|---|---|
@@ -68,7 +66,7 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 
 - Captions from the presenter; every shortcut, menu path and value on screen as text ("⌘K → Export").
 - Sound: the presenter's voice; mute the screen recording unless its sound is the result; quiet music bed or none;
-  click sounds only if they help. Loudness is each output's own target (`bashcut platforms get`).
+  click sounds only if they help.
 - Look: leave the screen recording ungraded; grade only the presenter camera to natural skin (`bc:color-grade`).
 
 For the Shorts output, make a vertical cut of the hook and one step (`bashcut.vlog:publish`).
