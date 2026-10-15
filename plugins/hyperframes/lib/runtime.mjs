@@ -1,6 +1,6 @@
 // Where the HyperFrames runtime lives and how to run it: the same paths as bin/runtime.sh (bin/setup installs them).
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,4 +70,38 @@ export function execute(command, args, { cwd, onTick } = {}) {
 /** Runs the HyperFrames CLI. */
 export function hyperframes(args, options) {
     return execute(process.execPath, [paths.cli, ...args], options);
+}
+
+/**
+ * GSAP, KaTeX, lottie-web and the shared scripts are not bundled in compositions: the pinned GSAP, KaTeX (script, style
+ * and its woff2 fonts, into katex/), lottie-web's SVG player (as lottie.min.js), lib/diagram.js and lib/amenity-map.js
+ * are copied next to a page that loads them locally, so a render needs no network.
+ */
+export function provideScripts(composition) {
+    const page = composition.file ?? join(composition.dir, "index.html");
+    const html = readFileSync(page, "utf8");
+    const loads = (file) => new RegExp(`(src|href)=["']\\.?\\/?${file.replace(/[./]/g, "\\$&")}["']`).test(html);
+    const target = join(composition.dir, "gsap.min.js");
+    if (loads("gsap.min.js") && !existsSync(target)) copyFileSync(paths.gsap, target);
+    // The shared scripts are the plugin's: a copy older than the plugin's is replaced, so a rerender gets layout fixes.
+    for (const [file, from] of [["diagram.js", paths.diagram], ["amenity-map.js", paths.amenityMap]]) {
+        const copy = join(composition.dir, file);
+        if (loads(file) && (!existsSync(copy) || !readFileSync(copy).equals(readFileSync(from)))) copyFileSync(from, copy);
+    }
+    if (loads("lottie.min.js") && !existsSync(join(composition.dir, "lottie.min.js"))) {
+        if (!existsSync(paths.lottie)) {
+            throw new PluginError("dependency_missing", "lottie-web is not installed: choose Install Dependencies for HyperFrames Graphics in Plugins");
+        }
+        copyFileSync(paths.lottie, join(composition.dir, "lottie.min.js"));
+    }
+    if (loads("katex/katex.min.js") && !existsSync(join(composition.dir, "katex", "katex.min.js"))) {
+        if (!existsSync(join(paths.katex, "katex.min.js"))) {
+            throw new PluginError("dependency_missing", "KaTeX is not installed: choose Install Dependencies for HyperFrames Graphics in Plugins");
+        }
+        mkdirSync(join(composition.dir, "katex", "fonts"), { recursive: true });
+        for (const file of ["katex.min.js", "katex.min.css"]) copyFileSync(join(paths.katex, file), join(composition.dir, "katex", file));
+        for (const font of readdirSync(join(paths.katex, "fonts")).filter((f) => f.endsWith(".woff2"))) {
+            copyFileSync(join(paths.katex, "fonts", font), join(composition.dir, "katex", "fonts", font));
+        }
+    }
 }

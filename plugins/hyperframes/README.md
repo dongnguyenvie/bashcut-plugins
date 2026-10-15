@@ -20,6 +20,9 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   `secondary`, `headingFont`, `bodyFont`, `disclosure`) from the project's `brand`, explicit values winning, so a brand
   change restyles placed graphics with `rerender --all --brand`. Uses `$BASHCUT_CLI`, else `bashcut` on PATH.
   A composition that declares `mascot` gets the brand's mascot pose (`--set pose=thinking`; five examples have one).
+  `--snapshot 1.5,4,9.2 [-o OUT]` on `plan`, `place` or `rerender ITEM` previews instead: the row resolved exactly as
+  it would render (values, "@words" timing, brand, frame, span, canvas) in a throwaway copy, then `hf snapshot` at
+  those seconds; PNGs and a contact sheet in seconds, nothing rendered, imported or placed.
 - **`bin/hf`**: the pinned HyperFrames CLI with telemetry off and the plugin's own Chrome: `catalog`, `add`, `lint`,
   `check`, `snapshot` (frames to look at, optionally against a reference video), `docs`.
 - **`bin/osm-map`**: an OpenStreetMap map and a route for a composition: tiles (cached in the plugin cache folder)
@@ -38,7 +41,7 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
 - **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
   `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
   `cost-table`, `timeline`, `calendar`, `map-route`, `amenity-radius`; mock screens (`mock-video-app`) and cards such as
-  `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, `growing-diagram` (one diagram that grows over a whole video), and
+  `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, `growing-diagram` (one diagram that grows over a whole video: ghost blocks for the hook, a `recap`, a `bottomSafe` line for captions, closing edges routed round the stage), and
   `big-canvas`, one hand-drawn canvas for a whole video with a camera path) and science widgets (`formula` with
   KaTeX, `matrix-grid`, `scale-compare`); `lottie` plays one Lottie accent picked with resources'
   `fetch_lottie.py`. All take the brand variables `bin/graphic` fills. Those with `data-fit="canvas"` render at the

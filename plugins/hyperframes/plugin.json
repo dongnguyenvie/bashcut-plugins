@@ -5,7 +5,7 @@
     "en": "HyperFrames Graphics",
     "vi": "Đồ hoạ HyperFrames"
   },
-  "version": "0.0.5",
+  "version": "0.0.6",
   "apiVersion": 8,
   "minApiVersion": 7,
   "entrypoint": "bin/provider",

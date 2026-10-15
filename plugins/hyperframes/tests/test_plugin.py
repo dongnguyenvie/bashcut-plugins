@@ -892,6 +892,87 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertEqual(2, out.returncode)
         self.assertIn("t0 and total", json.loads(out.stderr)["error"])
 
+    def fake_hyperframes(self):
+        """A HyperFrames runtime in the test's plugin data whose `snapshot` keeps the page and arguments it was given."""
+        runtime = self.folder / "data" / "runtime" / "node_modules"
+        (runtime / "gsap" / "dist").mkdir(parents=True, exist_ok=True)
+        (runtime / "gsap" / "dist" / "gsap.min.js").write_text("/* gsap */")
+        (runtime / "hyperframes" / "bin").mkdir(parents=True, exist_ok=True)
+        (runtime / "hyperframes" / "bin" / "hyperframes.mjs").write_text(r"""
+import { copyFileSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+const args = process.argv.slice(2);
+const out = args[args.indexOf("-o") + 1];
+mkdirSync(out, { recursive: true });
+writeFileSync(join(out, "args.json"), JSON.stringify(args));
+writeFileSync(join(out, "files.json"), JSON.stringify(readdirSync(args[1]).sort()));
+copyFileSync(join(args[1], "index.html"), join(out, "page.html"));
+args[args.indexOf("--at") + 1].split(",").forEach((t, i) => writeFileSync(join(out, `frame-0${i}-at-${t}s.png`), "png"));
+writeFileSync(join(out, "contact-sheet.jpg"), "jpg");
+""")
+
+    def baked(self, page):
+        """The variable defaults a snapshot page carries."""
+        text = re.search(r"data-composition-variables='([\s\S]*?)'", page).group(1)
+        return {v["id"]: v["default"] for v in json.loads(text.replace("&#39;", "'").replace("&amp;", "&"))}
+
+    def test_place_snapshot_shows_the_row_as_it_would_render_and_places_nothing(self):
+        self.fake_hyperframes()
+        example = ROOT / "examples" / "growing-diagram"
+        before = sorted(p.name for p in example.iterdir())
+        data = {"nodes": [{"id": "a", "label": "App", "at": 1}, {"id": "b", "label": "API", "at": 3}],
+                "edges": [{"from": "a", "to": "b"}, {"from": "b", "to": "a"}]}
+        (self.folder / "d.json").write_text(json.dumps(data))
+        out_dir = self.folder / "shots"
+        state = {"projects": [self.project(brand=self.brand)]}
+        out, calls = self.run_graphic(state, "place", "growing-diagram", "--duration", "240", "--set", f"data=@{self.folder / 'd.json'}",
+                                      "--set", "recap=5.5", "--set", "look=iso", "--frame", '{"backdrop": "texture"}',
+                                      "--snapshot", "1.5,6", "-o", str(out_dir))
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        shot = result["snapshot"]
+        self.assertEqual([str(out_dir / "frame-00-at-1.5s.png"), str(out_dir / "frame-01-at-6s.png")], shot["frames"])
+        self.assertEqual(str(out_dir / "contact-sheet.jpg"), shot["sheet"])
+        self.assertEqual((8, {"width": 1080, "height": 1920}), (shot["seconds"], shot["canvas"]))
+        self.assertTrue(any("noti" in w or "b→a" in w for w in result["warnings"]), "iso draws a closing edge across the chain")
+        self.assertEqual(["project get"], [" ".join(c["args"][:2]) for c in calls], "nothing rendered, imported or placed")
+        args = json.loads((out_dir / "args.json").read_text())
+        self.assertEqual(["snapshot", "--at", "1.5,6", "--no-end", "--describe", "false"], [a for a in args if not a.startswith("/")][:6])
+        page = (out_dir / "page.html").read_text()
+        defaults = self.baked(page)
+        self.assertEqual((5.5, "iso", "#FF3366"), (defaults["recap"], defaults["look"], defaults["accent"]), "set and brand baked in")
+        self.assertEqual(data, json.loads(defaults["data"]))
+        self.assertIn('data-duration="8"', page)
+        self.assertIn('"backdrop":"texture"', page, "the frame is drawn")
+        self.assertTrue({"gsap.min.js", "diagram.js"} <= set(json.loads((out_dir / "files.json").read_text())))
+        self.assertEqual(before, sorted(p.name for p in example.iterdir()), "the plugin's example is untouched")
+
+    def test_place_snapshot_needs_no_open_project(self):
+        self.fake_hyperframes()
+        out, calls = self.run_graphic({"projects": [self.project()], "fail": "project get"}, "place", str(self.composition),
+                                      "--snapshot", "2")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual([], result["brand"])
+        self.assertEqual(1, len(result["snapshot"]["frames"]))
+        self.assertTrue(pathlib.Path(result["snapshot"]["frames"][0]).exists())
+        self.assertFalse((self.composition / "snapshots").exists())
+
+    def test_plan_snapshot_times_words_and_imports_nothing(self):
+        self.fake_hyperframes()
+        state = {"projects": [self.plan_project()], "check": self.plan_check(), "projectFile": str(self.folder / "project.bashcut.json")}
+        out, calls = self.run_graphic(state, "plan", "--only", "g1", "--snapshot", "0.5,3", "-o", str(self.folder / "shots"))
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual(["g1"], [s["id"] for s in result["snapshots"]])
+        self.assertEqual(3.2, result["snapshots"][0]["seconds"])
+        page = (self.folder / "shots" / "page.html").read_text()
+        self.assertEqual(0.6, self.baked(page)["month"], "@hai mươi → seconds from the graphic's start")
+        self.assertIn('data-duration="3.2"', page, "the span plan check gives it")
+        commands = {" ".join(c["args"][:2]) for c in calls}
+        self.assertFalse(commands & {"plugins invoke", "media import", "plan apply", "timeline apply", "project set-data"}, commands)
+        self.assertIn('data-duration="5.5"', (self.composition / "index.html").read_text(), "the project's page is untouched")
+
     def test_examples_list_their_own_variables_apart_from_the_brand(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "examples")
         self.assertEqual(0, out.returncode, out.stderr)
@@ -938,7 +1019,9 @@ class GraphicScriptTests(unittest.TestCase):
     def test_usage_errors_exit_2(self):
         for args in (["place"], ["rerender"], ["draw", "x"], ["place", "d", "--keep-length"],
                      ["rerender", "x", "--at-frame", "3"], ["place", "d", "--variables", "[1]"],
-                     ["place", "d", "--fps", "zero"], ["rerender", "x", "--all"]):
+                     ["place", "d", "--fps", "zero"], ["rerender", "x", "--all"], ["place", "d", "--snapshot", "1,x"],
+                     ["place", "d", "--snapshot", "-1"], ["place", "d", "--out", "o"], ["plan", "--snapshot", "1", "--dry-run"],
+                     ["plan", "--snapshot", "1", "--force"], ["rerender", "--all", "--snapshot", "2"]):
             out, calls = self.run_graphic({"projects": [self.project()]}, *args)
             self.assertEqual(2, out.returncode, (args, out.stderr))
             self.assertIn("error", json.loads(out.stderr))
@@ -1460,6 +1543,53 @@ console.log(JSON.stringify(out));
             self.assertTrue(row["whole"], row)
             # review.minTextSize 0.035 of the short side is 37.8 px at 1080; separate() may shrink a crowded box by 8 %.
             self.assertGreaterEqual(row["font"], 34 * 0.92 if row["kind"] == "iso" else 38 * 0.92 * 0.92, row)
+
+
+    def test_recap_lights_every_node_and_staggers_every_edge(self):
+        recap = self.node(r"""
+const d = require(process.argv[1]);
+const layout = { nodes: ["a", "b", "c"].map((id) => ({ id })), edges: [{ from: "a", to: "b" }, { from: "b", to: "c" }, { from: "c", to: "a" }] };
+console.log(JSON.stringify([d.recapStep(38.6, layout, 42.5), d.recapStep(0, layout, 42.5), d.recapStep(42.2, layout, 42.5)]));
+""")
+        self.assertEqual({"at": 38.6, "focus": ["a", "b", "c"], "reveal": [], "edges": ["a>b", "b>c", "c>a"], "grown": True,
+                          "recap": True, "stagger": 0.45}, recap[0])
+        self.assertEqual([None, None], recap[1:], "no recap at 0 or too close to the end")
+
+    def test_bottom_safe_keeps_the_diagram_above_the_captions(self):
+        rows = self.node(r"""
+const d = require(process.argv[1]);
+const a = (b) => { const r = d.areaFor(1080, 1920, 1, true, false, b); return Math.round(r.y + r.h); };
+console.log(JSON.stringify([a(0), a(d.GROWING_BOTTOM_SAFE), a(0.5), a(1100), a(-3)]));
+""")
+        self.assertEqual([1459, 1190, 960, 1100, 1459], rows)
+
+    def test_a_closing_edge_goes_round_the_stage_with_its_label_outside(self):
+        rows = self.node(r"""
+const d = require(process.argv[1]);
+const ids = ["app", "api", "kho", "pay", "ship", "noti"];
+const data = { nodes: ids.map((id, i) => ({ id, label: id === "pay" ? "Cổng thanh toán" : id, at: 4 + i * 5 })),
+  edges: ids.slice(1).map((id, i) => ({ from: ids[i], to: id })).concat([{ from: "noti", to: "app", label: "tin nhắn" }]) };
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const area = d.areaFor(W, H, u, true, false, W < H ? d.GROWING_BOTTOM_SAFE : 0);
+  const L = d.flowLayout(data, area, u, undefined, { maxFont: 60, minFont: 38 });
+  const by = new Map(L.nodes.map((n) => [n.id, n]));
+  const stage = { x: 24 * u, y: area.y - 40 * u, w: W - 48 * u, h: area.h + 40 * u };
+  const r = d.aroundPath(by.get("noti"), by.get("app"), L.nodes, L.direction, stage, u);
+  const pts = r.d.match(/-?[\d.]+,-?[\d.]+/g).map((p) => p.split(",").map(Number));
+  // The leg along the column (row) runs outside every node box, inside the frame.
+  const leg = L.direction === "tb" ? pts[2][0] : pts[2][1];
+  const clear = L.nodes.every((n) => L.direction === "tb" ? Math.abs(leg - n.x) > n.w / 2 : Math.abs(leg - n.y) > n.h / 2);
+  out.push({ direction: L.direction, side: r.side, clear, inside: leg > 0 && leg < (L.direction === "tb" ? W : H),
+    forward: d.aroundPath(by.get("app"), by.get("api"), L.nodes, L.direction, stage, u) });
+}
+console.log(JSON.stringify(out));
+""")
+        for row in rows:
+            self.assertTrue(row["clear"] and row["inside"], row)
+            self.assertIsNone(row["forward"], "an edge with the flow keeps its curve")
+        self.assertEqual(["tb", "lr"], [r["direction"] for r in rows])
 
 
 class AmenityLayoutTests(unittest.TestCase):
