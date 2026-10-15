@@ -50,6 +50,18 @@ class FingerprintTests(unittest.TestCase):
     def setUpClass(cls):
         cls.f = load('fetch_luts')
 
+    def test_titles(self):
+        f = load('fetch_luts')
+        cases = [('gmic', 'creative-bleachbypass_1', 'Bleach bypass 1'), ('gmic', 'creative-tealorange_2', 'Teal orange 2'),
+                 ('gmic', 'negative_color-agfa_vista_200', 'Agfa Vista 200'), ('gmic', 'toddblankenship-bluehour', 'Blue hour'),
+                 ('gmic', 'debrup_travel_films-cine-10', 'Cine 10'),
+                 ('rawtherapee', 'Kodak-Kodak T-Max 400', 'Kodak T-Max 400'),
+                 ('rawtherapee', 'Polaroid-Polaroid 669 2 -', 'Polaroid 669 2 -'),
+                 ('rawtherapee', 'CreativePack-1-CrispWarm', 'Creative Pack 1 Crisp Warm'),
+                 ('local', 'my_teal-look', 'My teal look'), ('local', 'TealOrange', 'Teal Orange')]
+        for source, name, expected in cases:
+            self.assertEqual(f.title(source, name), expected, name)
+
     def test_identity_cube_measures_unchanged(self):
         table = self.f.parse_cube(cube(lambda c: c))
         fp = self.f.fingerprint(lambda c: self.f.apply_lut(c, table))
@@ -140,6 +152,35 @@ class IngestTests(unittest.TestCase):
         again, adds = self.run_main()  # files kept from the first run are not measured again
         self.assertEqual(adds, [])
         self.assertEqual(again, ['0 added, 1 duplicates, 0 log, 1 broken, 4 already in the library'])
+
+    def test_title_is_readable_and_the_stem_stays_the_id(self):
+        _, adds = self.run_main()
+        warm = next(dict(zip(a[2::2], a[3::2])) for a in adds if dict(zip(a[2::2], a[3::2]))['--id'] == 'lut-local-warm-copy')
+        self.assertEqual(warm['--name'], 'Warm copy')
+        params = json.loads(warm['--params'])
+        self.assertEqual(params['lutName'], 'Warm copy')
+        self.assertEqual(params['lut']['name'], 'warm-copy')
+        self.assertEqual(Path(params['lut']['file']).name, 'warm-copy.cube')
+
+    def test_earlier_looks_are_renamed_unless_renamed_since(self):
+        calls = []
+        items = [
+            {'id': 'lut-gmic-creative-bleachbypass-1', 'name': 'creative-bleachbypass_1',
+             'params': {'lutName': 'creative-bleachbypass_1', 'lut': {'source': 'gmic', 'sha': 'a'}}},
+            {'id': 'lut-gmic-creative-anime', 'name': 'My anime',  # renamed by someone: kept
+             'params': {'lutName': 'creative-anime', 'lut': {'source': 'gmic'}}},
+            {'id': 'lut-gmic-creative-moonlight', 'name': 'Moonlight',  # already has its title
+             'params': {'lutName': 'Moonlight', 'lut': {'source': 'gmic', 'name': 'creative-moonlight'}}},
+        ]
+        with mock.patch.object(self.f, 'bashcut', lambda *a, **k: calls.append(a) or {'id': 'x'}):
+            self.assertEqual(self.f.retitle(items, 'user'), 1)
+        self.assertEqual(len(calls), 1)
+        args = dict(zip(calls[0][3::2], calls[0][4::2]))
+        self.assertEqual(calls[0][:3], ('library', 'update', 'lut-gmic-creative-bleachbypass-1'))
+        self.assertEqual(args['--name'], 'Bleach bypass 1')
+        params = json.loads(args['--params'])
+        self.assertEqual((params['lutName'], params['lut']['name'], params['lut']['sha']),
+                         ('Bleach bypass 1', 'creative-bleachbypass_1', 'a'))
 
     def test_limit_caps_what_is_looked_at(self):
         lines, adds = self.run_main('--limit', '2')
