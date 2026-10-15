@@ -169,8 +169,7 @@ This holds for every recipe.
 
 **Shared by every recipe** (the recipes do not repeat these): Vietnamese text needs a font with every tone mark
 (`bc:captions-text`); the brand (`project get` › `brand`: palette, fonts, logo, mascot) sets the look when there is
-one; nothing generated, stock or AI is labelled on the video unless the recipe says so (news; an explainer's
-illustrative housing project); sponsorship
+one; nothing generated, stock or AI is labelled on the video unless the recipe says so (news only); sponsorship
 is said early with `vlog-disclosure` in the user's wording; transition kinds and their sizes are `bc:effects`.
 
 ## 5. Strategy audit and gate, then coverage
