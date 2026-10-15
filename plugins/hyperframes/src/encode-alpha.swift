@@ -1,5 +1,8 @@
 // encode-alpha: an RGBA PNG sequence → a .mov with alpha (HEVC with alpha or ProRes 4444), with AVAssetWriter.
 // No FFmpeg. Usage: encode-alpha <frames-dir> <out.mov> [--fps 30] [--codec hevc|prores] [--quality 0.0–1.0]
+//   [--under backdrop.png --under-at X,Y [--under-fade S] [--under-drift DX,DY --under-span S]]
+// --under draws a picture below every frame (bin/graphic's baked backdrop, kept out of Chrome's capture): its top left
+// at X,Y px (page coordinates, y down), faded in over S seconds, moved by DX,DY px over --under-span seconds (linear).
 import AVFoundation
 import CoreImage
 import Foundation
@@ -12,6 +15,16 @@ struct Options {
     var fps: Int32 = 30
     var codec = "hevc"
     var quality = 0.8
+    var under: URL?
+    var underAt = CGPoint.zero
+    var underFade = 0.0
+    var underDrift = CGPoint.zero
+    var underSpan = 0.0
+}
+
+func point(_ text: String) -> CGPoint {
+    let parts = text.split(separator: ",").map { Double($0) ?? 0 }
+    return CGPoint(x: parts.first ?? 0, y: parts.count > 1 ? parts[1] : 0)
 }
 
 func parse() -> Options {
@@ -28,6 +41,11 @@ func parse() -> Options {
         case "--fps": options.fps = Int32(value) ?? 30
         case "--codec": options.codec = value
         case "--quality": options.quality = Double(value) ?? 0.8
+        case "--under": options.under = URL(fileURLWithPath: value)
+        case "--under-at": options.underAt = point(value)
+        case "--under-fade": options.underFade = Double(value) ?? 0
+        case "--under-drift": options.underDrift = point(value)
+        case "--under-span": options.underSpan = Double(value) ?? 0
         default: FileHandle.standardError.write(Data("unknown option \(flag)\n".utf8)); exit(2)
         }
     }
@@ -39,8 +57,15 @@ func image(_ url: URL) -> CGImage? {
     return CGImageSourceCreateImageAtIndex(source, 0, nil)
 }
 
-/// Draws `image` into a BGRA buffer with premultiplied alpha (what the encoders take).
-func fill(_ buffer: CVPixelBuffer, with image: CGImage) {
+/// A picture drawn below a frame: its top left in page pixels (y down) and its opacity.
+struct Underlay {
+    var image: CGImage
+    var origin: CGPoint
+    var alpha: Double
+}
+
+/// Draws `image` into a BGRA buffer with premultiplied alpha (what the encoders take), over `under` when given.
+func fill(_ buffer: CVPixelBuffer, with image: CGImage, under: Underlay? = nil) {
     CVPixelBufferLockBaseAddress(buffer, [])
     defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
     let width = CVPixelBufferGetWidth(buffer), height = CVPixelBufferGetHeight(buffer)
@@ -49,6 +74,14 @@ func fill(_ buffer: CVPixelBuffer, with image: CGImage) {
         bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: CGColorSpace(name: CGColorSpace.sRGB)!,
         bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)!
     context.clear(CGRect(x: 0, y: 0, width: width, height: height))
+    if let under, under.alpha > 0 {
+        // CoreGraphics counts y from the bottom.
+        let size = CGSize(width: under.image.width, height: under.image.height)
+        context.setAlpha(min(1, under.alpha))
+        context.draw(under.image, in: CGRect(x: under.origin.x, y: Double(height) - under.origin.y - size.height,
+                                             width: size.width, height: size.height))
+        context.setAlpha(1)
+    }
     context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
 }
 
@@ -57,6 +90,10 @@ let frames = (try FileManager.default.contentsOfDirectory(at: options.input, inc
     .filter { $0.pathExtension.lowercased() == "png" }.sorted { $0.lastPathComponent < $1.lastPathComponent }
 guard let first = frames.first.flatMap(image) else { fatalError("no PNG frames in \(options.input.path)") }
 let width = first.width, height = first.height
+let backdrop = options.under.map { url -> CGImage in
+    guard let picture = image(url) else { fatalError("cannot read the underlay \(url.path)") }
+    return picture
+}
 try? FileManager.default.removeItem(at: options.output)
 
 let started = Date()
@@ -89,7 +126,13 @@ for (index, url) in frames.enumerated() {
     var buffer: CVPixelBuffer?
     CVPixelBufferPoolCreatePixelBuffer(nil, adaptor.pixelBufferPool!, &buffer)
     guard let buffer else { fatalError("no pixel buffer") }
-    fill(buffer, with: picture)
+    let underlay = backdrop.map { picture -> Underlay in
+        let seconds = Double(index) / Double(options.fps)
+        let moved = options.underSpan > 0 ? min(1, seconds / options.underSpan) : 0
+        let origin = CGPoint(x: options.underAt.x + options.underDrift.x * moved, y: options.underAt.y + options.underDrift.y * moved)
+        return Underlay(image: picture, origin: origin, alpha: options.underFade > 0 ? seconds / options.underFade : 1)
+    }
+    fill(buffer, with: picture, under: underlay)
     guard adaptor.append(buffer, withPresentationTime: CMTime(value: CMTimeValue(index), timescale: options.fps)) else {
         fatalError("append failed at frame \(index): \(String(describing: writer.error))")
     }

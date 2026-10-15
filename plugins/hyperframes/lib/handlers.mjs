@@ -6,8 +6,10 @@
 //
 // Params: composition (absolute path to the folder, or to one .html file in it), fps (default 30), codec ("hevc" or
 // "prores"), variables (object, merged over the composition's declared defaults), name (output file name without
-// extension), outputDirectory (from BashCut).
-// Result: path, codec, frames, fps, width, height, bytes, renderSeconds, encodeSeconds, lint {errors, warnings,
+// extension), outputDirectory (from BashCut), draft (true: Chrome's faster drawElement capture, for a review render;
+// bin/graphic also lowers the fps), underlay ({path, x, y, fadeIn?, drift?: [dx, dy], seconds?}: a PNG bin/encode-alpha
+// draws below every frame — bin/graphic's baked backdrop, kept out of the capture because it made it slow).
+// Result: path, codec, frames, fps, width, height, bytes, renderSeconds, encodeSeconds, draft, lint {errors, warnings,
 // findings}.
 import { existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -58,7 +60,24 @@ function settingsOf(params) {
     if (typeof output !== "string" || !isAbsolute(output)) {
         throw new PluginError("invalid_params", "outputDirectory is missing (BashCut sets it)");
     }
-    return { fps, codec, variables, output };
+    const underlay = params.underlay ?? null;
+    if (underlay !== null) {
+        const numbers = [underlay.x, underlay.y, underlay.fadeIn ?? 0, underlay.seconds ?? 0, ...(underlay.drift ?? [0, 0])];
+        if (typeof underlay.path !== "string" || !isAbsolute(underlay.path) || !existsSync(underlay.path)
+            || !numbers.every(Number.isFinite) || (underlay.drift && underlay.drift.length !== 2)) {
+            throw new PluginError("invalid_params", "underlay is {path (absolute PNG), x, y, fadeIn?, drift?: [dx, dy], seconds?}");
+        }
+    }
+    return { fps, codec, variables, output, underlay, draft: params.draft === true };
+}
+
+/** bin/encode-alpha's arguments for an underlay. */
+export function underlayArgs(underlay) {
+    if (!underlay) return [];
+    const args = ["--under", underlay.path, "--under-at", `${underlay.x},${underlay.y}`];
+    if (underlay.fadeIn) args.push("--under-fade", String(underlay.fadeIn));
+    if (underlay.drift && underlay.seconds) args.push("--under-drift", underlay.drift.join(","), "--under-span", String(underlay.seconds));
+    return args;
 }
 
 async function lint(composition) {
@@ -81,7 +100,7 @@ async function lint(composition) {
 
 async function render(params, host) {
     const composition = compositionOf(params);
-    const { fps, codec, variables, output } = settingsOf(params);
+    const { fps, codec, variables, output, underlay, draft } = settingsOf(params);
     requireRuntime();
     provideScripts(composition);
     const name = params.name ?? composition.name;
@@ -101,7 +120,10 @@ async function render(params, host) {
         const args = ["render", composition.dir, "--format", "png-sequence", "-o", join(work, "png"),
             "--fps", String(fps), "--variables-file", variablesFile, "--quiet"];
         if (composition.file) args.push("-c", relative(composition.dir, composition.file));
-        const rendered = await hyperframes(args, { onTick: () => host.progress(null, "Rendering frames in Chrome") });
+        // A draft captures with drawElement even with several workers (HyperFrames turns it off there because it cannot
+        // self-verify): ~1.7× faster, and frames matched the screenshot path to within faint alpha edges.
+        const env = draft ? { PRODUCER_EXPERIMENTAL_FAST_CAPTURE: "true" } : {};
+        const rendered = await hyperframes(args, { env, onTick: () => host.progress(null, "Rendering frames in Chrome") });
         if (rendered.code !== 0) {
             throw new PluginError("render_failed", `HyperFrames could not render: ${rendered.stderr.trim().slice(-1500)}`);
         }
@@ -109,7 +131,7 @@ async function render(params, host) {
 
         host.progress(0.85, codec === "hevc" ? "Encoding HEVC with alpha" : "Encoding ProRes 4444");
         const path = join(output, `${name}.mov`);
-        const encoded = await execute(paths.encoder, [join(work, "png"), path, "--fps", String(fps), "--codec", codec],
+        const encoded = await execute(paths.encoder, [join(work, "png"), path, "--fps", String(fps), "--codec", codec, ...underlayArgs(underlay)],
             { onTick: () => host.progress(null, "Encoding") });
         if (encoded.code !== 0) {
             throw new PluginError("encode_failed", `Encoding failed: ${encoded.stderr.trim().slice(-1500)}`);
@@ -125,6 +147,7 @@ async function render(params, host) {
             bytes: report.bytes,
             renderSeconds,
             encodeSeconds: report.encodeSeconds,
+            ...(draft ? { draft: true } : {}),
             lint: lintReport,
         };
     } finally {

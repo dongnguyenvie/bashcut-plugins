@@ -25,12 +25,13 @@ may be a copy elsewhere). `osm-map --help` lists its options.
 | `"$P/bin/hf" docs compositions\|data-attributes\|gsap` | The runtime's own rules |
 | `"$P/bin/graphic" examples [NAME]` | One line per example (what it draws, seconds, its variables): choose without reading HTML. With NAME every variable's label and default, its `pitfalls` and the `lessons` tagged `block:NAME` |
 | `… --snapshot 1.5,4,9.2 [-o OUT]` on `plan --only g1`, `place D …`, `rerender ITEM …` | Look before you render: the row exactly as it would render (its `set`, `"@words"` times, brand, frame, span, canvas) as PNGs and a contact sheet in seconds; nothing rendered, imported or placed. Seconds count from the graphic's start (a scene slice: the row's). `place --snapshot` needs no open project |
-| `"$P/bin/graphic" plan [--only g1,g2]` | Renders every `plan.cut` graphic with `render` {composition, set, frame} to the span plan check gives it, imports, writes the media into plan.cut and runs `plan apply`: a graphics edit in one call. A `set` value `"@words"` is the seconds from the graphic's start to those words in the voiceover; unchanged graphics are not rendered again |
+| `"$P/bin/graphic" plan [--only g1,g2] [--draft\|--final]` | Renders every `plan.cut` graphic with `render` {composition, set, frame} to the span plan check gives it, imports, writes the media into plan.cut and runs `plan apply`: a graphics edit in one call. A `set` value `"@words"` is the seconds from the graphic's start to those words in the voiceover; unchanged graphics are not rendered again |
+| `--draft` (`plan`, `place`, `rerender`) / `--final` (`plan`, `rerender --all`) | A draft renders at 15 fps with Chrome's faster capture, full size: a 42 s diagram in ~10 s instead of ~50 s, sharp enough for `review` and the critic. The media records `draft`; `plan` keeps an unchanged draft and lists it in `drafts`; `rerender` of a draft stays a draft. `plan --final` / `rerender --all --final` render every draft again at full fps and swap every use in one undo step (nothing to do: `drafts: 0`) |
 | `--frame JSON` (`place`, `rerender`) / `render.frame` (`plan`) | Chrome around any composition, no HTML edit: `backdrop` `texture`\|`paper`\|`plain` (paper: kraft with a kraft-brown brand background, notebook with a cream one), `fadeIn`, `drift`, `float` (after ~1.2 s the widget bobs to the end: a held card passes review's frozen-picture check; drift alone does not), `chip` ("2/4"), `credit` (source line, only when the user asks), `callout` {text, at, top} (`*word*` in the accent), `scale` 0.5–2.5. Brand colours and fonts apply; chip and credit move aside when they would cover the widget |
 | `"$P/bin/graphic" place D --at-frame F [--set k=v …]` | Render and place full canvas on the Overlay layer in one call, recording the inputs. `rerender ITEM [--set …]` renders again and swaps every use in one undo step |
 | `--set data=@file.json` + `--steps-from voice\|sections` (`place`) | The JSON-data widgets: data in a file, never HTML or coordinates (the script lays out for 9:16 or 16:9). `--steps-from voice` gives step i the start of the i-th voice line (`sections`: section markers); `"at": "line:3"` / `"section:Label"` picks one; without `--at-frame`/`--duration` the graphic starts 0.4 s before the first step and ends after the last line. One widget = one `place` call |
 | flow-diagram, mind-map, isometric-system | Data `{title, nodes, edges, steps:[{focus, reveal, note?}]}`; a node in no `reveal` shows from the start; `focus` lights it and dims the rest. ≤12 nodes, labels 1–3 words; one diagram per section, steps = its voice lines |
-| growing-diagram | One diagram that grows over the whole video (never one per section, never hand-written HTML): `nodes:[{id, label, at:"@words"}]`, `edges:[{from, to, at?}]`; each lands and lights up, dots run on new edges; `look` flow\|iso. One `plan` row over the span, or one row per section with the same `render.scene` (slices meet exactly). Knobs, never page edits: `ghosts` (default on: later blocks faint and dashed from the start, so a "6 khối" hook shows six), `recap` (second or `"@words"`: every block lit, every edge runs dots, staggered, to the end), `bottomSafe` (nothing below: 0–1 of the height or px; 0 = 0.62 on 9:16, above captions at ~69 %). A closing edge (last → first) goes round the column in `look flow` (iso warns). Grid background: `render.frame` `{"backdrop": "texture"}`; size: leave the layout to `bottomSafe` (`frame.scale` zooms about the centre, back into the captions) |
+| growing-diagram | One diagram that grows over the whole video (never one per section, never hand-written HTML): `nodes:[{id, label, at:"@words"}]`, `edges:[{from, to, at?}]`; each lands and lights up, dots run on new edges; `look` flow\|iso. One `plan` row per section with the same `render.scene` (slices meet frame-exactly), never one row over the whole span. Knobs, never page edits: `ghosts` (default on: later blocks faint and dashed from the start, so a "6 khối" hook shows six), `recap` (second or `"@words"`: every block lit, every edge runs dots, staggered, to the end), `bottomSafe` (nothing below: 0–1 of the height or px; 0 = 0.62 on 9:16, above captions at ~69 %). A closing edge (last → first) goes round the column in `look flow` (iso warns). Grid background: `render.frame` `{"backdrop": "texture"}`; size: leave the layout to `bottomSafe` (`frame.scale` zooms about the centre, back into the captions) |
 | big-canvas | A whole video as one hand-drawn canvas (mind-map data + `stops`): placed once over the full span; each stop ≥ 2 s; a 60 s render takes about a minute. Look at one contact sheet (`hf snapshot --frames 8`), not frame by frame |
 | formula, matrix-grid, scale-compare, bar-chart rows | formula: KaTeX with `\\hl{id}{tex}` terms; matrix-grid: rows, cols, values, steps; scale-compare: numbers from your source; bar-chart `layout=rows look=paper highlight=N`: a paper benchmark table |
 | `"$P/bin/osm-map"` | OpenStreetMap tiles and a real route into a composition folder; prints `km`, `minutes` and per-stop `legs` to put on screen. `--places` looks up named places and prints area and perimeter (alone, it only measures). `--legs star` routes from the first point to each other; `--amenities … --radius` counts places around the first point and prints per kind `count` and the `nearest` (markers for `amenity-radius`; a kind with 0 is listed in `none` and left off its legend). Tags are strict: `hospital` never counts a clinic, dentist or pharmacy (ask `clinic`), `school` leaves out driving and language centres, `mall` is `shop=mall\|department_store` (ask `supermarket` apart), `park` is `leisure=park`. `--style dark` makes map-route/amenity-radius dark (no CSS edits). A failure names the request and reason; tiles fall back to other OSM servers by themselves, so never probe with curl: a failed `--places` lookup means give `--points`. Needs network; the render then needs none. Coordinates come from the user, the brief or a named source, never from memory |
@@ -39,7 +40,7 @@ may be a copy elsewhere). `osm-map --help` lists its options.
 When `bin/hf` exits 3 or the render says `dependency_missing`, the user chooses **Install Dependencies…** for
 HyperFrames Graphics in Plugins (you cannot); say so and fall back to native text.
 
-## 2. The loop: design, build, look, render, place, check
+## 2. The loop: design, build, look, draft, review, final at export
 
 **Fewest tokens first.** When an example does the job, do not read or edit its HTML: its motion is tuned and its
 content and look are variables. `graphic examples NAME` gives variables, `pitfalls` (values that broke it) and
@@ -61,21 +62,32 @@ a value broke a block, record it (`knowledge add-lesson … --tags block:NAME`).
    - Declare every variable on `<html data-composition-variables='[{"id","type","label","default"}…]'>` (string,
      number, color, boolean, enum, font, image); lists as a JSON string.
    - Images, the user's logos, screenshots and fonts: copied into the folder, relative paths. No network at render.
+   - **Short pieces.** A graphic longer than ~10 s is several `plan.cut` rows, one per section or group of voice
+     lines (5–10 s each), sharing one `render.scene` (flow-diagram, isometric-system, growing-diagram declare
+     `t0`/`total`): the first row carries composition, set and frame; the others only `scene`. Each slice renders
+     on its own, so fixing one section's timing (`"@words"`, a node's `at`) renders that slice in seconds and keeps
+     the rest. Shared changes (a label, a new node or edge, `set`, `frame`, the scene's total length) still render
+     every slice. Other compositions: one row per card, never one 30 s card.
 3. **Look.** `snapshot` at the entrance, the landing word and the hold; read the PNGs (`--against` with a reference).
    A `plan.cut` row or a `place` call with its values: add `--snapshot S1,S2,… -o OUT` to the same `graphic` command
    (`hf snapshot D` alone shows only the page's defaults). Look before every `plan` render, not after it.
    Check: words read at phone size, the face stays clear (`media subjects`), nothing in the platform's bottom band
    (`platforms get`), Vietnamese tone marks render (a font without them falls back mid-word). Two or three rounds is
    normal.
-4. **Render and place**: `graphic place <dir> --at-frame <W − entrance frames> [--duration N] --set … --variables
-   '{…}'`. `--duration` (frames) is also the composition's length (its exit lands at the end). `--set` is typed by
-   the declarations (undeclared ids refused); fix lint errors it prints. A 3–5 s card renders in 10–15 s, a 6 s map
-   about 1 min; one render at a time. `--dry-run` prints the request.
+4. **Draft and place**: `graphic plan --draft` (or `graphic place <dir> --draft --at-frame <W − entrance frames>
+   [--duration N] --set … --variables '{…}'`). Render drafts while the edit is reviewed: 15 fps, full size, about 5×
+   faster. `--duration` (frames) is also the composition's length (its exit lands at the end). `--set` is typed by
+   the declarations (undeclared ids refused); fix lint errors it prints. One render at a time. `--dry-run` prints the
+   request.
 5. **Change it later**: `graphic rerender <item> --set …` (`--unset k` drops an override) renders from the recorded inputs and
    repoints every use as one edit; an item that played the whole graphic follows the new length (`--keep-length` keeps it).
-6. **Check in BashCut**: `ui frame W --phone` on the landing frame and `review window W --span 12` across the
-   entrance (with the words heard); after re-cutting that range, re-read the words and move or `rerender` with new
-   `at`s. Several graphics: one `timeline sheet --at F1,F2,F3 --outputs <output>` instead of a frame each.
+6. **Review in BashCut** (on the drafts): `ui frame W --phone` on the landing frame and `review window W --span 12`
+   across the entrance (with the words heard); after re-cutting that range, re-read the words and move or `rerender`
+   with new `at`s. Several graphics: one `timeline sheet --at F1,F2,F3 --outputs <output>` instead of a frame each.
+   A draft's motion steps at 15 fps: judge timing and layout, not smoothness.
+7. **Final before export**: `graphic plan --final` (graphics from a plan) or `graphic rerender --all --final` (placed
+   ones), then export. It renders only the drafts, at the project's fps, with the same inputs, and swaps every use in
+   one undo step; the final looks like the draft except the motion is smooth. Never export over drafts.
 
 ## 3. Composition rules (or frames come out wrong)
 
@@ -88,6 +100,11 @@ a value broke a block, record it (`knowledge add-lesson … --tags block:NAME`).
   and set the first value before the count starts.
 - The body stays transparent for overlays; a full-frame card paints its own background. Plates (opacity 0.75–0.9)
   and shadows carry legibility over busy footage. Keep 60 px+ from the edges for anything to be read.
+- Heavy full-frame backgrounds make every frame slow: layered gradients, grain, noise and big blurs are re-captured
+  in each frame and their dithering makes each PNG heavy (a textured backdrop made a 42 s render 4× slower). For a
+  backdrop use `frame.backdrop` (`texture`/`paper` are baked once into a picture and drawn under the frames by the
+  encoder, at no render cost); in your own composition, keep the background flat or a static image, never a large
+  gradient or filter in a layer that moves.
 - Time the exit from the root's `data-duration` (`END - 0.5`), as the examples do: `graphic plan` sets it to the
   graphic's span, so the card holds until its section ends.
 - `hf snapshot` and `check` do not copy GSAP: copy `"$P/bin/hf" --gsap` next to `index.html` first, or every frame

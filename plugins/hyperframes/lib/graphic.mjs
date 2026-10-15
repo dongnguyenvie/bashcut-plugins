@@ -39,6 +39,11 @@
 //     sections): the first row with a composition gives composition and set to all, each row renders its own span
 //     with t0 (its start in the scene) and total, and "@words" count from the scene's start. Prints {rendered, kept, apply}.
 //
+//   --draft (plan, place, rerender) / --final (plan, rerender): a draft renders at DRAFT_FPS (15) at most, full size,
+//     with Chrome's faster capture — a review render about 5× faster — and records `draft` on the media (its recorded
+//     fps stays the full one). plan keeps an unchanged draft (listed in `drafts`) and renders changed rows as drafts
+//     with --draft, at full quality without; rerender keeps a draft a draft. plan --final and rerender --all --final
+//     render the drafts again at full fps and swap every use in one undo step: the step before export.
 //   --snapshot S1,S2,… [--out DIR | -o DIR]  (plan, place, rerender ITEM): look before you render. The row is resolved
 //     exactly as it would render (variables with "@words" timing, brand, frame, span length, canvas) in a throwaway
 //     copy of its composition, with the values baked in as the page's defaults, GSAP and the shared scripts copied in,
@@ -71,7 +76,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, 
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkFrame, FRAME_VERSION, mergeFrame, withFrameMarkup } from "./frame.mjs";
+import { bakeFrame, BACKDROP_MARGIN, checkFrame, FRAME_VERSION, mergeFrame, splitBackdrop, withFrameMarkup } from "./frame.mjs";
 
 export class UsageError extends Error {}
 
@@ -84,9 +89,17 @@ export const BRAND_IDS = Object.keys(BRAND_MAP);
 // What the brand fills besides BRAND_IDS: its logo, its mascot and the mascot's pose (`mascotPose` is the older name).
 const BRAND_SLOTS = ["logo", "mascot", "pose", "mascotPose"];
 const POSE_IDS = ["pose", "mascotPose"];
-const FLAGS = new Set(["no-brand", "brand", "keep-length", "dry-run", "all", "force", "no-apply", "steps-from-voice"]);
+const FLAGS = new Set(["no-brand", "brand", "keep-length", "dry-run", "all", "force", "no-apply", "steps-from-voice", "draft", "final"]);
 const LISTS = new Set(["set", "unset"]);
 const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "frame", "name", "fps", "codec", "only", "steps-from", "snapshot", "out"]);
+
+/** A draft renders at this many frames a second at most (and with Chrome's faster capture): enough to review motion. */
+export const DRAFT_FPS = 15;
+
+/** The fps a render runs at: the recorded fps, or DRAFT_FPS at most for a draft. */
+export function renderFps(inputs) {
+    return inputs.draft ? Math.min(inputs.fps, DRAFT_FPS) : inputs.fps;
+}
 
 /** argv (after the node script) → {command, target, options}; options.set/unset are lists. */
 export function parseArgs(argv) {
@@ -128,6 +141,9 @@ export function parseArgs(argv) {
     }
     if (options.codec !== undefined && !["hevc", "prores"].includes(options.codec)) throw new UsageError('--codec is "hevc" or "prores"');
     if (options.brand && options["no-brand"]) throw new UsageError("--brand and --no-brand together");
+    if (options.draft && options.final) throw new UsageError("--draft and --final together");
+    if (options.draft && options.fps !== undefined) throw new UsageError(`--draft renders at ${DRAFT_FPS} fps: leave out --fps`);
+    if (command === "place" && options.final) throw new UsageError("place renders at full quality unless --draft: leave out --final");
     if (options["steps-from-voice"]) {
         if (options["steps-from"] && options["steps-from"] !== "voice") throw new UsageError("--steps-from-voice and --steps-from sections together");
         options["steps-from"] = "voice";
@@ -139,7 +155,7 @@ export function parseArgs(argv) {
     if (options.snapshot !== undefined) {
         options.snapshot = snapshotTimes(options.snapshot);
         if (options["dry-run"]) throw new UsageError("--snapshot already renders nothing: leave out --dry-run");
-        for (const key of ["force", "no-apply", "keep-length", "all"]) {
+        for (const key of ["force", "no-apply", "keep-length", "all", "draft", "final"]) {
             if (options[key]) throw new UsageError(`--${key} is not for --snapshot (it renders, imports and places nothing)`);
         }
     } else if (options.out !== undefined) throw new UsageError("--out (-o) is the folder for --snapshot frames");
@@ -431,7 +447,7 @@ export function brandVariables(brand, declared) {
 }
 
 /** Inputs recorded on a placed graphic's media, merged with a rerender's changes. */
-export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, name, brand, frame } = {}) {
+export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, name, brand, frame, draft } = {}) {
     const variables = { ...(recorded.variables ?? {}), ...explicit };
     for (const id of unset) delete variables[id];
     const framed = mergeFrame(recorded.frame, frame);
@@ -443,6 +459,8 @@ export function mergeInputs(recorded, { explicit = {}, unset = [], fps, codec, n
         name: name ?? recorded.name,
         brand: brand ?? recorded.brand ?? true,
         ...(recorded.seconds ? { seconds: recorded.seconds } : {}),
+        // A draft stays a draft when it is rendered again, unless --final (or --draft) says otherwise.
+        ...((draft ?? recorded.draft) ? { draft: true } : {}),
         ...(framed ? { frame: framed } : {}),
     };
 }
@@ -473,7 +491,8 @@ export function rerenderOps(project, oldMedia, render, inputs, { keepLength = fa
     const projectFps = frameRate(project.format?.fps);
     const toProject = (frames, fps) => Math.floor((frames / fps) * projectFps + 1e-6);
     const old = (project.media ?? []).find((m) => m.id === oldMedia);
-    const oldLength = old ? toProject(old.frames ?? 0, frameRate(old.fps)) : 0;
+    const oldFps = old ? frameRate(old.fps) : render.fps;
+    const oldLength = old ? toProject(old.frames ?? 0, oldFps) : 0;
     const newLength = toProject(render.frames, render.fps);
     const ops = [{
         op: "addMedia",
@@ -488,12 +507,14 @@ export function rerenderOps(project, oldMedia, render, inputs, { keepLength = fa
             if (item.media !== oldMedia) continue;
             const at = item.at ?? 0;
             const length = item.dur ?? 0;
-            const sourceIn = Math.min(item.in ?? 0, Math.max(0, newLength - 1));
+            // In-points count source frames: a draft (15 fps) swapped for its final (30 fps) keeps the same second.
+            const sourceIn = Math.min(Math.round(((item.in ?? 0) / oldFps) * render.fps), Math.max(0, render.frames - 1));
             ops.push({ op: "setSource", item: item.id, media: mediaId, sourceIn });
-            const playedAll = (item.in ?? 0) + length >= oldLength - 1;
+            const playedAll = toProject(item.in ?? 0, oldFps) + length >= oldLength - 1;
+            const inProject = toProject(sourceIn, render.fps);
             let next = length;
-            if (!keepLength && playedAll) next = newLength - sourceIn;
-            next = Math.max(1, Math.min(next, newLength - sourceIn));
+            if (!keepLength && playedAll) next = newLength - inProject;
+            next = Math.max(1, Math.min(next, newLength - inProject));
             const entry = { item: item.id, track: track.id, frames: next };
             if (next !== length) {
                 ops.push({ op: "trim", item: item.id, edge: "end", toFrame: at + next });
@@ -512,6 +533,7 @@ function record(inputs, render) {
         composition: inputs.composition, variables: inputs.variables, fps: inputs.fps, codec: inputs.codec,
         name: inputs.name, brand: inputs.brand, frames: render.frames,
         ...(inputs.seconds ? { seconds: inputs.seconds } : {}),
+        ...(inputs.draft ? { draft: true } : {}),
         ...(inputs.frame ? { frame: inputs.frame } : {}),
     };
 }
@@ -701,8 +723,10 @@ async function resolveVariables(inputs, project, warnings) {
     return { variables, brand: applied };
 }
 
-async function renderNow(inputs, variables, dryRun, page) {
-    const params = { composition: page ?? inputs.composition, fps: inputs.fps, codec: inputs.codec, variables, name: inputs.name };
+async function renderNow(inputs, variables, dryRun, underlay = null) {
+    const params = { composition: inputs.composition, fps: renderFps(inputs), codec: inputs.codec, variables, name: inputs.name };
+    if (inputs.draft) params.draft = true;
+    if (underlay) params.underlay = underlay;
     if (dryRun) return { dryRun: params };
     const started = await call(["plugins", "invoke", "graphics.render", "--params", JSON.stringify(params)]);
     const job = started?.job;
@@ -725,7 +749,7 @@ async function renderNow(inputs, variables, dryRun, page) {
  * Renders with the page's data-duration set to `inputs.seconds` when it has one (so the exit lands on the end) and
  * the frame drawn around it when there is one.
  */
-async function renderSpan(inputs, variables, dryRun) {
+async function renderSpan(inputs, variables, dryRun, warnings = []) {
     if (dryRun || (!inputs.seconds && !inputs.frame && !inputs.canvas)) {
         const render = await renderNow(inputs, variables, dryRun);
         if (render.dryRun && inputs.seconds) render.dryRun.seconds = inputs.seconds;
@@ -733,7 +757,73 @@ async function renderSpan(inputs, variables, dryRun) {
         if (render.dryRun && inputs.canvas) render.dryRun.canvas = inputs.canvas;
         return render;
     }
-    return withPage(inputs.composition, { seconds: inputs.seconds, frame: inputs.frame, canvas: inputs.canvas }, () => renderNow(inputs, variables, false));
+    return renderFramed(inputs, variables, inputs.seconds, warnings);
+}
+
+/**
+ * Renders with the page stretched to `seconds` and the frame drawn round it; a texture or paper backdrop is baked once
+ * (bakeBackdrop) and drawn under the frames by the encoder instead of in the captured page. When baking fails the page
+ * draws it (the same picture, ~4× slower) and `warnings` says why.
+ */
+export async function renderFramed(inputs, variables, seconds, warnings = []) {
+    const canvas = canvasOf(inputs);
+    let { page, under } = splitBackdrop(inputs.frame, { ...canvas, seconds: seconds ?? readComposition(inputs.composition).duration });
+    let underlay = null;
+    if (under) {
+        const { backdrop, ...placement } = under;
+        try {
+            underlay = { path: await bakeBackdrop(inputs, variables, backdrop), ...placement };
+        } catch (error) {
+            warnings.push(`the ${backdrop} backdrop is drawn in the page (slower): ${error.message}`);
+            page = inputs.frame;
+        }
+    }
+    return withPage(inputs.composition, { seconds, frame: page, canvas: inputs.canvas }, () => renderNow(inputs, variables, false, underlay));
+}
+
+/** The canvas a row renders at: the project's for a data-fit="canvas" composition, else the composition's own. */
+function canvasOf(inputs) {
+    if (inputs.canvas) return inputs.canvas;
+    const { width, height } = readComposition(inputs.composition);
+    return { width: width || 1080, height: height || 1920 };
+}
+
+/**
+ * A texture or paper backdrop as a PNG, BACKDROP_MARGIN larger than the canvas on every side: the composition (for its
+ * brand colours) with the frame drawing only the backdrop, one `hyperframes snapshot` in a throwaway copy. Cached by
+ * what it depends on (kind, canvas, page, the variables that are not the data), so a series of cards bakes it once.
+ */
+export async function bakeBackdrop(inputs, variables, backdrop) {
+    const { paths, hyperframes, provideScripts } = await import("./runtime.mjs");
+    const canvas = canvasOf(inputs);
+    restorePage(inputs.composition);
+    const html = readFileSync(join(inputs.composition, "index.html"), "utf8");
+    const file = join(paths.backdrops, `${backdropKey(backdrop, canvas, html, variables)}.png`);
+    if (existsSync(file)) return file;
+    if (!existsSync(paths.cli)) throw new Error("HyperFrames is not installed");
+    const preview = previewCopy(inputs.composition);
+    try {
+        const big = { width: canvas.width + 2 * BACKDROP_MARGIN, height: canvas.height + 2 * BACKDROP_MARGIN };
+        const page = join(preview.copy, "index.html");
+        // withCanvas needs the root's data-width: every composition has one.
+        writeFileSync(page, renderPage(withDefaults(html, variables), { frame: bakeFrame(backdrop), canvas: big }, page));
+        provideScripts({ dir: preview.copy, file: null });
+        const out = join(preview.work, "out");
+        const run = await hyperframes(["snapshot", preview.copy, "--at", "0", "--no-end", "--describe", "false", "-o", out]);
+        const shot = existsSync(out) ? readdirSync(out).find((n) => /^frame-.*\.png$/.test(n)) : null;
+        if (run.code !== 0 || !shot) throw new Error(`baking the ${backdrop} backdrop failed: ${(run.stderr || run.stdout).trim().slice(-800)}`);
+        mkdirSync(paths.backdrops, { recursive: true });
+        copyFileSync(join(out, shot), file);
+        return file;
+    } finally {
+        rmSync(preview.work, { recursive: true, force: true });
+    }
+}
+
+/** What a baked backdrop depends on; a scene slice's own timing (t0, total) and the data leave it unchanged. */
+export function backdropKey(backdrop, canvas, html, variables) {
+    const kept = Object.fromEntries(Object.entries(variables).filter(([id]) => !["data", "t0", "total"].includes(id)).sort());
+    return createHash("sha256").update(JSON.stringify([FRAME_VERSION, BACKDROP_MARGIN, backdrop, canvas, kept, html])).digest("hex").slice(0, 20);
 }
 
 function lintNote(render, out) {
@@ -811,6 +901,7 @@ async function placeIn(given, copy, options) {
         composition: dir, variables: explicit, name,
         fps: options.fps ?? Math.round(frameRate(project.format?.fps)), codec: options.codec ?? "hevc",
         brand: !options["no-brand"],
+        ...(options.draft ? { draft: true } : {}),
     };
     if (options.frame) inputs.frame = checkFrame(options.frame) ?? undefined;
     // --duration also sets the composition's length, so its exit plays at the end of the span instead of being cut.
@@ -824,7 +915,7 @@ async function placeIn(given, copy, options) {
         const snapshot = await snapshotRow(inputs, variables, options.snapshot, snapshotFolder(options, name, false));
         return { snapshot, composition: given, variables: inputs.variables, brand, ...(inputs.frame ? { frame: inputs.frame } : {}), ...(warnings.length ? { warnings } : {}) };
     }
-    const render = await renderSpan(inputs, variables, options["dry-run"]);
+    const render = await renderSpan(inputs, variables, options["dry-run"], warnings);
     if (render.dryRun) return { ...render.dryRun, brand, ...(warnings.length ? { warnings } : {}) };
     const id = `graphic-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "card"}-${randomBytes(3).toString("hex")}`;
     const added = await call(["library", "add", "--kind", "sticker", "--name", name, "--file", render.path, "--id", id]);
@@ -837,7 +928,7 @@ async function placeIn(given, copy, options) {
     const placed = cli(args);
     const out = {
         item: placed.item, media: placed.media, track: placed.track, atFrame: options["at-frame"] ?? null,
-        frames: placed.duration, path: render.path, rev: placed.rev, brand,
+        frames: placed.duration, path: render.path, rev: placed.rev, brand, ...(inputs.draft ? { draft: true } : {}),
     };
     try {
         const recorded = await applyOps([{ op: "setMediaData", media: placed.media, patch: { graphics: record(inputs, render) } }],
@@ -860,6 +951,11 @@ export async function rerender(target, options) {
     if (options.all) {
         targets = media.filter((m) => m.data?.graphics && used.has(m.id)).map((m) => m.id);
         if (targets.length === 0) throw new Error("no placed graphic has recorded inputs (place them with bin/graphic place)");
+        // --all --final: the drafts only, so it is the step before export (nothing to do when there is no draft).
+        if (options.final) {
+            targets = targets.filter((id) => media.find((m) => m.id === id).data.graphics.draft);
+            if (targets.length === 0) return { graphics: [], drafts: 0 };
+        }
     } else {
         const item = (project.tracks ?? []).flatMap((t) => t.items ?? []).find((i) => i.id === target);
         const id = item ? item.media : target;
@@ -900,6 +996,7 @@ export async function rerender(target, options) {
             explicit, unset: options.unset, fps: options.fps,
             codec: options.codec, name: options.name && safeName(options.name),
             brand: options.brand ? true : options["no-brand"] ? false : undefined, frame: options.frame,
+            draft: options.draft ? true : options.final ? false : undefined,
         });
         if (options.snapshot) {
             // The recorded composition with the changes, previewed in a copy: nothing rendered, nothing repointed.
@@ -917,7 +1014,7 @@ export async function rerender(target, options) {
             }
         }
         const { variables, brand } = await resolveVariables(inputs, project, warnings);
-        const render = await renderSpan(inputs, variables, options["dry-run"]);
+        const render = await renderSpan(inputs, variables, options["dry-run"], warnings);
         renders.push({ id, inputs, render, brand });
     }
     if (options["dry-run"]) return { graphics: renders.map((r) => ({ media: r.id, ...r.render.dryRun, brand: r.brand })) };
@@ -927,13 +1024,15 @@ export async function rerender(target, options) {
     for (const { id, inputs, render, brand } of renders) {
         const plan = rerenderOps(fresh, id, render, inputs, { keepLength: options["keep-length"] });
         ops.push(...plan.ops);
-        const entry = { media: plan.media, replaced: id, path: render.path, frames: plan.length, items: plan.items, brand };
+        const entry = { media: plan.media, replaced: id, path: render.path, frames: plan.length, items: plan.items, brand,
+            ...(inputs.draft ? { draft: true } : {}) };
         const changed = plan.items.filter((i) => i.from !== undefined);
         if (changed.length) entry.note = `length changed for ${changed.map((i) => `${i.item} ${i.from}→${i.frames}`).join(", ")} frames`;
         lintNote(render, entry);
         graphics.push(entry);
     }
-    const applied = await applyOps(ops, fresh.rev, graphics.length > 1 ? "Re-render graphics" : "Re-render graphic");
+    const label = options.final ? "Final graphics" : graphics.length > 1 ? "Re-render graphics" : "Re-render graphic";
+    const applied = await applyOps(ops, fresh.rev, label);
     const out = graphics.length === 1 && !options.all ? { ...graphics[0], rev: applied?.rev } : { graphics, rev: applied?.rev };
     if (warnings.length) out.warnings = [...new Set(warnings)];
     return out;
@@ -1165,6 +1264,40 @@ export function inputsHash(dir, variables, seconds, fps, codec, frame = null, ca
     return hash.digest("hex").slice(0, 16);
 }
 
+/** Seconds around a slice inside which a scene time changes its picture (a landing, an edge drawing on, dots). */
+export const SLICE_MARGIN = 1;
+
+/**
+ * A scene slice's variables as far as its picture goes, for its hash: growing-diagram times (nodes' and edges' `at`,
+ * `recap`, `total`) that cannot change what the slice shows are replaced by their order ("<3", ">7"). Kept exactly:
+ * every time from the step active when the slice starts (minus SLICE_MARGIN) to the slice's end (plus SLICE_MARGIN),
+ * since that step's dots run on into the slice. So moving a node's word in one section renders that section's slice
+ * (and a neighbour within a second) again, not the whole scene; a new label, node or edge still changes every slice
+ * (it moves the layout and the ghosts). Variables that are not a timed scene come back as they are.
+ */
+export function sliceVariables(variables, { t0, seconds }) {
+    let data;
+    try {
+        data = JSON.parse(variables.data);
+    } catch {
+        return variables;
+    }
+    const timed = [...(data.nodes ?? []), ...(data.edges ?? [])];
+    if (!data || (data.steps ?? []).length || !timed.length || timed.some((n) => n?.at !== undefined && !Number.isFinite(n.at))) return variables;
+    const recap = Number(variables.recap ?? data.recap);
+    const times = [...new Set([...timed.map((n) => n.at), ...(recap > 0 ? [recap] : [])].filter(Number.isFinite))].sort((a, b) => a - b);
+    const active = times.filter((x) => x <= t0 + 1e-6).pop() ?? 0;
+    const lo = Math.min(active, t0) - SLICE_MARGIN, hi = t0 + seconds + SLICE_MARGIN;
+    const keep = (x) => (!Number.isFinite(x) || (x >= lo && x <= hi) ? x : `${x < lo ? "<" : ">"}${times.indexOf(x)}`);
+    const at = (n) => (n?.at === undefined ? n : { ...n, at: keep(n.at) });
+    const out = { ...variables, data: JSON.stringify({ ...data, nodes: (data.nodes ?? []).map(at), edges: (data.edges ?? []).map(at),
+        ...(data.recap !== undefined ? { recap: keep(Number(data.recap)) } : {}) }) };
+    if (variables.recap !== undefined) out.recap = keep(Number(variables.recap));
+    // The scene's end only plays its exit (and bounds the recap): after the slice it changes nothing in it.
+    if (Number(variables.total) - 1 > hi) out.total = ">end";
+    return out;
+}
+
 async function planGraphics(options) {
     const previews = [];
     try {
@@ -1194,6 +1327,8 @@ async function planGraphicsWith(options, previews) {
     const records = [];
     const scenes = planScenes(entries, rows);
     const snapshots = [];
+    // Rows whose movie is a draft after this call: `graphic plan --final` renders them at full quality before export.
+    const drafts = [];
     const several = entries.filter((e) => e.render && (!only || only.has(e.id))).length > 1;
     for (const entry of entries) {
         if (!entry.render || (only && !only.has(entry.id))) continue;
@@ -1230,7 +1365,7 @@ async function planGraphicsWith(options, previews) {
         const inputs = {
             composition: dir, variables: explicitVariables(declared, [], asked, warnings), name: safeName(spec.name ?? `${entry.id}-${basename(dir)}`),
             fps, codec: options.codec ?? spec.codec ?? "hevc", brand: spec.brand !== false,
-            ...(frame ? { frame } : {}),
+            ...(frame ? { frame } : {}), ...(options.draft ? { draft: true } : {}),
         };
         const { variables, brand } = await resolveVariables(inputs, project, warnings);
         if (preview) {
@@ -1240,28 +1375,34 @@ async function planGraphicsWith(options, previews) {
             continue;
         }
         restorePage(dir);
-        const hash = inputsHash(dir, variables, seconds, fps, inputs.codec, frame, inputs.canvas);
+        // The hash leaves the draft out: an unchanged draft is up to date for review, and --final renders it again.
+        const hash = inputsHash(dir, scene ? sliceVariables(variables, { t0: asked.t0, seconds }) : variables, seconds, fps,
+            inputs.codec, frame, inputs.canvas);
         const current = media.find((m) => m.id === entry.media);
-        if (!options.force && current?.data?.graphics?.hash === hash) {
+        const upToDate = current?.data?.graphics?.hash === hash;
+        if (!options.force && upToDate && !(options.final && current.data.graphics.draft)) {
             kept.push(entry.id);
+            if (current.data.graphics.draft) drafts.push(entry.id);
             continue;
         }
         if (options["dry-run"]) {
-            rendered.push({ id: entry.id, seconds, variables, brand, ...(frame ? { frame } : {}), ...(inputs.canvas ? { canvas: inputs.canvas } : {}) });
+            rendered.push({ id: entry.id, seconds, variables, brand, ...(frame ? { frame } : {}), ...(inputs.canvas ? { canvas: inputs.canvas } : {}),
+                ...(inputs.draft ? { draft: true, fps: renderFps(inputs) } : {}) });
             continue;
         }
-        const render = await withPage(dir, { seconds, frame, canvas: inputs.canvas }, () => renderNow(inputs, variables, false));
+        const render = await renderFramed(inputs, variables, seconds, warnings);
         const imported = await call(["media", "import", render.path, "--origin", "ai", "--base-rev", "last"]) ?? {};
         const id = imported.media ?? imported.files?.[0]?.media ?? imported.id;
         if (!id) throw new Error(`media import returned no media for ${render.path}: ${JSON.stringify(imported).slice(0, 300)}`);
         patch[entry.id] = { media: id };
         records.push({ op: "setMediaData", media: id, patch: { graphics: { ...record(inputs, render), seconds, hash } } });
-        const out = { id: entry.id, media: id, seconds, frames: render.frames, renderSeconds: render.renderSeconds };
+        const out = { id: entry.id, media: id, seconds, frames: render.frames, renderSeconds: render.renderSeconds, ...(inputs.draft ? { draft: true } : {}) };
+        if (inputs.draft) drafts.push(entry.id);
         lintNote(render, out);
         rendered.push(out);
     }
     if (options.snapshot) return { snapshots, ...(warnings.length ? { warnings: [...new Set(warnings)] } : {}) };
-    const result = { rendered, kept };
+    const result = { rendered, kept, ...(drafts.length ? { drafts } : {}) };
     if (options["dry-run"]) return result;
     if (records.length) await applyOps(records, (await call(["project", "get"]))?.rev, "Record graphic inputs");
     if (!options["no-apply"]) {

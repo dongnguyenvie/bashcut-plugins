@@ -18,12 +18,13 @@ export const paths = {
     lottie: join(data, "runtime/node_modules/lottie-web/build/player/lottie_svg.min.js"),
     chromePathFile: join(cache, "chrome/path"),
     encoder: join(pluginDir, "bin/encode-alpha"),
+    backdrops: join(cache, "backdrops"),
     diagram: join(pluginDir, "lib/diagram.js"),
     amenityMap: join(pluginDir, "lib/amenity-map.js"),
 };
 
 /** The environment HyperFrames runs in: telemetry off, the plugin's Chrome, this Node.js first on PATH. */
-function environment() {
+function environment(extra = {}) {
     const env = {
         ...process.env,
         HYPERFRAMES_NO_TELEMETRY: "1",
@@ -33,7 +34,7 @@ function environment() {
         PATH: `${dirname(process.execPath)}:${process.env.PATH ?? "/usr/bin:/bin"}`,
     };
     if (existsSync(paths.chromePathFile)) env.HYPERFRAMES_BROWSER_PATH = readFileSync(paths.chromePathFile, "utf8").trim();
-    return env;
+    return { ...env, ...extra };
 }
 
 export function requireRuntime() {
@@ -44,10 +45,10 @@ export function requireRuntime() {
     if (!existsSync(paths.encoder)) throw new PluginError("dependency_missing", "bin/encode-alpha is missing (run build.sh)");
 }
 
-/** Runs a program and resolves {code, stdout, stderr}; `onTick` is called every 10 s while it runs. */
-export function execute(command, args, { cwd, onTick } = {}) {
+/** Runs a program and resolves {code, stdout, stderr}; `onTick` is called every 10 s while it runs; `env` adds variables. */
+export function execute(command, args, { cwd, onTick, env } = {}) {
     return new Promise((resolve, reject) => {
-        const child = spawn(command, args, { cwd, env: environment(), stdio: ["ignore", "pipe", "pipe"] });
+        const child = spawn(command, args, { cwd, env: environment(env), stdio: ["ignore", "pipe", "pipe"] });
         let stdout = "";
         let stderr = "";
         child.stdout.on("data", (chunk) => (stdout += chunk));

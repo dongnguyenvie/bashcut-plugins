@@ -23,9 +23,19 @@
 //
 // Colours and fonts are the composition's own (--accent, --background, --text, --heading-font, --body-font), so the
 // brand applies to the frame too.
+//
+// A "texture" or "paper" backdrop is not drawn in the page a render captures: its dithered gradients and grain made
+// every captured PNG heavy (a 42 s 9:16 render took 4× as long as the bare composition). bin/graphic bakes it once
+// into a PNG (bakePage: the backdrop alone on a canvas BACKDROP_MARGIN larger on every side) and bin/encode-alpha draws
+// that picture under every frame with the same fade-in and drift (splitBackdrop). Snapshots still draw it in the page.
 
 /** Bumped when the drawing changes, so graphic plan renders a framed graphic again. */
 export const FRAME_VERSION = 3;
+
+/** Backdrops baked into a picture for a render (a flat "plain" one costs nothing in the page). */
+export const BAKED = ["texture", "paper"];
+/** How far the backdrop reaches past the frame on every side (#bc-backdrop's inset), so the drift never shows an edge. */
+export const BACKDROP_MARGIN = 160;
 
 const KEYS = new Set(["backdrop", "fadeIn", "drift", "float", "chip", "credit", "callout", "scale"]);
 const BACKDROPS = ["texture", "paper", "plain", "none"];
@@ -81,6 +91,27 @@ export function mergeFrame(recorded, change) {
         else merged[key] = value;
     }
     return checkFrame(merged);
+}
+
+/**
+ * A frame for a render: `page` is what the page draws (the backdrop left out, `baked` naming it, so a chip still knows
+ * there is one) and `under` what bin/encode-alpha draws below every frame — the baked backdrop's kind, where its top
+ * left sits (px), its fade-in (s) and its drift ([dx, dy] px over `seconds`, as the page's drift tween). `under` is
+ * null when there is nothing to bake.
+ */
+export function splitBackdrop(frame, { width, height, seconds }) {
+    if (!frame || !BAKED.includes(frame.backdrop)) return { page: frame ?? null, under: null };
+    const { backdrop, fadeIn, ...rest } = frame;
+    const unit = Math.min(width, height) / 1080;
+    const under = { backdrop, x: -BACKDROP_MARGIN, y: -BACKDROP_MARGIN };
+    if (fadeIn) under.fadeIn = fadeIn;
+    if (frame.drift) Object.assign(under, { drift: [-60 * unit, 45 * unit], seconds });
+    return { page: { ...rest, baked: backdrop }, under };
+}
+
+/** The frame of the page that bakes a backdrop: on a canvas BACKDROP_MARGIN larger each side, the backdrop alone. */
+export function bakeFrame(backdrop) {
+    return { only: backdrop };
 }
 
 /** The markup put before </body>: the frame's style and the script that builds it. */
@@ -140,6 +171,17 @@ function build(frame) {
         else root.appendChild(el);
         return el;
     };
+    // Baking a backdrop (bin/graphic): the composition hidden, the backdrop filling the larger canvas, so the picture
+    // is what #bc-backdrop paints (inset -160 px) behind a frame of the real size.
+    if (frame.only) {
+        for (const el of root.children) el.style.visibility = "hidden";
+        Object.assign(root.style, { width: `${W}px`, height: `${H}px` });
+        const back = layer("bc-backdrop", true);
+        back.className = frame.only;
+        back.style.inset = "0";
+        tl.seek(0);
+        return;
+    }
 
     // The composition's own content, measured before anything is moved (union of its visible boxes that are not
     // full-frame backgrounds).
@@ -215,7 +257,7 @@ function build(frame) {
                 place.dy += push;
                 // The pushed full-frame layer would leave a transparent band at the top: fill it with the brand
                 // background.
-                if (fullFrame && !frame.backdrop) frame.backdrop = "plain";
+                if (fullFrame && !frame.backdrop && !frame.baked) frame.backdrop = "plain";
             }
         }
     }
