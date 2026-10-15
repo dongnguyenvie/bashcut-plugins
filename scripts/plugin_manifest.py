@@ -50,15 +50,16 @@ MAX_SKILL_NAME, MAX_SKILL_DESCRIPTION = 64, 1024
 MAX_VIEWS, MAX_REQUIRES, MAX_USES, MAX_FEATURES = 8, 16, 32, 32
 SYMBOL_PATTERN = r"[a-z0-9]+(?:\.[a-z0-9]+)*"
 VERSION_RANGE_PATTERN = r"\*|(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?)(?: +(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?))*"
-VIEW_LOCATIONS = ("panel", "dock", "sheet", "inspector")
+VIEW_LOCATIONS = ("panel", "dock", "sheet", "inspector", "window")  # window: API 11
 FEATURE_PATTERN = r"[a-z][a-zA-Z0-9]*(?:[.-][a-zA-Z0-9]+)*"
 # View components (PluginViewNode.Kind in the app); each is also the host feature `views.<type>`. A type the host does
 # not know draws "Needs a newer BashCut", so view_problems accepts unknown types.
 VIEW_NODE_TYPES = ("section", "row", "divider", "spacer", "text", "badge", "keyValue", "progress", "image",
                    "imageCompare", "audio", "list", "button", "textField", "textArea", "toggle", "picker", "slider",
-                   "colorPicker", "fontPicker", "grid")
+                   "colorPicker", "fontPicker", "grid", "split", "nav")
 VIEW_INPUTS = {"textField", "textArea", "toggle", "picker", "slider", "colorPicker", "fontPicker"}
-VIEW_INTERACTIVE = VIEW_INPUTS | {"button", "list", "grid"}
+VIEW_INTERACTIVE = VIEW_INPUTS | {"button", "list", "grid", "nav"}
+SPLIT_WIDTHS, MAX_NAV_GROUPS = (120, 600), 20  # split column points (or "flex"), nav groups (API 11)
 MAX_VIEW_NODES, MAX_VIEW_DEPTH, MAX_LIST_ITEMS, MAX_PICKER_OPTIONS = 2000, 12, 500, 200
 HEX_COLOR_PATTERN = r"#(?:[0-9A-Fa-f]{3,4}|[0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})"
 MAX_TAKES = 8
@@ -312,6 +313,8 @@ def composition_problems(manifest, api, transport, container, views):
             problems.append(f'view {view.get("id")}: title is required, up to 40 characters')
         if view.get("location", "panel") not in VIEW_LOCATIONS:
             problems.append(f'view {view.get("id")}: location must be one of {", ".join(VIEW_LOCATIONS)}')
+        elif view.get("location") == "window" and api < 11:
+            problems.append(f'view {view.get("id")}: location window needs apiVersion 11')
         if "icon" in view and not re.fullmatch(SYMBOL_PATTERN, str(view["icon"])):
             problems.append(f'view {view.get("id")}: icon must be an SF Symbol name')
         if "when" in view:
@@ -378,6 +381,15 @@ def view_problems(answer):
                     problems.append(f"{where}: items need an id")
                 elif "file" in item and not isinstance(item["file"], str):
                     problems.append(f"{where}: item {item['id']} file must be a path")
+        if kind == "split":
+            problems.extend(split_problems(node, where))
+        if kind == "nav":
+            groups = node.get("groups") or []
+            entries = [entry for group in groups if isinstance(group, dict) for entry in group.get("items") or []]
+            if len(groups) > MAX_NAV_GROUPS or len(entries) > MAX_LIST_ITEMS:
+                problems.append(f"{where}: at most {MAX_NAV_GROUPS} groups and {MAX_LIST_ITEMS} entries")
+            if not all(isinstance(entry, dict) and entry.get("id") for entry in entries):
+                problems.append(f"{where}: entries need an id")
         if kind == "image" and "file" in node and not isinstance(node["file"], str):
             problems.append(f"{where}: file must be a path")
         if kind == "picker" and len(node.get("options") or []) > MAX_PICKER_OPTIONS:
@@ -395,6 +407,23 @@ def view_problems(answer):
     if count > MAX_VIEW_NODES:
         problems.append(f"a view has at most {MAX_VIEW_NODES} components")
     return problems
+
+
+def split_problems(node, where):
+    """A split has 2 or 3 columns (its children) and, when given, one width per column: points or "flex"."""
+    columns = len(node.get("children") or [])
+    if columns not in (2, 3):
+        return [f"{where}: needs 2 or 3 children (its columns)"]
+    widths = node.get("widths")
+    if widths is None:
+        return []
+    if not isinstance(widths, list) or len(widths) != columns:
+        return [f"{where}: widths needs one entry per column"]
+    low, high = SPLIT_WIDTHS
+    if not all(w == "flex" or (isinstance(w, (int, float)) and not isinstance(w, bool) and low <= w <= high)
+               for w in widths):
+        return [f'{where}: widths are {low}–{high} points or "flex"']
+    return []
 
 
 def front_matter(text):
