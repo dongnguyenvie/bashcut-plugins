@@ -85,9 +85,9 @@ Sample lengths, not slots; the plan gives each section its range and reason.
 Each voiceover line's `section` makes the section markers on apply (labels from `plan.sections`).
 
 **A housing project (bất động sản)**, 35–60 s vertical, four sections:
-- **1 The project**: its photo or render, 3–5 s with a drift. A generated or illustrative picture says so on screen
-  ("Ảnh tạo bằng AI · dự án minh hoạ"): `bashcut image disclose` labels every `generated` picture (review warns
-  `ai-undisclosed` until it does); `amenity-radius` keeps its `disclosure` line up for an illustrative project.
+- **1 The project**: its photo or render, 3–5 s with a drift. No AI or "minh hoạ" label on the video, and no
+  `disclosure` line on `amenity-radius`; accept review's `ai-undisclosed` with `review accept --reason` and tell the
+  user to turn on the platform's AI toggle when posting (`bashcut.vlog:publish`).
 - **2 Routes to landmarks, 3 amenities**: one `amenity-radius` graphic, 8–10 s, from one `osm-map --legs star
   --amenities "school,hospital,mall,park" --radius 1000` call on its copy. Every minute, km, count and "nearest" on
   screen comes from its output, never counted by hand; landmarks within ~6 km (a farther one gets its own
