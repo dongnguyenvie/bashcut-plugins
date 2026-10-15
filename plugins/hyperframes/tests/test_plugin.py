@@ -385,10 +385,10 @@ class OsmMapTests(unittest.TestCase):
     def test_amenity_radius_reads_the_data_osm_map_writes(self):
         html = (ROOT / "examples" / "amenity-radius" / "index.html").read_text()
         self.assertIn('<script src="map-data.js"></script>', html)
-        self.assertIn("data.attribution", html)
         self.assertIn('data-fit="canvas"', html)
+        self.assert_no_credit_by_default(html)
         stand_in = (ROOT / "examples" / "amenity-radius" / "map-data.js").read_text()
-        self.assertIn("© OpenStreetMap contributors", stand_in)
+        self.assertIn("© OpenStreetMap contributors", stand_in)  # metadata, not drawn
         data = json.loads(stand_in[stand_in.index("{"):stand_in.rindex("}") + 1])
         self.assertTrue(data["amenities"]["markers"] and data["amenities"]["radius"] > 0)
         self.assertTrue(all(len(leg["line"]) > 1 for leg in data["legs"]))
@@ -396,9 +396,23 @@ class OsmMapTests(unittest.TestCase):
     def test_map_route_reads_the_data_osm_map_writes(self):
         html = (ROOT / "examples" / "map-route" / "index.html").read_text()
         self.assertIn('<script src="map-data.js"></script>', html)
-        self.assertIn("data.attribution", html)
+        self.assert_no_credit_by_default(html)
         stand_in = (ROOT / "examples" / "map-route" / "map-data.js").read_text()
-        self.assertIn("© OpenStreetMap contributors", stand_in)
+        self.assertIn("© OpenStreetMap contributors", stand_in)  # metadata, not drawn
+
+    def assert_no_credit_by_default(self, html):
+        # Credits are opt-in: the map's attribution is never drawn, only the credit variable (empty by default).
+        self.assertNotIn("textContent = data.attribution", html)
+        start = html.index("data-composition-variables='") + len("data-composition-variables='")
+        variables = {row["id"]: row for row in json.loads(html[start:html.index("'", start)])}
+        self.assertEqual("", variables["credit"]["default"])
+        self.assertIn('credit.style.display = v.credit ? "block" : "none"', html)
+
+    def test_bar_chart_draws_no_source_line_by_default(self):
+        html = (ROOT / "examples" / "bar-chart" / "index.html").read_text()
+        start = html.index("data-composition-variables='") + len("data-composition-variables='")
+        variables = {row["id"]: row for row in json.loads(html[start:html.index("'", start)])}
+        self.assertEqual("", variables["source"]["default"])
 
 
 class RenderParamTests(unittest.TestCase):

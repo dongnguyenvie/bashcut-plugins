@@ -26,7 +26,8 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   and `map-data.js` in canvas pixels, plus `km`, `minutes` and per-stop legs as JSON. Routes from OSRM on
   routing.openstreetmap.de (FOSSGIS); tiles from tile.openstreetmap.org with the plugin's User-Agent, two at a time,
   under the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Map data © OpenStreetMap
-  contributors (ODbL); `map-route` and `amenity-radius` keep the credit on screen. `--amenities` counts schools,
+  contributors (ODbL), kept as `attribution` in the data; `map-route` and `amenity-radius` draw no credit unless their
+  `credit` variable is set (only when the user asks). `--amenities` counts schools,
   hospitals, malls, parks… around the first point with one Overpass API query (90 s timeout, cached, same User-Agent).
   Strict tags (`AMENITIES` and `EXCLUDE` in `lib/osm-map.mjs`): `hospital` = `amenity=hospital` or
   `healthcare=hospital` but never a clinic, doctor, dentist or pharmacy, by tag or by name ("Phòng khám", "Nha khoa",

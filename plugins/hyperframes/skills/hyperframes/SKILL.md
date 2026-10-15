@@ -25,7 +25,7 @@ may be a copy elsewhere). `osm-map --help` lists its options.
 | `"$P/bin/hf" docs compositions\|data-attributes\|gsap` | The runtime's own rules |
 | `"$P/bin/graphic" examples [NAME]` | One line per example (what it draws, seconds, its variables): choose without reading HTML. With NAME every variable's label and default, its `pitfalls` and the `lessons` tagged `block:NAME` |
 | `"$P/bin/graphic" plan [--only g1,g2]` | Renders every `plan.cut` graphic with `render` {composition, set, frame} to the span plan check gives it, imports, writes the media into plan.cut and runs `plan apply`: a graphics edit in one call. A `set` value `"@words"` is the seconds from the graphic's start to those words in the voiceover; unchanged graphics are not rendered again |
-| `--frame JSON` (`place`, `rerender`) / `render.frame` (`plan`) | Chrome around any composition, no HTML edit: `backdrop` `texture`\|`paper`\|`plain` (paper: kraft with a kraft-brown brand background, notebook with a cream one), `fadeIn`, `drift`, `float` (after ~1.2 s the widget bobs to the end: a held card passes review's frozen-picture check; drift alone does not), `chip` ("2/4"), `credit` (source line), `callout` {text, at, top} (`*word*` in the accent), `scale` 0.5–2.5. Brand colours and fonts apply; chip and credit move aside when they would cover the widget |
+| `--frame JSON` (`place`, `rerender`) / `render.frame` (`plan`) | Chrome around any composition, no HTML edit: `backdrop` `texture`\|`paper`\|`plain` (paper: kraft with a kraft-brown brand background, notebook with a cream one), `fadeIn`, `drift`, `float` (after ~1.2 s the widget bobs to the end: a held card passes review's frozen-picture check; drift alone does not), `chip` ("2/4"), `credit` (source line, only when the user asks), `callout` {text, at, top} (`*word*` in the accent), `scale` 0.5–2.5. Brand colours and fonts apply; chip and credit move aside when they would cover the widget |
 | `"$P/bin/graphic" place D --at-frame F [--set k=v …]` | Render and place full canvas on the Overlay layer in one call, recording the inputs. `rerender ITEM [--set …]` renders again and swaps every use in one undo step |
 | `--set data=@file.json` + `--steps-from voice\|sections` (`place`) | The JSON-data widgets: data in a file, never HTML or coordinates (the script lays out for 9:16 or 16:9). `--steps-from voice` gives step i the start of the i-th voice line (`sections`: section markers); `"at": "line:3"` / `"section:Label"` picks one; without `--at-frame`/`--duration` the graphic starts 0.4 s before the first step and ends after the last line. One widget = one `place` call |
 | flow-diagram, mind-map, isometric-system | Data `{title, nodes, edges, steps:[{focus, reveal, note?}]}`; a node in no `reveal` shows from the start; `focus` lights it and dims the rest. ≤12 nodes, labels 1–3 words; one diagram per section, steps = its voice lines |
@@ -89,8 +89,10 @@ a value broke a block, record it (`knowledge add-lesson … --tags block:NAME`).
 - `hf snapshot` and `check` do not copy GSAP: copy `"$P/bin/hf" --gsap` next to `index.html` first, or every frame
   shows the end state ("Timeline did not advance under seek"); likewise `$P/lib/diagram.js` for the diagrams and
   `$P/lib/amenity-map.js` for amenity-radius (render copies them when missing).
-- Data keeps its credit: a map keeps "© OpenStreetMap contributors" visible; a sourced chart or table carries its
-  source line (`bar-chart` › `source`). Illustrative numbers are said to be illustrative, in the words or on the card.
+- No credit, source or licence line on the picture by default: it makes the video look unnatural. Only when the
+  user asks, set the composition's own variable (`map-route` / `amenity-radius` › `credit`, e.g. the
+  `attribution` osm-map prints; `bar-chart` › `source`) or `--frame` › `credit`. Keep where numbers come from in your
+  notes, not on screen.
 
 ## 4. Brand
 

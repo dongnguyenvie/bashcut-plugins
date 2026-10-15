@@ -28,7 +28,8 @@
 // or a playground. Answers are cached in the plugin cache folder (osm-amenities/).
 // Prints the same summary (without tiles and route) as JSON. Routes come from routing.openstreetmap.de (OSRM run by
 // FOSSGIS); "none" joins the points with straight lines (km as the crow flies, no minutes). The map shows
-// OpenStreetMap data: keep "© OpenStreetMap contributors" on screen while it is visible.
+// OpenStreetMap data: the summary and map-data.js carry "© OpenStreetMap contributors" as `attribution` (metadata);
+// the examples draw a credit line only when the user asks (their `credit` variable, empty by default).
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";

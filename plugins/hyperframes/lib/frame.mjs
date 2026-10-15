@@ -15,7 +15,8 @@
 //             to count a held card as moving
 //   chip      a short label in a pill at the top left ("2/4", "Bước 1"); fades out 0.3 s before the end. When chip
 //             or credit pushes a widget with a painted full-frame layer down, a "plain" backdrop fills the top
-//   credit    a source line at the top left, above the chip ("© OpenStreetMap contributors")
+//   credit    a source line at the top left, above the chip ("© OpenStreetMap contributors"); opt-in, only when
+//             the user asks for a credit (nothing sets it by default)
 //   callout   {text, at, top}: a plate under the widget that lands at `at` seconds ("@words" in plan); `*word*` is
 //             drawn in the accent; top (px) overrides where it sits
 //   scale     the widget's size (0.5–2.5) around its own centre, kept 60 px inside the frame

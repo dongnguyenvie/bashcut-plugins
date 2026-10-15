@@ -99,7 +99,10 @@ About one picture per sentence of 4.5–6 s, cut in the pause after it (RC: eigh
 - The date of the news is said or shown; a story older than a few days says when it happened ("ngày 30/8").
 - Quotes verbatim, the speaker named with role and date; a translated quote says "(lời dịch)"; never shorten a quote
   so it says something else.
-- Every picture keeps its credit on screen while it shows; a screenshot names its outlet and date.
+- Every picture keeps its credit on screen while it shows; a screenshot names its outlet and date. This is the one
+  recipe with a credit by default, because a news viewer takes pictures as evidence: the credit names where the
+  picture comes from (outlet, agency, archive). Licence notices stay off screen unless the user asks: no
+  "© OpenStreetMap contributors" on a map, no stock or CC licence line.
 - No defamation: an accusation is attributed ("theo …", "cáo buộc"), never stated as fact; no private person's face,
   name or address without a public reason.
 

@@ -2,7 +2,7 @@
 <!-- Routes to landmarks ("≈ 15 min · 6.3 km"), then a radius circle with the amenities inside counted per kind. On a
      dark map, the routes glow from the project to each landmark, the camera moves onto the circle and the places in it
      pop up by distance while a legend counts schools, hospitals, malls, parks…; a two-line title, an optional
-     disclosure line on top and the OpenStreetMap credit at the bottom. Run bin/osm-map --dir <this folder> --points
+     disclosure line on top and a credit line under the legend only when the credit variable is set. Run bin/osm-map --dir <this folder> --points
      "project;landmarks" --legs star --amenities "school,hospital,mall,park" first (the map-data.js here is an offline
      stand-in with no tiles): every number on screen comes from it. The project's canvas (9:16 or 16:9), 8 s. -->
 <!-- Pitfalls:
@@ -35,6 +35,7 @@
   {"id": "showZero", "type": "boolean", "label": "Show kinds with no place in the radius as 0 (off: leave them out)", "default": false},
   {"id": "zoomIn", "type": "boolean", "label": "Camera moves onto the circle when the amenities come (off: one view for all)", "default": true},
   {"id": "darkMap", "type": "boolean", "label": "Dark map (off: the normal OpenStreetMap colours)", "default": true},
+  {"id": "credit", "type": "string", "label": "Credit line under the legend (empty hides it; only when the user asks, e.g. © OpenStreetMap contributors)", "default": ""},
   {"id": "accent", "type": "color", "label": "Route and circle colour", "default": "#C6FF3D"},
   {"id": "background", "type": "color", "label": "Map base and tag colour", "default": "#0B0E14"},
   {"id": "text", "type": "color", "label": "Text colour", "default": "#FFFFFF"},
@@ -164,7 +165,9 @@
       const chips = AM.mountLegend(legend, kinds, u, labels,
         (k) => (k.nearest && v.nearestText ? v.nearestText.replace("{d}", distance(k.nearest.km)) : ""));
       const credit = document.getElementById("credit");
-      credit.textContent = data.attribution;
+      // data.attribution stays in map-data.js as metadata; a credit line is drawn only when the credit variable asks.
+      credit.textContent = v.credit ?? "";
+      credit.style.display = v.credit ? "block" : "none";
       Object.assign(credit.style, { left: px(72), top: `${(rows ? legendTop + legendH * u : H * 0.7) + 16 * u}px`, fontSize: px(22) });
 
       // The map: first the project, the routes and the landmarks fitted into the free zone; then (zoomIn) the camera

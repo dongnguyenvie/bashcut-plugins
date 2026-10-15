@@ -119,18 +119,17 @@ Two sections in a row with the same widget need a reason. Graphic density sits a
 
 ## Pictures and frame chrome
 
-- **Where pictures come from**, in order: the user's own; stock (`bc:stock-images`, credit when the licence asks);
-  public-domain or open archives with the credit on screen (Wikimedia, NASA); screenshots of a real source, cropped,
-  source named; generated illustrations (`bashcut.vlog:scene-prompt`). Never present a generated picture as a photo
-  of a real place, person or event.
+- **Where pictures come from**, in order: the user's own; stock (`bc:stock-images`); public-domain or open archives
+  (Wikimedia, NASA); screenshots of a real source, cropped; generated illustrations (`bashcut.vlog:scene-prompt`).
+  Never present a generated picture as a photo of a real place, person or event.
 - **One illustration style for the whole video** (RC: crayon, engraving, paper-cut collage, isometric — one per
   channel): in `decisions` with the prompt fragment that keeps it, reused for every generated picture.
 - **Frame chrome stays across scenes** (RC): section chip and header bar, the user's avatar or mascot in a corner if
-  any, a credit line while sourced data or archive pictures show; only the content swaps. Inside the safe zone. Give
-  every row the same `render.frame` instead of editing HTML, e.g. `{"backdrop": "texture"|"paper", "float": true,
-  "chip": "2/4", "credit": "© OpenStreetMap contributors", "callout": {"text": "≈ *47 lần*", "at": "@bốn mươi
-  bảy"}, "scale": 1.2}` (`float` keeps held cards moving for the frozen-picture check; hook and recap leave out the
-  chip; `map-route` lands each pin with `arriveAt` `["@…"]`). Keys: `bashcut.hyperframes:hyperframes`.
+  any; only the content swaps. No credit, source or licence line on the picture unless the user asks for one (then
+  `render.frame` › `credit`). Inside the safe zone. Give every row the same `render.frame` instead of editing HTML,
+  e.g. `{"backdrop": "texture"|"paper", "float": true, "chip": "2/4", "callout": {"text": "≈ *47 lần*", "at": "@bốn
+  mươi bảy"}, "scale": 1.2}` (`float` keeps held cards moving for the frozen-picture check; hook and recap leave out
+  the chip; `map-route` lands each pin with `arriveAt` `["@…"]`). Keys: `bashcut.hyperframes:hyperframes`.
 - **A mascot or character** only from the user's own image or a style they approved; never invented and presented as
   theirs.
 - **Scene changes**: widgets exit by swinging away in 3D; the next card enters as one leaves (0.3–0.45 s overlap).
@@ -146,7 +145,7 @@ Two sections in a row with the same widget need a reason. Graphic density sits a
 - All numbers: one `fetch_facts.py` call (`bc:motion-graphics`) before any web search; search by hand only its `none`
   rows; widget data comes from its rows {value, unit, credit}.
 - Maps: real coordinates from the user or a named source, the route from `osm-map`; its minutes and km go on screen
-  rounded ("≈ 16 phút · 7,5 km"); "© OpenStreetMap contributors" stays visible.
+  rounded ("≈ 16 phút · 7,5 km"). No map credit on screen unless the user asks (`credit` variable).
 - Law, health and money: name the law, article and date of the rule; say "check with a professional" when advice
   depends on the viewer's case.
 
@@ -167,7 +166,7 @@ illustrations left as made.
 ## Review notes
 
 - Blockers a viewer notices: a number said but not on screen, a card before or long after its word, a widget that
-  never moves, a map without its credit, two sections built the same way, text too small at phone width, captions
+  never moves, two sections built the same way, text too small at phone width, captions
   over a widget.
 - Deliberate: one card for a whole section (`shot-long` at `info`), no hard cuts, the same chrome on every scene.
 - `needs_user`: the facts and sources, voice or music only, the illustration style, the user's mascot, avatar and
@@ -182,6 +181,6 @@ What this recipe adds to the plan (`bashcut.vlog:plan` §3).
 - `checks` (source: explainer recipe): `number-shown` every number said is on screen; `number-sourced` every number
   has a source or is marked as an example; `widget-on-word` each widget row lands on its word;
   `one-widget-per-section` each section has its widget and neighbours differ; `nothing-frozen` nothing stands still
-  beyond its reading time; `credit-visible` maps, archive pictures and sourced data keep their credit; `one-style`
+  beyond its reading time; `one-style`
   generated pictures share the plan's illustration style.
 - `askAtIntake`: `["voiceOrMusicOnly", "factSources", "brandKit"]`.
