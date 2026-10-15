@@ -530,14 +530,15 @@ def browser(request, state, values, event):
                  "wide": True},
             ]
     body = [{"type": "split", "widths": [200, "flex", 260], "children": [
-        {"type": "section", "title": "Palettes", "children": [nav]},
+        # `label` names a side column where a narrow window folds it into a disclosure; a `title` would add one here.
+        {"type": "section", "label": "Palettes", "children": [nav]},
         {"type": "section", "children": [
             {"type": "text", "text": "Drag a swatch onto the timeline: it is saved to the library when dropped.",
              "style": "secondary"},
             {"type": "grid", "id": "tiles", "items": tiles, "selected": focus, "cellWidth": 140, "aspect": 16 / 9,
              "drag": "download"},
         ]},
-        {"type": "section", "title": "Details", "children": inspector},
+        {"type": "section", "label": "Details", "children": inspector},
     ]}]
     return {"state": {"group": group, "focus": focus, "saved": saved}, "body": body, **answer}
 
