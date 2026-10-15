@@ -24,7 +24,8 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   `check`, `snapshot` (frames to look at, optionally against a reference video), `docs`.
 - **`bin/osm-map`**: an OpenStreetMap map and a route for a composition: tiles (cached in the plugin cache folder)
   and `map-data.js` in canvas pixels, plus `km`, `minutes` and per-stop legs as JSON. Routes from OSRM on
-  routing.openstreetmap.de (FOSSGIS); tiles from tile.openstreetmap.org with the plugin's User-Agent, two at a time,
+  routing.openstreetmap.de (FOSSGIS); tiles from tile.openstreetmap.org (falling back to tile.openstreetmap.de and openstreetmap.fr HOT, or
+  your `--tiles`) with the plugin's User-Agent, two at a time,
   under the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). Map data © OpenStreetMap
   contributors (ODbL), kept as `attribution` in the data; `map-route` and `amenity-radius` draw no credit unless their
   `credit` variable is set (only when the user asks). `--amenities` counts schools,
@@ -37,7 +38,7 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
 - **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
   `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
   `cost-table`, `timeline`, `calendar`, `map-route`, `amenity-radius`; mock screens (`mock-video-app`) and cards such as
-  `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, and
+  `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, `growing-diagram` (one diagram that grows over a whole video), and
   `big-canvas`, one hand-drawn canvas for a whole video with a camera path) and science widgets (`formula` with
   KaTeX, `matrix-grid`, `scale-compare`); `lottie` plays one Lottie accent picked with resources'
   `fetch_lottie.py`. All take the brand variables `bin/graphic` fills. Those with `data-fit="canvas"` render at the

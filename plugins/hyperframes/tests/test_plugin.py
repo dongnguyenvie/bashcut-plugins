@@ -408,6 +408,137 @@ class OsmMapTests(unittest.TestCase):
         self.assertEqual("", variables["credit"]["default"])
         self.assertIn('credit.style.display = v.credit ? "block" : "none"', html)
 
+    def setUp(self):
+        self.dead = self.closed_port()
+
+    def serve_tiles(self):
+        """A local tile server: /tiles/… answers a PNG, anything else 404. Returns its port."""
+        import http.server
+        import threading
+        png = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+                            "1f15c4890000000d49444154789c6360000002000100e5279ad40000000049454e44ae426082")
+
+        class Tiles(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                ok = self.path.startswith(("/tiles/", "/wm/"))
+                self.send_response(200 if ok else 404)
+                self.send_header("Content-Type", "image/png")
+                if self.path.startswith("/wm/"):
+                    self.send_header("ETag", '"wm-da89c20e77c1-dark"')
+                self.end_headers()
+                if ok:
+                    self.wfile.write(png)
+
+            def log_message(self, *args):
+                pass
+
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Tiles)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        return server.server_address[1]
+
+    @staticmethod
+    def closed_port():
+        """A local port nothing listens on (fetch refuses well-known ports such as 9 outright)."""
+        import socket
+        with socket.socket() as probe:
+            probe.bind(("127.0.0.1", 0))
+            return probe.getsockname()[1]
+
+    def run_offline(self, *args, **extra):
+        with tempfile.TemporaryDirectory() as folder:
+            env = {**environment(folder), "OSM_RETRY_MS": "10",
+                   "OSM_NOMINATIM_URL": f"http://127.0.0.1:{self.dead}/search", **extra}
+            out = subprocess.run([str(ROOT / "bin" / "osm-map"), *args], capture_output=True, text=True, env=env,
+                                 timeout=60)
+            data = None
+            if "--dir" in args and out.returncode == 0:
+                text = pathlib.Path(args[args.index("--dir") + 1], "map-data.js").read_text()
+                data = json.loads(text[text.index("{"):text.rindex("}") + 1])
+            return out, data
+
+    def test_a_failing_tile_server_is_named_and_the_next_one_used(self):
+        port = self.serve_tiles()
+        tiles = f"http://127.0.0.1:{self.dead}/{{z}}/{{x}}/{{y}}.png,http://127.0.0.1:{port}/gone/{{z}}/{{x}}/{{y}}.png," \
+                f"http://127.0.0.1:{port}/wm/{{z}}/{{x}}/{{y}}.png,http://127.0.0.1:{port}/tiles/{{z}}/{{x}}/{{y}}.png"
+        with tempfile.TemporaryDirectory() as target:
+            out, data = self.run_offline("--dir", target, "--points", "21.03,105.83,A;21.05,105.82,B", "--route", "none",
+                                         "--zoom", "3", "--tiles", tiles)
+            self.assertEqual(0, out.returncode, out.stderr)
+            result = json.loads(out.stdout)
+            self.assertEqual(f"127.0.0.1:{port}", result["tileServer"])
+            warning = " ".join(result["warnings"])
+            self.assertIn(f"127.0.0.1:{self.dead}", warning)
+            self.assertIn("connection refused", warning)
+            self.assertIn("HTTP 404", warning)
+            self.assertIn("watermark tile", warning)
+            self.assertIn("used 127.0.0.1:", warning)
+            self.assertTrue(data["customTiles"])
+            self.assertEqual("osm", data["style"])
+            self.assertTrue(data["tiles"] and all(pathlib.Path(target, t["src"]).exists() for t in data["tiles"]))
+            self.assertIn("OpenStreetMap", data["attribution"])  # metadata only: the pages never draw it
+
+    def test_a_failed_route_falls_back_to_straight_lines(self):
+        port = self.serve_tiles()
+        with tempfile.TemporaryDirectory() as target:
+            out, data = self.run_offline("--dir", target, "--points", "21.03,105.83,A;21.05,105.82,B", "--zoom", "3",
+                                         "--tiles", f"http://127.0.0.1:{port}/tiles/{{z}}/{{x}}/{{y}}.png",
+                                         OSM_ROUTING_URL=f"http://127.0.0.1:{self.dead}")
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual("none", result["profile"])
+        self.assertIn("route failed", " ".join(result["warnings"]))
+        self.assertIsNone(result["legs"][0]["minutes"])
+
+    def test_a_failed_place_lookup_says_why_and_asks_for_points(self):
+        out, _ = self.run_offline("--places", "Hồ Tây, Hà Nội")
+        self.assertEqual(2, out.returncode)
+        self.assertIn(f"GET http://127.0.0.1:{self.dead}/search failed: connection refused", out.stderr)
+        self.assertIn('--points "lat,lon,Label', out.stderr)
+        port = self.serve_tiles()
+        with tempfile.TemporaryDirectory() as target:
+            out, data = self.run_offline("--dir", target, "--places", "Hồ Tây, Hà Nội", "--points", "21.05,105.82,Hồ Tây",
+                                         "--route", "none", "--zoom", "3",
+                                         "--tiles", f"http://127.0.0.1:{port}/tiles/{{z}}/{{x}}/{{y}}.png")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertIn("--places lookup failed", " ".join(json.loads(out.stdout)["warnings"]))
+        self.assertNotIn("places", data)
+
+    def test_failures_are_described_and_styles_pick_their_servers(self):
+        result = self.run_module(
+            "const d = m.describeFailure; console.log(JSON.stringify({"
+            "dns: d(Object.assign(new TypeError('fetch failed'), {cause: {code: 'ENOTFOUND', hostname: 'tile.openstreetmap.org'}})),"
+            "again: d({cause: {code: 'EAI_AGAIN', hostname: 'nominatim.openstreetmap.org'}}),"
+            "http: d({status: 503, statusText: 'Service Unavailable'}), timeout: d({name: 'TimeoutError'}, 30),"
+            "servers: m.tileServers().map((s) => s.name), own: m.tileServers('https://t.example/{z}/{x}/{y}.png')[0]}));")
+        self.assertEqual("DNS: tile.openstreetmap.org did not resolve", result["dns"])
+        self.assertEqual("DNS: nominatim.openstreetmap.org did not resolve", result["again"])
+        self.assertEqual("HTTP 503 Service Unavailable", result["http"])
+        self.assertEqual("timeout after 30 s", result["timeout"])
+        self.assertEqual(["tile.openstreetmap.org", "tile.openstreetmap.de", "tile-a.openstreetmap.fr (HOT)"], result["servers"])
+        self.assertFalse(any("carto" in name.lower() for name in result["servers"]), "CARTO watermarks tiles without a key")
+        self.assertEqual(("t.example", True), (result["own"]["name"], result["own"]["custom"]))
+
+    def test_rejects_an_unknown_style_and_a_tile_url_without_placeholders(self):
+        with tempfile.TemporaryDirectory() as target:
+            out = self.run_map("--dir", target, "--points", "21.03,105.83,A", "--style", "neon")
+            self.assertEqual(2, out.returncode)
+            self.assertIn("--style", out.stderr)
+            out = self.run_map("--dir", target, "--points", "21.03,105.83,A", "--tiles", "https://t.example/tile.png")
+            self.assertEqual(2, out.returncode)
+            self.assertIn("{z}", out.stderr)
+
+    def test_map_pages_draw_pre_styled_tiles_as_they_are_and_hide_zero_kinds(self):
+        for name in ("map-route", "amenity-radius"):
+            html = (ROOT / "examples" / name / "index.html").read_text()
+            self.assertIn('!data.customTiles && (data.style === "dark" || (data.style !== "light" && v.darkMap !== false))', html, name)
+        html = (ROOT / "examples" / "amenity-radius" / "index.html").read_text()
+        start = html.index("data-composition-variables='") + len("data-composition-variables='")
+        variables = {row["id"]: row for row in json.loads(html[start:html.index("'", start)])}
+        self.assertIs(False, variables["showZero"]["default"])
+        self.assertIn("k.count > 0 || v.showZero === true", html)
+
     def test_bar_chart_draws_no_source_line_by_default(self):
         html = (ROOT / "examples" / "bar-chart" / "index.html").read_text()
         start = html.index("data-composition-variables='") + len("data-composition-variables='")
@@ -726,10 +857,45 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertIn("mười bảy", json.loads(out.stderr)["error"])
         self.assertFalse(any(c["args"][:2] == ["plugins", "invoke"] for c in calls))
 
+    def test_plan_renders_a_scene_as_slices_timed_from_its_start(self):
+        data = {"nodes": [{"id": "app", "label": "App", "at": "@năm"}, {"id": "db", "label": "Database", "at": "@ba"}],
+                "edges": [{"from": "app", "to": "db"}]}
+        graphics = [{"id": "g1", "on": "l1", "render": {"composition": "growing-diagram", "scene": "sys",
+                                                        "set": {"data": data}, "frame": {"fadeIn": 0.4, "drift": True}}},
+                    {"id": "g2", "on": "l2", "render": {"scene": "sys"}}]
+        check = {"ok": False, "problems": [], "graphics": [
+            {"id": "g1", "at": 10.0, "seconds": 4.0, "words": [{"text": "Năm", "at": 0.5}, {"text": "hai", "at": 1.0}]},
+            {"id": "g2", "at": 14.0, "seconds": 6.0, "words": [{"text": "ba", "at": 2.25}]}]}
+        project_file = self.folder / "project" / "project.bashcut.json"
+        project_file.parent.mkdir()
+        state = {"projects": [self.plan_project(graphics=graphics)], "check": check, "projectFile": str(project_file)}
+        out, calls = self.run_graphic(state, "plan")
+        self.assertEqual(0, out.returncode, out.stderr)
+        invokes = [c for c in calls if c["args"][:2] == ["plugins", "invoke"]]
+        self.assertEqual(2, len(invokes))
+        folder = project_file.parent / "graphics" / "sys-growing-diagram"
+        self.assertEqual({str(folder)}, {c["params"]["composition"] for c in invokes}, "one copy for the scene")
+        first, second = (c["params"]["variables"] for c in invokes)
+        self.assertEqual((0, 10.0), (first["t0"], first["total"]))
+        self.assertEqual((4.0, 10.0), (second["t0"], second["total"]))
+        self.assertEqual(first["data"], second["data"], "every slice draws the same scene")
+        self.assertEqual([0.5, 6.25], [n["at"] for n in json.loads(second["data"])["nodes"]], "@words from the scene start")
+        self.assertEqual({"fadeIn": 0.4}, invokes[0]["pageFrame"])
+        self.assertIsNone(invokes[1].get("pageFrame"), "no fade-in or drift on a later slice")
+        self.assertTrue(any("drift" in w for w in json.loads(out.stdout)["warnings"]))
+
+    def test_plan_scene_needs_a_composition_with_t0(self):
+        graphics = [{"id": "g1", "on": "l1", "render": {"composition": "graphics/calendar", "scene": "s"}}]
+        state = {"projects": [self.plan_project(graphics=graphics)], "check": self.plan_check(),
+                 "projectFile": str(self.folder / "p.json")}
+        out, calls = self.run_graphic(state, "plan")
+        self.assertEqual(2, out.returncode)
+        self.assertIn("t0 and total", json.loads(out.stderr)["error"])
+
     def test_examples_list_their_own_variables_apart_from_the_brand(self):
         out, calls = self.run_graphic({"projects": [self.project()]}, "examples")
         self.assertEqual(0, out.returncode, out.stderr)
-        self.assertLess(len(out.stdout), 9600, "the list is short: one line per example")
+        self.assertLess(len(out.stdout), 10000, "the list is short: one line per example")
         rows = {row["name"]: row for row in json.loads(out.stdout)}
         self.assertEqual(sorted(p.name for p in (ROOT / "examples").iterdir() if (p / "index.html").exists()), sorted(rows))
         self.assertIn("items:string", rows["bar-chart"]["variables"].split())
@@ -1135,6 +1301,19 @@ class GraphicScriptTests(unittest.TestCase):
         self.assertEqual(str(570 - 288 + 15), place[place.index("--duration") + 1])  # section How runs to the end, 570
         self.assertIn('data-width="1080"', (flow / "index.html").read_text())  # the page is put back
 
+    def test_place_times_a_growing_diagrams_nodes_on_named_lines(self):
+        data = {"nodes": [{"id": "a", "label": "App", "at": "line:1"}, {"id": "b", "label": "API", "at": "line:3"}],
+                "edges": [{"from": "a", "to": "b", "at": "line:2"}]}
+        (self.folder / "grow.json").write_text(json.dumps(data))
+        grow = self.folder / "graphics" / "grow"
+        shutil.copytree(ROOT / "examples" / "growing-diagram", grow)
+        state = {"projects": [self.diagram_project(), self.diagram_project()]}
+        out, calls = self.run_graphic(state, "place", str(grow), "--set", f"data=@{self.folder / 'grow.json'}")
+        self.assertEqual(0, out.returncode, out.stderr)
+        sent = json.loads(next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]["variables"]["data"])
+        self.assertEqual([0.4, 6.4], [n["at"] for n in sent["nodes"]])
+        self.assertEqual(3.4, sent["edges"][0]["at"])
+
     def test_steps_beyond_the_voice_lines_are_refused_before_rendering(self):
         data = {"nodes": [{"id": "a", "label": "A"}], "steps": [{"focus": ["a"]}] * 4}
         (self.folder / "d.json").write_text(json.dumps(data))
@@ -1228,6 +1407,59 @@ console.log(JSON.stringify(out));
         script = 'const d = require(process.argv[1]); console.log(JSON.stringify(d.timedSteps([{at: 4, focus: "b"}, {focus: ["a"]}, {focus: []}], 8).map((s) => [s.at, s.focus])))'
         out = subprocess.run([node, "-e", script, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=30)
         self.assertEqual([[0.9, ["a"]], [4, ["b"]], [4.1, []]], json.loads(out.stdout))
+
+
+class GrowingDiagramTests(unittest.TestCase):
+    """The growing diagram: steps from each node's and edge's own `at`, labels a phone can read, slices of one scene."""
+
+    def node(self, script):
+        node = subprocess.run([str(ROOT / "bin" / "find-node")], capture_output=True, text=True).stdout.strip() or "node"
+        out = subprocess.run([node, "-e", script, str(ROOT / "lib" / "diagram.js")], capture_output=True, text=True, timeout=60)
+        self.assertEqual(0, out.returncode, out.stderr)
+        return json.loads(out.stdout)
+
+    def test_nodes_and_edges_with_at_become_steps(self):
+        steps = self.node(r"""
+const d = require(process.argv[1]);
+console.log(JSON.stringify(d.growthSteps({ nodes: [{ id: "a", at: 1 }, { id: "b", at: 3 }, { id: "c" }],
+  edges: [{ from: "a", to: "b" }, { from: "a", to: "c", at: 5 }, { from: "a", to: "zz", at: 6 }] })));
+""")
+        self.assertEqual([{"at": 1, "focus": ["a"], "reveal": ["a"], "edges": [], "grown": True},
+                          {"at": 3, "focus": ["b"], "reveal": ["b"], "edges": [], "grown": True},
+                          {"at": 5, "focus": ["a", "c"], "reveal": [], "edges": ["a>c"], "grown": True}], steps)
+
+    def test_a_slice_plays_its_part_of_the_scene(self):
+        self.assertEqual([{"t0": 0, "sceneEnd": 8}, {"t0": 4, "sceneEnd": 20}, {"t0": 4, "sceneEnd": 12}], self.node(r"""
+const d = require(process.argv[1]);
+console.log(JSON.stringify([d.sceneSlice({}, {}, 8), d.sceneSlice({ t0: 4, total: 20 }, {}, 8), d.sceneSlice({ t0: "4" }, {}, 8)]));
+"""))
+
+    def test_labels_stay_phone_readable_and_whole_up_to_ten_nodes(self):
+        rows = self.node(r"""
+const d = require(process.argv[1]);
+const words = ["Khách hàng", "API Gateway", "Auth", "Database", "Cache", "Queue", "Worker service", "Email", "Thanh toán", "CDN"];
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const area = d.areaFor(W, H, u, true);
+  for (let n = 2; n <= 10; n++) for (const shape of ["chain", "tree", "fan"]) {
+    const nodes = Array.from({ length: n }, (_, i) => ({ id: "n" + i, label: words[i], icon: i % 3 ? undefined : "x", at: i }));
+    const edges = [];
+    for (let i = 1; i < n; i++) edges.push({ from: "n" + (shape === "chain" ? i - 1 : shape === "fan" ? 0 : Math.floor((i - 1) / 3)), to: "n" + i });
+    for (const [kind, fonts] of [["flow", { maxFont: 60, minFont: 38 }], ["iso", { maxFont: 48, minFont: 34 }]]) {
+      const L = kind === "flow" ? d.flowLayout({ nodes, edges }, area, u, undefined, fonts) : d.isoLayout({ nodes, edges }, area, u, fonts);
+      const whole = L.nodes.every((b) => b.lines.join(" ").split(" ").every((w) => b.label.split(" ").includes(w)));
+      out.push({ W, kind, shape, n, overlaps: d.overlapping(L.nodes).length, font: Math.min(...L.nodes.map((b) => b.font / u)), whole });
+    }
+  }
+}
+console.log(JSON.stringify(out));
+""")
+        for row in rows:
+            self.assertEqual(0, row["overlaps"], row)
+            self.assertTrue(row["whole"], row)
+            # review.minTextSize 0.035 of the short side is 37.8 px at 1080; separate() may shrink a crowded box by 8 %.
+            self.assertGreaterEqual(row["font"], 34 * 0.92 if row["kind"] == "iso" else 38 * 0.92 * 0.92, row)
 
 
 class AmenityLayoutTests(unittest.TestCase):

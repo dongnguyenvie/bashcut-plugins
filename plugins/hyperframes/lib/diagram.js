@@ -9,6 +9,11 @@
 //   section markers); a step without a number is spread evenly over the graphic.
 //   A node in no step's reveal is there from the start; reveal brings it in on that step; focus lights it up (the
 //   rest dims) until the next step; packets run along the edges that touch a focused node.
+// Growing diagram (one scene for a whole explainer): a node or edge with its own `at` (seconds, or "@words" in
+//   graphic plan) comes in then and lights up, a new edge carries data dots until the next one lands (growthSteps);
+//   a node without `at` is there from the start. Variables t0 and total render one slice of the scene: t0 is the
+//   scene second this render starts at and total the scene's length, so slices rendered per section meet without a
+//   jump (graphic plan sets both for rows that share render.scene).
 // big-canvas data adds stops: [{at, focus: id | [x, y, w, h] (0–1 of the canvas), zoom?, note?}], summary?.
 (function (root) {
     "use strict";
@@ -63,7 +68,7 @@
         const flat = String(text).trim();
         const lines = [];
         for (let i = 0; i < flat.length && lines.length < 3; i += perLine) lines.push(flat.slice(i, i + perLine));
-        return { font, lines, width: Math.min(w, Math.max(...lines.map((l) => textWidth(l, font)))) };
+        return { font, lines, width: Math.min(w, Math.max(...lines.map((l) => textWidth(l, font)))), broken: true };
     }
 
     // MARK: graph helpers
@@ -203,14 +208,16 @@
     function sizeNode(n, bw, bh, u, { maxFont = 46, minFont = 22, pad = 22, icon = true } = {}) {
         const iconW = icon && n.icon ? maxFont * u * 1.35 : 0;
         const fit = fitLabel(n.label, bw - pad * 2 * u - iconW, bh - pad * 1.6 * u, maxFont * u, minFont * u);
+        // A word cut in two reads worse than a box without its icon.
+        if (fit.broken && iconW) return { ...sizeNode(n, bw, bh, u, { maxFont, minFont, pad, icon: false }), icon: undefined };
         const w = Math.min(bw, Math.max(fit.width + pad * 2 * u + iconW, Math.min(bw, 150 * u)));
         const h = Math.min(bh, Math.max(fit.lines.length * fit.font * 1.18 + pad * 1.6 * u, 84 * u));
-        return { ...n, w, h, font: fit.font, lines: fit.lines };
+        return { ...n, w, h, font: fit.font, lines: fit.lines, ...(fit.broken ? { broken: true } : {}) };
     }
 
     // MARK: layouts (all return {nodes: [{id, x, y, w, h, font, lines, …}], edges, unit, …}; x, y are centres)
 
-    function flowLayout(data, area, unit, direction) {
+    function flowLayout(data, area, unit, direction, fonts = {}) {
         const { nodes, edges } = readData(data);
         if (!nodes.length) return { nodes: [], edges: [], unit, direction: "lr" };
         const { rows, layer, waypoints } = layering(nodes, edges, { dummies: true });
@@ -231,14 +238,14 @@
                     const along = (r + 0.5) * cellMain;
                     const across = (i + 0.5 + (widest - row.length) / 2) * cellCross;
                     // A waypoint is a small box: separate() keeps it off the nodes like any other.
-                    const n = byId.has(id) ? sizeNode(byId.get(id), bw, bh, unit) : { id, w: 36 * unit, h: 36 * unit, way: true };
+                    const n = byId.has(id) ? sizeNode(byId.get(id), bw, bh, unit, fonts) : { id, w: 36 * unit, h: 36 * unit, way: true };
                     n.x = area.x + (lr ? along : across);
                     n.y = area.y + (lr ? across : along);
                     n.depth = layer.get(id);
                     (n.way ? ways : out).push(n);
                 });
             });
-            return { nodes: out, ways, edges, unit, direction: dir, minFont: Math.min(...out.map((n) => n.font)) };
+            return { nodes: out, ways, edges, unit, direction: dir, minFont: Math.min(...out.map((n) => n.font)), broken: out.filter((n) => n.broken).length };
         };
         let chosen;
         if (direction === "lr" || direction === "tb") chosen = build(direction);
@@ -249,7 +256,9 @@
             const tb = build("tb");
             const prefer = area.w >= area.h ? lr : tb;
             const other = prefer === lr ? tb : lr;
-            chosen = prefer.minFont < 30 * unit && other.minFont > prefer.minFont * 1.15 ? other : prefer;
+            // A label cut mid-word is worse than either: the way with fewer of them wins first.
+            chosen = other.broken < prefer.broken ? other : other.broken > prefer.broken ? prefer
+                : prefer.minFont < Math.max(30, fonts.minFont ?? 0) * unit && other.minFont > prefer.minFont * 1.15 ? other : prefer;
         }
         separate([...chosen.nodes, ...chosen.ways], area, 12 * unit);
         const wayById = new Map(chosen.ways.map((w) => [w.id, w]));
@@ -349,7 +358,7 @@
     }
 
     /** Blocks on an isometric grid: layer → one grid axis, place in the layer → the other. */
-    function isoLayout(data, area, unit) {
+    function isoLayout(data, area, unit, fonts = {}) {
         const { nodes, edges } = readData(data);
         if (!nodes.length) return { nodes: [], edges: [], unit };
         const { rows, layer } = layering(nodes, edges);
@@ -382,7 +391,7 @@
             const py = area.y + (area.h - labelRoom) / 2 + ((g.gx + g.gy) * 0.5 - midY) * c;
             const blockW = 2 * s * c;
             const blockH = s * c + lift * s * c;
-            const label = fitLabel(node.label, Math.max(blockW * 1.25, 230 * unit), 96 * unit, 36 * unit, 20 * unit);
+            const label = fitLabel(node.label, Math.max(blockW * 1.25, 230 * unit), (fonts.maxFont ? fonts.maxFont * 2.7 : 96) * unit, (fonts.maxFont ?? 36) * unit, (fonts.minFont ?? 20) * unit);
             const labelW = label.width + 28 * unit;
             const labelH = label.lines.length * label.font * 1.18 + 18 * unit;
             const w = Math.max(blockW, labelW);
@@ -656,6 +665,41 @@
         return list.sort((a, b) => a.at - b.at);
     }
 
+    /**
+     * Steps from the nodes' and edges' own `at` (a growing diagram): at each time the nodes that come in are revealed
+     * and lit, and the edges that come in ("from>to" in `edges`) glow and carry dots with their ends lit.
+     */
+    function growthSteps(data) {
+        const slots = new Map();
+        const slot = (at) => {
+            const key = Math.round(at * 100) / 100;
+            if (!slots.has(key)) slots.set(key, { at: key, focus: [], reveal: [], edges: [], grown: true });
+            return slots.get(key);
+        };
+        const ids = new Set((data.nodes ?? []).map((n, i) => String(n.id ?? `n${i}`)));
+        (data.nodes ?? []).forEach((n, i) => {
+            if (typeof n.at !== "number" || !Number.isFinite(n.at)) return;
+            const s = slot(Math.max(0, n.at));
+            const id = String(n.id ?? `n${i}`);
+            s.reveal.push(id);
+            s.focus.push(id);
+        });
+        for (const e of data.edges ?? []) {
+            if (typeof e.at !== "number" || !Number.isFinite(e.at) || !ids.has(String(e.from)) || !ids.has(String(e.to))) continue;
+            const s = slot(Math.max(0, e.at));
+            s.edges.push(`${e.from}>${e.to}`);
+            for (const id of [String(e.from), String(e.to)]) if (!s.focus.includes(id)) s.focus.push(id);
+        }
+        return [...slots.values()].sort((a, b) => a.at - b.at);
+    }
+
+    /** The scene slice a render shows: t0 (scene seconds at its first frame) and the scene's END (total or t0 + END). */
+    function sceneSlice(v, data, END) {
+        const t0 = Math.max(0, Number(data.t0 ?? v.t0) || 0);
+        const total = Number(data.total ?? v.total) || 0;
+        return { t0, sceneEnd: total > 0 ? Math.max(total, t0 + 0.1) : t0 + END };
+    }
+
     function fromToState(tl, target, a, b, at, duration, ease) {
         tl.fromTo(target, a, { ...b, duration, ease: ease ?? "power2.out", immediateRender: false }, at);
     }
@@ -664,20 +708,29 @@
      * Builds a flow, mind or iso diagram on `rootEl` into the paused timeline `tl`. v: the page's variables (data JSON,
      * title, sketch, packets, brand ids).
      */
-    function mount(tl, v, kind, rootEl) {
+    function mount(tl, v, kind, rootEl, options = {}) {
         brand(v);
-        const { W, H, unit, END } = canvas(rootEl);
+        const { W, H, unit, END: span } = canvas(rootEl);
         const data = typeof v.data === "string" ? JSON.parse(v.data || "{}") : v.data ?? {};
+        // A slice of a longer scene: build the whole scene on its own timeline and play t0 … t0 + span of it.
+        const { t0: sliceAt, sceneEnd } = sceneSlice(v, data, span);
+        const END = sceneEnd;
+        const outer = tl;
+        if (sliceAt > 0 || Math.abs(sceneEnd - span) > 1e-3) tl = root.gsap.timeline({ paused: true });
+        const grown = growthSteps(data);
+        const growing = grown.length > 0;
+        const fonts = options.fonts ?? {};
+        const dimTo = Number.isFinite(data.dim) ? data.dim : growing ? 0.7 : 0.42;
         const title = data.title ?? v.title ?? "";
         const sketch = Boolean(data.sketch ?? v.sketch);
         if (sketch) rootEl.classList.add("dg-sketch");
         rootEl.style.setProperty("--dg-border", `${3 * unit}px`);
         rootEl.style.setProperty("--dg-radius", `${(kind === "mind" ? 40 : 22) * unit}px`);
         const area = areaFor(W, H, unit, Boolean(title), (data.steps ?? []).some((s) => s.note));
-        const layout = kind === "flow" ? flowLayout(data, area, unit, data.direction) : kind === "mind" ? mindLayout(data, area, unit) : isoLayout(data, area, unit);
+        const layout = kind === "flow" ? flowLayout(data, area, unit, data.direction, fonts) : kind === "mind" ? mindLayout(data, area, unit) : isoLayout(data, area, unit, fonts);
         const byId = new Map(layout.nodes.map((n) => [n.id, n]));
         if (kind === "iso") layout.nodes.forEach((n) => (n.cell = layout.cell));
-        const steps = timedSteps(data.steps, END);
+        const steps = timedSteps(data.steps, END).concat(grown).sort((a, b) => a.at - b.at);
         const groups = [...new Set(layout.nodes.map((n) => n.group).filter(Boolean))];
         const tint = (n) => {
             const g = groups.indexOf(n.group);
@@ -778,7 +831,8 @@
             const length = base.getTotalLength();
             base.style.strokeDasharray = `${length}`;
             base.style.strokeDashoffset = `${length}`;
-            const at = Math.max(shown(e.from), shown(e.to)) + 0.2;
+            const own = typeof e.at === "number" && Number.isFinite(e.at) ? e.at : 0;
+            const at = Math.max(own, Math.max(shown(e.from), shown(e.to)) + 0.2);
             fromToState(tl, base, { strokeDashoffset: length }, { strokeDashoffset: 0 }, at, 0.5, "power2.inOut");
             let arrow = null;
             if (kind !== "mind") {
@@ -792,17 +846,17 @@
             let tag = null;
             if (e.label) {
                 const mid = base.getPointAtLength(length / 2);
-                tag = el("div", { class: "dg-edge-label", text: e.label, style: `left:${mid.x}px;top:${mid.y}px;font-size:${24 * unit}px` }, htmlLayer);
+                tag = el("div", { class: "dg-edge-label", text: e.label, style: `left:${mid.x}px;top:${mid.y}px;font-size:${(growing ? 34 : 24) * unit}px` }, htmlLayer);
                 fromToState(tl, tag, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1 }, at + 0.35, 0.3);
             }
-            edgeParts.push({ e, base, hot, length, d, at, arrow, tag });
+            edgeParts.push({ e, key: `${e.from}>${e.to}`, base, hot, length, d, at, arrow, tag });
         });
 
         // Node motion: hidden → shown, then focused or dimmed per step.
         const HIDDEN = { opacity: 0, scale: 0.7, ring: 0, dim: 0 };
         const stateAt = (id, step) => {
             if (!step || !step.focus.length) return { opacity: 1, scale: 1, ring: 0, dim: 0 };
-            return step.focus.includes(id) ? { opacity: 1, scale: 1.07, ring: 1, dim: 0 } : { opacity: 0.42, scale: 1, ring: 0, dim: 1 };
+            return step.focus.includes(id) ? { opacity: 1, scale: 1.07, ring: 1, dim: 0 } : { opacity: dimTo, scale: 1, ring: 0, dim: 1 };
         };
         const apply = (id, from, to, at, duration, ease) => {
             const p = parts.get(id);
@@ -847,7 +901,11 @@
             const until = Math.min(k + 1 < steps.length ? steps[k + 1].at : END - 0.5, END - 0.5);
             for (const part of edgeParts) {
                 const { e } = part;
-                if (!s.focus.includes(e.from) && !s.focus.includes(e.to)) continue;
+                // A grown step lights its own new edges and those of the nodes it brings in; any other step every edge
+                // touching a lit node.
+                const lit = s.grown ? s.edges.includes(part.key) || s.reveal.includes(e.from) || s.reveal.includes(e.to)
+                    : s.focus.includes(e.from) || s.focus.includes(e.to);
+                if (!lit) continue;
                 const from = Math.max(s.at, part.at + 0.5);
                 if (until - from < 0.3) continue;
                 fromToState(tl, part.hot, { opacity: 0 }, { opacity: 0.9 }, from - 0.1, 0.25);
@@ -879,6 +937,11 @@
         tl.fromTo([svg, htmlLayer, overSvg], { opacity: 1, y: 0 }, { opacity: 0, y: -40 * unit, duration: 0.45, ease: "power2.in", immediateRender: false }, END - 0.5);
         const heading = rootEl.querySelector(".dg-title");
         if (heading) tl.fromTo(heading, { opacity: 1 }, { opacity: 0, duration: 0.4, immediateRender: false }, END - 0.5);
+        if (tl !== outer) {
+            // The slice: scene time t0 at this render's first frame, one scene second per second.
+            tl.duration();
+            outer.fromTo(tl, { time: sliceAt }, { time: Math.min(sliceAt + span, END), duration: span, ease: "none", immediateRender: false }, 0);
+        }
         return layout;
     }
 
@@ -1139,7 +1202,7 @@
         return world;
     }
 
-    const api = { textWidth, wrap, fitLabel, layering, flowLayout, mindLayout, isoLayout, canvasLayout, overlapping, separate, timedSteps, areaFor, mount, mountCanvas };
+    const api = { textWidth, wrap, fitLabel, layering, flowLayout, mindLayout, isoLayout, canvasLayout, overlapping, separate, timedSteps, growthSteps, sceneSlice, areaFor, mount, mountCanvas };
     root.BCDiagram = api;
     if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -35,7 +35,9 @@
 //     --words); inside a list or object given for a string variable, every "@words" string is replaced the same way.
 //     A composition path may be relative to the project folder; a bare name ("stat-counter") is this plugin's
 //     example. A brand id in `set` the composition does not declare is left out with a warning. render.frame is the frame (below); "@words" work
-//     in its callout.at too. Prints {rendered, kept, apply}.
+//     in its callout.at too. Rows with the same render.scene are slices of one scene (a growing diagram over several
+//     sections): the first row with a composition gives composition and set to all, each row renders its own span
+//     with t0 (its start in the scene) and total, and "@words" count from the scene's start. Prints {rendered, kept, apply}.
 //
 // Frame (--frame JSON, render.frame): chrome drawn around any composition for the render only — backdrop
 // ("texture" | "paper" | "plain"), fadeIn (s), drift (true), float (true), chip ("2/4"), credit (opt-in, only when the user asks), callout
@@ -234,6 +236,8 @@ export function explicitVariables(declared, sets = [], variables = {}, warnings 
         if (eq < 1) throw new UsageError(`--set takes key=value, got ${pair}`);
         put(pair.slice(0, eq), pair.slice(eq + 1), true);
     }
+    // #552: a "0 hospitals" chip reads as a claim; the legend leaves empty kinds out unless the user asked for zeros.
+    if (out.showZero === true && warnings) warnings.push("showZero puts kinds with no place on screen as 0: keep it only when the user asked for a zero");
     return out;
 }
 
@@ -279,7 +283,8 @@ const NAMED = /^(line|section):(.+)$/;
 export function namesAnchors(text) {
     try {
         const data = JSON.parse(text);
-        return [...(data.steps ?? []), ...(data.stops ?? [])].some((s) => typeof s?.at === "string" && NAMED.test(s.at));
+        return [...(data.steps ?? []), ...(data.stops ?? []), ...(data.nodes ?? []), ...(data.edges ?? [])]
+            .some((s) => typeof s?.at === "string" && NAMED.test(s.at));
     } catch {
         return false;
     }
@@ -299,8 +304,10 @@ export function resolveSteps(text, { anchors, from, atFrame, duration, fps }) {
         throw new UsageError("data is not JSON, so its steps cannot be timed");
     }
     const key = Array.isArray(data.steps) ? "steps" : Array.isArray(data.stops) ? "stops" : null;
-    if (!key) throw new UsageError("--steps-from needs data with steps (or stops for big-canvas)");
-    const list = data[key];
+    // A growing diagram's nodes and edges carry their own `at`: "line:N" / "section:Label" are timed like a step's.
+    const parts = ["nodes", "edges"].filter((k) => Array.isArray(data[k]) && data[k].some((n) => typeof n?.at === "string"));
+    if (!key && !parts.length) throw new UsageError("--steps-from needs data with steps (or stops for big-canvas), or nodes with at");
+    const list = key ? data[key] : [];
     const sequence = from ? anchors[from] : [];
     if (from && !sequence.length) {
         throw new UsageError(from === "voice" ? "there are no voice lines on a Voiceover layer to time the steps from" : "there are no section markers to time the steps from");
@@ -327,13 +334,21 @@ export function resolveSteps(text, { anchors, from, atFrame, duration, fps }) {
         used.push(anchor);
         return anchor.at;
     });
-    const timed = frames.filter((f) => typeof f === "number");
+    const named = (at) => {
+        const match = NAMED.exec(at);
+        if (!match) throw new UsageError(`at "${at}" is not seconds, "line:N" or "section:Label"`);
+        const anchor = match[1] === "line" ? anchors.voice[Number(match[2]) - 1] : anchors.sections.find((s) => s.label === match[2]);
+        if (!anchor) throw new UsageError(`"${at}": no such ${match[1] === "line" ? "voice line" : "section marker"}`);
+        used.push(anchor);
+        return anchor.at;
+    };
+    const partFrames = Object.fromEntries(parts.map((k) => [k, data[k].map((n) => (typeof n?.at === "string" ? named(n.at) : null))]));
+    const timed = frames.concat(...Object.values(partFrames)).filter((f) => typeof f === "number");
     if (atFrame === undefined) atFrame = timed.length ? Math.max(0, Math.min(...timed) - Math.round(0.4 * fps)) : 0;
     if (duration === undefined && used.length) duration = Math.max(1, Math.max(...used.map((a) => a.end)) + Math.round(0.5 * fps) - atFrame);
-    data[key] = list.map((step, i) => {
-        if (typeof frames[i] !== "number") return step;
-        return { ...step, at: Math.max(0, Math.round(((frames[i] - atFrame) / fps) * 100) / 100) };
-    });
+    const seconds = (frame) => Math.max(0, Math.round(((frame - atFrame) / fps) * 100) / 100);
+    if (key) data[key] = list.map((step, i) => (typeof frames[i] !== "number" ? step : { ...step, at: seconds(frames[i]) }));
+    for (const k of parts) data[k] = data[k].map((n, i) => (typeof partFrames[k][i] !== "number" ? n : { ...n, at: seconds(partFrames[k][i]) }));
     return { data: JSON.stringify(data), atFrame, duration };
 }
 
@@ -1023,27 +1038,38 @@ async function planGraphics(options) {
     const warnings = [];
     const patch = {};
     const records = [];
+    const scenes = planScenes(entries, rows);
     for (const entry of entries) {
         if (!entry.render || (only && !only.has(entry.id))) continue;
         const row = rows[entry.id];
         if (!row || !(row.seconds > 0)) throw new Error(`plan check gives graphic ${entry.id} no span: ${JSON.stringify((check.problems ?? []).filter((p) => p.entry === entry.id))}`);
         const seconds = row.short ?? row.seconds;
-        const given = entry.render.composition;
+        const scene = sceneOf(entry, scenes);
+        const spec = scene ? sceneRender(scene, entry) : entry.render;
+        const words = scene ? scene.words : row.words ?? [];
+        const given = spec.composition;
         if (typeof given !== "string" || !given) throw new UsageError(`graphic ${entry.id}: render.composition is missing`);
         const asGiven = compositionFolder(given, root);
         if (!existsSync(join(asGiven, "index.html"))) throw new UsageError(`graphic ${entry.id}: ${asGiven} has no index.html`);
-        const dir = options["dry-run"] ? asGiven : await ownComposition(asGiven, root, `${entry.id}-${basename(asGiven)}`);
+        const slot = scene ? `${scene.id}-${basename(asGiven)}` : `${entry.id}-${basename(asGiven)}`;
+        const dir = options["dry-run"] ? asGiven : await ownComposition(asGiven, root, slot);
         const declared = readComposition(dir).declared;
-        const asked = resolveWordTimes({ ...(entry.render.variables ?? {}), ...(entry.render.set ?? {}) }, row.words ?? []);
+        const asked = resolveWordTimes({ ...(spec.variables ?? {}), ...(spec.set ?? {}) }, words);
+        if (scene) {
+            if (!["t0", "total"].every((id) => declared.some((d) => d.id === id))) {
+                throw new UsageError(`graphic ${entry.id}: render.scene needs a composition that declares t0 and total (growing-diagram, flow-diagram, isometric-system)`);
+            }
+            Object.assign(asked, { t0: Math.round((row.at - scene.start) * 1000) / 1000, total: scene.total });
+        }
         let frame;
         try {
-            frame = checkFrame(resolveWordTimes(entry.render.frame, row.words ?? []));
+            frame = checkFrame(resolveWordTimes(scene ? sceneFrame(spec.frame, scene, entry, warnings) : spec.frame, words));
         } catch (error) {
             throw new UsageError(`graphic ${entry.id}: ${error.message}`);
         }
         const inputs = {
-            composition: dir, variables: explicitVariables(declared, [], asked, warnings), name: safeName(entry.render.name ?? `${entry.id}-${basename(dir)}`),
-            fps, codec: options.codec ?? entry.render.codec ?? "hevc", brand: entry.render.brand !== false,
+            composition: dir, variables: explicitVariables(declared, [], asked, warnings), name: safeName(spec.name ?? `${entry.id}-${basename(dir)}`),
+            fps, codec: options.codec ?? spec.codec ?? "hevc", brand: spec.brand !== false,
             ...(frame ? { frame } : {}),
         };
         const { variables, brand } = await resolveVariables(inputs, project, warnings);
@@ -1088,6 +1114,59 @@ async function planGraphics(options) {
     }
     if (warnings.length) result.warnings = [...new Set(warnings)];
     return result;
+}
+
+/**
+ * Rows that share `render.scene` are slices of one scene (a growing diagram over several sections): {id, base (the
+ * first row with a composition), start and total (seconds, from the rows' spans), first (the earliest row's id),
+ * words (every row's words in seconds from the scene's start)}, by scene id.
+ */
+export function planScenes(entries, rows) {
+    const scenes = new Map();
+    for (const entry of entries) {
+        const id = entry.render?.scene;
+        if (id === undefined || id === null || id === "") continue;
+        if (!scenes.has(String(id))) scenes.set(String(id), { id: String(id), base: null, spans: [] });
+        const scene = scenes.get(String(id));
+        if (!scene.base && entry.render.composition) scene.base = entry;
+        const row = rows[entry.id];
+        if (row && row.seconds > 0) scene.spans.push({ entry, row });
+    }
+    for (const scene of scenes.values()) {
+        if (!scene.base) throw new UsageError(`render.scene "${scene.id}": no row of it gives render.composition`);
+        if (!scene.spans.length) continue;
+        scene.spans.sort((a, b) => a.row.at - b.row.at);
+        scene.start = scene.spans[0].row.at;
+        scene.first = scene.spans[0].entry.id;
+        scene.total = Math.round((Math.max(...scene.spans.map(({ row }) => row.at + row.seconds)) - scene.start) * 1000) / 1000;
+        scene.words = scene.spans.flatMap(({ row }) => (row.words ?? []).map((w) => ({ ...w, at: Math.round((w.at + row.at - scene.start) * 1000) / 1000 })))
+            .sort((a, b) => a.at - b.at);
+        delete scene.spans;
+    }
+    return scenes;
+}
+
+function sceneOf(entry, scenes) {
+    const id = entry.render?.scene;
+    return id === undefined || id === null || id === "" ? null : scenes.get(String(id));
+}
+
+/** A scene row's render: the base row's, with the row's own keys on top (its set merged into the base's). */
+export function sceneRender(scene, entry) {
+    const base = scene.base.render;
+    return { ...base, ...entry.render, set: { ...(base.set ?? {}), ...(entry.render.set ?? {}) } };
+}
+
+/** A scene slice's frame: no fade-in after the first slice, and no drift or float (they would restart per slice). */
+export function sceneFrame(frame, scene, entry, warnings) {
+    if (!frame || typeof frame !== "object") return frame;
+    const out = { ...frame };
+    for (const key of ["drift", "float"]) {
+        if (out[key]) warnings.push(`render.scene "${scene.id}": frame.${key} left out (it would jump at every slice)`);
+        delete out[key];
+    }
+    if (entry.id !== scene.first) delete out.fadeIn;
+    return out;
 }
 
 /** plan.cut with each patched graphic's media set. */

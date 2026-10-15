@@ -4,6 +4,7 @@
 //   bin/osm-map --dir D --points "21.0278,105.8342,Hồ Gươm;21.0545,105.8194,Hồ Tây" [--route car|bike|foot|none]
 //               [--width 1080] [--height 1920] [--padding 0.2] [--zoom Z] [--legs chain|star]
 //               [--places "Name, City;…"] [--amenities "school,hospital,mall,park" --radius 1000]
+//               [--style osm|dark|light] [--tiles "https://…/{z}/{x}/{y}.png,…"]
 //
 // Writes D/map/<z>-<x>-<y>.png (tiles, also cached in the plugin cache folder) and D/map-data.js, which sets
 // window.MAP_DATA = {width, height, zoom, tiles: [{src, x, y, size}], points: [{x, y, label, lat, lon}],
@@ -30,6 +31,13 @@
 // FOSSGIS); "none" joins the points with straight lines (km as the crow flies, no minutes). The map shows
 // OpenStreetMap data: the summary and map-data.js carry "© OpenStreetMap contributors" as `attribution` (metadata);
 // the examples draw a credit line only when the user asks (their `credit` variable, empty by default).
+// --style dark: map-route and amenity-radius draw the map dark (light: in its own colours; osm: their darkMap
+// variable decides). --tiles "URL,…" puts your own {z}/{x}/{y} templates first (drawn as they are; a keyed service
+// such as CARTO needs its key in the URL: a watermark tile counts as a failure).
+// Network failures name the request and the reason (DNS, HTTP status, timeout, refused); each request is tried twice.
+// Tiles fall back to the next server (tile.openstreetmap.org → tile.openstreetmap.de → openstreetmap.fr HOT), and
+// `tileServer` / `warnings` say which one was used. A failed route falls back to straight lines (warned); a failed --places lookup is skipped
+// with a warning when --points are given, else it fails asking for --points "lat,lon,Label" (no probing needed).
 import { copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { homedir } from "node:os";
@@ -42,6 +50,43 @@ const PROFILES = { car: "routed-car", bike: "routed-bike", foot: "routed-foot" }
 // Overpass servers tried in order (a busy one answers 429 or 504); OSM_OVERPASS_URL replaces the list.
 const OVERPASS = (process.env.OSM_OVERPASS_URL
     ?? "https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter").split(",");
+const NOMINATIM = process.env.OSM_NOMINATIM_URL ?? "https://nominatim.openstreetmap.org/search";
+const ROUTING = process.env.OSM_ROUTING_URL ?? "https://routing.openstreetmap.de";
+const RETRY_MS = Number(process.env.OSM_RETRY_MS ?? 800);
+const OSM_CREDIT = "© OpenStreetMap contributors";
+
+/**
+ * Raster tile servers of OpenStreetMap data, tried in order (a server that fails gives way to the next for the whole
+ * map, so the look never mixes). CARTO's basemaps are not among them: without an API key they answer every tile with
+ * an "API KEY REQUIRED" watermark (pass them with --tiles when you have a key).
+ */
+export const TILE_SERVERS = [
+    { key: "osm", name: "tile.openstreetmap.org", url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png" },
+    { key: "osm-de", name: "tile.openstreetmap.de", url: "https://tile.openstreetmap.de/{z}/{x}/{y}.png" },
+    { key: "osm-fr-hot", name: "tile-a.openstreetmap.fr (HOT)", url: "https://tile-a.openstreetmap.fr/hot/{z}/{x}/{y}.png" },
+];
+/** --style: how the pages draw the tiles. dark: darkened (whatever darkMap says), light: as they are, osm: darkMap. */
+export const STYLES = ["osm", "dark", "light"];
+
+/** The servers to try: --tiles templates first (drawn as they are, `custom`), then the OpenStreetMap ones. */
+export function tileServers(given = "") {
+    const own = String(given ?? "").split(",").map((u) => u.trim()).filter(Boolean).map((url) => ({
+        key: `custom-${createHash("sha256").update(url).digest("hex").slice(0, 8)}`, name: new URL(url.replace(/[{}]/g, "")).host, url, custom: true,
+    }));
+    return [...own, ...TILE_SERVERS];
+}
+
+/** Why a request failed, in words an agent can act on: DNS, HTTP status, timeout, refused… */
+export function describeFailure(error, seconds = 60) {
+    const code = error?.cause?.code ?? error?.code;
+    if (error?.status) return `HTTP ${error.status}${error.statusText ? ` ${error.statusText}` : ""}`;
+    if (error?.name === "TimeoutError" || error?.name === "AbortError" || code === "UND_ERR_CONNECT_TIMEOUT") return `timeout after ${seconds} s`;
+    if (code === "ENOTFOUND" || code === "EAI_AGAIN" || code === "EAI_NONAME") return `DNS: ${error.cause?.hostname ?? "the host"} did not resolve`;
+    if (code === "ECONNREFUSED") return "connection refused";
+    if (code === "ECONNRESET" || code === "UND_ERR_SOCKET") return "connection reset";
+    if (code && /CERT|TLS|SSL/.test(code)) return `TLS: ${code}`;
+    return error?.cause?.message ?? error?.message ?? String(error);
+}
 
 /** Friendly kinds → the OpenStreetMap tags that make one: a row matches when each of its keys has one of its values. */
 export const AMENITIES = {
@@ -140,6 +185,13 @@ function checkNumbers(options) {
     if (!(options.padding >= 0 && options.padding < 0.5)) fail("--padding must be 0–0.5 (share of each side)");
     if (options.route !== "none" && !PROFILES[options.route]) fail("--route must be car, bike, foot or none");
     options.legs ??= "chain";
+    options.style ??= "osm";
+    if (!STYLES.includes(options.style)) fail("--style must be osm, dark or light");
+    if (options.tiles) {
+        for (const url of options.tiles.split(",").map((u) => u.trim()).filter(Boolean)) {
+            if (!/^https?:\/\/[^/]+\/.*\{z\}.*\{x\}.*\{y\}/.test(url)) fail(`--tiles takes URL templates with {z}, {x} and {y}: ${url}`);
+        }
+    }
     if (!["chain", "star"].includes(options.legs)) fail("--legs must be chain or star");
     const unknown = options.amenities.filter((kind) => !AMENITIES[kind]);
     if (unknown.length) fail(`unknown amenity ${unknown.join(", ")}: one of ${Object.keys(AMENITIES).join(", ")}`);
@@ -177,10 +229,39 @@ function cacheRoot() {
     return process.env.BASHCUT_PLUGIN_CACHE ?? join(homedir(), "Library/Caches/BashCut/PluginData/bashcut.hyperframes");
 }
 
+/** The URL without its query, short enough for a message. */
+function shown(url) {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}${u.pathname.length > 60 ? `${u.pathname.slice(0, 57)}…` : u.pathname}`;
+}
+
+/**
+ * GET with a real User-Agent, tried twice (a second after a network error, a timeout, 429 or 5xx). A failure throws
+ * an Error naming the request and the reason ("GET https://tile.openstreetmap.org/15/… failed twice: DNS: … did not
+ * resolve"), with `.reason` alone.
+ */
 async function get(url, seconds = 60) {
-    const response = await fetch(url, { headers: { "User-Agent": AGENT }, signal: AbortSignal.timeout(seconds * 1000) });
-    if (!response.ok) throw new Error(`${response.status} from ${new URL(url).host}`);
-    return response;
+    let reason;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+        if (attempt) await new Promise((done) => setTimeout(done, RETRY_MS));
+        try {
+            const response = await fetch(url, { headers: { "User-Agent": AGENT }, signal: AbortSignal.timeout(seconds * 1000) });
+            // A keyed tile service (CARTO) answers 200 with a watermark tile: as good as a refusal.
+            if (response.ok && /^(W\/)?"?wm-/.test(response.headers.get("etag") ?? "")) {
+                reason = "watermark tile (the server wants an API key)";
+                break;
+            }
+            if (response.ok) return response;
+            reason = describeFailure({ status: response.status, statusText: response.statusText });
+            if (response.status !== 429 && response.status < 500) break;
+        } catch (error) {
+            reason = describeFailure(error, seconds);
+        }
+    }
+    const error = new Error(`GET ${shown(url)} failed: ${reason}`);
+    error.reason = reason;
+    error.host = new URL(url).host;
+    throw error;
 }
 
 /** A route's line ([lat, lon]…) cut into one line per leg, at the vertex nearest each stop between the ends. */
@@ -214,7 +295,7 @@ async function routeChain(points, profile) {
         return { line: points.map((p) => [p.lat, p.lon]), legs };
     }
     const coordinates = points.map((p) => `${p.lon},${p.lat}`).join(";");
-    const url = `https://routing.openstreetmap.de/${PROFILES[profile]}/route/v1/driving/${coordinates}`
+    const url = `${ROUTING}/${PROFILES[profile]}/route/v1/driving/${coordinates}`
         + "?overview=full&geometries=geojson";
     const body = await (await get(url)).json();
     if (body.code !== "Ok" || !body.routes?.length) throw new Error(`no route: ${body.message ?? body.code}`);
@@ -240,9 +321,27 @@ function fitZoom(line, options) {
     return 2;
 }
 
-async function tiles(origin, z, options) {
-    const cache = join(cacheRoot(), "osm-tiles");
+/**
+ * The tiles covering the canvas from `origin` at zoom z, from the first server in `servers` that gives them all (a
+ * failing one gives way to the next for the whole map, so the look never mixes). Returns {placed, downloaded, server,
+ * failed: ["server: reason"]}.
+ */
+async function tiles(origin, z, options, servers) {
+    const failed = [];
+    for (const server of servers) {
+        try {
+            return { ...(await tilesFrom(server, origin, z, options)), server, failed };
+        } catch (error) {
+            failed.push(`${server.name}: ${error.message}`);
+        }
+    }
+    throw new Error(`no tile server answered (${failed.join("; ")}); give one with --tiles "https://…/{z}/{x}/{y}.png"`);
+}
+
+async function tilesFrom(server, origin, z, options) {
+    const cache = join(cacheRoot(), server.key === "osm" ? "osm-tiles" : `tiles-${server.key}`);
     const out = join(options.dir, "map");
+    const prefix = server.key === "osm" ? "" : `${server.key}-`;
     mkdirSync(cache, { recursive: true });
     mkdirSync(out, { recursive: true });
     const count = 2 ** z;
@@ -258,19 +357,26 @@ async function tiles(origin, z, options) {
     const queue = [...wanted];
     async function worker() {
         for (let item = queue.shift(); item; item = queue.shift()) {
-            const name = `${z}-${item.wrapped}-${item.ty}.png`;
-            const cached = join(cache, name);
+            const name = `${prefix}${z}-${item.wrapped}-${item.ty}.png`;
+            const cached = join(cache, `${z}-${item.wrapped}-${item.ty}.png`);
             if (!existsSync(cached)) {
-                const bytes = Buffer.from(await (await get(`https://tile.openstreetmap.org/${z}/${item.wrapped}/${item.ty}.png`)).arrayBuffer());
+                const url = server.url.replace("{z}", z).replace("{x}", item.wrapped).replace("{y}", item.ty);
+                const bytes = Buffer.from(await (await get(url, 30)).arrayBuffer());
                 writeFileSync(cached, bytes);
                 downloaded += 1;
             }
             copyFileSync(cached, join(out, name));
         }
     }
-    await Promise.all([worker(), worker()]);
+    // One failure stops both workers (Promise.all rejects at once; the other stops at its next tile).
+    try {
+        await Promise.all([worker(), worker()]);
+    } catch (error) {
+        queue.length = 0;
+        throw error;
+    }
     const placed = wanted.map((t) => ({
-        src: `map/${z}-${t.wrapped}-${t.ty}.png`,
+        src: `map/${prefix}${z}-${t.wrapped}-${t.ty}.png`,
         x: Math.round(t.tx * TILE - origin[0]),
         y: Math.round(t.ty * TILE - origin[1]),
         size: TILE,
@@ -328,7 +434,7 @@ async function lookUp(query, last) {
     const wait = 1100 - (Date.now() - last.at);
     if (wait > 0) await new Promise((done) => setTimeout(done, wait));
     last.at = Date.now();
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&polygon_geojson=1&limit=1&q=${encodeURIComponent(query)}`;
+    const url = `${NOMINATIM}?format=jsonv2&polygon_geojson=1&limit=1&q=${encodeURIComponent(query)}`;
     const found = (await (await get(url)).json())[0];
     if (!found) throw new Error(`OpenStreetMap has no place named "${query}" (add the city or country)`);
     writeFileSync(file, JSON.stringify(found));
@@ -424,10 +530,10 @@ async function overpass(query) {
             writeFileSync(file, JSON.stringify(elements));
             return elements;
         } catch (error) {
-            failure = `${new URL(server).host}: ${error.message}`;
+            failure = failure ? `${failure}; ${error.message}` : error.message;
         }
     }
-    throw new Error(`Overpass did not answer (${failure})`);
+    throw new Error(`Overpass did not answer (${failure}); amenity counts need it (OSM_OVERPASS_URL takes another server)`);
 }
 
 async function amenities(options, centre) {
@@ -459,7 +565,15 @@ export function placeAmenities(markers, centre, radius, z, local) {
 async function main() {
     const options = parseArgs(process.argv.slice(2));
     if (options.dir && !existsSync(options.dir)) fail(`${options.dir} does not exist`);
-    const found = await places(options.places);
+    const warnings = [];
+    let found = [];
+    try {
+        found = await places(options.places);
+    } catch (error) {
+        const why = `--places lookup failed: ${error.message}`;
+        if (!options.points.length) fail(`${why}. Give the places as --points "lat,lon,Label;…" (coordinates from the user, the brief or a named source); outlines and areas need the lookup`);
+        warnings.push(`${why}; drawn from --points without outlines or areas`);
+    }
     const facts = found.map(({ rings, ...fact }) => fact);
     const first = options.points[0] ?? (found[0] && { lat: found[0].lat, lon: found[0].lon, label: found[0].name });
     const nearby = options.amenities.length ? await amenities(options, first) : null;
@@ -473,13 +587,22 @@ async function main() {
     if (!options.dir) {
         const out = found.length ? { places: facts } : {};
         if (around) out.amenities = around;
-        out.attribution = "© OpenStreetMap contributors";
-        if (found.length) out.source = "Nominatim, nominatim.openstreetmap.org";
+        out.attribution = OSM_CREDIT;
+        if (found.length) out.source = `Nominatim, ${new URL(NOMINATIM).host}`;
+        if (warnings.length) out.warnings = warnings;
         process.stdout.write(`${JSON.stringify(out, null, 2)}\n`);
         return;
     }
     if (!options.points.length) options.points = found.map((p) => ({ lat: p.lat, lon: p.lon, label: p.name }));
-    const { line, legs } = await route(options.points, options.route, options.legs);
+    let routed;
+    try {
+        routed = await route(options.points, options.route, options.legs);
+    } catch (error) {
+        warnings.push(`route failed (${error.message}); legs are straight lines (km as the crow flies, no minutes)`);
+        options.route = "none";
+        routed = await route(options.points, "none", options.legs);
+    }
+    const { line, legs } = routed;
     const outlines = found.flatMap((p) => p.rings.map((ring) => ring.map(([lon, lat]) => [lat, lon])));
     // The radius circle is fitted and centred with the route.
     const reach = around ? [[1, 1], [-1, -1]].map(([a, b]) => [first.lat + (a * options.radius) / 111320,
@@ -493,7 +616,14 @@ async function main() {
     const maxY = Math.max(...box.map((p) => p[1]));
     const origin = [(minX + maxX) / 2 - options.width / 2, (minY + maxY) / 2 - options.height / 2];
     const local = ([x, y]) => [Math.round((x - origin[0]) * 10) / 10, Math.round((y - origin[1]) * 10) / 10];
-    const { placed, downloaded } = await tiles(origin, z, options);
+    let base;
+    try {
+        base = await tiles(origin, z, options, tileServers(options.tiles));
+    } catch (error) {
+        fail(error.message);
+    }
+    const { placed, downloaded, server } = base;
+    if (base.failed.length) warnings.push(`tiles: ${base.failed.join("; ")}; used ${server.name}`);
     // A star's legs do not add up to one trip: no total.
     const star = options.legs === "star";
     const km = star ? null : legs.reduce((sum, leg) => sum + leg.km, 0);
@@ -510,10 +640,14 @@ async function main() {
             const [x, y] = local(project(p.lat, p.lon, z));
             return { x, y, label: p.label, lat: p.lat, lon: p.lon };
         }),
-        attribution: "© OpenStreetMap contributors",
+        attribution: OSM_CREDIT,
+        style: options.style,
+        tileServer: server.name,
+        ...(server.custom ? { customTiles: true } : {}),
         routeSource: options.route === "none" ? "straight lines" : "OSRM, routing.openstreetmap.de (FOSSGIS)",
     };
     if (found.length) summary.places = facts;
+    if (warnings.length) summary.warnings = warnings;
     if (around) summary.amenities = around;
     const data = { ...summary, tiles: placed, route: xy.map(local) };
     data.legs = summary.legs.map((leg, i) => ({ ...leg, line: thin(legs[i].line).map(([lat, lon]) => local(project(lat, lon, z))) }));
@@ -524,10 +658,15 @@ async function main() {
         // about three quarters of the canvas's short side; positioned in canvas pixels at `scale` (2^-dz).
         const dz = Math.max(0, Math.min(3, 18 - z, Math.round(Math.log2((0.38 * Math.min(options.width, options.height)) / data.amenities.radius))));
         if (dz > 0) {
+            detail = { placed: [], downloaded: 0 };
             const [wx, wy] = project(first.lat, first.lon, z + dz);
             const near = [wx - options.width / 2, wy - options.height / 2];
-            detail = await tiles(near, z + dz, options);
-            data.amenities.detail = {
+            try {
+                detail = await tiles(near, z + dz, options, [server]);
+            } catch (error) {
+                warnings.push(`sharper tiles around the circle failed (${error.message}); the page zooms the base tiles`);
+            }
+            if (detail.placed.length) data.amenities.detail = {
                 zoom: z + dz, scale: 2 ** -dz, x: round(near[0] / 2 ** dz - origin[0], 1), y: round(near[1] / 2 ** dz - origin[1], 1),
                 tiles: detail.placed,
             };

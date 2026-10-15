@@ -12,6 +12,8 @@
 <html lang="en" data-composition-variables='[
   {"id": "data", "type": "string", "label": "System (JSON {title, nodes, edges, steps})", "default": "{\"title\": \"Inside a video app\", \"nodes\": [{\"id\": \"phone\", \"label\": \"Phone\", \"icon\": \"📱\"}, {\"id\": \"cdn\", \"label\": \"CDN\", \"icon\": \"🌐\"}, {\"id\": \"api\", \"label\": \"API\", \"icon\": \"⚙️\"}, {\"id\": \"store\", \"label\": \"Video storage\", \"icon\": \"🗄️\", \"group\": \"data\"}, {\"id\": \"db\", \"label\": \"Database\", \"icon\": \"💾\", \"group\": \"data\"}, {\"id\": \"encode\", \"label\": \"Encoder\", \"icon\": \"🎞️\"}], \"edges\": [{\"from\": \"phone\", \"to\": \"cdn\"}, {\"from\": \"phone\", \"to\": \"api\"}, {\"from\": \"api\", \"to\": \"db\"}, {\"from\": \"api\", \"to\": \"encode\"}, {\"from\": \"encode\", \"to\": \"store\"}, {\"from\": \"cdn\", \"to\": \"store\"}], \"steps\": [{\"at\": 1.8, \"focus\": [\"phone\", \"api\"]}, {\"at\": 3.8, \"focus\": [\"encode\", \"store\"]}, {\"at\": 5.8, \"focus\": [\"cdn\"]}]}"},
   {"id": "title", "type": "string", "label": "Title when data has none (empty: no title)", "default": ""},
+  {"id": "t0", "type": "number", "label": "Scene second this render starts at (a slice of a longer scene; graphic plan sets it)", "default": 0},
+  {"id": "total", "type": "number", "label": "Scene length in seconds (0: the length of this render; graphic plan sets it)", "default": 0},
   {"id": "packets", "type": "boolean", "label": "Packets run along focused connectors", "default": true},
   {"id": "accent", "type": "color", "label": "Focus colour (ring, packets, hot edges)", "default": "#3EE0B5"},
   {"id": "background", "type": "color", "label": "Node plate colour", "default": "#121826"},

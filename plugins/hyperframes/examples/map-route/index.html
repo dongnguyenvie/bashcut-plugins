@@ -19,7 +19,7 @@
   {"id": "subtitle", "type": "string", "label": "Second line (accent)", "default": "to West Lake"},
   {"id": "stat", "type": "string", "label": "Stat line", "default": "≈ 16 min · 7.5 km"},
   {"id": "accent", "type": "color", "label": "Route colour", "default": "#C6FF3D"},
-  {"id": "darkMap", "type": "boolean", "label": "Dark map (off: the normal OpenStreetMap colours)", "default": true},
+  {"id": "darkMap", "type": "boolean", "label": "Dark map (off: the normal OpenStreetMap colours; osm-map --style dark|light overrides it)", "default": true},
   {"id": "credit", "type": "string", "label": "Credit line at the top (empty hides it; only when the user asks, e.g. © OpenStreetMap contributors)", "default": ""},
   {"id": "drawAt", "type": "number", "label": "Route starts drawing (s)", "default": 0.6},
   {"id": "drawSeconds", "type": "number", "label": "Route draw length (s)", "default": 2.6},
@@ -93,7 +93,8 @@
       document.head.appendChild(faces);
       const data = window.MAP_DATA;
       const root = document.getElementById("root");
-      root.classList.toggle("dark", v.darkMap !== false);
+      // osm-map --style dark / light decides; else darkMap. Your own --tiles are drawn as they are.
+      root.classList.toggle("dark", !data.customTiles && (data.style === "dark" || (data.style !== "light" && v.darkMap !== false)));
       const map = document.getElementById("map");
       for (const tile of data.tiles) {
         const img = document.createElement("img");
