@@ -24,6 +24,7 @@ may be a copy elsewhere). `osm-map --help` lists its options.
 | `"$P/bin/hf" snapshot D --at 0.3,0.8,1.6 --no-end -o OUT` | PNG frames and a contact sheet; `--against ref.mp4` pairs each with a reference frame; `--zoom "#card"` crops one element |
 | `"$P/bin/hf" docs compositions\|data-attributes\|gsap` | The runtime's own rules |
 | `"$P/bin/graphic" examples [NAME]` | One line per example (what it draws, seconds, its variables): choose without reading HTML. With NAME every variable's label and default, its `pitfalls` and the `lessons` tagged `block:NAME` |
+| `… --snapshot 1.5,4,9.2 [-o OUT]` on `plan --only g1`, `place D …`, `rerender ITEM …` | Look before you render: the row exactly as it would render (its `set`, `"@words"` times, brand, frame, span, canvas) as PNGs and a contact sheet in seconds; nothing rendered, imported or placed. Seconds count from the graphic's start (a scene slice: the row's). `place --snapshot` needs no open project |
 | `"$P/bin/graphic" plan [--only g1,g2]` | Renders every `plan.cut` graphic with `render` {composition, set, frame} to the span plan check gives it, imports, writes the media into plan.cut and runs `plan apply`: a graphics edit in one call. A `set` value `"@words"` is the seconds from the graphic's start to those words in the voiceover; unchanged graphics are not rendered again |
 | `--frame JSON` (`place`, `rerender`) / `render.frame` (`plan`) | Chrome around any composition, no HTML edit: `backdrop` `texture`\|`paper`\|`plain` (paper: kraft with a kraft-brown brand background, notebook with a cream one), `fadeIn`, `drift`, `float` (after ~1.2 s the widget bobs to the end: a held card passes review's frozen-picture check; drift alone does not), `chip` ("2/4"), `credit` (source line, only when the user asks), `callout` {text, at, top} (`*word*` in the accent), `scale` 0.5–2.5. Brand colours and fonts apply; chip and credit move aside when they would cover the widget |
 | `"$P/bin/graphic" place D --at-frame F [--set k=v …]` | Render and place full canvas on the Overlay layer in one call, recording the inputs. `rerender ITEM [--set …]` renders again and swaps every use in one undo step |
@@ -61,6 +62,8 @@ a value broke a block, record it (`knowledge add-lesson … --tags block:NAME`).
      number, color, boolean, enum, font, image); lists as a JSON string.
    - Images, the user's logos, screenshots and fonts: copied into the folder, relative paths. No network at render.
 3. **Look.** `snapshot` at the entrance, the landing word and the hold; read the PNGs (`--against` with a reference).
+   A `plan.cut` row or a `place` call with its values: add `--snapshot S1,S2,… -o OUT` to the same `graphic` command
+   (`hf snapshot D` alone shows only the page's defaults). Look before every `plan` render, not after it.
    Check: words read at phone size, the face stays clear (`media subjects`), nothing in the platform's bottom band
    (`platforms get`), Vietnamese tone marks render (a font without them falls back mid-word). Two or three rounds is
    normal.

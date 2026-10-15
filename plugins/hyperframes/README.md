@@ -20,6 +20,9 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   `secondary`, `headingFont`, `bodyFont`, `disclosure`) from the project's `brand`, explicit values winning, so a brand
   change restyles placed graphics with `rerender --all --brand`. Uses `$BASHCUT_CLI`, else `bashcut` on PATH.
   A composition that declares `mascot` gets the brand's mascot pose (`--set pose=thinking`; five examples have one).
+  `--snapshot 1.5,4,9.2 [-o OUT]` on `plan`, `place` or `rerender ITEM` previews instead: the row resolved exactly as
+  it would render (values, "@words" timing, brand, frame, span, canvas) in a throwaway copy, then `hf snapshot` at
+  those seconds; PNGs and a contact sheet in seconds, nothing rendered, imported or placed.
 - **`bin/hf`**: the pinned HyperFrames CLI with telemetry off and the plugin's own Chrome: `catalog`, `add`, `lint`,
   `check`, `snapshot` (frames to look at, optionally against a reference video), `docs`.
 - **`bin/osm-map`**: an OpenStreetMap map and a route for a composition: tiles (cached in the plugin cache folder)

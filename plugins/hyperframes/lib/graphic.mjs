@@ -39,6 +39,15 @@
 //     sections): the first row with a composition gives composition and set to all, each row renders its own span
 //     with t0 (its start in the scene) and total, and "@words" count from the scene's start. Prints {rendered, kept, apply}.
 //
+//   --snapshot S1,S2,… [--out DIR | -o DIR]  (plan, place, rerender ITEM): look before you render. The row is resolved
+//     exactly as it would render (variables with "@words" timing, brand, frame, span length, canvas) in a throwaway
+//     copy of its composition, with the values baked in as the page's defaults, GSAP and the shared scripts copied in,
+//     then the bundled `hyperframes snapshot` takes PNGs at those seconds from the graphic's start (a scene slice:
+//     from the row's start) and a contact sheet. No render, no import, no timeline change; seconds per call. Prints
+//     {snapshot: {frames, sheet, at, seconds, canvas}} (plan: {snapshots: [{id, …}]}, one subfolder of DIR per row
+//     when several). Without --out the frames go to a new folder in the temp dir. place --snapshot works without an
+//     open project (no brand, the composition's own canvas).
+//
 // Frame (--frame JSON, render.frame): chrome drawn around any composition for the render only — backdrop
 // ("texture" | "paper" | "plain"), fadeIn (s), drift (true), float (true), chip ("2/4"), credit (opt-in, only when the user asks), callout
 // ({text, at, top}, *word* in the accent), scale (0.5–2.5) — so a series of cards shares one look without editing
@@ -77,7 +86,7 @@ const BRAND_SLOTS = ["logo", "mascot", "pose", "mascotPose"];
 const POSE_IDS = ["pose", "mascotPose"];
 const FLAGS = new Set(["no-brand", "brand", "keep-length", "dry-run", "all", "force", "no-apply", "steps-from-voice"]);
 const LISTS = new Set(["set", "unset"]);
-const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "frame", "name", "fps", "codec", "only", "steps-from"]);
+const OPTIONS = new Set(["at-frame", "duration", "track", "variables", "frame", "name", "fps", "codec", "only", "steps-from", "snapshot", "out"]);
 
 /** argv (after the node script) → {command, target, options}; options.set/unset are lists. */
 export function parseArgs(argv) {
@@ -89,7 +98,7 @@ export function parseArgs(argv) {
     const options = { set: [], unset: [] };
     let target;
     for (let i = 0; i < rest.length; i += 1) {
-        const word = rest[i];
+        const word = rest[i] === "-o" ? "--out" : rest[i];
         if (!word.startsWith("--")) {
             if (target !== undefined) throw new UsageError(`unexpected argument ${word}`);
             target = word;
@@ -127,6 +136,13 @@ export function parseArgs(argv) {
     if (options["steps-from"] !== undefined && !["voice", "sections"].includes(options["steps-from"])) {
         throw new UsageError('--steps-from is "voice" (voice line starts) or "sections" (section markers)');
     }
+    if (options.snapshot !== undefined) {
+        options.snapshot = snapshotTimes(options.snapshot);
+        if (options["dry-run"]) throw new UsageError("--snapshot already renders nothing: leave out --dry-run");
+        for (const key of ["force", "no-apply", "keep-length", "all"]) {
+            if (options[key]) throw new UsageError(`--${key} is not for --snapshot (it renders, imports and places nothing)`);
+        }
+    } else if (options.out !== undefined) throw new UsageError("--out (-o) is the folder for --snapshot frames");
     if (command === "plan") {
         if (target) throw new UsageError("plan takes no folder: it reads plan.cut.graphics");
         for (const key of ["all", "keep-length", "brand", "at-frame", "duration", "track", "variables", "frame", "name", "steps-from"]) {
@@ -177,6 +193,16 @@ export function parseArgs(argv) {
         options.frame = frame;
     }
     return { command, target, options };
+}
+
+/** "1.5,4,9.2" → [1.5, 4, 9.2]: seconds from the graphic's start, at most 12. */
+export function snapshotTimes(text) {
+    const times = String(text).split(",").map((t) => t.trim()).filter(Boolean).map(Number);
+    if (!times.length || times.some((t) => !Number.isFinite(t) || t < 0)) {
+        throw new UsageError("--snapshot takes seconds from the graphic's start, comma-separated (1.5,4,9.2)");
+    }
+    if (times.length > 12) throw new UsageError("--snapshot takes at most 12 times; use more calls or a contact sheet");
+    return times;
 }
 
 /** The composition's declarations and canvas from its index.html. */
@@ -751,9 +777,21 @@ export async function ownComposition(dir, projectRoot, slot) {
 async function place(target, options) {
     const given = compositionFolder(target, process.cwd());
     if (!existsSync(given) || !statSync(given).isDirectory()) throw new UsageError(`${given} is not a composition folder`);
-    const project = await call(["project", "get"]) ?? {};
+    if (!options.snapshot) return placeIn(given, given, options);
+    const preview = previewCopy(given);
+    try {
+        return await placeIn(given, preview.copy, options);
+    } finally {
+        rmSync(preview.work, { recursive: true, force: true });
+    }
+}
+
+/** place with the composition `given`; `copy` is its preview copy with --snapshot (no project needed then). */
+async function placeIn(given, copy, options) {
+    // A preview works without an open project: no brand, the composition's own canvas.
+    const project = (options.snapshot ? await call(["project", "get"]).catch(() => null) : await call(["project", "get"])) ?? {};
     const name = safeName(options.name ?? basename(given));
-    const dir = options["dry-run"] ? given
+    const dir = options.snapshot ? copy : options["dry-run"] ? given
         : await ownComposition(given, async () => dirname((await call(["context", "get"]))?.project ?? ""), `${name}-${randomBytes(3).toString("hex")}`);
     const declared = readComposition(dir).declared;
     const warnings = [];
@@ -782,6 +820,10 @@ async function place(target, options) {
         inputs.seconds = frames / frameRate(project.format?.fps);
     }
     const { variables, brand } = await resolveVariables(inputs, project, warnings);
+    if (options.snapshot) {
+        const snapshot = await snapshotRow(inputs, variables, options.snapshot, snapshotFolder(options, name, false));
+        return { snapshot, composition: given, variables: inputs.variables, brand, ...(inputs.frame ? { frame: inputs.frame } : {}), ...(warnings.length ? { warnings } : {}) };
+    }
     const render = await renderSpan(inputs, variables, options["dry-run"]);
     if (render.dryRun) return { ...render.dryRun, brand, ...(warnings.length ? { warnings } : {}) };
     const id = `graphic-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "card"}-${randomBytes(3).toString("hex")}`;
@@ -859,6 +901,21 @@ export async function rerender(target, options) {
             codec: options.codec, name: options.name && safeName(options.name),
             brand: options.brand ? true : options["no-brand"] ? false : undefined, frame: options.frame,
         });
+        if (options.snapshot) {
+            // The recorded composition with the changes, previewed in a copy: nothing rendered, nothing repointed.
+            const preview = previewCopy(inputs.composition);
+            try {
+                const asRecorded = inputs.composition;
+                inputs.composition = preview.copy;
+                const { variables, brand } = await resolveVariables(inputs, project, warnings);
+                const snapshot = await snapshotRow(inputs, variables, options.snapshot, snapshotFolder(options, inputs.name ?? id, false));
+                const out = { media: id, snapshot, composition: asRecorded, brand, ...(inputs.frame ? { frame: inputs.frame } : {}) };
+                if (warnings.length) out.warnings = [...new Set(warnings)];
+                return out;
+            } finally {
+                rmSync(preview.work, { recursive: true, force: true });
+            }
+        }
         const { variables, brand } = await resolveVariables(inputs, project, warnings);
         const render = await renderSpan(inputs, variables, options["dry-run"]);
         renders.push({ id, inputs, render, brand });
@@ -983,13 +1040,7 @@ export function restorePage(dir) {
 export async function withPage(dir, { seconds, frame, canvas } = {}, work) {
     restorePage(dir);
     const page = join(dir, "index.html");
-    let html = readFileSync(page, "utf8");
-    const root = /(data-composition-id="main"[^>]*\bdata-duration=")([\d.]+)(")/;
-    if (seconds && !root.test(html)) throw new Error(`${page} has no root with data-composition-id="main" and data-duration`);
-    // Rounded down to the millisecond: the renderer rounds frames up, so 110 frames at 30 fps (3.667 s) stay 110.
-    if (seconds) html = html.replace(root, `$1${Math.floor(seconds * 1000) / 1000}$3`);
-    if (canvas) html = withCanvas(html, canvas);
-    if (frame) html = withFrameMarkup(html, frame);
+    const html = renderPage(readFileSync(page, "utf8"), { seconds, frame, canvas }, page);
     copyFileSync(page, join(dir, BACKUP));
     try {
         writeFileSync(page, html);
@@ -999,10 +1050,85 @@ export async function withPage(dir, { seconds, frame, canvas } = {}, work) {
     }
 }
 
+/** The page as it renders: root data-duration = `seconds`, the project's canvas, the frame before </body>. */
+export function renderPage(html, { seconds, frame, canvas } = {}, page = "index.html") {
+    const root = /(data-composition-id="main"[^>]*\bdata-duration=")([\d.]+)(")/;
+    if (seconds && !root.test(html)) throw new Error(`${page} has no root with data-composition-id="main" and data-duration`);
+    // Rounded down to the millisecond: the renderer rounds frames up, so 110 frames at 30 fps (3.667 s) stay 110.
+    if (seconds) html = html.replace(root, `$1${Math.floor(seconds * 1000) / 1000}$3`);
+    if (canvas) html = withCanvas(html, canvas);
+    if (frame) html = withFrameMarkup(html, frame);
+    return html;
+}
+
+/**
+ * The page with each declared variable's default set to `variables` (what graphics.render passes as values): `hf
+ * snapshot` only shows a composition's defaults, so a preview bakes the row's values in.
+ */
+export function withDefaults(html, variables) {
+    return html.replace(/data-composition-variables='([\s\S]*?)'/, (all, text) => {
+        const declared = JSON.parse(text.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&"));
+        const baked = declared.map((d) => (Object.hasOwn(variables, d.id) ? { ...d, default: variables[d.id] } : d));
+        return `data-composition-variables='${JSON.stringify(baked).replace(/&/g, "&amp;").replace(/'/g, "&#39;")}'`;
+    });
+}
+
 /** The page with its root's data-width and data-height set to `canvas` (a data-fit="canvas" composition). */
 export function withCanvas(html, { width, height }) {
     return html.replace(/<[^>]*data-composition-id="main"[^>]*>/, (tag) => tag.replace(/\bdata-width="[\d.]+"/, `data-width="${width}"`)
         .replace(/\bdata-height="[\d.]+"/, `data-height="${height}"`));
+}
+
+// MARK: snapshot (look before you render)
+
+/**
+ * A throwaway copy of composition folder `dir` to preview: brand fonts, logos, the baked variables and the frame go
+ * into the copy, so neither the plugin's examples nor the project's folders change. Movies and old snapshots stay out.
+ */
+export function previewCopy(dir) {
+    const work = mkdtempSync(join(tmpdir(), "bashcut-graphic-preview-"));
+    const copy = join(work, basename(dir));
+    const skip = new Set([BACKUP, "snapshots", "renders", "node_modules"]);
+    cpSync(dir, copy, { recursive: true, filter: (from) => from === dir || (!skip.has(basename(from)) && !/\.(mov|mp4|m4v|webm)$/i.test(from)) });
+    // A render stopped half-way left the page stretched: the copy takes the original.
+    if (existsSync(join(dir, BACKUP))) copyFileSync(join(dir, BACKUP), join(copy, "index.html"));
+    return { work, copy };
+}
+
+/**
+ * Snapshots of a resolved row (inputs.composition is a previewCopy) at `times` (seconds from the graphic's start)
+ * into `out`: the page as it would render (variables baked in as defaults, span length, canvas, frame), GSAP and the
+ * shared scripts copied in, then the bundled `hyperframes snapshot`. Frames and a contact sheet from an earlier
+ * snapshot in `out` are replaced.
+ */
+async function snapshotRow(inputs, variables, times, out) {
+    const { paths, hyperframes, provideScripts } = await import("./runtime.mjs");
+    if (!existsSync(paths.cli) || !existsSync(paths.gsap)) {
+        throw new Error("HyperFrames is not installed: the user chooses Install Dependencies for HyperFrames Graphics in BashCut › Plugins");
+    }
+    const page = join(inputs.composition, "index.html");
+    writeFileSync(page, renderPage(withDefaults(readFileSync(page, "utf8"), variables), inputs, page));
+    provideScripts({ dir: inputs.composition, file: null });
+    mkdirSync(out, { recursive: true });
+    for (const name of readdirSync(out)) if (/^(frame-.*\.png|contact-sheet.*\.jpg)$/.test(name)) rmSync(join(out, name), { force: true });
+    // --describe false: frames never leave this Mac (the CLI sends them to Gemini when a key is set).
+    const run = await hyperframes(["snapshot", inputs.composition, "--at", times.join(","), "--no-end", "--describe", "false", "-o", out]);
+    if (run.code !== 0) throw new Error(`hf snapshot failed: ${(run.stderr || run.stdout).trim().slice(-1200)}`);
+    const names = readdirSync(out).sort();
+    const frames = names.filter((n) => /^frame-.*\.png$/.test(n)).map((n) => join(out, n));
+    if (!frames.length) throw new Error(`hf snapshot wrote no frames: ${run.stdout.trim().slice(-600)}`);
+    const sheet = names.find((n) => /^contact-sheet.*\.jpg$/.test(n));
+    const composition = readComposition(inputs.composition);
+    return {
+        frames, ...(sheet ? { sheet: join(out, sheet) } : {}), at: times,
+        seconds: inputs.seconds ?? composition.duration, canvas: inputs.canvas ?? { width: composition.width, height: composition.height },
+    };
+}
+
+/** Where --snapshot frames go: --out (one subfolder per row when several), else a new folder in the temp dir. */
+function snapshotFolder(options, id, several) {
+    if (options.out) return several ? join(resolve(options.out), safeName(id)) : resolve(options.out);
+    return mkdtempSync(join(tmpdir(), `graphic-snapshot-${safeName(id)}-`));
 }
 
 /** What an agent needs from plan apply: the outcome, the problems and the review, not the change list. */
@@ -1040,6 +1166,15 @@ export function inputsHash(dir, variables, seconds, fps, codec, frame = null, ca
 }
 
 async function planGraphics(options) {
+    const previews = [];
+    try {
+        return await planGraphicsWith(options, previews);
+    } finally {
+        for (const work of previews) rmSync(work, { recursive: true, force: true });
+    }
+}
+
+async function planGraphicsWith(options, previews) {
     const project = await call(["project", "get"]) ?? {};
     const root = dirname((await call(["context", "get"]))?.project ?? "");
     const entries = project.plan?.cut?.graphics ?? [];
@@ -1058,6 +1193,8 @@ async function planGraphics(options) {
     const patch = {};
     const records = [];
     const scenes = planScenes(entries, rows);
+    const snapshots = [];
+    const several = entries.filter((e) => e.render && (!only || only.has(e.id))).length > 1;
     for (const entry of entries) {
         if (!entry.render || (only && !only.has(entry.id))) continue;
         const row = rows[entry.id];
@@ -1071,7 +1208,11 @@ async function planGraphics(options) {
         const asGiven = compositionFolder(given, root);
         if (!existsSync(join(asGiven, "index.html"))) throw new UsageError(`graphic ${entry.id}: ${asGiven} has no index.html`);
         const slot = scene ? `${scene.id}-${basename(asGiven)}` : `${entry.id}-${basename(asGiven)}`;
-        const dir = options["dry-run"] ? asGiven : await ownComposition(asGiven, root, slot);
+        // --snapshot previews the project's copy when there is one (it may be edited), else the folder given.
+        const own = join(root, "graphics", safeName(slot));
+        const preview = options.snapshot ? previewCopy(existsSync(join(own, "index.html")) ? own : asGiven) : null;
+        if (preview) previews.push(preview.work);
+        const dir = preview ? preview.copy : options["dry-run"] ? asGiven : await ownComposition(asGiven, root, slot);
         const declared = readComposition(dir).declared;
         const asked = resolveWordTimes({ ...(spec.variables ?? {}), ...(spec.set ?? {}) }, words);
         if (scene) {
@@ -1092,6 +1233,12 @@ async function planGraphics(options) {
             ...(frame ? { frame } : {}),
         };
         const { variables, brand } = await resolveVariables(inputs, project, warnings);
+        if (preview) {
+            const snapshot = await snapshotRow({ ...inputs, seconds }, variables, options.snapshot, snapshotFolder(options, entry.id, several));
+            snapshots.push({ id: entry.id, ...snapshot, brand, ...(scene ? { scene: scene.id, t0: asked.t0 } : {}),
+                ...(frame ? { frame } : {}), variables: inputs.variables });
+            continue;
+        }
         restorePage(dir);
         const hash = inputsHash(dir, variables, seconds, fps, inputs.codec, frame, inputs.canvas);
         const current = media.find((m) => m.id === entry.media);
@@ -1113,6 +1260,7 @@ async function planGraphics(options) {
         lintNote(render, out);
         rendered.push(out);
     }
+    if (options.snapshot) return { snapshots, ...(warnings.length ? { warnings: [...new Set(warnings)] } : {}) };
     const result = { rendered, kept };
     if (options["dry-run"]) return result;
     if (records.length) await applyOps(records, (await call(["project", "get"]))?.rev, "Record graphic inputs");
