@@ -125,6 +125,12 @@ class PluginTests(unittest.TestCase):
             resources.handle("plugin.action", {"action": "bashcut.resources.fetch", "params": {"script": "nope"}},
                              FakeHost())
 
+    def test_open_shows_the_sheet_and_leaves_no_status_message(self):
+        host = FakeHost()
+        answer = resources.handle("plugin.action", {"action": "bashcut.resources.open"}, host)
+        self.assertEqual(host.calls, [("plugins.show-view", {"plugin": "bashcut.resources", "view": "browse"})])
+        self.assertNotIn("message", answer)
+
     def test_the_sheet_searches_selects_and_downloads(self):
         host = FakeHost()
         params = {"view": "browse", "locale": "en", "options": {}}

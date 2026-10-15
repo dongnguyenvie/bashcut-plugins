@@ -739,7 +739,7 @@ def handle(method, params, host):
     args, options = params.get("params") or {}, params.get("options") or {}
     if action == "open":
         host.call("plugins.show-view", {"plugin": PLUGIN_ID, "view": "browse"})
-        return {"message": "Opened Online resources"}
+        return {}  # the sheet opening is the answer; a status message would stay in the status bar
     if action == "search":
         found = search(host, options, args.get("kind") or "photo", args.get("query"), args.get("source"),
                        args.get("page") or 1, args.get("orientation") or "any", args.get("text"))
