@@ -38,7 +38,7 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
 - **`examples/`**: starting points that pass `hf lint` and `hf check`: `keyword-pop`, `stat-counter`,
   `cursor-click`, `paper-card`, `checklist-card`, and the data widgets explainers build scenes from: `bar-chart`,
   `cost-table`, `timeline`, `calendar`, `map-route`, `amenity-radius`; mock screens (`mock-video-app`) and cards such as
-  `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, `growing-diagram` (one diagram that grows over a whole video), and
+  `corner-curl-card`; diagrams laid out from JSON data (`flow-diagram`, `mind-map`, `isometric-system`, `growing-diagram` (one diagram that grows over a whole video: ghost blocks for the hook, a `recap`, a `bottomSafe` line for captions, closing edges routed round the stage), and
   `big-canvas`, one hand-drawn canvas for a whole video with a camera path) and science widgets (`formula` with
   KaTeX, `matrix-grid`, `scale-compare`); `lottie` plays one Lottie accent picked with resources'
   `fetch_lottie.py`. All take the brand variables `bin/graphic` fills. Those with `data-fit="canvas"` render at the

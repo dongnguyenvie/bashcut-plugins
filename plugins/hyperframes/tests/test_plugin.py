@@ -1462,6 +1462,53 @@ console.log(JSON.stringify(out));
             self.assertGreaterEqual(row["font"], 34 * 0.92 if row["kind"] == "iso" else 38 * 0.92 * 0.92, row)
 
 
+    def test_recap_lights_every_node_and_staggers_every_edge(self):
+        recap = self.node(r"""
+const d = require(process.argv[1]);
+const layout = { nodes: ["a", "b", "c"].map((id) => ({ id })), edges: [{ from: "a", to: "b" }, { from: "b", to: "c" }, { from: "c", to: "a" }] };
+console.log(JSON.stringify([d.recapStep(38.6, layout, 42.5), d.recapStep(0, layout, 42.5), d.recapStep(42.2, layout, 42.5)]));
+""")
+        self.assertEqual({"at": 38.6, "focus": ["a", "b", "c"], "reveal": [], "edges": ["a>b", "b>c", "c>a"], "grown": True,
+                          "recap": True, "stagger": 0.45}, recap[0])
+        self.assertEqual([None, None], recap[1:], "no recap at 0 or too close to the end")
+
+    def test_bottom_safe_keeps_the_diagram_above_the_captions(self):
+        rows = self.node(r"""
+const d = require(process.argv[1]);
+const a = (b) => { const r = d.areaFor(1080, 1920, 1, true, false, b); return Math.round(r.y + r.h); };
+console.log(JSON.stringify([a(0), a(d.GROWING_BOTTOM_SAFE), a(0.5), a(1100), a(-3)]));
+""")
+        self.assertEqual([1459, 1190, 960, 1100, 1459], rows)
+
+    def test_a_closing_edge_goes_round_the_stage_with_its_label_outside(self):
+        rows = self.node(r"""
+const d = require(process.argv[1]);
+const ids = ["app", "api", "kho", "pay", "ship", "noti"];
+const data = { nodes: ids.map((id, i) => ({ id, label: id === "pay" ? "Cổng thanh toán" : id, at: 4 + i * 5 })),
+  edges: ids.slice(1).map((id, i) => ({ from: ids[i], to: id })).concat([{ from: "noti", to: "app", label: "tin nhắn" }]) };
+const out = [];
+for (const [W, H] of [[1080, 1920], [1920, 1080]]) {
+  const u = Math.min(W, H) / 1080;
+  const area = d.areaFor(W, H, u, true, false, W < H ? d.GROWING_BOTTOM_SAFE : 0);
+  const L = d.flowLayout(data, area, u, undefined, { maxFont: 60, minFont: 38 });
+  const by = new Map(L.nodes.map((n) => [n.id, n]));
+  const stage = { x: 24 * u, y: area.y - 40 * u, w: W - 48 * u, h: area.h + 40 * u };
+  const r = d.aroundPath(by.get("noti"), by.get("app"), L.nodes, L.direction, stage, u);
+  const pts = r.d.match(/-?[\d.]+,-?[\d.]+/g).map((p) => p.split(",").map(Number));
+  // The leg along the column (row) runs outside every node box, inside the frame.
+  const leg = L.direction === "tb" ? pts[2][0] : pts[2][1];
+  const clear = L.nodes.every((n) => L.direction === "tb" ? Math.abs(leg - n.x) > n.w / 2 : Math.abs(leg - n.y) > n.h / 2);
+  out.push({ direction: L.direction, side: r.side, clear, inside: leg > 0 && leg < (L.direction === "tb" ? W : H),
+    forward: d.aroundPath(by.get("app"), by.get("api"), L.nodes, L.direction, stage, u) });
+}
+console.log(JSON.stringify(out));
+""")
+        for row in rows:
+            self.assertTrue(row["clear"] and row["inside"], row)
+            self.assertIsNone(row["forward"], "an edge with the flow keeps its curve")
+        self.assertEqual(["tb", "lr"], [r["direction"] for r in rows])
+
+
 class AmenityLayoutTests(unittest.TestCase):
     """lib/amenity-map.js lays amenity markers out: no two icons overlap at the scale they are seen at."""
 

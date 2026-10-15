@@ -13,7 +13,10 @@
 //   graphic plan) comes in then and lights up, a new edge carries data dots until the next one lands (growthSteps);
 //   a node without `at` is there from the start. Variables t0 and total render one slice of the scene: t0 is the
 //   scene second this render starts at and total the scene's length, so slices rendered per section meet without a
-//   jump (graphic plan sets both for rows that share render.scene).
+//   jump (graphic plan sets both for rows that share render.scene). Knobs (a variable or the same data key):
+//   ghosts (later blocks faint and dashed from the start), recap (scene second from which everything is lit and every
+//   edge runs dots, staggered), bottomSafe (nothing below this line: 0–1 of the height or px; 0.62 on 9:16 by
+//   default). A flow edge against the flow whose straight line would cross nodes goes round the stage (aroundPath).
 // big-canvas data adds stops: [{at, focus: id | [x, y, w, h] (0–1 of the canvas), zoom?, note?}], summary?.
 (function (root) {
     "use strict";
@@ -563,6 +566,47 @@
         return `M${p.x + j()},${p.y + j()} C${c1.x + j() * 2},${c1.y + j() * 2} ${c2.x + j() * 2},${c2.y + j() * 2} ${q.x},${q.y}`;
     }
 
+    /**
+     * A flow edge that runs against the flow (a closing edge, last → first) and whose straight line would cross other
+     * nodes goes round the stage instead: out of a's side, along the free side of the column (row on 16:9) and into
+     * b's side. Returns {d, label: {x, y, transform}} with the label set outside the line, or null when the edge runs
+     * with the flow or its straight line is clear. `bounds` is the room the line may use.
+     */
+    function aroundPath(a, b, nodes, direction, bounds, unit) {
+        const lr = direction === "lr";
+        const along = (n) => (lr ? n.x : n.y);
+        if (along(b) >= along(a) - 1) return null;
+        const p0 = boxEdge(a, b.x, b.y);
+        const q0 = boxEdge(b, a.x, a.y);
+        if (!nodes.some((n) => n !== a && n !== b && segmentHits(p0, q0, n))) return null;
+        const lo = Math.min(along(a), along(b)) - 1;
+        const hi = Math.max(along(a), along(b)) + 1;
+        const span = nodes.filter((n) => along(n) >= lo && along(n) <= hi);
+        // Cross axis: x in a top-down column, y in a left-right row.
+        const c = (n) => (lr ? n.y : n.x);
+        const half = (n) => (lr ? n.h : n.w) / 2;
+        const far = Math.max(...span.map((n) => c(n) + half(n)));
+        const near = Math.min(...span.map((n) => c(n) - half(n)));
+        const [b0, b1] = lr ? [bounds.y, bounds.y + bounds.h] : [bounds.x, bounds.x + bounds.w];
+        const after = b1 - far >= near - b0;
+        const room = after ? b1 - far : near - b0;
+        const off = Math.max(18 * unit, Math.min(56 * unit, room * 0.45));
+        const line = after ? far + off : near - off;
+        const s = after ? 1 : -1;
+        const ends = [a, b].map((n) => c(n) + s * half(n));
+        const r = Math.min(34 * unit, Math.abs(along(a) - along(b)) / 2, off);
+        const pt = (u, v) => (lr ? `${v},${u}` : `${u},${v}`);
+        const dirAlong = along(b) < along(a) ? -1 : 1;
+        const d = `M${pt(ends[0], along(a))} L${pt(line - s * r, along(a))} Q${pt(line, along(a))} ${pt(line, along(a) + dirAlong * r)}`
+            + ` L${pt(line, along(b) - dirAlong * r)} Q${pt(line, along(b))} ${pt(line - s * r, along(b))} L${pt(ends[1], along(b))}`;
+        const mid = (along(a) + along(b)) / 2;
+        const gap = 12 * unit;
+        const label = lr
+            ? { x: mid, y: line + s * gap, transform: after ? "translate(-50%, 0)" : "translate(-50%, -100%)" }
+            : { x: line + s * gap, y: mid, transform: after ? "translate(0, -50%)" : "translate(-100%, -50%)" };
+        return { d, label, side: lr ? (after ? "below" : "above") : after ? "right" : "left" };
+    }
+
     /** A rounded-rectangle outline (wobbly when sketched) for draw-on. */
     function boxPath(n, sketch, seed, unit) {
         const x0 = n.x - n.w / 2;
@@ -649,12 +693,23 @@
      * The area a diagram fills: inside 72 px, under the title, above a phone's caption band on 9:16 and, on 16:9,
      * above the band the step notes take.
      */
-    function areaFor(W, H, unit, hasTitle, hasNotes = false) {
+    function areaFor(W, H, unit, hasTitle, hasNotes = false, bottomSafe = 0) {
         const portrait = H > W;
         const top = (hasTitle ? (portrait ? 0.15 : 0.17) : portrait ? 0.1 : 0.08) * H;
-        const bottom = (portrait ? 0.76 : hasNotes ? 0.8 : 0.92) * H;
+        const asked = safeLine(bottomSafe, H);
+        const bottom = asked !== null ? Math.max(asked, top + 0.2 * H) : (portrait ? 0.76 : hasNotes ? 0.8 : 0.92) * H;
         return { x: 72 * unit, y: top, w: W - 144 * unit, h: bottom - top };
     }
+
+    /** bottomSafe as a y in px: a share of the height (0–1) or px from the top (> 1); null when not given. */
+    function safeLine(value, H) {
+        const n = Number(value);
+        if (!Number.isFinite(n) || n <= 0) return null;
+        return Math.min(H, n <= 1 ? n * H : n);
+    }
+
+    /** The growing diagram's default bottomSafe: a 9:16 caption pill sits at ~66–73 % of the height. */
+    const GROWING_BOTTOM_SAFE = 0.62;
 
     /** Steps with times: a number is kept; the others are spread evenly from 0.9 s to the end. */
     function timedSteps(steps, END) {
@@ -693,6 +748,19 @@
         return [...slots.values()].sort((a, b) => a.at - b.at);
     }
 
+    /**
+     * The recap (growing-diagram `recap`, scene seconds): from then to the end every node is lit and every edge glows
+     * and runs dots, the edges starting one after another (stagger, s) so the whole chain reads in order. null when
+     * recap is not a time inside the scene.
+     */
+    function recapStep(value, layout, END) {
+        const at = Number(value);
+        if (!Number.isFinite(at) || at <= 0 || at >= END - 0.8 || !layout.nodes.length) return null;
+        const edges = layout.edges.map((e) => `${e.from}>${e.to}`);
+        const stagger = edges.length > 1 ? Math.max(0.1, Math.min(0.45, (END - 0.5 - at - 1) / edges.length)) : 0;
+        return { at: Math.round(at * 100) / 100, focus: layout.nodes.map((n) => n.id), reveal: [], edges, grown: true, recap: true, stagger };
+    }
+
     /** The scene slice a render shows: t0 (scene seconds at its first frame) and the scene's END (total or t0 + END). */
     function sceneSlice(v, data, END) {
         const t0 = Math.max(0, Number(data.t0 ?? v.t0) || 0);
@@ -726,10 +794,16 @@
         if (sketch) rootEl.classList.add("dg-sketch");
         rootEl.style.setProperty("--dg-border", `${3 * unit}px`);
         rootEl.style.setProperty("--dg-radius", `${(kind === "mind" ? 40 : 22) * unit}px`);
-        const area = areaFor(W, H, unit, Boolean(title), (data.steps ?? []).some((s) => s.note));
+        // bottomSafe (growing-diagram): nothing below this line (captions); 0 / unset there is 0.62 of the height on 9:16.
+        const knob = (key) => data[key] ?? v[key];
+        let bottomSafe = Number(knob("bottomSafe")) || 0;
+        if (!(bottomSafe > 0) && v.bottomSafe !== undefined && H > W) bottomSafe = GROWING_BOTTOM_SAFE;
+        const area = areaFor(W, H, unit, Boolean(title), (data.steps ?? []).some((s) => s.note), bottomSafe);
         const layout = kind === "flow" ? flowLayout(data, area, unit, data.direction, fonts) : kind === "mind" ? mindLayout(data, area, unit) : isoLayout(data, area, unit, fonts);
         const byId = new Map(layout.nodes.map((n) => [n.id, n]));
         if (kind === "iso") layout.nodes.forEach((n) => (n.cell = layout.cell));
+        const recap = recapStep(knob("recap"), layout, END);
+        if (recap) grown.push(recap);
         const steps = timedSteps(data.steps, END).concat(grown).sort((a, b) => a.at - b.at);
         const groups = [...new Set(layout.nodes.map((n) => n.group).filter(Boolean))];
         const tint = (n) => {
@@ -818,14 +892,50 @@
             if (label.scrollWidth > room) label.style.fontSize = `${n.font * (room / label.scrollWidth)}px`;
         }
 
+        // Ghosts (growing-diagram `ghosts`): every block that comes in later shows faint and dashed from the start, so
+        // the hook already shows the whole system's shape; each ghost fades as its own block pops in.
+        if (growing && knob("ghosts") === true) {
+            sorted.forEach((n, i) => {
+                const t0 = shown(n.id);
+                if (!(t0 > 0.6)) return;
+                const p = parts.get(n.id);
+                const ghost = p.box.cloneNode(true);
+                ghost.classList.add("dg-ghost");
+                ghost.style.opacity = "0";
+                for (const plate of ghost.querySelectorAll(".dg-plate")) {
+                    plate.style.cssText += "border-style:dashed;border-color:color-mix(in srgb, var(--text) 70%, transparent);box-shadow:none;background:transparent;";
+                }
+                htmlLayer.insertBefore(ghost, p.box);
+                const fade = [ghost];
+                if (p.block) {
+                    // An iso block: its outline only, dashed.
+                    const shape = p.block.cloneNode(true);
+                    shape.setAttribute("opacity", "0");
+                    for (const poly of [...shape.children]) {
+                        if (poly.tagName.toLowerCase() !== "polygon") continue;
+                        if (poly.style.opacity === "0") poly.remove();
+                        else poly.style.cssText = `fill:none;stroke:var(--text);stroke-width:${3 * unit}px;stroke-dasharray:${12 * unit} ${9 * unit};filter:none`;
+                    }
+                    blockLayer.insertBefore(shape, p.block);
+                    fade.push(shape);
+                }
+                for (const g of fade) {
+                    fromToState(tl, g, { opacity: 0 }, { opacity: 0.32 }, 0.3 + Math.min(i * 0.12, 1.2), 0.5);
+                    fromToState(tl, g, { opacity: 0.32 }, { opacity: 0 }, Math.max(0.9, t0 - 0.3), 0.25, "power1.in");
+                }
+            });
+        }
+
         // Edges: drawn on once both ends are there.
         const edgeParts = [];
         const taken = [];
+        const stage = { x: 24 * unit, y: area.y - 40 * unit, w: W - 48 * unit, h: area.h + 40 * unit };
         layout.edges.forEach((e, i) => {
             const a = byId.get(e.from);
             const b = byId.get(e.to);
+            const around = kind === "flow" ? aroundPath(a, b, layout.nodes, layout.direction, stage, unit) : null;
             const d = kind === "iso" ? isoPath(a, b, layout.nodes, { x: 60 * unit, y: 60 * unit, w: W - 120 * unit, h: H - 120 * unit }, taken)
-                : edgePath(a, b, kind, layout.direction, sketch, `${e.from}>${e.to}`, unit, e.via);
+                : around ? around.d : edgePath(a, b, kind, layout.direction, sketch, `${e.from}>${e.to}`, unit, e.via);
             const base = el("path", { d, fill: "none", stroke: "var(--text)", "stroke-opacity": kind === "iso" ? 0.55 : 0.7, "stroke-width": (kind === "iso" ? 7 : 5) * unit, "stroke-linecap": "round", "stroke-linejoin": "round" }, edgeLayer, true);
             const hot = el("path", { d, fill: "none", stroke: "var(--accent)", "stroke-width": (kind === "iso" ? 9 : 7) * unit, "stroke-linecap": "round", "stroke-linejoin": "round", opacity: 0 }, edgeLayer, true);
             const length = base.getTotalLength();
@@ -845,8 +955,18 @@
             }
             let tag = null;
             if (e.label) {
-                const mid = base.getPointAtLength(length / 2);
-                tag = el("div", { class: "dg-edge-label", text: e.label, style: `left:${mid.x}px;top:${mid.y}px;font-size:${(growing ? 34 : 24) * unit}px` }, htmlLayer);
+                const size = (growing ? 34 : 24) * unit;
+                let { x, y } = base.getPointAtLength(length / 2);
+                let transform = "";
+                if (around) {
+                    // Beside the line, away from the nodes, when it fits the frame; on the line otherwise.
+                    const w = textWidth(e.label, size) + size * 1.2;
+                    const h = size * 1.6;
+                    const fits = around.side === "right" ? around.label.x + w <= W - 8 * unit : around.side === "left" ? around.label.x - w >= 8 * unit
+                        : around.side === "below" ? around.label.y + h <= H - 8 * unit : around.label.y - h >= 8 * unit;
+                    if (fits) ({ x, y, transform } = around.label);
+                }
+                tag = el("div", { class: "dg-edge-label", text: e.label, style: `left:${x}px;top:${y}px;font-size:${size}px;${transform ? `transform:${transform};` : ""}` }, htmlLayer);
                 fromToState(tl, tag, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1 }, at + 0.35, 0.3);
             }
             edgeParts.push({ e, key: `${e.from}>${e.to}`, base, hot, length, d, at, arrow, tag });
@@ -906,7 +1026,8 @@
                 const lit = s.grown ? s.edges.includes(part.key) || s.reveal.includes(e.from) || s.reveal.includes(e.to)
                     : s.focus.includes(e.from) || s.focus.includes(e.to);
                 if (!lit) continue;
-                const from = Math.max(s.at, part.at + 0.5);
+                // The recap starts its edges one after another, in the data's order.
+                const from = Math.max(s.at, part.at + 0.5) + (s.stagger ? s.edges.indexOf(part.key) * s.stagger : 0);
                 if (until - from < 0.3) continue;
                 fromToState(tl, part.hot, { opacity: 0 }, { opacity: 0.9 }, from - 0.1, 0.25);
                 fromToState(tl, part.hot, { opacity: 0.9 }, { opacity: 0 }, until - 0.15, 0.25);
@@ -1202,7 +1323,7 @@
         return world;
     }
 
-    const api = { textWidth, wrap, fitLabel, layering, flowLayout, mindLayout, isoLayout, canvasLayout, overlapping, separate, timedSteps, growthSteps, sceneSlice, areaFor, mount, mountCanvas };
+    const api = { textWidth, wrap, fitLabel, layering, flowLayout, mindLayout, isoLayout, canvasLayout, overlapping, separate, timedSteps, growthSteps, recapStep, aroundPath, safeLine, sceneSlice, areaFor, mount, mountCanvas, GROWING_BOTTOM_SAFE };
     root.BCDiagram = api;
     if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

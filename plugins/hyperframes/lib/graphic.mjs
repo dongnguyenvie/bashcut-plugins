@@ -238,7 +238,26 @@ export function explicitVariables(declared, sets = [], variables = {}, warnings 
     }
     // #552: a "0 hospitals" chip reads as a claim; the legend leaves empty kinds out unless the user asked for zeros.
     if (out.showZero === true && warnings) warnings.push("showZero puts kinds with no place on screen as 0: keep it only when the user asked for a zero");
+    if (warnings && String(out.look ?? "").trim().toLowerCase() === "iso") warnings.push(...backEdgeWarnings(out.data));
     return out;
+}
+
+/**
+ * Edges of a diagram's data that run back to a node that came in earlier (a closing edge, last → first): look flow
+ * routes them round the stage, look iso draws them across the chain.
+ */
+export function backEdgeWarnings(dataText) {
+    let data;
+    try {
+        data = typeof dataText === "string" ? JSON.parse(dataText) : dataText;
+    } catch {
+        return [];
+    }
+    const nodes = data?.nodes ?? [];
+    const timed = nodes.every((n) => typeof n.at === "number");
+    const order = new Map(nodes.map((n, i) => [String(n.id ?? `n${i}`), timed ? n.at : i]));
+    return (data?.edges ?? []).filter((e) => order.has(String(e.from)) && order.has(String(e.to)) && order.get(String(e.to)) < order.get(String(e.from)))
+        .map((e) => `look iso draws the closing edge ${e.from}→${e.to} across the chain: use look flow (it goes round the stage) or leave the edge out`);
 }
 
 /**
