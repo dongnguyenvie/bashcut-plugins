@@ -1,6 +1,6 @@
 # Online Resources (`bashcut.resources`)
 
-Search and download open resources into the BashCut library from one sheet (**Online resources**: the rail icon,
+Search and download open resources into the BashCut library from one browser window (**Online resources**: the rail icon,
 Plugins menu, or the Media, Audio, Stickers, Text and Filters panels): photos and video (Wikimedia, Openverse, NASA,
 Internet Archive; Pexels and Pixabay with a key), music (Openverse), sound effects (Mixkit, Openverse; Freesound with a
 key), illustrations (Open Peeps, Open Doodles, Humaaans, unDraw), emoji (Noto Animated, OpenMoji), logos (Simple
@@ -10,9 +10,19 @@ library refuses Lottie stickers). The library is searched
 first and results already in it are marked; downloads are saved with tags (and audio is measured), so the agent finds
 them with `library list` before fetching anything.
 
-Every filter in the search row is labelled (Type, Source, Orientation, and Save to by the download button). Photo and
-video searches start with the project's orientation (portrait for a 9:16 project), and an empty sheet offers three
-example searches for the chosen type. While a search runs, placeholder tiles stand where the results will be.
+Since 0.0.5 (BashCut plugin API 11) the browser is a non-modal window, so the editor stays usable behind it, with
+**Dock** to show it over the viewer instead. It has three columns: the types (Photos, Video, Music, SFX, Fonts, LUTs,
+Illustrations, Emoji, Logos, Lottie) and the chosen type's sources on the left; a large search field, labelled
+filters (Orientation starts with the project's shape, portrait for a 9:16 project) and recent searches above the
+results grid in the middle; and an inspector on the right with a big preview, licence, author, source, size and fit
+(whether the picture fills the project frame or is cropped), plus **Add to timeline** (download, then place at the
+playhead), **Add to project** and **Save to library** (My library, on this Mac). Drag a result onto the timeline and
+it is downloaded and placed where it was dropped; the window stays open. The query, results, selection and recent
+searches are kept when the window closes, until the project closes. An empty browser offers three example searches
+for the chosen type, and placeholder tiles stand where results will be while a search runs. Licence and author are
+shown for you to check; nothing is written on the video (credits stay optional).
+
+Older BashCut apps (plugin API 8–10) keep 0.0.4, the sheet version, through `minApiVersion`.
 
 One implementation for people and agents: `scripts/fetch_*.py` are the fetchers the agent kit runs (its skills keep
 thin shims that run these files), and every button is an action:

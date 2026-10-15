@@ -5,8 +5,8 @@
     "en": "Views Example",
     "vi": "Ví dụ giao diện"
   },
-  "version": "0.0.2",
-  "apiVersion": 8,
+  "version": "0.0.3",
+  "apiVersion": 11,
   "entrypoint": "bin/provider",
   "transport": "session",
   "category": "sample",
@@ -88,6 +88,15 @@
           "en": "Live",
           "vi": "Trực tiếp"
         }
+      },
+      {
+        "id": "browser",
+        "title": {
+          "en": "Browser",
+          "vi": "Trình duyệt"
+        },
+        "location": "window",
+        "icon": "square.split.3x1"
       }
     ],
     "actions": [
@@ -119,5 +128,6 @@
         "path": "skills/views-example"
       }
     ]
-  }
+  },
+  "minApiVersion": 11
 }

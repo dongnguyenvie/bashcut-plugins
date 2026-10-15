@@ -12,6 +12,10 @@ sys.path.insert(0, os.path.join(HERE, "..", "..", "..", "scripts"))
 from plugin_manifest import manifest_problems, skill_problems, view_problems  # noqa: E402
 
 
+class Refused(Exception):
+    """An answer that makes BashCut refuse the host call."""
+
+
 class Session:
     def __init__(self, answers=None, features=("views", "views.list")):
         env = dict(os.environ, BASHCUT_PLUGIN_CACHE=tempfile.mkdtemp(), VIEWS_EXAMPLE_COUNT_SECONDS="0.01")
@@ -37,7 +41,11 @@ class Session:
                 self.calls.append((message["method"], message["params"]))
                 answer = self.answers.get(message["method"], {})
                 result = answer(message["params"]) if callable(answer) else answer
-                self.write({"type": "callResult", "callId": message["callId"], "result": result})
+                if isinstance(result, Refused):
+                    self.write({"type": "callResult", "callId": message["callId"],
+                                "error": {"code": -32602, "message": str(result)}})
+                else:
+                    self.write({"type": "callResult", "callId": message["callId"], "result": result})
             elif message.get("type") == "event":
                 self.events.append(message["event"])
             elif message.get("type") in ("viewUpdate", "overlays"):
@@ -73,6 +81,9 @@ class ManifestTests(unittest.TestCase):
         with open(os.path.join(folder, "plugin.json")) as handle:
             manifest = json.load(handle)
         self.assertEqual(manifest_problems(manifest), [])
+        browser = next(view for view in manifest["contributes"]["views"] if view["id"] == "browser")
+        self.assertEqual(browser["location"], "window")
+        self.assertGreaterEqual(manifest["minApiVersion"], 11)
         self.assertEqual(skill_problems(folder, manifest), [])
 
 
@@ -282,6 +293,56 @@ class LiveTests(unittest.TestCase):
             self.assertEqual(session.calls, [])
         finally:
             session.close()
+
+
+class BrowserTests(unittest.TestCase):
+    """The window view (API 11): a split with a nav, a grid whose tiles download when dropped, an inspector."""
+
+    def setUp(self):
+        self.added = []
+        self.session = Session(answers={
+            "library.get": lambda params: Refused("No library item"),
+            "library.add": lambda params: self.added.append(params) or {"id": params["id"]},
+            "library.place": {"itemID": "i1"},
+        }, features=("views", "views.split", "views.nav", "views.grid", "views.drag"))
+
+    def tearDown(self):
+        self.session.close()
+
+    def test_three_columns_with_a_nav(self):
+        result = self.session.view("browser")["result"]
+        self.assertEqual(view_problems(result), [])
+        split = result["body"][0]
+        self.assertEqual(split["type"], "split")
+        self.assertEqual(split["widths"], [200, "flex", 260])
+        self.assertEqual(len(split["children"]), 3)
+        nav = next(node for node in nodes(result["body"]) if node["type"] == "nav")
+        self.assertEqual(nav["value"], "warm")
+        self.assertEqual([entry["id"] for entry in nav["groups"][0]["items"]], ["warm", "cool", "mono"])
+        grid = next(node for node in nodes(result["body"]) if node["type"] == "grid")
+        self.assertEqual(grid["drag"], "download")
+        cool = self.session.view("browser", state=result["state"],
+                                 event={"node": "groups", "type": "select", "value": "cool"})["result"]
+        self.assertEqual(cool["state"]["group"], "cool")
+
+    def test_a_dropped_tile_is_saved_and_named_for_the_host(self):
+        state = self.session.view("browser")["result"]["state"]
+        dropped = self.session.view("browser", state=state,
+                                    event={"node": "tiles", "type": "drag", "value": {"item": "sunset"}})["result"]
+        self.assertEqual(dropped["libraryItem"], "project:views-example-sunset")
+        self.assertEqual(len(self.added), 1)
+        self.assertTrue(os.path.exists(self.added[0]["file"]))
+        self.assertNotIn("library.place", [method for method, _ in self.session.calls], "BashCut places a drop")
+        tile = next(node for node in nodes(dropped["body"]) if node["type"] == "grid")["items"][0]
+        self.assertEqual(tile["libraryItem"], "project:views-example-sunset", "a saved tile drags the item itself")
+
+    def test_inspector_adds_at_the_playhead(self):
+        state = self.session.view("browser")["result"]["state"]
+        picked = self.session.view("browser", state=state, event={"node": "tiles", "type": "select", "value": "ember"})
+        inspector = picked["result"]["body"][0]["children"][2]
+        self.assertIn("Licence", json.dumps(inspector))
+        self.session.view("browser", state=picked["result"]["state"], event={"node": "add", "type": "click"})
+        self.assertIn(("library.place", {"id": "project:views-example-ember", "atFrame": 12, "baseRev": "last"}), self.session.calls)
 
 
 class ActionTests(unittest.TestCase):
