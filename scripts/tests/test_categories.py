@@ -48,6 +48,12 @@ class CategoryTests(unittest.TestCase):
         self.assertIn("plugins/a/plugin.json", problems[0])
         self.assertIn("'misc'", problems[1])
 
+    def test_samples_are_marked_with_the_sample_category(self):
+        self.assertIn("sample", CATEGORIES)
+        manifest = json.loads((SCRIPTS.parent / "samples" / "views-example" / "plugin.json").read_text())
+        self.assertEqual(manifest["category"], "sample")
+        self.assertEqual(manifest_problems(manifest), [])
+
     def test_manifests_may_name_a_known_category(self):
         with contextlib.redirect_stdout(io.StringIO()):
             new_plugin.main(["sorter", "--template", "action", "--lang", "shell", "--category", "effects",
