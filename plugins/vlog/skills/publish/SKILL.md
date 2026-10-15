@@ -95,7 +95,7 @@ below come from `platforms get` once core's platform data carries them (fields `
 | YouTube / Shorts title | `title.maxChars` (hard, 100), `title.visibleChars` | the number or question of the hook in the visible part; about 40 characters show on mobile, 60 on desktop (T17 §3) | the device most viewers use |
 | TikTok / Reels caption | `caption.maxChars` (hard): TikTok 2200 (Content Posting API), Reels 2200 | the hook line, one detail, a question or CTA; front-load it, the feed shows only the first line or two | where the "more" cut falls in each app |
 | Hashtags | `hashtags.max` (hard): Reels 5 (Instagram, Dec 2025), TikTok no official cap; `hashtags.ignoredAbove`: YouTube/Shorts ignores all of them past 60 | TikTok 3–5, Reels 3–5 (earlier vlog practice 3–8, T17 §3, now capped at 5); YouTube tags 5–12 (T17 §3) | topic, place, format; a niche needs fewer, broader ones |
-| YouTube description | `description.maxChars` (hard, 5000) | the sections with chapter times from `export chapters`, sources and credits | — |
+| YouTube description | `description.maxChars` (hard, 5000) | the sections with chapter times from `export chapters`; sources and credits only when the user asks | — |
 
 - Only claims with a source: prices, addresses, names and numbers the video shows or the brief sources (T01 §7). Never
   invent facts.
@@ -103,7 +103,8 @@ below come from `platforms get` once core's platform data carries them (fields `
   generated shots or voices are placed, read the platform's `disclosure` fact and tell the user in the summary to
   switch on the platform's own AI label at upload. A sponsored video says so in the first seconds with
   `vlog-disclosure`, in the user's wording.
-- Credits: licensed music and stock as their licenses ask.
+- Credits: none on the video or in the post by default. Only when the user asks, list licensed music and stock in
+  the description (`project credits`), never on the picture.
 
 Report: per output the file, length, bit rate and loudness from `export status`; the cover files and frame; the
 chapter list and any rule it fails; the title, caption and hashtags per platform; and which facts came from data

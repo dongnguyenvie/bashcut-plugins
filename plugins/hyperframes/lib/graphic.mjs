@@ -38,7 +38,7 @@
 //     in its callout.at too. Prints {rendered, kept, apply}.
 //
 // Frame (--frame JSON, render.frame): chrome drawn around any composition for the render only — backdrop
-// ("texture" | "paper" | "plain"), fadeIn (s), drift (true), float (true), chip ("2/4"), credit ("© OpenStreetMap contributors"), callout
+// ("texture" | "paper" | "plain"), fadeIn (s), drift (true), float (true), chip ("2/4"), credit (opt-in, only when the user asks), callout
 // ({text, at, top}, *word* in the accent), scale (0.5–2.5) — so a series of cards shares one look without editing
 // their HTML (lib/frame.mjs). It is recorded with the inputs; rerender --frame changes keys (null drops one; --frame
 // null drops the frame).
