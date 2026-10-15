@@ -1277,6 +1277,16 @@ console.log(JSON.stringify({{
         self.assertEqual({"earlier": True, "own": False, "later": True, "crossing": False, "label": False, "total": True,
                           "lastSliceTotal": False}, json.loads(out.stdout))
 
+    def test_the_hash_ignores_scripts_the_render_copies_in(self):
+        folder = self.folder / "graphics" / "diagram"
+        shutil.copytree(ROOT / "examples" / "growing-diagram", folder)
+        script = (f"import('{ROOT}/lib/graphic.mjs').then((g) => console.log(g.inputsHash({json.dumps(str(folder))}, {{}}, 5, 30, 'hevc')))")
+        before = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60).stdout
+        shutil.copy(ROOT / "lib" / "diagram.js", folder / "diagram.js")  # what the first render copies in
+        after = subprocess.run(["node", "-e", script], capture_output=True, text=True, timeout=60).stdout
+        self.assertTrue(before.strip())
+        self.assertEqual(before, after, "a second plan keeps the row")
+
     def test_plan_frame_lands_its_callout_on_words_and_counts_in_the_hash(self):
         graphics = [{"id": "g1", "on": "l1", "render": {"composition": "graphics/calendar", "set": {"title": "Hồ Tây"},
                                                          "frame": {"chip": "1/4", "callout": {"text": "Hồ *Tây*", "at": "@hai mươi"}}}}]

@@ -1239,6 +1239,9 @@ export function briefApply(apply) {
     return out;
 }
 
+/** Files the render copies next to a page (provideScripts): not the composition's own. */
+const PROVIDED = ["gsap.min.js", "diagram.js", "amenity-map.js", "lottie.min.js", "katex"];
+
 /** What a render depends on, so an unchanged graphic is not rendered again. */
 export function inputsHash(dir, variables, seconds, fps, codec, frame = null, canvas = null) {
     // Every file the page can load counts (a shared chrome.js, map tiles, a logo), not only index.html: a change to
@@ -1249,7 +1252,7 @@ export function inputsHash(dir, variables, seconds, fps, codec, frame = null, ca
     if (canvas) hash.update(JSON.stringify(canvas));
     const walk = (folder, depth) => {
         for (const name of readdirSync(folder).sort()) {
-            if (name.startsWith(".") || ["node_modules", "gsap.min.js", "snapshots", "renders"].includes(name)) continue;
+            if (name.startsWith(".") || ["node_modules", "snapshots", "renders", ...PROVIDED].includes(name)) continue;
             const path = join(folder, name);
             const info = statSync(path);
             if (info.isDirectory()) {
@@ -1261,6 +1264,12 @@ export function inputsHash(dir, variables, seconds, fps, codec, frame = null, ca
         }
     };
     walk(dir, 0);
+    // The shared scripts count as the plugin's own copy: the render copies them in (so the folder differs before and
+    // after the first render), and a plugin update that changes them renders again.
+    const page = existsSync(join(dir, "index.html")) ? readFileSync(join(dir, "index.html"), "utf8") : "";
+    for (const name of ["diagram.js", "amenity-map.js"]) {
+        if (page.includes(name)) hash.update(readFileSync(fileURLToPath(new URL(`./${name}`, import.meta.url))));
+    }
     return hash.digest("hex").slice(0, 16);
 }
 
