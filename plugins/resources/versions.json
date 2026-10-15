@@ -56,6 +56,22 @@
       "size": 90272,
       "downloadBytes": 400000,
       "releasedAt": "2026-10-15"
+    },
+    {
+      "version": "0.0.5",
+      "apiVersion": 11,
+      "minApiVersion": 11,
+      "minAppVersion": "0.0.25",
+      "platforms": [
+        "macos-arm64",
+        "macos-x86_64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/resources-v0.0.5/bashcut.resources-0.0.5.zip",
+      "sha256": "50ac4b023a0897b2d9bcd22a39fe17b272589c3e2a7220917afc3f1c2f79027c",
+      "signature": "ed25519:W/mTNzWd01MEdkecXVaN1St+Hzj4LZjDcgnV0gNM5kDbr4EGLCuvDCSkUmxry1ZNnu9J32avGg+vQpWbvpL3DQ==",
+      "size": 90753,
+      "downloadBytes": 400000,
+      "releasedAt": "2026-10-15"
     }
   ]
 }
