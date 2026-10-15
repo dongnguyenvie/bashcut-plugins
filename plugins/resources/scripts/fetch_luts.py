@@ -18,6 +18,10 @@ clipped and crushed share. Log-to-Rec.709 LUTs (a big contrast jump with clippin
 `log`. A file seen before (same hash) or a LUT that measures like one already kept (--dedupe) is skipped. The rest
 go to the library: `library add --kind look --file X.cube --tags lut,<source>,<tags from the numbers>` with the
 measurements in params.lut. Prints one line: added, duplicates, log, broken. `grade.py candidates` ranks them.
+
+Each look gets a readable title ("creative-bleachbypass_1" reads "Bleach bypass 1", "Kodak-Kodak T-Max 400" reads
+"Kodak T-Max 400"); the file stem stays its ID and file name (params.lut.name keeps it). Looks an earlier run added
+under the file name are renamed, unless someone renamed them since.
 """
 import argparse
 import concurrent.futures
@@ -78,6 +82,77 @@ def bashcut(*args, retry=True):
 
 def slug(text):
     return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
+
+
+# --- titles ----------------------------------------------------------------------------------------------------
+
+# Words the gmic Creative pack and some authors write as one, and makers' own spellings.
+GLUED = {
+    "analogfx": "AnalogFX", "bleachbypass": "bleach bypass", "bluearchitecture": "blue architecture",
+    "bluehour": "blue hour", "brightgreen": "bright green", "brownbm": "brown BM", "cineblue": "cine blue",
+    "cinebm4k": "cine BM 4K", "colornegative": "color negative", "crispromance": "crisp romance",
+    "crispwarm": "crisp warm", "crispwinter": "crisp winter", "dropblues": "drop blues", "edgyember": "edgy ember",
+    "fallcolors": "fall colors", "foggynight": "foggy night", "futuristicbleak": "futuristic bleak",
+    "horrorblue": "horror blue", "latesunset": "late sunset", "nightfromday": "night from day",
+    "redblueyellow": "red blue yellow", "softwarming": "soft warming", "tealmagentagold": "teal magenta gold",
+    "tealorange": "teal orange", "tensiongreen": "tension green", "constlclip": "const clip",
+    "amstragram": "Amstragram", "xtrans": "X-Trans", "iii": "III", "apx": "APX", "bw": "BW", "hs": "HS",
+    "agfa": "Agfa", "fuji": "Fuji", "kodak": "Kodak", "ilford": "Ilford", "polaroid": "Polaroid",
+    "lomography": "Lomography", "rollei": "Rollei", "ektachrome": "Ektachrome", "neopan": "Neopan",
+}
+# gmic categories that are film stocks: each word capitalized ("Agfa Vista 200"); the rest read as a sentence.
+FILM = {"bw", "colorslide", "negative_color", "negative_new", "negative_old", "instant_consumer", "instant_pro",
+        "print", "fujixtransiii"}
+
+
+def _words(text, film):
+    out = []
+    for word in text.split():
+        bare = word.rstrip("+").lower()
+        if bare in GLUED:
+            out.append(GLUED[bare] + word[len(bare):])
+        elif film and word[:1].isalpha():
+            out.append(word[:1].upper() + word[1:])
+        else:
+            out.append(word)
+    line = " ".join(out)
+    return line[:1].upper() + line[1:]
+
+
+def title(source, name):
+    """A readable library title for a LUT named `name` by its source; the name itself stays the ID and file stem."""
+    name = name.strip()
+    if source == "rawtherapee" and "-" in name:
+        folder, rest = name.split("-", 1)
+        # "Kodak-Kodak T-Max 400": the folder repeats the maker; "CreativePack-1-ColorNegative" splits its words.
+        text = rest if rest.lower().startswith(folder.lower()) else re.sub(r"(?<=[a-z])(?=[A-Z])", " ", name.replace("-", " "))
+        return _words(re.sub(r"\s+", " ", text), film=False)[:60]
+    if source == "gmic" and "-" in name:
+        category, stem = name.split("-", 1)
+        film = category in FILM
+        text = stem.replace("_", " ") if film else re.sub(r"[_-]+", " ", stem)
+        return _words(re.sub(r"\s+", " ", text).strip(), film)[:60] or name[:60]
+    text = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", re.sub(r"[_-]+", " ", name))
+    text = re.sub(r"\s+", " ", text).strip()
+    return (text[:1].upper() + text[1:])[:60] or name[:60]
+
+
+def retitle(items, scope):
+    """Renames looks an earlier run added under their file name (params.lut without a name) to their title, unless
+    renamed since (the name no longer matches params.lutName). Returns how many."""
+    renamed = 0
+    for item in items:
+        params = item.get("params") or {}
+        lut = params.get("lut") or {}
+        name, ident = item.get("name"), item.get("id")
+        if not ident or not name or lut.get("name") or params.get("lutName") != name or not lut.get("source"):
+            continue
+        new = title(lut["source"], name)
+        params = {**params, "lutName": new, "lut": {**lut, "name": name}}
+        result = bashcut("library", "update", ident, "--scope", scope, "--name", new, "--params", json.dumps(params))
+        if isinstance(result, dict) and not result.get("error"):
+            renamed += 1
+    return renamed
 
 
 # --- LUT files --------------------------------------------------------------------------------------------------
@@ -447,15 +522,16 @@ def ingest(items, source, known, kept, counts, o, library=frozenset()):
             continue
         kept.append(fp)
         path = store / f"{slug(name)}.cube"
-        path.write_text(cube_text(table, name))
+        label = title(source, name)
+        path.write_text(cube_text(table, label))
         counts["log"] += log
         tags = ["lut", source, *(["log"] if log else auto_tags(fp))]
         if not o.library:
             counts["added"] += 1
             continue
-        params = {"color": {"lutStrength": 1}, "lutName": name[:60],
-                  "lut": {"sha": sha, "source": source, "file": str(path), "fp": fp}}
-        added = bashcut("library", "add", "--kind", "look", "--name", name[:60], "--file", str(path),
+        params = {"color": {"lutStrength": 1}, "lutName": label,
+                  "lut": {"sha": sha, "source": source, "name": name, "file": str(path), "fp": fp}}
+        added = bashcut("library", "add", "--kind", "look", "--name", label, "--file", str(path),
                         "--scope", o.scope, "--id", f"lut-{slug(source)}-{slug(name)}"[:64].strip("-"),
                         "--tags", ",".join(tags), "--pack", f"LUT {source}", "--origin", "web" if source != "local" else "own",
                         "--params", json.dumps(params))
@@ -490,6 +566,7 @@ def main(argv=None):
     kept = [((i.get("params") or {}).get("lut") or {}).get("fp") for i in existing]
     kept = [f for f in kept if f]
     counts = dict(added=0, duplicates=0, log=0, broken=0, known=0)
+    renamed = retitle(existing, o.scope) if o.library else 0
     for source, quota in zip(sources, quotas):
         name = "local" if source.startswith("folder:") else source
         try:
@@ -504,7 +581,8 @@ def main(argv=None):
             print(f"{source}: skipped ({str(error)[:80]})")
     errors = counts.pop("errors", [])
     print(f"{counts['added']} added, {counts['duplicates']} duplicates, {counts['log']} log, {counts['broken']} broken, "
-          f"{counts['known']} already in the library" + (f" (first error: {errors[0]})" if errors else ""))
+          f"{counts['known']} already in the library" + (f", {renamed} renamed" if renamed else "")
+          + (f" (first error: {errors[0]})" if errors else ""))
 
 
 if __name__ == "__main__":
