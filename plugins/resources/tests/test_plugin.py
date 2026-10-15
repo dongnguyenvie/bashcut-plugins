@@ -131,41 +131,93 @@ class PluginTests(unittest.TestCase):
         self.assertEqual(host.calls, [("plugins.show-view", {"plugin": "bashcut.resources", "view": "browse"})])
         self.assertNotIn("message", answer)
 
-    def test_the_sheet_searches_selects_and_downloads(self):
+    def test_the_browser_searches_and_shows_the_licence_before_adding(self):
         host = FakeHost()
-        params = {"view": "browse", "locale": "en", "options": {}}
+        params = {"view": "browse", "locale": "en", "options": {},
+                  "context": {"project": {"width": 1920, "height": 1080}}}
         first = resources.handle("view.render", {**params, "values": {}}, host)
         self.assertEqual(plugin_manifest.view_problems(first), [])
-        values = {"kind": "photo", "query": "clay pot", "source": "pixabay"}
-        found = resources.handle("view.event", {**params, "state": first["state"], "values": values,
+        split = first["body"][0]
+        self.assertEqual((split["type"], split["widths"]), ("split", [200, "flex", 300]))
+        kinds = find(first["body"], "kind")
+        self.assertEqual([e["id"] for e in kinds["groups"][0]["items"]][:8],
+                         ["photo", "video", "music", "sfx", "font", "lut", "illustration", "emoji"])
+        state = resources.handle("view.event", {**params, "state": first["state"], "values": {},
+                                                "event": {"node": "source", "type": "select", "value": "pixabay"}},
+                                 host)["state"]
+        values = {"query": "clay pot"}
+        found = resources.handle("view.event", {**params, "state": state, "values": values,
                                                 "event": {"node": "search", "type": "click"}}, host)
         self.assertEqual(plugin_manifest.view_problems(found), [])
         grid = find(found["body"], "results")
         self.assertEqual([i["id"] for i in grid["items"]], ["pixabay-11", "pixabay-12"])
+        self.assertEqual(grid["drag"], "download")
+        self.assertEqual(find(found["body"], "recent.0")["title"], "clay pot")
+        self.assertEqual(find(found["body"], "kind")["groups"][0]["items"][0]["count"], 2)
         picked = resources.handle("view.event", {**params, "state": found["state"], "values": values,
                                                  "event": {"node": "results", "type": "select", "value": "pixabay-12"}},
                                   host)
-        self.assertEqual(find(picked["body"], "results")["selected"], ["pixabay-12"])
-        saved = resources.handle("view.event", {**params, "state": picked["state"], "values": values,
-                                                "event": {"node": "download", "type": "click"}}, host)
-        cell = next(i for i in find(saved["body"], "results")["items"] if i["id"] == "pixabay-12")
+        self.assertEqual(find(picked["body"], "results")["selected"], "pixabay-12")
+        facts = {f["key"]: f["value"] for f in find_type(picked["body"], "keyValue")["items"]}
+        self.assertEqual(facts["Licence"], "Pixabay")
+        self.assertEqual(facts["Size"], "1920×1280")
+        self.assertEqual(facts["Fit"], "Cropped to fill a 16:9 frame")
+        added = resources.handle("view.event", {**params, "state": picked["state"], "values": values,
+                                                "event": {"node": "addTimeline", "type": "click"}}, host)
+        self.assertIn(("library.place", {"id": "project:pixabay-12"}), host.calls)
+        self.assertEqual(added["state"]["message"], "Added to the timeline")
+        cell = next(i for i in find(added["body"], "results")["items"] if i["id"] == "pixabay-12")
         self.assertEqual(cell["libraryItem"], "project:pixabay-12")
-        self.assertIn("1 saved", saved["state"]["message"])
+        self.assertEqual(added["state"]["recent"], [{"kind": "photo", "query": "clay pot"}])
 
-    def test_the_empty_sheet_labels_its_filters_and_offers_example_searches(self):
+    def test_a_dropped_result_downloads_and_answers_the_library_item(self):
+        host = FakeHost()
+        params = {"view": "browse", "locale": "en", "options": {}}
+        found = resources.handle("view.event", {**params, "state": {"source": "pixabay"}, "values": {"query": "pot"},
+                                                "event": {"node": "search", "type": "click"}}, host)
+        dropped = resources.handle("view.event", {**params, "state": found["state"], "values": {"query": "pot"},
+                                                  "event": {"node": "results", "type": "drag",
+                                                            "value": {"item": "pixabay-11"}}}, host)
+        self.assertEqual(dropped["libraryItem"], "project:pixabay-11")
+        self.assertNotIn("library.place", [m for m, _ in host.calls])  # BashCut places a drop where it landed
+        again = resources.handle("view.event", {**params, "state": dropped["state"], "values": {"query": "pot"},
+                                                "event": {"node": "results", "type": "drag",
+                                                          "value": {"item": "pixabay-11"}}}, host)
+        self.assertEqual(again["libraryItem"], "project:pixabay-11")
+        adds = [p for m, p in host.calls if m == "cli" and p["argv"][:2] == ["library", "add"]]
+        self.assertEqual(len(adds), 1, "the second drop reuses the saved item")
+
+    def test_save_to_library_uses_my_library_and_recent_searches_run_again(self):
+        host = FakeHost()
+        params = {"view": "browse", "locale": "vi", "options": {}}
+        found = resources.handle("view.event", {**params, "state": {"source": "pixabay"}, "values": {"query": "pot"},
+                                                "event": {"node": "search", "type": "click"}}, host)
+        picked = resources.handle("view.event", {**params, "state": found["state"], "values": {},
+                                                 "event": {"node": "results", "type": "select", "value": "pixabay-11"}},
+                                  host)
+        saved = resources.handle("view.event", {**params, "state": picked["state"], "values": {},
+                                                "event": {"node": "saveLibrary", "type": "click"}}, host)
+        self.assertEqual(saved["state"]["message"], "Đã lưu vào Thư viện của tôi")
+        add = next(p["argv"] for m, p in host.calls if m == "cli" and p["argv"][:2] == ["library", "add"])
+        self.assertEqual(add[add.index("--scope") + 1], "user")
+        again = resources.handle("view.event", {**params, "state": {**saved["state"], "query": "", "found": None},
+                                                "values": {}, "event": {"node": "recent.0", "type": "click"}}, host)
+        self.assertEqual(again["state"]["query"], "pot")
+        self.assertEqual(find(again["body"], "query")["value"], "pot")
+
+    def test_the_empty_browser_labels_its_filters_and_offers_example_searches(self):
         host = FakeHost()
         params = {"view": "browse", "locale": "en", "options": {},
                   "context": {"project": {"width": 1080, "height": 1920}}}
         first = resources.handle("view.render", {**params, "values": {}}, host)
         self.assertEqual(plugin_manifest.view_problems(first), [])
-        self.assertNotIn("title", first)  # the sheet header already names the view
-        pickers = {n["id"]: n for n in first["body"][0]["children"] if n["type"] == "picker"}
-        self.assertEqual({k: v["label"] for k, v in pickers.items()},
-                         {"kind": "Type", "source": "Source", "orientation": "Orientation"})
-        self.assertEqual(pickers["source"]["options"][0]["label"], "Any free source")
-        self.assertEqual(pickers["orientation"]["value"], "portrait")  # a 9:16 project
+        self.assertNotIn("title", first)  # the window header already names the view
+        self.assertEqual(find(first["body"], "orientation")["label"], "Orientation")
+        self.assertEqual(find(first["body"], "orientation")["value"], "portrait")  # a 9:16 project
+        self.assertEqual(find(first["body"], "source")["groups"][0]["items"][0]["title"], "Any free source")
         self.assertEqual(find(first["body"], "example.0")["title"], "coffee")
-        found = resources.handle("view.event", {**params, "state": first["state"], "values": {"kind": "photo"},
+        self.assertIn("Select a result", json.dumps(first["body"]))
+        found = resources.handle("view.event", {**params, "state": first["state"], "values": {},
                                                 "event": {"node": "example.0", "type": "click"}}, host)
         self.assertEqual(found["state"]["query"], "coffee")
         self.assertEqual(find(found["body"], "query")["value"], "coffee")
@@ -173,6 +225,10 @@ class PluginTests(unittest.TestCase):
         skeleton = find(host.renders[-1], "loading")  # the render while the search ran
         self.assertEqual(len(skeleton["items"]), resources.SKELETON_TILES)
         self.assertEqual(plugin_manifest.view_problems({"body": host.renders[-1]}), [])
+        music = resources.handle("view.event", {**params, "state": found["state"], "values": {},
+                                                "event": {"node": "kind", "type": "select", "value": "music"}}, host)
+        self.assertEqual(music["state"]["kind"], "music")
+        self.assertEqual(music["state"]["source"], "openverse")
 
     def test_lottie_tab_saves_picks_into_the_project_not_the_library(self):
         lottie = resources.module("fetch_lottie")
@@ -193,8 +249,8 @@ class PluginTests(unittest.TestCase):
             self.addCleanup(patcher.stop)
         host = FakeHost(project=str(project / "Demo.bashcut"))
         params = {"view": "browse", "locale": "en", "options": {}}
-        values = {"kind": "lottie", "query": "check", "source": "all"}
-        found = resources.handle("view.event", {**params, "state": {}, "values": values,
+        values = {"query": "check"}
+        found = resources.handle("view.event", {**params, "state": {"kind": "lottie", "source": "all"}, "values": values,
                                                 "event": {"node": "search", "type": "click"}}, host)
         self.assertEqual(plugin_manifest.view_problems(found), [])
         cell = find(found["body"], "results")["items"][0]
@@ -204,11 +260,13 @@ class PluginTests(unittest.TestCase):
         picked = resources.handle("view.event", {**params, "state": found["state"], "values": values,
                                                  "event": {"node": "results", "type": "select", "value": "check=1"}},
                                   host)
+        self.assertTrue(find(picked["body"], "addTimeline")["disabled"])  # Lottie never goes on the timeline
+        self.assertNotIn("drag", find(picked["body"], "results"))
         saved = resources.handle("view.event", {**params, "state": picked["state"], "values": values,
-                                                "event": {"node": "download", "type": "click"}}, host)
+                                                "event": {"node": "addProject", "type": "click"}}, host)
         self.assertTrue((project / "media/lottie/check-ua-checkmark.json").is_file())
         self.assertEqual(find(saved["body"], "results")["items"][0]["badge"], "In library")
-        self.assertIn("1 saved to the project", saved["state"]["message"])
+        self.assertEqual(saved["state"]["message"], "Saved to this project")
         self.assertFalse(any(p and p.get("argv", [""])[0] == "library" for m, p in host.calls if m == "cli"))
         again = resources.search(host, {}, "lottie", "check", "all")
         self.assertEqual(again["items"][0]["inLibrary"], str(project / "media/lottie/check-ua-checkmark.json"))
@@ -223,6 +281,15 @@ class PluginTests(unittest.TestCase):
         lines = [json.loads(line) for line in out.stdout.splitlines() if line.strip()]
         self.assertEqual(lines[0]["type"], "hello")
         self.assertIn("--brands", lines[-1]["result"]["data"]["output"])
+
+
+def find_type(body, kind):
+    for node in body:
+        if node.get("type") == kind:
+            return node
+        with contextlib.suppress(LookupError):
+            return find_type(node.get("children") or [], kind)
+    raise LookupError(kind)
 
 
 def find(body, node_id):

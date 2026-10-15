@@ -18,6 +18,7 @@ import hashlib
 import importlib
 import io
 import json
+import math
 import os
 import re
 import shlex
@@ -759,182 +760,330 @@ def handle(method, params, host):
     raise PluginError("unknown_action", f"Online Resources has no action {action}")
 
 
-# --- the sheet ---------------------------------------------------------------------------------------------------
+# --- the browser -------------------------------------------------------------------------------------------------
+#
+# A window of its own (plugin API 11, `location: window`): one split of three columns. Left, a nav of the types and
+# of the current type's sources; middle, the search field, labelled filters, recent searches and the results grid
+# (tiles drag onto the timeline and download when dropped); right, an inspector with a big preview, licence, author,
+# size and fit, and Add to timeline / Add to project / Save to library. The window keeps its state when it closes, so
+# the query, results and recent searches are still there next time.
+
+KIND_ORDER = ["photo", "video", "music", "sfx", "font", "lut", "illustration", "emoji", "logo", "lottie"]
+KIND_ICONS = {"photo": "photo", "video": "film", "music": "music.note", "sfx": "speaker.wave.2",
+              "font": "textformat", "lut": "camera.filters", "illustration": "paintbrush", "emoji": "face.smiling",
+              "logo": "seal", "lottie": "sparkles"}
+MAX_RECENT = 6
+TEXT.update({
+    "types": ("Types", "Loại"), "sources": ("Sources", "Nguồn"), "details": ("Details", "Chi tiết"), "recent": ("Recent:", "Gần đây:"),
+    "pick": ("Select a result to see its licence and add it.", "Chọn một kết quả để xem giấy phép và thêm vào."),
+    "license": ("Licence", "Giấy phép"), "author": ("Author", "Tác giả"), "size": ("Size", "Kích thước"),
+    "fit": ("Fit", "Khớp khung"), "page": ("Page", "Trang gốc"), "unknown": ("Not given: check the source page",
+                                                                            "Không ghi: xem trang gốc"),
+    "addTimeline": ("Add to timeline", "Thêm vào timeline"), "addProject": ("Add to project", "Thêm vào project"),
+    "saveLibrary": ("Save to library", "Lưu vào thư viện"),
+    "dragHint": ("Drag a result onto the timeline, or select it and choose Add to timeline.",
+                 "Kéo kết quả vào timeline, hoặc chọn rồi bấm Thêm vào timeline."),
+    "added": ("Added to the timeline", "Đã thêm vào timeline"), "savedProject": ("Saved to this project",
+                                                                                   "Đã lưu vào project này"),
+    "savedUser": ("Saved to My library", "Đã lưu vào Thư viện của tôi"),
+    "noTimeline": ("This kind cannot go on the timeline; it was saved", "Loại này không đặt lên timeline được; đã lưu"),
+    "fits": ("Fits the {0} project", "Vừa khung project {0}"), "crops": ("Cropped to fill a {0} frame",
+                                                                          "Bị cắt cho đầy khung {0}"),
+})
+
 
 def browse(params, state, values, event, host):
     locale = params.get("locale") or "en"
     options = params.get("options") or {}
     node, kind_of_event, value = event.get("node"), event.get("type"), event.get("value")
-    kind = values.get("kind") or state.get("kind") or "photo"
+    kind = state.get("kind") or values.get("kind") or "photo"
     kind = kind if kind in KINDS else "photo"
-    source = resolve_source(kind, values.get("source") or state.get("source") or "")
+    source = resolve_source(kind, state.get("source") or values.get("source") or "")
     query = (values.get("query") if values.get("query") is not None else state.get("query") or "").strip()
     if node == "query" and isinstance(value, str):  # Return in the field (or plugins view-event --value)
         query = value.strip()
-    scope = values.get("scope") or state.get("scope") or "project"
     orientation = values.get("orientation") or state.get("orientation") or project_orientation(params)
     sample = values.get("sample") or state.get("sample") or ""
-    selected = list(state.get("selected") or [])
+    focus = state.get("focus")
     found = state.get("found")
-    message, reset = state.get("message", ""), {}
+    recent = list(state.get("recent") or [])
+    message, reset, answer = state.get("message", ""), {}, {}
 
-    if node == "kind" and kind != state.get("kind"):
-        source, found, selected, message = KINDS[kind]["sources"][0], None, [], ""
-        reset["source"] = source
-    if isinstance(node, str) and node.startswith("example.") and node[8:].isdigit():
-        examples = EXAMPLES.get(kind) or []
-        if int(node[8:]) < len(examples):
-            query = examples[int(node[8:])]
+    if node == "kind" and kind_of_event == "select" and value in KINDS and value != kind:
+        kind, source, found, focus, message = value, KINDS[value]["sources"][0], None, None, ""
+    if node == "source" and kind_of_event == "select" and value in KINDS[kind]["sources"]:
+        source = value
+    if isinstance(node, str) and node.startswith(("example.", "recent.")) and node.split(".")[1].isdigit():
+        index = int(node.split(".")[1])
+        picks = ([{"kind": kind, "query": q} for q in EXAMPLES.get(kind) or []] if node.startswith("example.")
+                 else recent)
+        if index < len(picks) and picks[index].get("kind") in KINDS:
+            if picks[index]["kind"] != kind:
+                kind, source = picks[index]["kind"], KINDS[picks[index]["kind"]]["sources"][0]
+            query = picks[index]["query"]
             reset["query"] = query
             node = "search"
-    run_search = (node in ("search",) or (node == "query" and kind_of_event == "submit")
-                  or (node == "kind" and query) or (node == "source" and query and found))
+    run_search = (node == "search" or (node == "query" and kind_of_event == "submit")
+                  or (node == "kind" and query) or (node in ("source", "orientation") and query and found))
+    draw = lambda text, **flags: body_of(locale, kind, source, query, orientation, sample, found, focus,  # noqa: E731
+                                         recent, text, params, **flags)
     try:
-        if run_search or (node == "fetchLuts") or (kind == "lut" and found is None and node is None):
+        if run_search or node == "fetchLuts" or (kind == "lut" and found is None and node is None):
             if node == "fetchLuts":
-                host.render(body_of(locale, kind, source, query, scope, orientation, sample, found, selected,
-                                    tr("working", locale), busy=True))
+                host.render(draw(tr("working", locale), busy=True))
                 rows = download(host, options, "lut", query, [], source, "user")
-                message = (rows[0].get("output") or "").splitlines()[-1:] or [""]
-                message = message[0][:300]
+                message = ((rows[0].get("output") or "").splitlines()[-1:] or [""])[0][:300]
             # A new search: placeholder tiles where the results will be, not the old results.
-            host.render(body_of(locale, kind, source, query, scope, orientation, sample, None, selected,
-                                tr("working", locale), busy=True, skeleton=True))
+            host.render(body_of(locale, kind, source, query, orientation, sample, None, None, recent,
+                                tr("working", locale), params, busy=True, skeleton=True))
             found = search(host, options, kind, query, source, 1, orientation, sample)
-            selected = []
+            focus = None
             message = message if node == "fetchLuts" else ""
-        elif node == "results" and kind_of_event == "select":
-            selected = [s for s in selected if s != value] if value in selected else selected + [value]
+            if query:
+                recent = ([{"kind": kind, "query": query}]
+                          + [r for r in recent if (r.get("kind"), r.get("query")) != (kind, query)])[:MAX_RECENT]
+        elif node in ("results", "library") and kind_of_event == "select":
+            focus = None if value == focus else value
         elif node == "results" and kind_of_event == "click" and value == "more" and found and found.get("next"):
-            host.render(body_of(locale, kind, source, query, scope, orientation, sample, found, selected,
-                                tr("working", locale), busy=True))
+            host.render(draw(tr("working", locale), busy=True))
             more = search(host, options, kind, found["query"], found.get("source") or source, found["next"],
                           orientation, sample)
             found = {**found, "items": found["items"] + more["items"], "next": more["next"], "page": more["page"]}
         elif node == "results" and kind_of_event == "action" and isinstance(value, dict):
             if value.get("action") == "preview":
-                row = ROWS.get(value.get("item"))
-                if row and found:
-                    with working(host, options, "Preview"):
-                        path = audio_file(row)
-                        if not path.exists():
-                            path.write_bytes(module("fetch_audio").get(row["url"], timeout=120))
-                    found = {**found, "items": [{**i, "audio": str(path)} if i["id"] == value.get("item") else i
-                                                for i in found["items"]]}
-        elif node == "download" and selected and found:
-            host.render(body_of(locale, kind, source, query, scope, orientation, sample, found, selected,
-                                tr("working", locale), busy=True))
-            rows = download(host, options, kind, found["query"], selected, found.get("source") or source, scope)
-            done = {r.get("id"): r.get("libraryId") for r in rows if r.get("libraryId")}
-            if kind in ("emoji", "illustration"):  # picked by slot=n: the lines carry slot and n
-                done = {f"{r.get('slot')}={r.get('n')}": r.get("libraryId") for r in rows if r.get("libraryId")}
-            if kind == "logo":
-                done = {r.get("slug"): r.get("libraryId") for r in rows if r.get("libraryId")}
-            if kind == "lottie":
-                done = {f"{r.get('slot')}={r.get('n')}": r.get("file") for r in rows if r.get("file")}
-            if kind == "font":
-                done = {str(r.get("n")): r.get("libraryId") or "saved" for r in rows if not r.get("error")}
-            found = {**found, "items": [{**i, "inLibrary": done.get(i["id"]) or i.get("inLibrary")}
-                                        for i in found["items"]]}
-            errors = [r.get("error") for r in rows if r.get("error")]
-            where = ("the project (media/lottie)", "project (media/lottie)") if kind == "lottie" else (
-                "the library", "thư viện")
-            message = (f"{len(done)} saved to {where[0]}" if not str(locale).startswith("vi")
-                       else f"Đã lưu {len(done)} mục vào {where[1]}") + (f" · {errors[0]}" if errors else "")
-            selected = []
+                found = with_audio_preview(host, options, found, value.get("item"))
+        elif node in ("results", "library") and kind_of_event == "drag" and isinstance(value, dict) and found:
+            # Dropped on the timeline: BashCut places the item it gets back where the tile landed.
+            reference, found = save_result(host, options, kind, found, str(value.get("item")), source, "project")
+            answer["libraryItem"] = reference
+            message = tr("savedProject", locale)
+        elif node in ("addTimeline", "addProject", "saveLibrary") and focus and found:
+            host.render(draw(tr("working", locale), busy=True))
+            scope = "user" if node == "saveLibrary" else "project"
+            reference, found = save_result(host, options, kind, found, focus, source, scope)
+            if node == "addTimeline":
+                if ":" not in str(reference) or not KINDS[kind]["library"]:
+                    message = tr("noTimeline", locale)
+                else:
+                    host.call("library.place", {"id": reference})
+                    message = tr("added", locale)
+            else:
+                message = tr("savedUser" if scope == "user" else "savedProject", locale)
     except PluginError as error:
         message = error.message
-    state = {"kind": kind, "source": source, "query": query, "scope": scope, "orientation": orientation,
-             "sample": sample, "selected": selected, "found": found, "message": message}
-    # No title of its own: the sheet header already says "Online resources".
-    answer = {"state": state,
-              "body": body_of(locale, kind, source, query, scope, orientation, sample, found, selected, message)}
+    state = {"kind": kind, "source": source, "query": query, "orientation": orientation, "sample": sample,
+             "focus": focus, "found": found, "message": message, "recent": recent}
+    # No title of its own: the window header already says "Online resources".
+    body = draw(message)
     if reset:
-        for component in answer["body"]:
-            for child in component.get("children") or []:
-                if child.get("id") in reset:
-                    child["value"] = reset[child["id"]]
-    return answer
+        set_values(body, reset)
+    return {"state": state, "body": body, **answer}
 
 
-def body_of(locale, kind, source, query, scope, orientation, sample, found, selected, message, busy=False,
-            skeleton=False):
-    kinds = [{"value": k, "label": tr(k, locale)} for k in KINDS]
-    sources = [{"value": s, "label": source_name(s, locale)} for s in KINDS[kind]["sources"]]
-    controls = [
-        {"type": "picker", "id": "kind", "label": tr("type", locale), "value": kind, "options": kinds},
-        {"type": "textField", "id": "query", "placeholder": tr("placeholder", locale), "submit": True,
-         **({"value": found["query"]} if found and found.get("query") else {})},
-        {"type": "picker", "id": "source", "label": tr("source", locale), "value": source, "options": sources},
-    ]
-    if kind in ("photo", "video"):
-        controls.append({"type": "picker", "id": "orientation", "label": tr("orientation", locale),
-                         "value": orientation, "options": [{"value": o, "label": tr(f"orientation.{o}", locale)}
-                                                           for o in ("any", "portrait", "landscape", "square")]})
-    controls.append({"type": "button", "id": "search", "title": tr("search", locale), "icon": "magnifyingglass",
-                     "style": "primary", "disabled": busy})
-    body = [{"type": "row", "children": controls}]
+def set_values(nodes, values):
+    for component in nodes:
+        if component.get("id") in values:
+            component["value"] = values[component["id"]]
+        set_values(component.get("children") or [], values)
+
+
+def with_audio_preview(host, options, found, item_id):
+    row = ROWS.get(item_id)
+    if not (row and found):
+        return found
+    with working(host, options, "Preview"):
+        path = audio_file(row)
+        if not path.exists():
+            path.write_bytes(module("fetch_audio").get(row["url"], timeout=120))
+    return {**found, "items": [{**i, "audio": str(path)} if i["id"] == item_id else i for i in found["items"]]}
+
+
+def saved_ids(kind, rows):
+    """Result id → what a download saved (a library reference, or the project file of a Lottie)."""
+    if kind in ("emoji", "illustration"):  # picked by slot=n: the lines carry slot and n
+        return {f"{r.get('slot')}={r.get('n')}": r.get("libraryId") for r in rows if r.get("libraryId")}
+    if kind == "logo":
+        return {r.get("slug"): r.get("libraryId") for r in rows if r.get("libraryId")}
+    if kind == "lottie":
+        return {f"{r.get('slot')}={r.get('n')}": r.get("file") for r in rows if r.get("file")}
     if kind == "font":
-        body.append({"type": "textField", "id": "sample", "label": tr("sample", locale), "value": sample or None,
-                     "placeholder": "Phở bò Hà Nội, đường lên Đà Lạt"})
+        return {str(r.get("n")): r.get("libraryId") or "saved" for r in rows if not r.get("error")}
+    return {r.get("id"): r.get("libraryId") for r in rows if r.get("libraryId")}
+
+
+def save_result(host, options, kind, found, item_id, source, scope):
+    """One result in the library (downloaded now unless it is there already); returns (reference, found) with the
+    result marked as in the library."""
+    mine = next((i for i in found.get("library") or [] if i["id"] == item_id), None)
+    if mine:
+        return mine["libraryId"], found
+    item = next((i for i in found.get("items") or [] if i["id"] == item_id), None)
+    if item is None:
+        raise PluginError("unknown_item", f"{item_id} is not in the results: search again")
+    there = str(item.get("inLibrary") or "")
+    if ":" in there and (scope == "project" or there.startswith(scope + ":")):
+        return there, found
+    rows = download(host, options, kind, found["query"], [item_id], found.get("source") or source, scope)
+    reference = saved_ids(kind, rows).get(item_id)
+    if not reference:
+        errors = [r.get("error") for r in rows if r.get("error")]
+        raise PluginError("download_failed", (errors[0] if errors else f"{item_id} was not saved")[:300])
+    found = {**found, "items": [{**i, "inLibrary": reference} if i["id"] == item_id else i for i in found["items"]]}
+    return reference, found
+
+
+def body_of(locale, kind, source, query, orientation, sample, found, focus, recent, message, params, busy=False,
+            skeleton=False):
+    """The three columns: types and sources, the search and results, the inspector."""
+    count = len((found or {}).get("items") or []) if found else None
+    nav = [
+        {"type": "nav", "id": "kind", "value": kind, "groups": [{"title": tr("types", locale), "items": [
+            {"id": k, "title": tr(k, locale), "icon": KIND_ICONS[k], **({"count": count} if k == kind and count else {})}
+            for k in KIND_ORDER]}]},
+        {"type": "nav", "id": "source", "value": source, "groups": [{"title": tr("sources", locale), "items": [
+            {"id": s, "title": source_name(s, locale), "icon": "globe"} for s in KINDS[kind]["sources"]]}]},
+    ]
+    middle = search_column(locale, kind, query, orientation, sample, found, focus, recent, message, busy, skeleton)
+    inspector = inspector_column(locale, kind, found, focus, params, busy)
+    # `label` names a side column where a narrow window folds it into a disclosure.
+    return [{"type": "split", "widths": [200, "flex", 300], "children": [
+        {"type": "section", "label": tr("types", locale), "children": nav},
+        {"type": "section", "children": middle},
+        {"type": "section", "label": tr("details", locale), "children": inspector},
+    ]}]
+
+
+def search_column(locale, kind, query, orientation, sample, found, focus, recent, message, busy, skeleton):
+    body = [{"type": "row", "children": [
+        {"type": "textField", "id": "query", "placeholder": tr("placeholder", locale), "submit": True,
+         **({"value": query} if query else {})},
+        {"type": "button", "id": "search", "title": tr("search", locale), "icon": "magnifyingglass",
+         "style": "primary", "disabled": busy}]}]
+    filters = []
+    if kind in ("photo", "video"):
+        filters.append({"type": "picker", "id": "orientation", "label": tr("orientation", locale),
+                        "value": orientation, "options": [{"value": o, "label": tr(f"orientation.{o}", locale)}
+                                                          for o in ("any", "portrait", "landscape", "square")]})
+    if kind == "font":
+        filters.append({"type": "textField", "id": "sample", "label": tr("sample", locale), "value": sample or None,
+                        "placeholder": "Phở bò Hà Nội, đường lên Đà Lạt"})
     if kind == "lut":
-        body.append({"type": "button", "id": "fetchLuts", "title": tr("fetchLuts", locale), "icon": "arrow.down.circle",
-                     "disabled": busy})
+        filters.append({"type": "button", "id": "fetchLuts", "title": tr("fetchLuts", locale),
+                        "icon": "arrow.down.circle", "disabled": busy})
+    if filters:
+        body.append({"type": "row", "children": filters})
+    if recent:
+        body.append({"type": "row", "children": [{"type": "text", "text": tr("recent", locale), "style": "caption"}]
+                     + [{"type": "button", "id": f"recent.{n}", "title": r["query"], "style": "link", "disabled": busy}
+                        for n, r in enumerate(recent)]})
     if busy:
         body.append({"type": "progress", "label": message})
     elif message:
         body.append({"type": "text", "text": message, "style": "caption"})
     cell, aspect = KINDS[kind]["cell"], KINDS[kind]["aspect"]
     audio_kind = kind in ("music", "sfx")
+    icon = "waveform" if audio_kind else ("textformat" if kind == "font" else "photo")
     if skeleton:
-        icon = "waveform" if audio_kind else ("textformat" if kind == "font" else "photo")
         body.append({"type": "grid", "id": "loading", "cellWidth": cell, "aspect": aspect,
                      "items": [{"id": f"loading-{n}", "icon": icon, "title": "…"} for n in range(SKELETON_TILES)]})
         return body
+    placeable = bool(KINDS[kind]["library"])
     if found and found.get("library"):
         body.append({"type": "section", "title": f"{tr('library', locale)} ({len(found['library'])})", "children": [
-            {"type": "grid", "id": "library", "cellWidth": cell, "aspect": aspect, "items": [
+            {"type": "grid", "id": "library", "cellWidth": cell, "aspect": aspect, "selected": focus, "items": [
                 {"id": item["id"], "title": item.get("title"), "subtitle": ", ".join(item.get("tags", [])[:4]),
                  "image": item.get("preview"), "audio": item.get("audio"), "libraryItem": item["libraryId"],
-                 "icon": "waveform" if audio_kind else "photo", "badge": tr("inLibrary", locale),
-                 "badgeColor": "green"} for item in found["library"]]}]})
+                 "icon": icon, "badge": tr("inLibrary", locale), "badgeColor": "green"} for item in found["library"]]}]})
     if found and found.get("sheet") and Path(found["sheet"]).exists():
         body.append({"type": "image", "path": found["sheet"], "height": 420})
-    if found is not None:
-        items = []
-        for item in found.get("items") or []:
-            cell_item = {"id": item["id"], "title": item.get("title"), "subtitle": item.get("subtitle"),
-                         "image": item.get("preview"), "audio": item.get("audio"),
-                         "icon": "waveform" if audio_kind else ("textformat" if kind == "font" else "photo")}
-            if item.get("inLibrary"):
-                cell_item.update(badge=tr("inLibrary", locale), badgeColor="green")
-                if ":" in str(item["inLibrary"]):
-                    cell_item["libraryItem"] = item["inLibrary"]
-            if audio_kind and not item.get("audio"):
-                cell_item["actions"] = [{"id": "preview", "title": tr("preview", locale), "icon": "play.circle"}]
-            items.append({k: v for k, v in cell_item.items() if v not in (None, "")})
-        grid = {"type": "grid", "id": "results", "cellWidth": cell, "aspect": aspect, "items": items,
-                "selected": selected, "empty": tr("none", locale)}
-        if found.get("next"):
-            grid["more"] = tr("more", locale)
-        body.append({"type": "section",
-                     "title": f"{tr('results', locale)} · {source_name(found.get('source'), locale)}",
-                     "children": [grid]})
-        if kind != "lut":
-            body.append({"type": "row", "children": [
-                {"type": "text", "text": f"{len(selected)} {tr('selected', locale)}", "style": "secondary"},
-                {"type": "picker", "id": "scope", "label": tr("scope", locale), "value": scope,
-                 "options": [{"value": s, "label": tr(f"scope.{s}", locale)} for s in ("project", "user")]},
-                {"type": "button", "id": "download", "title": f"{tr('download', locale)} ({len(selected)})",
-                 "icon": "arrow.down.to.line", "style": "primary", "disabled": busy or not selected}]})
-    else:
+    if found is None:
         body.append({"type": "text", "text": tr("empty", locale), "style": "secondary"})
         examples = EXAMPLES.get(kind) or []
         if examples:
             body.append({"type": "row", "children": [{"type": "text", "text": tr("try", locale), "style": "secondary"}]
                          + [{"type": "button", "id": f"example.{n}", "title": text, "icon": "magnifyingglass",
                              "disabled": busy} for n, text in enumerate(examples)]})
+        return body
+    items = []
+    for item in found.get("items") or []:
+        cell_item = {"id": item["id"], "title": item.get("title"), "subtitle": item.get("subtitle"),
+                     "image": item.get("preview"), "audio": item.get("audio"), "icon": icon}
+        if item.get("inLibrary"):
+            cell_item.update(badge=tr("inLibrary", locale), badgeColor="green")
+            if ":" in str(item["inLibrary"]):
+                cell_item["libraryItem"] = item["inLibrary"]
+        if audio_kind and not item.get("audio"):
+            cell_item["actions"] = [{"id": "preview", "title": tr("preview", locale), "icon": "play.circle"}]
+        items.append({k: v for k, v in cell_item.items() if v not in (None, "")})
+    grid = {"type": "grid", "id": "results", "cellWidth": cell, "aspect": aspect, "items": items,
+            "selected": focus, "empty": tr("none", locale)}
+    if placeable:
+        grid["drag"] = "download"
+    if found.get("next"):
+        grid["more"] = tr("more", locale)
+    body.append({"type": "section", "title": f"{tr('results', locale)} · {source_name(found.get('source'), locale)}",
+                 "children": [grid]})
+    if placeable and items:
+        body.append({"type": "text", "text": tr("dragHint", locale), "style": "caption"})
     return body
+
+
+def inspector_column(locale, kind, found, focus, params, busy):
+    item = next((i for i in (found or {}).get("items") or [] if i["id"] == focus), None)
+    mine = next((i for i in (found or {}).get("library") or [] if i["id"] == focus), None)
+    if not (item or mine):
+        return [{"type": "text", "text": tr("pick", locale), "style": "secondary"}]
+    item = item or {"title": mine.get("title"), "preview": mine.get("preview"), "audio": mine.get("audio"),
+                    "inLibrary": mine["libraryId"]}
+    body = []
+    if item.get("preview"):
+        body.append({"type": "image", "path": item["preview"], "height": 220,
+                     **({"libraryItem": item["inLibrary"]} if ":" in str(item.get("inLibrary") or "") else {})})
+    if item.get("audio"):
+        body.append({"type": "audio", "path": item["audio"], "title": tr("preview", locale)})
+    body.append({"type": "text", "text": str(item.get("title") or focus), "style": "heading"})
+    if item.get("inLibrary"):
+        body.append({"type": "badge", "text": tr("inLibrary", locale), "color": "green"})
+    facts = [{"key": tr("license", locale), "value": item.get("license") or tr("unknown", locale)}]
+    if item.get("author"):
+        facts.append({"key": tr("author", locale), "value": str(item["author"])})
+    if item.get("subtitle"):
+        facts.append({"key": tr("source", locale), "value": str(item["subtitle"])})
+    size = size_of(item.get("subtitle"))
+    if size:
+        facts.append({"key": tr("size", locale), "value": f"{size[0]}×{size[1]}"})
+        fit = fit_text(size, params, locale)
+        if fit:
+            facts.append({"key": tr("fit", locale), "value": fit})
+    if item.get("page"):
+        facts.append({"key": tr("page", locale), "value": str(item["page"])})
+    body.append({"type": "keyValue", "items": facts})
+    placeable = bool(KINDS[kind]["library"])
+    body.append({"type": "button", "id": "addTimeline", "title": tr("addTimeline", locale), "icon": "plus.rectangle",
+                 "style": "primary", "wide": True, "disabled": busy or not placeable})
+    body.append({"type": "button", "id": "addProject", "title": tr("addProject", locale), "icon": "folder.badge.plus",
+                 "wide": True, "disabled": busy})
+    if placeable:
+        body.append({"type": "button", "id": "saveLibrary", "title": tr("saveLibrary", locale),
+                     "icon": "tray.and.arrow.down", "wide": True, "disabled": busy})
+    return body
+
+
+def size_of(subtitle):
+    match = re.search(r"(\d{2,5})x(\d{2,5})", str(subtitle or ""))
+    return (int(match.group(1)), int(match.group(2))) if match else None
+
+
+def fit_text(size, params, locale):
+    """Whether a picture of `size` fills the project frame as it is or is cropped to fill it."""
+    project = ((params.get("context") or {}).get("project") or {})
+    width, height = project.get("width"), project.get("height")
+    if not isinstance(width, int) or not isinstance(height, int) or width <= 0 or height <= 0:
+        return None
+    divisor = math.gcd(width, height)
+    ratio = f"{width // divisor}:{height // divisor}"
+    same = abs(size[0] / size[1] - width / height) < 0.02
+    return tr("fits" if same else "crops", locale).format(ratio)
 
 
 def project_orientation(params):
