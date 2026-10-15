@@ -5,9 +5,9 @@
     "en": "Online Resources",
     "vi": "Tài nguyên trực tuyến"
   },
-  "version": "0.0.4",
-  "apiVersion": 8,
-  "minApiVersion": 8,
+  "version": "0.0.5",
+  "apiVersion": 11,
+  "minApiVersion": 11,
   "transport": "session",
   "entrypoint": "bin/provider",
   "category": "utilities",
@@ -15,7 +15,10 @@
     "name": "BashCut"
   },
   "features": [
-    "views.grid"
+    "views.grid",
+    "views.split",
+    "views.nav",
+    "views.drag"
   ],
   "capabilities": [],
   "dependencies": [
@@ -96,7 +99,7 @@
           "en": "Online resources",
           "vi": "Tài nguyên trực tuyến"
         },
-        "location": "sheet",
+        "location": "window",
         "icon": "globe"
       }
     ],

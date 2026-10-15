@@ -9,7 +9,9 @@ Read it top to bottom:
   4. Title card - a sheet: a short form that closes itself when done.
   5. Live       - the "Live" view: marks on the timeline (overlays) and a background job that redraws the view
                   after its request has answered (viewUpdate lines).
-  6. Actions    - Tools buttons that call BashCut while they run, one opening the sheet.
+  6. Browser    - a window (API 11): a 3-column split with a nav, a grid whose tiles download when dragged onto the
+                  timeline, and an inspector; its state survives closing the window.
+  7. Actions    - Tools buttons that call BashCut while they run, one opening the sheet.
 
 Views are answers, not widgets: BashCut sends `view.render` (draw) or `view.event` (the user did something) and the
 plugin answers with the whole component tree. Keep what you need between requests in `state`.
@@ -465,10 +467,98 @@ def count_in_background():
         send({"type": "viewUpdate", "view": "live", **update, **({"notify": "Counted to five"} if done else {})})
 
 
-VIEWS = {"gallery": gallery, "voice": voice, "titleCard": title_card, "live": live}
+# ------------------------------------------------------------------------------------------------------- 6. Browser
+
+SWATCHES = {
+    "warm": [("sunset", (240, 120, 60)), ("ember", (200, 70, 40)), ("sand", (230, 200, 150)), ("rust", (170, 90, 50))],
+    "cool": [("ocean", (40, 110, 200)), ("mint", (90, 200, 170)), ("night", (30, 40, 90)), ("ice", (190, 220, 240))],
+    "mono": [("ink", (25, 25, 25)), ("ash", (120, 120, 120)), ("paper", (235, 235, 230))],
+}
+
+
+def swatch_file(name, rgb, size=(320, 180)):
+    """A generated picture: the "online result" the browser downloads (no network in a sample)."""
+    path = os.path.join(cache_folder(), f"swatch-{name}-{size[0]}.png")
+    if not os.path.exists(path):
+        width, height = size
+        write_png(path, width, height, lambda x, y: tuple(min(255, c + (x * 40) // width - (y * 20) // height)
+                                                         for c in rgb))
+    return path
+
+
+def browser(request, state, values, event):
+    """A window view (`"location": "window"`, API 11): one `split` that fills the window, each column scrolling on
+    its own. The left column is a `nav` (sends `select`), the middle a `grid` whose tiles have `drag: "download"`,
+    the right an inspector for the selected tile. Dropping a tile on the timeline sends a `drag` event: the plugin
+    saves the file to the library and answers `libraryItem`, which BashCut places where the tile was dropped."""
+    event = event or {}
+    node, kind, value = event.get("node"), event.get("type"), event.get("value")
+    group = state.get("group", "warm")
+    focus = state.get("focus")
+    saved = dict(state.get("saved") or {})
+    answer = {}
+    if node == "groups" and kind == "select" and value in SWATCHES:
+        group, focus = value, None
+    elif node == "tiles" and kind == "select":
+        focus = value
+    elif (node == "tiles" and kind == "drag") or node == "add":
+        name = (value or {}).get("item") if kind == "drag" else focus
+        rgb = dict(item for items in SWATCHES.values() for item in items).get(name)
+        if rgb:
+            reference = saved.get(name) or save_swatch(request, name, rgb)
+            saved[name] = reference
+            answer["libraryItem"] = reference
+            if node == "add":  # the button places at the playhead; a drop is placed by BashCut where it landed
+                playhead = int((request.params.get("context") or {}).get("playhead") or 0)
+                request.call("library.place", {"id": reference, "atFrame": playhead, "baseRev": "last"})
+    tiles = [{"id": name, "title": name.title(), "image": swatch_file(name, rgb, (160, 90)),
+              **({"libraryItem": saved[name], "badge": "Saved", "badgeColor": "green"} if name in saved else {})}
+             for name, rgb in SWATCHES[group]]
+    nav = {"type": "nav", "id": "groups", "value": group, "groups": [
+        {"title": "Palettes", "items": [{"id": g, "title": g.title(), "icon": "paintpalette", "count": len(items)}
+                                        for g, items in SWATCHES.items()]}]}
+    inspector = [{"type": "text", "text": "Select a swatch", "style": "secondary"}]
+    if focus:
+        rgb = dict(item for items in SWATCHES.values() for item in items).get(focus)
+        if rgb:
+            inspector = [
+                {"type": "image", "path": swatch_file(focus, rgb), "height": 150},
+                {"type": "text", "text": focus.title(), "style": "heading"},
+                {"type": "keyValue", "items": [{"key": "Licence", "value": "CC0 (generated)"},
+                                               {"key": "Size", "value": "320×180"},
+                                               {"key": "Colour", "value": "#%02X%02X%02X" % rgb}]},
+                {"type": "button", "id": "add", "title": "Add to timeline", "icon": "plus", "style": "primary",
+                 "wide": True},
+            ]
+    body = [{"type": "split", "widths": [200, "flex", 260], "children": [
+        # `label` names a side column where a narrow window folds it into a disclosure; a `title` would add one here.
+        {"type": "section", "label": "Palettes", "children": [nav]},
+        {"type": "section", "children": [
+            {"type": "text", "text": "Drag a swatch onto the timeline: it is saved to the library when dropped.",
+             "style": "secondary"},
+            {"type": "grid", "id": "tiles", "items": tiles, "selected": focus, "cellWidth": 140, "aspect": 16 / 9,
+             "drag": "download"},
+        ]},
+        {"type": "section", "label": "Details", "children": inspector},
+    ]}]
+    return {"state": {"group": group, "focus": focus, "saved": saved}, "body": body, **answer}
+
+
+def save_swatch(request, name, rgb):
+    """Saves a swatch as a project library clip and returns its reference (scope:id)."""
+    item_id = f"views-example-{name}"
+    try:
+        request.call("library.get", {"id": item_id, "scope": "project"})  # saved earlier: reuse it
+    except RuntimeError:
+        request.call("library.add", {"kind": "clip", "name": f"Swatch {name}", "id": item_id,
+                                     "file": swatch_file(name, rgb), "scope": "project"})
+    return f"project:{item_id}"
+
+
+VIEWS = {"gallery": gallery, "voice": voice, "titleCard": title_card, "live": live, "browser": browser}
 PLUGIN_ID = "bashcut.views-example"
 
-# ----------------------------------------------------------------------------------------------------- 6. Actions
+# ----------------------------------------------------------------------------------------------------- 7. Actions
 
 
 def hello_action(request):

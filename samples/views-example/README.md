@@ -1,6 +1,6 @@
 # Views Example
 
-A sample of plugin views for BashCut (plugin API 8), in one Python file with no dependencies. It shows the three
+A sample of plugin views for BashCut (plugin API 8–11), in one Python file with no dependencies. It shows the
 places a view can live:
 
 - **Components** (`gallery`, the rail panel): every view component — text and markdown, badges, key/value rows, progress, buttons
@@ -20,6 +20,12 @@ places a view can live:
   **Count to five in the background** answers at once and keeps redrawing the view from a thread with
   `{"type": "viewUpdate", "view": "live", "body": …}` lines (feature `viewUpdate`) until it is done.
 
+- **Browser** (`browser`, `"location": "window"`, API 11): a non-modal window with one `split` of three columns
+  (`"widths": [200, "flex", 260]`): a `nav` of palettes on the left, a `grid` of swatches in the middle and an
+  inspector on the right. The grid has `"drag": "download"`: drop a swatch on the timeline and the plugin gets a
+  `drag` event, saves the swatch to the project library (`library.add`) and answers `libraryItem`, which BashCut
+  places where it was dropped. **Add to timeline** in the inspector places it at the playhead (`library.place`).
+  Close the window and open it again: the palette and selection are still there.
 - **Title card** (`titleCard`, `"location": "sheet"`): a short form in a sheet. The gallery's button and the
   **New title card…** action open it with the host call `plugins.show-view`; the answer `"close": true` closes it.
 
@@ -45,6 +51,8 @@ bashcut plugins view bashcut.views-example --view gallery --open
 bashcut plugins view-event bashcut.views-example --view gallery --node add
 bashcut plugins view-event bashcut.views-example --view gallery --node query --type change --value coffee
 bashcut plugins show-view bashcut.views-example --view titleCard
+bashcut plugins show-view bashcut.views-example --view browser
+bashcut plugins view-event bashcut.views-example --view browser --node groups --type select --value cool
 bashcut plugins view-event bashcut.views-example --view live --node mark
 bashcut plugins overlays bashcut.views-example
 bashcut plugins view-event bashcut.views-example --view voice --node provider --type change --value bashcut.vieneu-tts.synthesize

@@ -49,6 +49,16 @@ class InspectorWhenTests(unittest.TestCase):
                             for p in manifest_problems(self.manifest({"location": "inspector", "when": " "}))))
 
 
+class WindowViewTests(unittest.TestCase):
+    def manifest(self, api):
+        return {**BASE, "apiVersion": api, "transport": "session", "capabilities": [], "features": ["views"],
+                "contributes": {"views": [{"id": "browse", "title": "Browse", "location": "window"}]}}
+
+    def test_window_needs_api_11(self):
+        self.assertEqual(manifest_problems(self.manifest(11)), [])
+        self.assertIn("view browse: location window needs apiVersion 11", manifest_problems(self.manifest(10)))
+
+
 class DataOnlyTests(unittest.TestCase):
     PACK = {"schema": "bashcut.plugin/1", "id": "me.my-skills", "name": "My skills", "version": "0.1.0",
             "apiVersion": 7, "category": "agents", "contributes": {"skills": [{"path": "skills/beat-cut"}]}}
@@ -99,6 +109,18 @@ class ViewTests(unittest.TestCase):
                          "id is used twice"):
             self.assertTrue(any(expected in p for p in problems), (expected, problems))
         self.assertEqual(view_problems({"title": "no body"}), ["a view answer needs a body array of components"])
+
+    def test_split_and_nav(self):
+        column = {"type": "section", "children": [{"type": "text", "text": "x"}]}
+        good = {"body": [{"type": "split", "widths": [200, "flex", 280], "children": [column, column, column]},
+                         {"type": "nav", "id": "types", "value": "a", "groups": [{"items": [{"id": "a", "count": 3}]}]}]}
+        self.assertEqual(view_problems(good), [])
+        bad = {"body": [{"type": "split", "children": [column]},
+                        {"type": "split", "widths": [20, "flex"], "children": [column, column]},
+                        {"type": "nav", "groups": [{"items": [{"title": "no id"}]}]}]}
+        problems = view_problems(bad)
+        for expected in ("needs 2 or 3 children", 'points or "flex"', "nav _2: needs an id", "entries need an id"):
+            self.assertTrue(any(expected in p for p in problems), (expected, problems))
 
 
 if __name__ == "__main__":
