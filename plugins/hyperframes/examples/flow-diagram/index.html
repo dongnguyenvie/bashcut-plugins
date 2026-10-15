@@ -14,6 +14,8 @@
 <html lang="en" data-composition-variables='[
   {"id": "data", "type": "string", "label": "Diagram (JSON {title, nodes, edges, steps})", "default": "{\"title\": \"How an order flows\", \"nodes\": [{\"id\": \"app\", \"label\": \"Mobile app\", \"icon\": \"📱\"}, {\"id\": \"api\", \"label\": \"API gateway\"}, {\"id\": \"auth\", \"label\": \"Auth\", \"group\": \"core\"}, {\"id\": \"orders\", \"label\": \"Order service\", \"group\": \"core\"}, {\"id\": \"db\", \"label\": \"Database\", \"icon\": \"🗄️\"}, {\"id\": \"mail\", \"label\": \"Email\"}], \"edges\": [{\"from\": \"app\", \"to\": \"api\", \"label\": \"HTTPS\"}, {\"from\": \"api\", \"to\": \"auth\"}, {\"from\": \"api\", \"to\": \"orders\"}, {\"from\": \"orders\", \"to\": \"db\"}, {\"from\": \"orders\", \"to\": \"mail\", \"label\": \"event\"}], \"steps\": [{\"at\": 1.8, \"focus\": [\"app\", \"api\"]}, {\"at\": 3.6, \"focus\": [\"orders\"], \"reveal\": [\"db\", \"mail\"]}, {\"at\": 5.6, \"focus\": [\"db\"]}]}"},
   {"id": "title", "type": "string", "label": "Title when data has none (empty: no title)", "default": ""},
+  {"id": "t0", "type": "number", "label": "Scene second this render starts at (a slice of a longer scene; graphic plan sets it)", "default": 0},
+  {"id": "total", "type": "number", "label": "Scene length in seconds (0: the length of this render; graphic plan sets it)", "default": 0},
   {"id": "packets", "type": "boolean", "label": "Packets run along focused edges", "default": true},
   {"id": "sketch", "type": "boolean", "label": "Hand-drawn strokes and font", "default": false},
   {"id": "accent", "type": "color", "label": "Focus colour (ring, packets, hot edges)", "default": "#FFB020"},

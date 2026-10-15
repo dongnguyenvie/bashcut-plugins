@@ -11,7 +11,7 @@ and the review profile with `bashcut.vlog:plan`; edit with `bc:edit-workflow`.
 
 ## Build it in four calls
 
-The whole picture is one list, `plan.cut`: voiceover lines, one graphic per section, captions, music, SFX. Never
+The whole picture is one list, `plan.cut`: voiceover lines, one graphic per section (a growing diagram: one for all), captions, music, SFX. Never
 place voice takes, graphics or captions one by one with `timeline apply`. `P` is the HyperFrames plugin folder
 (`~/Library/Application Support/BashCut/Plugins/bashcut.hyperframes`).
 
@@ -89,9 +89,9 @@ Each voiceover line's `section` makes the section markers on apply (labels from 
   `disclosure` line on `amenity-radius`; accept review's `ai-undisclosed` with `review accept --reason` and tell the
   user to turn on the platform's AI toggle when posting (`bashcut.vlog:publish`).
 - **2 Routes to landmarks, 3 amenities**: one `amenity-radius` graphic, 8–10 s, from one `osm-map --legs star
-  --amenities "school,hospital,mall,park" --radius 1000` call on its copy. Every minute, km, count and "nearest" on
+  --amenities "school,hospital,mall,park" --radius 1000` call on its copy (`--style dark` for a dark map). Every minute, km, count and "nearest" on
   screen comes from its output, never counted by hand; landmarks within ~6 km (a farther one gets its own
-  `map-route`). A kind in its `none` list is left off the legend: never say or show it as "0".
+  `map-route`). A kind in its `none` list is left off the legend: never say or show it as "0" (never set `showZero`).
 - **4 Price and CTA**: `cost-table` or `stat-counter` with the price's source and date, then the CTA, 4–6 s.
 
 Ranges: hook 1–3 s on the price or a count ("4 trường trong 1 km"); 0–2 cuts a minute.
@@ -107,6 +107,7 @@ cannot do.
 | prices, costs, a budget (rows adding up to a total) | `cost-table` |
 | a comparison, a trend, a ranking | `bar-chart` |
 | a day plan, a history, the steps of a process | `timeline` |
+| a system or flow that grows with the voice across sections | one `growing-diagram` for all of them (`render.scene`) |
 | a place, a route, distances, travel times | `map-route` after `osm-map` |
 | what is around a place | `amenity-radius` after `osm-map --amenities` |
 | conditions, rules, what to bring or check | `checklist-card` |

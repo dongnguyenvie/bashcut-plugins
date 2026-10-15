@@ -17,7 +17,7 @@
     merge into one marker with a count badge, different kinds are nudged apart with a leader line to their place.
   - A tag that would leave the frame flips to the left of its pin; two landmarks closer than ~120 px still overlap.
   - Up to 6 kinds fit the legend (2 columns on 9:16, 3 on 16:9). A kind with no place inside the radius is left out
-    of the legend: "0 hospitals" on screen reads as a claim. showZero puts it back when that is the point.
+    of the legend: "0 hospitals" on screen reads as a claim. Never set showZero unless the user asks to show a zero.
   - legText takes {min} and {km}; a leg without minutes (--route none) shows the km alone.
   - routeAt + legs × (legSeconds + 0.15) and amenitiesAt + 1.6 must end before data-duration − 0.5 (the swing-out).
 -->
@@ -32,9 +32,9 @@
   {"id": "routeAt", "type": "number", "label": "Routes start drawing (s)", "default": 0.6},
   {"id": "legSeconds", "type": "number", "label": "Seconds per route leg", "default": 1.1},
   {"id": "amenitiesAt", "type": "number", "label": "Radius circle and amenities appear (s)", "default": 3.4},
-  {"id": "showZero", "type": "boolean", "label": "Show kinds with no place in the radius as 0 (off: leave them out)", "default": false},
+  {"id": "showZero", "type": "boolean", "label": "Show kinds with no place in the radius as 0: only when the user asks for a zero (off: left out)", "default": false},
   {"id": "zoomIn", "type": "boolean", "label": "Camera moves onto the circle when the amenities come (off: one view for all)", "default": true},
-  {"id": "darkMap", "type": "boolean", "label": "Dark map (off: the normal OpenStreetMap colours)", "default": true},
+  {"id": "darkMap", "type": "boolean", "label": "Dark map (off: the normal OpenStreetMap colours; osm-map --style dark|light overrides it)", "default": true},
   {"id": "credit", "type": "string", "label": "Credit line under the legend (empty hides it; only when the user asks, e.g. © OpenStreetMap contributors)", "default": ""},
   {"id": "accent", "type": "color", "label": "Route and circle colour", "default": "#C6FF3D"},
   {"id": "background", "type": "color", "label": "Map base and tag colour", "default": "#0B0E14"},
@@ -133,7 +133,8 @@
       function px(n) { return `${n * u}px`; }
       const data = window.MAP_DATA;
       const near = data.amenities ?? { kinds: [], markers: [] };
-      root.classList.toggle("dark", v.darkMap !== false);
+      // osm-map --style dark / light decides; else darkMap. Your own --tiles are drawn as they are.
+      root.classList.toggle("dark", !data.customTiles && (data.style === "dark" || (data.style !== "light" && v.darkMap !== false)));
 
       const labels = AM.parseJSON(v.kindLabels);
       function number(digits) { return new Intl.NumberFormat(v.locale || "en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits }); }
