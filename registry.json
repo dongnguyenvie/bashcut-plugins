@@ -156,22 +156,6 @@
       "id": "bashcut.hyperframes",
       "versions": [
         {
-          "version": "0.0.2",
-          "apiVersion": 8,
-          "minApiVersion": 7,
-          "minAppVersion": "0.0.21",
-          "platforms": [
-            "macos-arm64",
-            "macos-x86_64"
-          ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/hyperframes-v0.0.2/bashcut.hyperframes-0.0.2.zip",
-          "sha256": "e566d373ca3fc6b1ee0f0ce1a0990d7630966684adac2ae807f2d23d76f8765e",
-          "signature": "ed25519:ZvZMNh8c+mRIWa+e6VP3WGYeBJ9sFIdtVQCDCW1FTy1Qr1g4V3ZB3F3g6rs1gu+Qu1eg0RYf2prSsEbqLypwDw==",
-          "size": 226395,
-          "downloadBytes": 400000000,
-          "releasedAt": "2026-10-13"
-        },
-        {
           "version": "0.0.3",
           "apiVersion": 8,
           "minApiVersion": 7,
@@ -202,6 +186,22 @@
           "size": 305194,
           "downloadBytes": 400000000,
           "releasedAt": "2026-10-14"
+        },
+        {
+          "version": "0.0.5",
+          "apiVersion": 8,
+          "minApiVersion": 7,
+          "minAppVersion": "0.0.24",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/hyperframes-v0.0.5/bashcut.hyperframes-0.0.5.zip",
+          "sha256": "61c890cacd0c7e4b3ed42e45922db04d6e04dea44d64ded22822420739ebac47",
+          "signature": "ed25519:06dbaeERG9xhRFA5Ernyt8N0v84yRqsT5iJxkPzt1yo5ZMU03VoVEGgE7fErnhe1DHbXYVPrdiX2c2MZz4FKAA==",
+          "size": 311712,
+          "downloadBytes": 400000000,
+          "releasedAt": "2026-10-15"
         }
       ],
       "name": {
