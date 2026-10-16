@@ -1,0 +1,74 @@
+{
+  "name": "Vietsub TikTok",
+  "inputs": [],
+  "template": {
+    "canvas": "portrait",
+    "resolution": "1080",
+    "fps": "30",
+    "outputs": [
+      "tiktok",
+      "shorts"
+    ]
+  },
+  "steps": [
+    {
+      "action": "media.import",
+      "params": {
+        "path": "{input}",
+        "place": true
+      },
+      "label": "Import and place"
+    },
+    {
+      "action": "captions.generate",
+      "params": {
+        "media": "{media}"
+      },
+      "label": "Auto captions (spoken language)"
+    },
+    {
+      "action": "captions.style",
+      "params": {
+        "style": {
+          "fill": "#FFFFFF",
+          "stroke": "#000000",
+          "strokeWidth": 6
+        },
+        "wordStyle": "none"
+      },
+      "label": "Caption style"
+    },
+    {
+      "action": "bashcut.translate-captions.cover",
+      "params": {
+        "mode": "auto"
+      },
+      "label": "Cover burned-in subtitles"
+    },
+    {
+      "action": "bashcut.translate-captions.translate",
+      "params": {
+        "target": "vi"
+      },
+      "label": "Translate to Vietnamese"
+    },
+    {
+      "action": "review.run",
+      "params": {},
+      "label": "Review checks"
+    },
+    {
+      "action": "export",
+      "params": {
+        "presets": [
+          "tiktok",
+          "shorts"
+        ]
+      },
+      "label": "Export TikTok and Shorts"
+    }
+  ],
+  "onFailure": "skip",
+  "concurrency": 1,
+  "outputName": "{name}-{preset}"
+}

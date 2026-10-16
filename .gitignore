@@ -12,3 +12,4 @@ node_modules/
 # Local-only notes and scripts (release steps, signing, reusable how-tos); never committed.
 .local/
 plugins/image-gen/bin/provider
+plugins/translate-captions/bin/provider
