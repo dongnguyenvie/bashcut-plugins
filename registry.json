@@ -262,22 +262,6 @@
       "id": "bashcut.resources",
       "versions": [
         {
-          "version": "0.0.1",
-          "apiVersion": 8,
-          "minApiVersion": 8,
-          "minAppVersion": "0.0.23",
-          "platforms": [
-            "macos-arm64",
-            "macos-x86_64"
-          ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/resources-v0.0.1/bashcut.resources-0.0.1.zip",
-          "sha256": "30c5432d1f976f75e0aa1d3801aca1c4e29fb672c25a6fc4d674af27b461959c",
-          "signature": "ed25519:OVz//uO4Jba3PC8Ra3YR+btv9Q5po3UmBRGEirDltGQJz4S8fkuX9JQbD18gKBJgNRGupZBg05omAYEYzAbEDw==",
-          "size": 88575,
-          "downloadBytes": 400000,
-          "releasedAt": "2026-10-14"
-        },
-        {
           "version": "0.0.4",
           "apiVersion": 8,
           "minApiVersion": 8,
@@ -308,6 +292,22 @@
           "size": 90753,
           "downloadBytes": 400000,
           "releasedAt": "2026-10-15"
+        },
+        {
+          "version": "0.0.6",
+          "apiVersion": 11,
+          "minApiVersion": 11,
+          "minAppVersion": "0.0.25",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/resources-v0.0.6/bashcut.resources-0.0.6.zip",
+          "sha256": "e11c7d4299fff3e1e7ea5227b09512c10061d20dce260fd4bd177d5e758e251e",
+          "signature": "ed25519:I4Rb1KIn1QNZqNS9JFGt/YjOJwjk5KROhdM76+4BYrOiP/guHLd1kgKHOy6gr7etquJj6oGvoDi9XVG1Kq29Bw==",
+          "size": 91479,
+          "downloadBytes": 400000,
+          "releasedAt": "2026-10-16"
         }
       ],
       "name": {
