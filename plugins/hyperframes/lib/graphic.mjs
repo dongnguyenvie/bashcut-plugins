@@ -44,6 +44,9 @@
 //     fps stays the full one). plan keeps an unchanged draft (listed in `drafts`) and renders changed rows as drafts
 //     with --draft, at full quality without; rerender keeps a draft a draft. plan --final and rerender --all --final
 //     render the drafts again at full fps and swap every use in one undo step: the step before export.
+//   finalise: the step before export in one command (plugin.json exportSteps, which BashCut runs before a final
+//     export): plan --final when every draft on the timeline is a plan.cut graphic's media, else rerender --all --final.
+//     Under BashCut's export step (BASHCUT_EXPORT_STEP set) it reports `::progress` lines on stderr.
 //   --snapshot S1,S2,… [--out DIR | -o DIR]  (plan, place, rerender ITEM): look before you render. The row is resolved
 //     exactly as it would render (variables with "@words" timing, brand, frame, span length, canvas) in a throwaway
 //     copy of its composition, with the values baked in as the page's defaults, GSAP and the shared scripts copied in,
@@ -105,8 +108,12 @@ export function renderFps(inputs) {
 export function parseArgs(argv) {
     const [command, ...rest] = argv;
     if (command === "examples") return { command, target: rest.find((w) => !w.startsWith("--")), options: { set: [], unset: [] } };
+    if (command === "finalise") {
+        if (rest.length) throw new UsageError("finalise takes no arguments: it renders every draft on the timeline at full quality");
+        return { command, options: { set: [], unset: [] } };
+    }
     if (!["place", "rerender", "plan"].includes(command)) {
-        throw new UsageError("usage: graphic place DIR [--at-frame F] [--set k=v …] | graphic rerender ITEM|MEDIA|--all [--set k=v …] | graphic plan [--only IDS]");
+        throw new UsageError("usage: graphic place DIR [--at-frame F] [--set k=v …] | graphic rerender ITEM|MEDIA|--all [--set k=v …] | graphic plan [--only IDS] | graphic finalise");
     }
     const options = { set: [], unset: [] };
     let target;
@@ -966,8 +973,9 @@ export async function rerender(target, options) {
     }
     const warnings = [];
     const renders = [];
-    for (const id of targets) {
+    for (const [index, id] of targets.entries()) {
         const recorded = media.find((m) => m.id === id).data.graphics;
+        stepProgress(index / targets.length, `Rendering ${recorded.name ?? id} (${index + 1} of ${targets.length})`);
         if (!recorded.composition || !existsSync(join(recorded.composition, "index.html"))) {
             throw new Error(`the composition of ${id} is gone: ${recorded.composition}`);
         }
@@ -1339,8 +1347,9 @@ async function planGraphicsWith(options, previews) {
     // Rows whose movie is a draft after this call: `graphic plan --final` renders them at full quality before export.
     const drafts = [];
     const several = entries.filter((e) => e.render && (!only || only.has(e.id))).length > 1;
-    for (const entry of entries) {
+    for (const [index, entry] of entries.entries()) {
         if (!entry.render || (only && !only.has(entry.id))) continue;
+        stepProgress(index / entries.length, `Rendering ${entry.id} (${index + 1} of ${entries.length})`);
         const row = rows[entry.id];
         if (!row || !(row.seconds > 0)) throw new Error(`plan check gives graphic ${entry.id} no span: ${JSON.stringify((check.problems ?? []).filter((p) => p.entry === entry.id))}`);
         const seconds = row.short ?? row.seconds;
@@ -1503,12 +1512,37 @@ async function saveMedia(project, patch) {
     }
 }
 
+/** A `::progress` line on stderr while BashCut runs this as an export step (stdout stays one JSON line). */
+function stepProgress(fraction, text) {
+    if (process.env.BASHCUT_EXPORT_STEP) process.stderr.write(`::progress ${fraction.toFixed(3)} ${text}\n`);
+}
+
+/**
+ * The step before a final export (BashCut's export step, plugin.json `exportSteps`): every draft a timeline item uses
+ * rendered at full quality and swapped in. Like BashCut's graphics_draft fix: `plan --final` when every draft is a
+ * plan.cut graphic's media (plan.cut keeps pointing at the final), else `rerender --all --final`, which finalises
+ * placed graphics and plan ones alike. Nothing to do without drafts.
+ */
+export async function finalise(options) {
+    const project = await call(["project", "get"]) ?? {};
+    const used = new Set((project.tracks ?? []).flatMap((t) => (t.items ?? []).map((i) => i.media)).filter(Boolean));
+    const drafts = (project.media ?? []).filter((m) => m.data?.graphics?.draft && used.has(m.id)).map((m) => m.id);
+    if (drafts.length === 0) return { via: null, drafts: 0 };
+    const planned = new Set((project.plan?.cut?.graphics ?? []).map((g) => g.media).filter(Boolean));
+    const result = drafts.every((id) => planned.has(id))
+        ? { via: "plan --final", ...(await planGraphics({ ...options, final: true })) }
+        : { via: "rerender --all --final", ...(await rerender(undefined, { ...options, all: true, final: true })) };
+    stepProgress(1, "Draft graphics finalised");
+    return { drafts: drafts.length, ...result };
+}
+
 export async function main(argv) {
     try {
         const { command, target, options } = parseArgs(argv);
         const result = command === "examples" ? await examples(target)
-            : command === "plan" ? await planGraphics(options) : command === "place" ? await place(target, options)
-                : await rerender(target, options);
+            : command === "finalise" ? await finalise(options)
+                : command === "plan" ? await planGraphics(options) : command === "place" ? await place(target, options)
+                    : await rerender(target, options);
         process.stdout.write(JSON.stringify(result) + "\n");
         return 0;
     } catch (error) {

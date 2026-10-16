@@ -87,7 +87,9 @@ a value broke a block, record it (`knowledge add-lesson … --tags block:NAME`).
    A draft's motion steps at 15 fps: judge timing and layout, not smoothness.
 7. **Final before export**: `graphic plan --final` (graphics from a plan) or `graphic rerender --all --final` (placed
    ones), then export. It renders only the drafts, at the project's fps, with the same inputs, and swaps every use in
-   one undo step; the final looks like the draft except the motion is smooth. Never export over drafts.
+   one undo step; the final looks like the draft except the motion is smooth. Never export over drafts. A BashCut
+   with plugin API 12 runs `graphic finalise` (the same choice) by itself as the plugin's export step on a final
+   `export start` (`--no-steps` skips it): the export's `job` is then the step's job; `jobs wait` it.
 
 ## 3. Composition rules (or frames come out wrong)
 

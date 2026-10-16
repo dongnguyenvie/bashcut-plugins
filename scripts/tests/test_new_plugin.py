@@ -95,7 +95,8 @@ class ViewsTemplateTests(unittest.TestCase):
         self.assertEqual(manifest["transport"], "session")
         self.assertEqual([v.get("location", "panel") for v in manifest["contributes"]["views"]],
                          ["panel", "dock", "sheet", "window"])
-        self.assertEqual((manifest["apiVersion"], manifest["minApiVersion"]), (11, 11), "a window view needs API 11")
+        self.assertEqual((manifest["apiVersion"], manifest["minApiVersion"]), (new_plugin.API_CURRENT, 11),
+                         "a window view needs API 11")
         self.assertNotIn("views.colorPicker", manifest["features"], "optional features stay out of features")
         views = [v["id"] for v in manifest["contributes"]["views"]]
         for features in ([], ["views", "views.colorPicker", "views.split", "views.nav"]):

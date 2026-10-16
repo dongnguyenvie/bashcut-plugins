@@ -6,6 +6,8 @@
 #   bin/graphic rerender ITEM|MEDIA|--all [--set key=value …] [--unset key] [--variables JSON] [--frame JSON] [--keep-length]
 #                        [--draft|--final]
 #   bin/graphic plan [--only g1,g2] [--draft|--final] | bin/graphic examples [NAME]
+#   bin/graphic finalise  (every draft on the timeline at full quality: plan --final or rerender --all --final;
+#                          BashCut runs it as the plugin's export step before a final export)
 #   … --draft on plan, place or rerender: 15 fps, faster capture, for review; plan --final / rerender --all --final
 #   renders the drafts at full quality before export
 #   … --snapshot 1.5,4,9.2 [-o OUT] on plan, place or rerender ITEM: PNGs of the row as it would render, nothing placed
