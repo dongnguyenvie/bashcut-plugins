@@ -93,17 +93,21 @@ class ViewsTemplateTests(unittest.TestCase):
         plugin = make(root, "panel-python", "--template", "views", "--lang", "python")
         manifest = json.loads((plugin / "plugin.json").read_text())
         self.assertEqual(manifest["transport"], "session")
-        self.assertEqual([v.get("location", "panel") for v in manifest["contributes"]["views"]], ["panel", "dock", "sheet"])
+        self.assertEqual([v.get("location", "panel") for v in manifest["contributes"]["views"]],
+                         ["panel", "dock", "sheet", "window"])
+        self.assertEqual((manifest["apiVersion"], manifest["minApiVersion"]), (11, 11), "a window view needs API 11")
         self.assertNotIn("views.colorPicker", manifest["features"], "optional features stay out of features")
-        for features in ([], ["views", "views.colorPicker"]):
-            hello = {"type": "hello", "apiVersion": 9, "features": features}
+        views = [v["id"] for v in manifest["contributes"]["views"]]
+        for features in ([], ["views", "views.colorPicker", "views.split", "views.nav"]):
+            hello = {"type": "hello", "apiVersion": 11, "features": features}
             lines = [hello] + [{"type": "request", "id": f"r{i}", "method": "view.render",
-                                "params": {"view": view, "values": {}, "state": None}}
-                               for i, view in enumerate(("main", "form"))] + [{"type": "shutdown"}]
+                                # Media already in state: no host call to answer in this one-way session.
+                                "params": {"view": view, "values": {}, "state": {"media": []}}}
+                               for i, view in enumerate(views)] + [{"type": "shutdown"}]
             out = subprocess.run([str(plugin / "bin/provider"), "session"], capture_output=True, text=True, timeout=60,
                                  input="".join(json.dumps(line) + "\n" for line in lines))
             replies = [json.loads(line) for line in out.stdout.splitlines()][1:]
-            self.assertEqual(len(replies), 2, out.stderr)
+            self.assertEqual(len(replies), len(views), out.stderr)
             for reply in replies:
                 self.assertEqual(view_problems(reply["result"]), [], reply)
 
@@ -214,6 +218,12 @@ class BehaviourTests(unittest.TestCase):
         self.assertEqual(listing["category"], "agents")
         self.assertEqual(json.loads((staging / "versions.json").read_text())["versions"], [])
         self.assertIn("scripts/dev-link.sh fresh-thing", (staging / "README.md").read_text())
+
+    def test_views_listing_needs_the_app_with_api_11(self):
+        args = new_plugin.parse(["fresh-panel", "--template", "views", "--lang", "node"])
+        new_plugin.generate(args, True, self.root / "staging")
+        listing = json.loads((self.root / "staging/listing.json").read_text())
+        self.assertEqual(listing["minAppVersion"], "0.0.25")
 
 
 if __name__ == "__main__":

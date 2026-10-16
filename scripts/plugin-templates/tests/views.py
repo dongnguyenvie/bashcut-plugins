@@ -33,9 +33,10 @@ class ViewTests(unittest.TestCase):
         self.assertNotIn("error", reply, reply)
         return lines, reply["result"]
 
-    def test_manifest_declares_three_places(self):
+    def test_manifest_declares_four_places(self):
         views = {view["id"]: view.get("location", "panel") for view in MANIFEST["contributes"]["views"]}
-        self.assertEqual(views, {"main": "panel", "media": "dock", "form": "sheet"})
+        self.assertEqual(views, {"main": "panel", "media": "dock", "form": "sheet", "browse": "window"})
+        self.assertGreaterEqual(MANIFEST["minApiVersion"], 11, "an older app refuses a window view")
         self.assertIn("icon", MANIFEST["contributes"]["container"])
 
     def test_main_counts_in_state(self):
@@ -53,9 +54,11 @@ class ViewTests(unittest.TestCase):
         self.assertEqual(renders[0]["kind"], "render")
         self.assertEqual(result["state"]["message"], "The timeline has 2 layers.")
 
-    def test_main_opens_the_sheet(self):
+    def test_main_opens_the_sheet_and_the_window(self):
         self.view("main", event={"node": "openForm", "type": "click"})
         self.assertEqual(self.calls[-1], ("plugins.show-view", {"plugin": MANIFEST["id"], "view": "form"}))
+        self.view("main", event={"node": "openBrowser", "type": "click"})
+        self.assertEqual(self.calls[-1], ("plugins.show-view", {"plugin": MANIFEST["id"], "view": "browse"}))
 
     def test_media_rows_drag_and_measure_with_a_job(self):
         self.answers.update({
@@ -91,6 +94,30 @@ class ViewTests(unittest.TestCase):
         _, newer = self.view("form", features=["views", "views.colorPicker"])
         kind = lambda result: next(node for node in nodes(result["body"]) if node.get("id") == "color")["type"]
         self.assertEqual((kind(older), kind(newer)), ("textField", "colorPicker"))
+
+    def test_browse_window_filters_selects_and_places(self):
+        self.answers["media.list"] = {"media": [
+            {"id": "m1", "name": "voice.wav", "kind": "audio", "path": "/tmp/voice.wav"},
+            {"id": "m2", "name": "clip.mov", "kind": "video", "absolutePath": "/tmp/clip.mov", "path": "media/clip.mov"},
+            {"id": "m3", "name": "b-roll.mov", "kind": "video", "path": "media/b-roll.mov"}]}
+        _, first = self.view("browse")
+        split = first["body"][0]
+        self.assertEqual((len(first["body"]), split["type"], split["widths"]), (1, "split", [180, "flex", 260]))
+        nav = next(node for node in nodes(first["body"]) if node.get("id") == "kinds")
+        self.assertEqual({e["id"]: e["count"] for e in nav["groups"][0]["items"]},
+                         {"all": 3, "video": 2, "audio": 1, "image": 0})
+        tiles = lambda result: next(node for node in nodes(result["body"]) if node.get("id") == "items")["items"]
+        self.assertEqual([t.get("file") for t in tiles(first)], ["/tmp/voice.wav", "/tmp/clip.mov", None])
+
+        _, video = self.view("browse", state=first["state"], event={"node": "kinds", "type": "select", "value": "video"})
+        self.assertEqual([t["id"] for t in tiles(video)], ["m2", "m3"])
+        self.assertEqual(next(node for node in nodes(video["body"]) if node.get("id") == "kinds")["value"], "video")
+        _, picked = self.view("browse", state=video["state"], event={"node": "items", "type": "select", "value": "m2"})
+        self.assertIn("place", [node.get("id") for node in nodes(picked["body"])])
+        _, placed = self.view("browse", state=picked["state"], event={"node": "place", "type": "click"})
+        self.assertEqual([call[0] for call in self.calls], ["media.list", "media.place"], "state keeps the media")
+        self.assertEqual(self.calls[-1][1], {"media": "m2", "atFrame": 12, "baseRev": "last"})
+        self.assertIn("Placed clip.mov at frame 12", json.dumps(placed))
 
     def test_action_opens_the_form(self):
         session = Session(self.folder)

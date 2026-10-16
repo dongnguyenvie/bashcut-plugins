@@ -140,7 +140,7 @@ scripts/new-plugin.py party-pack --template library
 | `hook` | `contributes.hooks` on `export.finished` (writes `pluginData`) and `media.imported` |
 | `options` | Options of every type, including a `secret`, read by an action |
 | `chat-agent` | An `agent.chat` session plugin: a tab in the agent dock that streams events and calls BashCut commands |
-| `views` | A rail panel (`contributes.container`) with a panel view, a dock tab and a sheet, an action that opens the sheet, and the request loop with `call`, `wait_job` / `waitJob` and `render` helpers (see [Panels and views](#panels-and-views)) |
+| `views` | A rail panel (`contributes.container`) with a panel view, a dock tab, a sheet and a window (a `split` with a `nav` and a `grid`), an action that opens the sheet, and the request loop with `call`, `wait_job` / `waitJob` and `render` helpers (see [Panels and views](#panels-and-views)); plugin API 11, so `listing.json` asks for BashCut 0.0.25 |
 | `skills` | A skill pack without code: `skills/<slug>/SKILL.md` and no `entrypoint` (host feature `skillsOnly`, API 7) |
 | `library` | A library pack without code: `packs/<slug>/pack.json` with a sound (a generated WAV), a sticker, a text style, a look and a transition, no `entrypoint` |
 
@@ -184,9 +184,13 @@ back as `view.event`. The panel also lists the plugin's actions as Tools, its sk
 capabilities it `uses`.
 
 `scripts/new-plugin.py my-panel --template views --lang swift|node|python` makes one to start from: a panel view
-(state, a host call while the view shows progress, opening the sheet), a dock tab listing the project's media (rows
-drag onto the timeline with `file`; a row button measures loudness through another plugin with `plugins.invoke` and
-`wait_job`) and a sheet form that closes itself, with smoke tests that answer the host calls.
+(state, a host call while the view shows progress, opening the sheet and the window), a dock tab listing the project's
+media (rows drag onto the timeline with `file`; a row button measures loudness through another plugin with
+`plugins.invoke` and `wait_job`), a sheet form that closes itself, and a window (`"location": "window"`, API 11) whose
+whole body is a three-column `split`: a `nav` of media kinds, a `grid` of the media whose tiles drag onto the timeline,
+and the selected tile's details with a button that places it at the playhead (`media.place`). Smoke tests answer the
+host calls. A window view needs `minApiVersion` 11 (older apps refuse the manifest); for a plugin that must run on an
+older BashCut, drop the `browse` view and lower `minApiVersion` to 8.
 
 [`samples/views-example`](samples/views-example) shows every component, events and state, and how to reuse other
 plugins from a view (generate speech with `voice.speak` through whichever voice plugin the user has, remember the
