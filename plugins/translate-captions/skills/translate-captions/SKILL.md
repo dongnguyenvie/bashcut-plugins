@@ -54,6 +54,12 @@ of the spoken language, caption style, cover, translate to Vietnamese, review ch
 The translate step needs the key: without one those items stop at that step; translate them yourself as above and
 export with `bashcut export start --presets tiktok,shorts`.
 
+Caption look: Whisper captions come in the system font, regular weight, which sinks into a busy picture. Restyle
+them like the usual drama subtitle, bold italic with a thin outline (the batch preset does this):
+`bashcut captions style style.json --base-rev last` with
+`{"font": "AvenirNext-HeavyItalic", "size": 0.052, "fill": "#FFFFFF", "stroke": "#000000", "strokeWidth": 4}`.
+An outline above about 6 fills the letters in at this size.
+
 ## Limits
 
 - Burned-in subtitles are found with on-screen text reading (Apple Vision): stylised or very small text, or
