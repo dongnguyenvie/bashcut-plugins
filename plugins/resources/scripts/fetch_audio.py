@@ -32,19 +32,10 @@ import time
 import urllib.parse
 from pathlib import Path
 
-AGENT = "Mozilla/5.0 (Macintosh) bashcut-agent-kit"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from fetch_stock import get  # noqa: E402  (curl, with retries on resets, timeouts and HTTP 429/5xx)
+
 WORKERS = 6
-
-
-def get(url, timeout=30, headers=None):
-    # curl, not urllib: it uses the system's certificates, which some Python installs lack.
-    command = ["curl", "-sfL", "-A", AGENT, "--max-time", str(timeout)]
-    for name, value in (headers or {}).items():
-        command += ["-H", f"{name}: {value}"]
-    out = subprocess.run(command + [url], capture_output=True)
-    if out.returncode != 0:
-        raise OSError(f"curl exit {out.returncode} for {url}")
-    return out.stdout
 
 
 def openverse(query, music, size=20):
