@@ -433,6 +433,30 @@
             }
           },
           {
+            "id": "look",
+            "title": {
+              "en": "Blur look",
+              "vi": "Kiểu làm mờ"
+            },
+            "type": "enum",
+            "choices": [
+              "mosaic",
+              "smooth"
+            ],
+            "choiceLabels": {
+              "mosaic": {
+                "en": "Mosaic with soft edges",
+                "vi": "Khảm ô vuông, mép mềm"
+              },
+              "smooth": {
+                "en": "Smooth blur",
+                "vi": "Mờ mượt"
+              }
+            },
+            "default": "mosaic",
+            "advanced": true
+          },
+          {
             "id": "blur",
             "title": {
               "en": "Blur strength",
@@ -447,6 +471,35 @@
               "en": "Blur radius as a share of the picture's short side: 0.03 for small subtitles, 0.05 hides most, more for big bold text",
               "vi": "Bán kính mờ theo cạnh ngắn của khung: 0.03 cho phụ đề nhỏ, 0.05 che được hầu hết, tăng lên cho chữ to đậm"
             }
+          },
+          {
+            "id": "tint",
+            "title": {
+              "en": "Blur colour",
+              "vi": "Màu vùng mờ"
+            },
+            "type": "enum",
+            "choices": [
+              "natural",
+              "dark",
+              "light"
+            ],
+            "choiceLabels": {
+              "natural": {
+                "en": "Follow the picture behind",
+                "vi": "Theo nền phía sau"
+              },
+              "dark": {
+                "en": "Darker (white captions stand out)",
+                "vi": "Tối hơn (chữ trắng nổi rõ)"
+              },
+              "light": {
+                "en": "Light frosted glass",
+                "vi": "Kính mờ trắng"
+              }
+            },
+            "default": "natural",
+            "advanced": true
           },
           {
             "id": "opacity",

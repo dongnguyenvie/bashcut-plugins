@@ -448,6 +448,7 @@ class CoverTests(unittest.TestCase):
         insert = next(op for op in result["operations"] if op["op"] == "insert")["item"]
         self.assertEqual((insert["media"], insert["at"], insert["dur"], insert["in"]), ("m1", 0, 900, 0))
         self.assertEqual((insert["blur"], insert["muted"], insert["transform"]), (0.05, True, {"zoom": 1}))
+        self.assertNotIn("color", insert, "the blur follows the picture's own colours by default")
         crop = insert["crop"]
         # Lines from 0.82 to 0.905 (two lines) plus a quarter line: the crop keeps just that strip.
         self.assertAlmostEqual(crop["top"], 0.81, places=3)
@@ -494,6 +495,23 @@ class CoverTests(unittest.TestCase):
                 crop = op["item"]["crop"]
                 self.assertLessEqual(crop["left"] + crop["right"], 0.95, crop)
                 self.assertLessEqual(crop["top"] + crop["bottom"], 0.95, crop)
+
+    def test_mosaic_with_soft_edges_where_the_app_can(self):
+        result = self.cover(CoverHost(ocr_frames(logo=False)), features=["clip.blur", "clip.mosaic"])["result"]
+        insert = next(op for op in result["operations"] if op["op"] == "insert")["item"]
+        # Lines 0.04 of the picture tall in a 9:16 frame: cells half a line, a share of the short side.
+        self.assertAlmostEqual(insert["pixelate"], 0.036, places=3)
+        self.assertAlmostEqual(insert["blur"], 0.036 * 0.35, delta=0.001)
+        self.assertEqual(insert["feather"], 0.35)
+        self.assertNotIn("radius", insert["crop"])
+        smooth = self.cover(CoverHost(ocr_frames(logo=False)), {"look": "smooth"}, features=["clip.blur", "clip.mosaic"])["result"]
+        self.assertNotIn("pixelate", next(op for op in smooth["operations"] if op["op"] == "insert")["item"])
+
+    def test_tints_darken_or_lighten_the_blur(self):
+        for tint, color in (("dark", {"exposure": -0.6}), ("light", {"exposure": 0.9, "saturation": 0.5})):
+            result = self.cover(CoverHost(ocr_frames(logo=False)), {"tint": tint}, features=["clip.blur"])["result"]
+            insert = next(op for op in result["operations"] if op["op"] == "insert")["item"]
+            self.assertEqual(insert["color"], color, tint)
 
     def test_auto_on_an_older_app_is_a_box_hugging_the_lines(self):
         result = self.cover(CoverHost(ocr_frames(logo=False)))["result"]

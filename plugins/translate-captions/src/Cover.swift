@@ -301,6 +301,9 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         note = "this BashCut cannot blur a clip (update it), so a box covers them"
     }
     let blur = min(0.2, max(0.01, request.number("blur", 0.05)))
+    let tint = request.string("tint", "natural")
+    // mosaic: square cells with soft edges, like the usual pixelated subtitle (needs clip.mosaic); smooth: a blur.
+    let mosaic = request.string("look", "mosaic") == "mosaic" && hostFeatures.contains("clip.mosaic")
 
     // Plan each clip: the area over its subtitles (tight: what the text reader saw plus a little), and how it is covered.
     struct Plan {
@@ -343,8 +346,11 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         }
         // A quarter line above and below, half a line at the sides (as picture shares): text right at a blurred
         // crop's edge stays readable, since the blur repeats the edge.
-        let pad = subtitles.lineHeight * 0.25
-        let side = subtitles.lineHeight * 0.5 * placement.height / max(1, placement.width)
+        // A mosaic's edges fade out, so its area reaches a little further to keep the text under the opaque middle.
+        let pad = subtitles.lineHeight * (mosaic && style == "blur" ? 0.55 : 0.25)
+        let side = subtitles.lineHeight * (mosaic && style == "blur" ? 0.8 : 0.5) * placement.height / max(1, placement.width)
+        // The picture's height as a share of its short side, to size mosaic cells from the line height.
+        let heightShare = placement.height / max(1, min(placement.width, placement.height))
         let above = pad + extraAbove * subtitles.lineHeight * 1.3
         func padded(_ box: (left: Double, top: Double, right: Double, bottom: Double)) -> (Double, Double, Double, Double) {
             // At least 6 % each way (a crop keeps at least 5 %): a one-word subtitle grows around its centre.
@@ -395,7 +401,17 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
             switch style {
             case "band", "zoom": band = onCanvas(0, top, 1, bottom - top)
             case "blur":
-                var copy = blurredCopy(of: clip, crop: (left, top, right, bottom), blur: blur)
+                var copy = blurredCopy(of: clip, crop: (left, top, right, bottom), blur: blur, tint: tint)
+                if mosaic {
+                    // Cells about half a line tall, softened a little, edges fading over a third of the area.
+                    let cell = min(0.1, max(0.008, subtitles.lineHeight * 0.5 * heightShare))
+                    copy["pixelate"] = round3(cell)
+                    copy["blur"] = round3(cell * 0.35)
+                    copy["feather"] = 0.35
+                    var crop = copy["crop"] as? JSON ?? [:]
+                    crop["radius"] = nil
+                    copy["crop"] = crop
+                }
                 copy["at"] = piece.at
                 copy["dur"] = piece.dur
                 copy["in"] = clipIn + piece.offset
@@ -524,9 +540,10 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
 }
 
 /// A copy of `clip` (same media, time, speed and framing) cropped to `crop` (left, top, right, bottom as shares of
-/// the picture), blurred by `blur` (a share of the picture's short side) and a little darker so new captions stand
-/// out; muted, since the clip below already plays its sound.
-func blurredCopy(of clip: JSON, crop: (Double, Double, Double, Double), blur: Double) -> JSON {
+/// the picture), blurred by `blur` (a share of the picture's short side) and tinted: `natural` keeps the picture's own
+/// colours, `dark` darkens it so white captions stand out, `light` makes it a pale frosted glass; muted, since the
+/// clip below already plays its sound.
+func blurredCopy(of clip: JSON, crop: (Double, Double, Double, Double), blur: Double, tint: String = "natural") -> JSON {
     var copy: JSON = [:]
     for key in ["media", "at", "dur", "in", "speed", "speedCurve", "reverse", "transform", "fill", "keyframes"] {
         if let value = clip[key] { copy[key] = value }
@@ -536,7 +553,11 @@ func blurredCopy(of clip: JSON, crop: (Double, Double, Double, Double), blur: Do
         "right": round3(min(0.95, 1 - crop.2)), "bottom": round3(min(0.95, 1 - crop.3)), "radius": 0.02,
     ]
     copy["blur"] = round3(blur)
-    copy["color"] = ["exposure": -0.6]
+    switch tint {
+    case "dark": copy["color"] = ["exposure": -0.6]
+    case "light": copy["color"] = ["exposure": 0.9, "saturation": 0.5]
+    default: break
+    }
     copy["muted"] = true
     return copy
 }
