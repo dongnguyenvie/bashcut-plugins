@@ -404,6 +404,45 @@
       "hooks": []
     },
     {
+      "id": "bashcut.translate-captions",
+      "versions": [
+        {
+          "version": "0.0.1",
+          "apiVersion": 12,
+          "minApiVersion": 10,
+          "minAppVersion": "0.0.24",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/translate-captions-v0.0.1/bashcut.translate-captions-0.0.1.zip",
+          "sha256": "10470b8cda757742741c61d80267e2bea37200d7e4883adad1af8b2e22cbb7f8",
+          "signature": "ed25519:HEhi5fqx+Sab5OjH5tDTvd3rPCpvl8wzQIYfkzswxrksytC33dSB1Y7Pg7vI4umTqNG5L6x/ilUmOyhmsZOBDg==",
+          "size": 299483,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-16"
+        }
+      ],
+      "name": {
+        "en": "Translate Captions",
+        "vi": "Dịch phụ đề"
+      },
+      "summary": {
+        "en": "Vietsub with your own Gemini or OpenAI key: translate every caption and keep its timing and look, cover subtitles burned into the footage, and a Vietsub TikTok batch preset. Without a key, your agent translates.",
+        "vi": "Vietsub bằng khoá Gemini hoặc OpenAI của bạn: dịch từng dòng phụ đề mà giữ nguyên thời gian và kiểu chữ, che phụ đề in sẵn trong footage, kèm preset hàng loạt Vietsub TikTok. Không có khoá thì agent dịch giúp."
+      },
+      "publisher": "bashcut",
+      "category": "captions",
+      "homepage": "https://github.com/dongnguyenvie/bashcut-plugins/tree/main/plugins/translate-captions",
+      "capabilities": [],
+      "actions": [
+        "bashcut.translate-captions.translate",
+        "bashcut.translate-captions.cover",
+        "bashcut.translate-captions.install-preset"
+      ],
+      "hooks": []
+    },
+    {
       "id": "bashcut.vieneu-tts",
       "versions": [
         {
