@@ -36,6 +36,8 @@ struct Subtitles {
     let shownShare: Double
     let examples: [String]
     let fixedText: [String]
+    /// The subtitle lines read in each picture (empty when it showed none), for covers that follow each subtitle.
+    var pictures: [(seconds: Double, lines: [SeenText])] = []
 
     var json: JSON {
         [
@@ -103,7 +105,78 @@ func findSubtitles(_ frames: [(seconds: Double, texts: [SeenText])]) -> (Subtitl
         top: percentile(lines.map(\.y), 0.05), bottom: percentile(lines.map { $0.y + $0.height }, 0.95),
         left: percentile(lines.map(\.x), 0.05), right: percentile(lines.map { $0.x + $0.width }, 0.95),
         lineHeight: percentile(lines.map(\.height), 0.5), lines: zone.map(\.count).max() ?? 1,
-        shownShare: Double(shown) / Double(pictures), examples: examples, fixedText: fixedList), fixedList, fixedBoxes)
+        shownShare: Double(shown) / Double(pictures), examples: examples, fixedText: fixedList,
+        pictures: zip(frames, zone).map { (seconds: $0.0.seconds, lines: $0.1) }), fixedList, fixedBoxes)
+}
+
+/// One subtitle on screen: from `start` to `end` (source seconds) inside `box` (left, top, right, bottom as shares of
+/// the picture, the union of its lines in every picture it was read in).
+struct SubtitleSpan: Equatable {
+    var start: Double
+    var end: Double
+    var box: (left: Double, top: Double, right: Double, bottom: Double)
+
+    static func == (a: SubtitleSpan, b: SubtitleSpan) -> Bool {
+        a.start == b.start && a.end == b.end && a.box == b.box
+    }
+}
+
+/// The subtitles one after another, from pictures read every `step` seconds: pictures in a row with the same text
+/// (allowing the text reader's slips) make one span. A span reaches a whole `step` past its first and last picture,
+/// since the subtitle may change anywhere between two pictures; spans that meet split the time between them.
+func subtitleSpans(_ subtitles: Subtitles, step: Double) -> [SubtitleSpan] {
+    func key(_ lines: [SeenText]) -> String {
+        String(lines.map(\.string).joined().lowercased().unicodeScalars
+            .filter { CharacterSet.alphanumerics.contains($0) }.map(Character.init))
+    }
+    func similar(_ a: String, _ b: String) -> Bool {
+        guard !a.isEmpty, !b.isEmpty else { return false }
+        if a == b { return true }
+        func pairs(_ text: String) -> Set<String> {
+            let characters = Array(text)
+            return Set(zip(characters, characters.dropFirst()).map { "\($0)\($1)" })
+        }
+        let left = pairs(a), right = pairs(b)
+        return Double(left.intersection(right).count) / Double(max(1, left.union(right).count)) >= 0.6
+    }
+    var spans: [SubtitleSpan] = []
+    var lastKey = ""
+    var lastSeconds = -Double.infinity
+    for picture in subtitles.pictures {
+        guard !picture.lines.isEmpty else {
+            lastKey = ""
+            continue
+        }
+        let text = key(picture.lines)
+        let box = (
+            left: picture.lines.map(\.x).min() ?? 0, top: picture.lines.map(\.y).min() ?? 0,
+            right: picture.lines.map { $0.x + $0.width }.max() ?? 1, bottom: picture.lines.map { $0.y + $0.height }.max() ?? 1)
+        if similar(text, lastKey), picture.seconds - lastSeconds <= step * 1.5, var span = spans.popLast() {
+            span.end = picture.seconds + step
+            span.box = (min(span.box.left, box.left), min(span.box.top, box.top),
+                        max(span.box.right, box.right), max(span.box.bottom, box.bottom))
+            spans.append(span)
+        } else {
+            let start = picture.seconds - step
+            if var previous = spans.popLast() {
+                // Two spans that overlap meet halfway between their pictures.
+                if previous.end > start {
+                    let middle = (previous.end - step + picture.seconds) / 2
+                    previous.end = middle
+                    spans.append(previous)
+                    spans.append(SubtitleSpan(start: middle, end: picture.seconds + step, box: box))
+                } else {
+                    spans.append(previous)
+                    spans.append(SubtitleSpan(start: start, end: picture.seconds + step, box: box))
+                }
+            } else {
+                spans.append(SubtitleSpan(start: max(0, start), end: picture.seconds + step, box: box))
+            }
+        }
+        lastKey = text
+        lastSeconds = picture.seconds
+    }
+    return spans
 }
 
 /// Where a clip's picture lands on the canvas, in canvas pixels.
@@ -144,6 +217,8 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     let moveCaptions = request.bool("moveCaptions", true)
     let coverLogos = request.bool("coverLogos", false)
     let extraAbove = min(4, max(0, request.number("extraLinesAbove", 0)))
+    // follow: a cover per subtitle, sized to its lines (the whole clip is read); fixed: one area for the whole clip.
+    let follow = request.string("fit", "follow") == "follow"
     guard let outputDirectory = request.outputDirectory else { throw PluginError("bad_request", "outputDirectory is required") }
 
     let timeline = try host.call("timeline.get") as? JSON ?? [:]
@@ -159,19 +234,29 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         .filter { videoMedia.contains($0["media"] as? String ?? "") }
     guard !clips.isEmpty else { throw PluginError("no_video", "There is no video on the Main layer to look at") }
 
-    // Look at each video once, from its first clip.
+    // Look at each video once: the first seconds of its first clip, or (follow) all of its clips every half second.
     var found: [String: Subtitles] = [:]
+    var steps: [String: Double] = [:]
     var logos: [String: [SeenText]] = [:]
     var report: [JSON] = []
     var order: [String] = []
     for clip in clips where !order.contains(clip["media"] as? String ?? "") { order.append(clip["media"] as? String ?? "") }
     for (index, media) in order.prefix(12).enumerated() {
         host.progress(Double(index) / Double(min(order.count, 12)), "Looking for subtitles in video \(index + 1) of \(min(order.count, 12))")
-        guard let first = clips.first(where: { $0["media"] as? String == media }) else { continue }
-        let from = Double(first["in"] as? Int ?? 0) / fps
-        let length = min(seconds, Double(first["dur"] as? Int ?? 0) / fps)
+        let used = clips.filter { $0["media"] as? String == media }
+        guard let first = used.first else { continue }
+        var from = Double(first["in"] as? Int ?? 0) / fps
+        var length = min(seconds, Double(first["dur"] as? Int ?? 0) / fps)
+        var step = length > 20 ? 1.0 : 0.5
+        if follow {
+            from = used.map { Double($0["in"] as? Int ?? 0) / fps }.min() ?? from
+            let to = used.map { Double(($0["in"] as? Int ?? 0) + ($0["dur"] as? Int ?? 0)) / fps }.max() ?? from + length
+            length = max(1, to - from)
+            step = max(0.5, (length / 3000 * 10).rounded(.up) / 10)
+        }
+        steps[media] = step
         let started = try host.call("media.ocr", [
-            "media": media, "from": from, "to": from + max(1, length), "step": length > 20 ? 1 : 0.5,
+            "media": media, "from": from, "to": from + max(1, length), "step": step,
         ])
         let result = try host.waitJob(started, timeout: 900, interval: 0.5) as? JSON ?? [:]
         let frames = (result["frames"] as? [JSON] ?? []).map { frame in
@@ -220,6 +305,10 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     // Plan each clip: the area over its subtitles (tight: what the text reader saw plus a little), and how it is covered.
     struct Plan {
         let clip: JSON
+        /// Where this cover sits (timeline frames) and the source frame it starts at.
+        let at: Int
+        let dur: Int
+        let sourceIn: Int
         /// The covered area on the canvas, where the captions go.
         let area: CGRect?
         /// Drawn into the cover picture: a full-width band, and rounded boxes (the subtitles in style box, logos).
@@ -245,40 +334,77 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
             let pad = text.height * 0.35
             return onCanvas(text.x - pad, text.y - pad, text.width + 2 * pad, text.height + 2 * pad)
         }.filter { !$0.isEmpty }
-        var area: CGRect?, band: CGRect?, blurCopy: JSON?
-        if let subtitles = found[media] {
-            // A quarter line above and below, two thirds of a line at the sides (all as picture shares).
-            let pad = subtitles.lineHeight * 0.25
-            let side = subtitles.lineHeight * 0.66 * placement.height / max(1, placement.width)
-            let above = pad + extraAbove * subtitles.lineHeight * 1.3
-            let top = max(0, subtitles.top - above), bottom = min(1, subtitles.bottom + pad)
-            let left = max(0, subtitles.left - side), right = min(1, subtitles.right + side)
-            if style == "zoom", boxes.isEmpty, (subtitles.top + subtitles.bottom) / 2 >= 0.5,
-                let zoom = placement.zoomOut(below: top), zoom.zoom <= 1.2
-            {
-                var transform = placement.transform
-                transform["zoom"] = (zoom.zoom * 1000).rounded() / 1000
-                transform["tilt"] = zoom.tilt
-                zoomOps.append(["op": "setProperties", "item": id, "patch": ["transform": transform]])
-                zoomed += 1
-                continue
+        let clipAt = clip["at"] as? Int ?? 0, clipDur = clip["dur"] as? Int ?? 1, clipIn = clip["in"] as? Int ?? 0
+        guard let subtitles = found[media] else {
+            if !boxes.isEmpty {
+                plans.append(Plan(clip: clip, at: clipAt, dur: clipDur, sourceIn: 0, area: nil, band: nil, boxes: boxes, blurCopy: nil))
             }
-            switch style {
-            case "band", "zoom":
-                band = onCanvas(0, top, 1, bottom - top)
-                area = band
-            case "blur":
-                area = onCanvas(left, top, right - left, bottom - top)
-                blurCopy = blurredCopy(of: clip, crop: (left, top, right, bottom), blur: blur)
-            default:
-                let box = onCanvas(left, top, right - left, bottom - top)
-                boxes.insert(box, at: 0)
-                area = box
-            }
+            continue
         }
-        if area?.isEmpty == true { area = nil }
-        if band != nil || !boxes.isEmpty || blurCopy != nil {
-            plans.append(Plan(clip: clip, area: area, band: band, boxes: boxes, blurCopy: blurCopy))
+        // A quarter line above and below, half a line at the sides (as picture shares): text right at a blurred
+        // crop's edge stays readable, since the blur repeats the edge.
+        let pad = subtitles.lineHeight * 0.25
+        let side = subtitles.lineHeight * 0.5 * placement.height / max(1, placement.width)
+        let above = pad + extraAbove * subtitles.lineHeight * 1.3
+        func padded(_ box: (left: Double, top: Double, right: Double, bottom: Double)) -> (Double, Double, Double, Double) {
+            // At least 6 % each way (a crop keeps at least 5 %): a one-word subtitle grows around its centre.
+            func span(_ low: Double, _ high: Double) -> (Double, Double) {
+                guard high - low < 0.06 else { return (max(0, low), min(1, high)) }
+                let centre = min(0.97, max(0.03, (low + high) / 2))
+                return (centre - 0.03, centre + 0.03)
+            }
+            let (left, right) = span(box.left - side, box.right + side)
+            let (top, bottom) = span(box.top - above, box.bottom + pad)
+            return (left, top, right, bottom)
+        }
+        let whole = padded((subtitles.left, subtitles.top, subtitles.right, subtitles.bottom))
+        if style == "zoom", boxes.isEmpty, (subtitles.top + subtitles.bottom) / 2 >= 0.5,
+            let zoom = placement.zoomOut(below: whole.1), zoom.zoom <= 1.2
+        {
+            var transform = placement.transform
+            transform["zoom"] = (zoom.zoom * 1000).rounded() / 1000
+            transform["tilt"] = zoom.tilt
+            zoomOps.append(["op": "setProperties", "item": id, "patch": ["transform": transform]])
+            zoomed += 1
+            continue
+        }
+        let captionArea = style == "band" || style == "zoom"
+            ? onCanvas(0, whole.1, 1, whole.3 - whole.1) : onCanvas(whole.0, whole.1, whole.2 - whole.0, whole.3 - whole.1)
+        // Pieces: each subtitle span inside the clip (a speed change keeps one piece for the whole clip).
+        var pieces: [(at: Int, dur: Int, offset: Int, box: (Double, Double, Double, Double))] = []
+        let plainSpeed = ((clip["speed"] as? NSNumber)?.doubleValue ?? 1) == 1 && clip["speedCurve"] == nil && clip["reverse"] == nil
+        if follow, plainSpeed, style != "band" {
+            let clipStart = Double(clipIn) / fps, clipEnd = Double(clipIn + clipDur) / fps
+            for span in subtitleSpans(subtitles, step: steps[media] ?? 0.5) where span.end > clipStart && span.start < clipEnd {
+                let first = Int((max(span.start, clipStart) * fps).rounded()) - clipIn
+                let last = Int((min(span.end, clipEnd) * fps).rounded()) - clipIn
+                guard last > first else { continue }
+                pieces.append((clipAt + first, last - first, first, padded(span.box)))
+            }
+        } else {
+            pieces.append((clipAt, clipDur, 0, whole))
+        }
+        if pieces.count > 1, !boxes.isEmpty {
+            plans.append(Plan(clip: clip, at: clipAt, dur: clipDur, sourceIn: 0, area: nil, band: nil, boxes: boxes, blurCopy: nil))
+            boxes = []
+        }
+        for (index, piece) in pieces.enumerated() {
+            let (left, top, right, bottom) = piece.box
+            var band: CGRect?, blurCopy: JSON?
+            var pieceBoxes = index == 0 ? boxes : []
+            switch style {
+            case "band", "zoom": band = onCanvas(0, top, 1, bottom - top)
+            case "blur":
+                var copy = blurredCopy(of: clip, crop: (left, top, right, bottom), blur: blur)
+                copy["at"] = piece.at
+                copy["dur"] = piece.dur
+                copy["in"] = clipIn + piece.offset
+                blurCopy = copy
+            default: pieceBoxes.insert(onCanvas(left, top, right - left, bottom - top), at: 0)
+            }
+            plans.append(Plan(
+                clip: clip, at: piece.at, dur: piece.dur, sourceIn: piece.offset,
+                area: captionArea.isEmpty ? nil : captionArea, band: band, boxes: pieceBoxes, blurCopy: blurCopy))
         }
     }
 
@@ -329,7 +455,7 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     }
     var coverItems: [String] = []
     for plan in plans {
-        let at = plan.clip["at"] as? Int ?? 0, dur = plan.clip["dur"] as? Int ?? 1
+        let at = plan.at, dur = plan.dur
         if var copy = plan.blurCopy {
             let id = "subtitle-cover-\(UUID().uuidString.prefix(8).lowercased())"
             copy["id"] = id
@@ -367,7 +493,7 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         ? "No burned-in subtitles in \(order.count) video(s)"
         : "Covered burned-in subtitles in \(found.count) of \(order.count) video(s)"
     var how: [String] = []
-    let covered = plans.filter { $0.area != nil }.count
+    let covered = Set(plans.filter { $0.area != nil }.compactMap { $0.clip["id"] as? String }).count
     if covered > 0 {
         let verb = ["blur": "blurred on", "box": "a box over them on", "band": "a band over them on"][style] ?? "covered on"
         how.append("\(verb) \(covered) clip(s)")
@@ -375,6 +501,8 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     if zoomed > 0 { how.append("zoomed \(zoomed) clip(s)") }
     let logoClips = plans.filter { $0.boxes.count > ($0.area != nil && style == "box" ? 1 : 0) }.count
     if logoClips > 0 { how.append("fixed text or logos covered on \(logoClips) clip(s)") }
+    let pieces = plans.filter { $0.area != nil }.count
+    if follow, pieces > covered { how.append("\(pieces) covers following the subtitles") }
     if !how.isEmpty { message += ": " + how.joined(separator: ", ") }
     if moved > 0 { message += "; moved \(moved) caption(s) onto the cover" }
     if let note { message += " (\(note))" }

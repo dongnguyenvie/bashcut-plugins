@@ -369,6 +369,29 @@
             }
           },
           {
+            "id": "fit",
+            "title": {
+              "en": "Cover size",
+              "vi": "Kích thước vùng che"
+            },
+            "type": "enum",
+            "choices": [
+              "follow",
+              "fixed"
+            ],
+            "choiceLabels": {
+              "follow": {
+                "en": "Follow each subtitle (tight, reads the whole clip)",
+                "vi": "Bám theo từng câu (sát chữ, đọc cả clip)"
+              },
+              "fixed": {
+                "en": "One area for the whole clip",
+                "vi": "Một vùng cho cả clip"
+              }
+            },
+            "default": "follow"
+          },
+          {
             "id": "coverLogos",
             "title": {
               "en": "Also cover fixed text and logos",
@@ -384,8 +407,8 @@
           {
             "id": "seconds",
             "title": {
-              "en": "Seconds to look at",
-              "vi": "Số giây để dò"
+              "en": "Seconds to look at (one area)",
+              "vi": "Số giây để dò (một vùng)"
             },
             "type": "integer",
             "minimum": 5,

@@ -403,11 +403,11 @@ class CoverTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.mkdtemp()
 
-    def cover(self, host, params=None, plugin_data=None, features=()):
+    def cover(self, host, params=None, plugin_data=None, features=(), fit="fixed"):
         session = Session(self.folder, features=features)
         try:
             return session.request("r1", "plugin.action", {
-                "action": "bashcut.translate-captions.cover", "params": params or {}, "options": {},
+                "action": "bashcut.translate-captions.cover", "params": {"fit": fit, **(params or {})}, "options": {},
                 "context": context([], plugin_data), "outputDirectory": self.folder}, on_call=host)[1]
         finally:
             session.close()
@@ -452,8 +452,48 @@ class CoverTests(unittest.TestCase):
         # Lines from 0.82 to 0.905 (two lines) plus a quarter line: the crop keeps just that strip.
         self.assertAlmostEqual(crop["top"], 0.81, places=3)
         self.assertAlmostEqual(crop["bottom"], 1 - 0.915, places=3)
-        self.assertTrue(0.1 < crop["left"] < 0.2 and 0.1 < crop["right"] < 0.2, crop)
+        self.assertTrue(0.15 < crop["left"] < 0.2 and 0.15 < crop["right"] < 0.2, crop)
         self.assertEqual(result["pluginData"]["cover"]["items"], [insert["id"]])
+
+    def test_follow_covers_each_subtitle_with_its_own_lines(self):
+        frames = []
+        # Pictures every half second: 0–1 s one short line, 1.5 s nothing, 2–3 s two long lines.
+        for index in range(7):
+            second = index * 0.5
+            texts = []
+            if second <= 1:
+                texts.append({"box": [0.4, 0.82, 0.2, 0.04], "string": "Short line"})
+            elif second >= 2:
+                texts += [{"box": [0.1, 0.8, 0.8, 0.04], "string": "A much longer first line here"},
+                          {"box": [0.15, 0.845, 0.7, 0.04], "string": "and its second line"}]
+            frames.append({"seconds": second, "frame": int(second * 30), "text": texts})
+        host = CoverHost(frames)
+        result = self.cover(host, features=["clip.blur"], fit="follow")["result"]
+        copies = [op["item"] for op in result["operations"] if op["op"] == "insert"]
+        self.assertEqual(len(copies), 2, [c["crop"] for c in copies])
+        short, long = copies
+        # The short line's cover is narrow and one line tall; the long one wide and two lines tall.
+        self.assertGreater(short["crop"]["left"], 0.35)
+        self.assertLess(long["crop"]["left"], 0.1)
+        self.assertGreater(long["crop"]["bottom"] - 0, 0)
+        self.assertLess(1 - short["crop"]["bottom"] - short["crop"]["top"], 0.06)
+        # Each lasts while its subtitle shows (a step either side), and starts in the source where it shows.
+        self.assertEqual((short["at"], short["in"]), (0, 0))
+        self.assertEqual(short["at"] + short["dur"], 45, "ends a step after its last picture (1 s)")
+        self.assertEqual(long["at"], 45, "starts a step before its first picture (2 s)")
+        self.assertEqual(long["in"], long["at"])
+        ocr = next(call for call in host.calls if call["method"] == "media.ocr")["params"]
+        self.assertEqual((ocr["from"], ocr["to"], ocr["step"]), (0, 30, 0.5), "the whole clip, every half second")
+
+    def test_a_one_word_subtitle_gets_a_cover_big_enough_to_crop(self):
+        frames = [{"seconds": i * 0.5, "frame": i * 15, "text": [
+            {"box": [0.48, 0.82, 0.04, 0.02], "string": "am" if i < 3 else "So"}]} for i in range(6)]
+        result = self.cover(CoverHost(frames), features=["clip.blur"], fit="follow")["result"]
+        for op in result["operations"]:
+            if op["op"] == "insert":
+                crop = op["item"]["crop"]
+                self.assertLessEqual(crop["left"] + crop["right"], 0.95, crop)
+                self.assertLessEqual(crop["top"] + crop["bottom"], 0.95, crop)
 
     def test_auto_on_an_older_app_is_a_box_hugging_the_lines(self):
         result = self.cover(CoverHost(ocr_frames(logo=False)))["result"]
