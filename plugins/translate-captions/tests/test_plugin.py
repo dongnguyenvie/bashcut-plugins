@@ -499,13 +499,16 @@ class CoverTests(unittest.TestCase):
     def test_mosaic_with_soft_edges_where_the_app_can(self):
         result = self.cover(CoverHost(ocr_frames(logo=False)), features=["clip.blur", "clip.mosaic"])["result"]
         insert = next(op for op in result["operations"] if op["op"] == "insert")["item"]
-        # Lines 0.04 of the picture tall in a 9:16 frame: cells half a line, a share of the short side.
-        self.assertAlmostEqual(insert["pixelate"], 0.036, places=3)
-        self.assertAlmostEqual(insert["blur"], 0.036 * 0.35, delta=0.001)
-        self.assertEqual(insert["feather"], 0.35)
+        # Lines 0.04 of the picture tall in a 9:16 frame: cells 0.9 of a line, as a share of the short side.
+        self.assertAlmostEqual(insert["pixelate"], 0.04 * 0.9 * 16 / 9, delta=0.001)
+        self.assertAlmostEqual(insert["blur"], insert["pixelate"] * 0.12, delta=0.001)
+        self.assertEqual(insert["feather"], 0.25)
         self.assertNotIn("radius", insert["crop"])
         smooth = self.cover(CoverHost(ocr_frames(logo=False)), {"look": "smooth"}, features=["clip.blur", "clip.mosaic"])["result"]
         self.assertNotIn("pixelate", next(op for op in smooth["operations"] if op["op"] == "insert")["item"])
+        # An app without clip.mosaic gets the smooth blur.
+        older = self.cover(CoverHost(ocr_frames(logo=False)), features=["clip.blur"])["result"]
+        self.assertNotIn("pixelate", next(op for op in older["operations"] if op["op"] == "insert")["item"])
 
     def test_tints_darken_or_lighten_the_blur(self):
         for tint, color in (("dark", {"exposure": -0.6}), ("light", {"exposure": 0.9, "saturation": 0.5})):
