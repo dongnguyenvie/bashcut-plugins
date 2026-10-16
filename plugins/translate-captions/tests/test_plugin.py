@@ -143,9 +143,23 @@ class TranslationServer:
         server = self
 
         class Handler(BaseHTTPRequestHandler):
+            def answer(self, status, payload):
+                data = json.dumps(payload).encode()
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
+            def do_GET(self):
+                server.calls.append({"path": self.path, "auth": self.headers.get("Authorization")})
+                self.answer(200, {"data": [{"id": "gpt-5-mini"}, {"id": "text-embedding-3-small"}, {"id": "local-model"}]})
+
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 server.calls.append({"path": self.path, "auth": self.headers.get("Authorization"), "body": body})
+                if body["model"] == "missing-model":
+                    return self.answer(404, {"error": {"message": "The model `missing-model` does not exist"}})
                 lines = json.loads(body["messages"][1]["content"])["lines"]
                 answer = {"lines": [{"id": line["id"], "text": "VI " + line["text"]} for line in lines
                                     if not (line["id"] in drop and len(server.calls) == 1)]}
@@ -178,6 +192,21 @@ def brief_host(call):
 
 
 class TranslateTests(unittest.TestCase):
+    def test_a_missing_model_lists_the_ones_the_service_has(self):
+        server = TranslationServer()
+        try:
+            error = self.translate(options={"service": "openai", "endpoint": server.endpoint, "model": "custom",
+                                            "customModel": "missing-model"})[1]["error"]
+        finally:
+            server.close()
+        self.assertEqual(error["code"], "model_missing")
+        self.assertIn("gpt-5-mini, local-model", error["message"])
+        self.assertNotIn("embedding", error["message"])
+
+    def test_a_model_of_the_other_service_is_refused(self):
+        error = self.translate(options={"service": "gemini", "apiKey": "k", "model": "gpt-5-mini"})[1]["error"]
+        self.assertEqual(error["code"], "wrong_model")
+
     def setUp(self):
         self.folder = tempfile.mkdtemp()
 
@@ -222,6 +251,7 @@ class TranslateTests(unittest.TestCase):
         self.assertEqual(len(server.calls), 2, "45 lines go in batches of 40")
         first = server.calls[0]["body"]
         self.assertEqual(first["model"], "local-model")
+        self.assertNotIn("temperature", first, "GPT-5 models refuse a temperature")
         self.assertIsNone(server.calls[0]["auth"], "a local server gets no key")
         system, user = first["messages"][0]["content"], json.loads(first["messages"][1]["content"])
         self.assertIn("Vietnamese", system)

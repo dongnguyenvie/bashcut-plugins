@@ -169,10 +169,18 @@ struct Translator {
                 "Add your \(kind == .gemini ? "Gemini" : "OpenAI") API key in Plugins › Translate Captions, or ask your agent "
                     + "to \"translate the captions to Vietnamese\" (it translates them itself with the translate-captions skill)")
         }
-        let chosen = (options["model"] as? String ?? "").trimmingCharacters(in: .whitespaces)
-        model = chosen.isEmpty ? (kind == .gemini ? "gemini-2.5-flash" : "gpt-4.1-mini") : chosen
-        let fallback = kind == .gemini ? "https://generativelanguage.googleapis.com" : "https://api.openai.com"
-        endpoint = (base.isEmpty ? fallback : base).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let fallback = kind == .gemini ? "gemini-flash-latest" : "gpt-5-mini"
+        var chosen = (options["model"] as? String ?? "auto").trimmingCharacters(in: .whitespaces)
+        if chosen == "custom" { chosen = (options["customModel"] as? String ?? "").trimmingCharacters(in: .whitespaces) }
+        model = chosen.isEmpty || chosen == "auto" ? fallback : chosen
+        // A model of the other service is a mistake in the options, unless the endpoint is a server of the user's own.
+        if base.isEmpty, (kind == .gemini) != model.hasPrefix("gemini"), options["model"] as? String != "custom" {
+            throw PluginError(
+                "wrong_model",
+                "\(model) is not a \(kind == .gemini ? "Gemini" : "OpenAI") model: choose a model of that service in Plugins › Translate Captions")
+        }
+        let service = kind == .gemini ? "https://generativelanguage.googleapis.com" : "https://api.openai.com"
+        endpoint = (base.isEmpty ? service : base).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     }
 
     /// Translations by line ID; lines the service left out are missing.
@@ -195,7 +203,7 @@ struct Translator {
         call.setValue("application/json", forHTTPHeaderField: "Content-Type")
         call.setValue(key, forHTTPHeaderField: "x-goog-api-key")
         call.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let answer = try send(call)
+        let answer = try sendForModel(call)
         let candidates = answer["candidates"] as? [JSON] ?? []
         let parts = (candidates.first?["content"] as? JSON)?["parts"] as? [JSON] ?? []
         let text = parts.compactMap { $0["text"] as? String }.joined()
@@ -209,7 +217,8 @@ struct Translator {
 
     private func openAI(system: String, user: String) throws -> String {
         var body: JSON = [
-            "model": model, "temperature": 0.3, "response_format": ["type": "json_object"],
+            // No temperature: GPT-5 and other reasoning models accept only their default.
+            "model": model, "response_format": ["type": "json_object"],
             "messages": [["role": "system", "content": system], ["role": "user", "content": user]],
         ]
         var call = URLRequest(url: try url("/v1/chat/completions"))
@@ -219,18 +228,53 @@ struct Translator {
         call.httpBody = try JSONSerialization.data(withJSONObject: body)
         let answer: JSON
         do {
-            answer = try send(call)
-        } catch let error as PluginError where error.code == "http_400" {
+            answer = try sendForModel(call)
+        } catch let error as PluginError where error.code == "http_400" && !error.message.contains(model) {
             // Some compatible servers do not know response_format; the instructions still ask for JSON.
             body["response_format"] = nil
             call.httpBody = try JSONSerialization.data(withJSONObject: body)
-            answer = try send(call)
+            answer = try sendForModel(call)
         }
         let choice = (answer["choices"] as? [JSON])?.first
         guard let text = (choice?["message"] as? JSON)?["content"] as? String, !text.isEmpty else {
             throw PluginError("no_answer", "OpenAI returned no translation")
         }
         return text
+    }
+
+    /// Sends a call that names the model; when the service does not know the model, the error lists the ones it has.
+    private func sendForModel(_ request: URLRequest) throws -> JSON {
+        do {
+            return try send(request)
+        } catch let error as PluginError
+            where error.code == "http_404" || (error.code == "http_400" && error.message.lowercased().contains("model"))
+        {
+            let names = (try? availableModels()) ?? []
+            throw PluginError(
+                "model_missing",
+                "The service has no model \(model) for your key (\(error.message))"
+                    + (names.isEmpty ? "" : ". Models it has: " + names.prefix(40).joined(separator: ", ")))
+        }
+    }
+
+    /// The text models the key can use, from the service's model list.
+    func availableModels() throws -> [String] {
+        var call = URLRequest(url: try url(kind == .gemini ? "/v1beta/models?pageSize=1000" : "/v1/models"))
+        if kind == .gemini {
+            call.setValue(key, forHTTPHeaderField: "x-goog-api-key")
+        } else if !key.isEmpty {
+            call.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        }
+        let answer = try send(call)
+        if kind == .gemini {
+            return (answer["models"] as? [JSON] ?? [])
+                .filter { ($0["supportedGenerationMethods"] as? [String] ?? []).contains("generateContent") }
+                .compactMap { ($0["name"] as? String)?.replacingOccurrences(of: "models/", with: "") }
+                .filter { !$0.contains("image") && !$0.contains("tts") && !$0.contains("embedding") }.sorted()
+        }
+        return (answer["data"] as? [JSON] ?? []).compactMap { $0["id"] as? String }
+            .filter { !["embedding", "whisper", "tts", "dall-e", "image", "audio", "realtime", "moderation", "transcribe"].contains(where: $0.contains) }
+            .sorted()
     }
 
     private func url(_ path: String) throws -> URL {

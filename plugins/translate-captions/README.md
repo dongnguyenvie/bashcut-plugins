@@ -15,9 +15,11 @@ Vietsub and other caption translations for a BashCut edit, with the user's own k
 - **Add the Vietsub TikTok batch preset**: saves `presets/vietsub-tiktok.json` to BashCut's batch presets: import,
   captions of the spoken language, caption style, cover, translate to Vietnamese, review checks, TikTok and Shorts
   exports.
-- **Services:** Google Gemini (`gemini-2.5-flash` by default) or OpenAI (`gpt-4.1-mini` by default). The **Endpoint**
-  option points the OpenAI mode at any server with `/v1/chat/completions`, such as a local model (no key needed on
-  127.0.0.1 or localhost).
+- **Services:** Google Gemini (`gemini-flash-latest` by default) or OpenAI (`gpt-5-mini` by default). **Model** lists
+  the common ones (Gemini Flash, Flash-Lite and Pro by their always-latest aliases, GPT-5 mini, nano and GPT-5,
+  GPT-4.1 mini) and **Other** with a typed ID in **Other model**. When the service does not know the model, the error
+  lists the models the key can use (from the service's model list). The **Endpoint** option points the OpenAI mode at
+  any server with `/v1/chat/completions`, such as a local model (no key needed on 127.0.0.1 or localhost).
 - **No key:** the action says to ask the agent; the plugin's skill tells Claude Code, Codex or the AI Editor how to
   translate the captions itself (`captions export` → `timeline apply`).
 
@@ -28,7 +30,7 @@ Needs BashCut with plugin API 10 or later (the Tools panel).
 
 - `bin/provider`: the entrypoint BashCut runs, built by `build.sh` (not in git)
 - `build.sh`: builds `bin/provider` (universal binary) from `src/`; not shipped
-- `plugin.json`: manifest: options (service, key, model, endpoint) and the three actions
+- `plugin.json`: manifest: options (service, key, model, other model, endpoint) and the three actions
 - `presets/vietsub-tiktok.json`: the batch pipeline the third action saves
 - `skills/translate-captions/SKILL.md`: the agent skill, including translating without a key
 - `src/Handlers.swift`: dispatch and shared request helpers

@@ -62,13 +62,76 @@
         "en": "Model",
         "vi": "Model"
       },
+      "type": "enum",
+      "choices": [
+        "auto",
+        "gemini-flash-latest",
+        "gemini-flash-lite-latest",
+        "gemini-pro-latest",
+        "gpt-5-mini",
+        "gpt-5-nano",
+        "gpt-5",
+        "gpt-4.1-mini",
+        "custom"
+      ],
+      "choiceLabels": {
+        "auto": {
+          "en": "Default for the service (Gemini Flash latest, GPT-5 mini)",
+          "vi": "Mặc định theo dịch vụ (Gemini Flash mới nhất, GPT-5 mini)"
+        },
+        "gemini-flash-latest": {
+          "en": "Gemini · Flash, latest (fast, good)",
+          "vi": "Gemini · Flash, mới nhất (nhanh, tốt)"
+        },
+        "gemini-flash-lite-latest": {
+          "en": "Gemini · Flash-Lite, latest (cheapest)",
+          "vi": "Gemini · Flash-Lite, mới nhất (rẻ nhất)"
+        },
+        "gemini-pro-latest": {
+          "en": "Gemini · Pro, latest (best, slower)",
+          "vi": "Gemini · Pro, mới nhất (tốt nhất, chậm hơn)"
+        },
+        "gpt-5-mini": {
+          "en": "OpenAI · GPT-5 mini",
+          "vi": "OpenAI · GPT-5 mini"
+        },
+        "gpt-5-nano": {
+          "en": "OpenAI · GPT-5 nano (cheapest)",
+          "vi": "OpenAI · GPT-5 nano (rẻ nhất)"
+        },
+        "gpt-5": {
+          "en": "OpenAI · GPT-5 (best, slower)",
+          "vi": "OpenAI · GPT-5 (tốt nhất, chậm hơn)"
+        },
+        "gpt-4.1-mini": {
+          "en": "OpenAI · GPT-4.1 mini",
+          "vi": "OpenAI · GPT-4.1 mini"
+        },
+        "custom": {
+          "en": "Other: type its ID below",
+          "vi": "Khác: nhập ID bên dưới"
+        }
+      },
+      "default": "auto",
+      "scope": "user",
+      "help": {
+        "en": "A model of the chosen service. When BashCut cannot find the model, the error lists the ones your key can use",
+        "vi": "Model của dịch vụ đã chọn. Nếu không tìm thấy model, thông báo lỗi sẽ liệt kê các model mà khoá của bạn dùng được"
+      }
+    },
+    {
+      "id": "customModel",
+      "title": {
+        "en": "Other model",
+        "vi": "Model khác"
+      },
       "type": "string",
       "default": "",
       "scope": "user",
       "maxLength": 200,
       "help": {
-        "en": "Empty uses gemini-2.5-flash (Gemini) or gpt-4.1-mini (OpenAI)",
-        "vi": "Để trống dùng gemini-2.5-flash (Gemini) hoặc gpt-4.1-mini (OpenAI)"
+        "en": "Used when Model is Other, such as gemini-3.5-flash, gpt-5.4-mini or a local server's model",
+        "vi": "Dùng khi Model là Khác, ví dụ gemini-3.5-flash, gpt-5.4-mini hoặc model của server trên máy"
       }
     },
     {
