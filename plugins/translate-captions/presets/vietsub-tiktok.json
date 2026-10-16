@@ -30,7 +30,7 @@
       "action": "captions.style",
       "params": {
         "style": {
-          "font": "AvenirNext-HeavyItalic",
+          "font": "AvenirNext-BoldItalic",
           "size": 0.052,
           "fill": "#FFFFFF",
           "stroke": "#000000",

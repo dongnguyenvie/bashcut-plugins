@@ -57,8 +57,9 @@ export with `bashcut export start --presets tiktok,shorts`.
 Caption look: Whisper captions come in the system font, regular weight, which sinks into a busy picture. Restyle
 them like the usual drama subtitle, bold italic with a thin outline (the batch preset does this):
 `bashcut captions style style.json --base-rev last` with
-`{"font": "AvenirNext-HeavyItalic", "size": 0.052, "fill": "#FFFFFF", "stroke": "#000000", "strokeWidth": 4}`.
-An outline above about 6 fills the letters in at this size.
+`{"font": "AvenirNext-BoldItalic", "size": 0.052, "fill": "#FFFFFF", "stroke": "#000000", "strokeWidth": 4}`.
+An outline above about 6 fills the letters in at this size. Pick a font that `bashcut fonts list --language vi
+--covers` lists: Avenir Next Heavy Italic, for one, has no stacked Vietnamese marks (ế, ố, ặ) and draws them apart.
 
 ## Limits
 
