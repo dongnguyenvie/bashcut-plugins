@@ -13,7 +13,7 @@ import re
 
 SCHEMA = "bashcut.plugin/1"
 API_MINIMUM = 1
-API_CURRENT = 9
+API_CURRENT = 11
 # Capabilities BashCut wires today (docs/guides/plugins.md › Capabilities).
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")

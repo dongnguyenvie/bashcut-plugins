@@ -12,8 +12,9 @@ Templates:
     hook         contributes.hooks subscribers (export.finished with pluginData, media.imported)
     options      options of every type, including a secret, read by an action
     chat-agent   an agent.chat session plugin: a tab in the agent dock that streams events and calls BashCut
-    views        a rail panel (contributes.container) with a panel, a dock tab and a sheet view, the request loop
-                 with call / wait_job / render helpers and the hello's host features (plugin API 8)
+    views        a rail panel (contributes.container) with a panel, a dock tab, a sheet and a window view (a split
+                 with a nav and a grid), the request loop with call / wait_job / render helpers and the hello's host
+                 features (plugin API 11)
     skills       a skill pack without code: agent skills only, no entrypoint (host feature skillsOnly, API 7)
     library      a library pack without code: items for the library panels (a sound, a sticker, a text style, a
                  look, a transition) in packs/<slug>/pack.json, no entrypoint
@@ -66,12 +67,14 @@ SUMMARIES = {
     "options": ("Shows how plugin options work, including a secret API key.",
                 "Minh hoạ các loại tuỳ chọn của plugin, kể cả khoá API bí mật."),
     "chat-agent": ("A chat agent in BashCut's agent dock.", "Trợ lý trò chuyện trong agent dock của BashCut."),
-    "views": ("A panel in BashCut's left rail with a dock tab and a sheet.",
-              "Bảng điều khiển ở thanh bên trái của BashCut, kèm tab trong dock và một sheet."),
+    "views": ("A panel in BashCut's left rail with a dock tab, a sheet and a window.",
+              "Bảng điều khiển ở thanh bên trái của BashCut, kèm tab trong dock, một sheet và một cửa sổ."),
     "skills": ("Agent skills for editing in BashCut.", "Skill cho agent khi dựng video trong BashCut."),
     "library": ("Sounds, stickers, text styles, looks and transitions for BashCut's library.",
                 "Âm thanh, sticker, kiểu chữ, màu và chuyển cảnh cho thư viện BashCut."),
 }
+# listing.json minAppVersion when the template needs a newer app than the first beta (plugin API 11: BashCut 0.0.25).
+MIN_APP_VERSIONS = {"views": "0.0.25"}
 DEFAULT_CATEGORIES = {"voice.synthesize": "voice", "captions.transcribe": "captions", "chat-agent": "agents",
                       "skills": "agents", "library": "effects",
                       "audio.beats": "audio", "audio.loudness": "audio", "audio.sync": "audio"}
@@ -154,7 +157,8 @@ def contribution_for(template, plugin_id, name, capability, slug=""):
                    "options": [{"id": "greeting", "title": text("Greeting", "Lời chào"), "type": "string",
                                 "default": "Hello", "scope": "user"}]}
     if template == "views":
-        return 8, {"transport": "session", "capabilities": [], "uses": ["audio.loudness"], "features": ["views"],
+        # The window view needs API 11: an older app refuses the manifest, so minApiVersion is 11 too.
+        return 11, {"transport": "session", "capabilities": [], "uses": ["audio.loudness"], "features": ["views"],
                    "contributes": {
                        "container": {"icon": "square.grid.2x2", "title": text(name[:24])},
                        "views": [
@@ -162,6 +166,8 @@ def contribution_for(template, plugin_id, name, capability, slug=""):
                            {"id": "media", "title": text("Media", "Media"), "location": "dock", "icon": "film"},
                            {"id": "form", "title": text("Form", "Biểu mẫu"), "location": "sheet",
                             "icon": "square.and.pencil"},
+                           {"id": "browse", "title": text("Browser", "Trình duyệt"), "location": "window",
+                            "icon": "square.split.3x1"},
                        ],
                        "actions": [{"id": action_id, "title": text("Open the form…", "Mở biểu mẫu…"),
                                     "icon": "square.and.pencil", "placements": ["menu.plugins"]}],
@@ -346,7 +352,7 @@ def generate(args, registry, staging):
             "publisher": "bashcut",
             "category": args.category,
             "homepage": f"{REPO_URL}/tree/main/plugins/{args.slug}",
-            "minAppVersion": "0.0.1",
+            "minAppVersion": MIN_APP_VERSIONS.get(args.template, "0.0.1"),
             "platforms": ["macos-arm64", "macos-x86_64"],
         }
         write("listing.json", json.dumps(listing, indent=2, ensure_ascii=False) + "\n")
