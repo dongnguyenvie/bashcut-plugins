@@ -423,8 +423,9 @@ class CoverTests(unittest.TestCase):
         self.assertEqual(result["baseRev"], 13, "planned against the revision after the import")
         ops = result["operations"]
         self.assertEqual(ops[0], {"op": "delete", "item": "old-band"}, "an earlier band is replaced; a missing one ignored")
-        self.assertIn({"op": "addTrack", "track": {"id": "subtitle-cover", "kind": "video", "name": "Subtitle cover",
-                                                    "role": "overlay"}}, ops, "covers get a layer of their own")
+        self.assertIn({"op": "addTrack", "atIndex": 2, "track": {"id": "subtitle-cover", "kind": "video",
+                                                                  "name": "Subtitle cover", "role": "overlay"}},
+                      ops, "covers get a layer of their own, below the caption layer (index 2)")
         insert = next(op for op in ops if op["op"] == "insert")
         self.assertEqual(insert["track"], "subtitle-cover")
         self.assertEqual((insert["item"]["media"], insert["item"]["at"], insert["item"]["dur"]), ("band1", 0, 900))

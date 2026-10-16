@@ -308,13 +308,22 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     guard let rev = fresh["rev"] as? Int else { throw PluginError("bad_answer", "timeline.get returned no revision") }
     let freshTracks = fresh["tracks"] as? [JSON] ?? tracks
 
-    // Covers go on layers of their own, in front of the other video layers: "Subtitle cover", and "Subtitle cover 2"
-    // for the picture when a clip has both a blurred copy and a picture (logos).
+    // Covers go on layers of their own, above the other video layers and below the text layers (captions, titles):
+    // "Subtitle cover", and "Subtitle cover 2" for the picture when a clip has both a blurred copy and a picture.
     var operations: [JSON] = earlier.filter(existing.contains).map { ["op": "delete", "item": $0] }
-    let trackIDs = Set(freshTracks.compactMap { $0["id"] as? String })
+    let trackIDs = freshTracks.compactMap { $0["id"] as? String }
+    let firstText = freshTracks.firstIndex { $0["kind"] as? String == "text" }
     func layer(_ id: String, _ name: String) -> String {
-        if !trackIDs.contains(id), !operations.contains(where: { ($0["track"] as? JSON)?["id"] as? String == id }) {
-            operations.append(["op": "addTrack", "track": ["id": id, "kind": "video", "name": name, "role": "overlay"]])
+        let added = operations.filter { $0["op"] as? String == "addTrack" }.count
+        if let index = trackIDs.firstIndex(of: id) {
+            // An earlier run's layer above the text layers moves below them.
+            if let firstText, index > firstText, !operations.contains(where: { $0["track"] as? String == id && $0["op"] as? String == "moveTrack" }) {
+                operations.append(["op": "moveTrack", "track": id, "toIndex": firstText])
+            }
+        } else if !operations.contains(where: { ($0["track"] as? JSON)?["id"] as? String == id }) {
+            var op: JSON = ["op": "addTrack", "track": ["id": id, "kind": "video", "name": name, "role": "overlay"]]
+            if let firstText { op["atIndex"] = firstText + added }
+            operations.append(op)
         }
         return id
     }
