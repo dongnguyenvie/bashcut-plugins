@@ -138,8 +138,10 @@ def context(tracks=None, plugin_data=None):
 class TranslationServer:
     """An OpenAI-compatible /v1/chat/completions that answers "<target> <text>" for each line, and records calls."""
 
-    def __init__(self, drop=(), fence=False):
+    def __init__(self, drop=(), fence=False, failures=()):
+        """`failures`: (status, message) answered to the first calls, in order."""
         self.calls = []
+        self.failures = list(failures)
         server = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -158,6 +160,13 @@ class TranslationServer:
             def do_POST(self):
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 server.calls.append({"path": self.path, "auth": self.headers.get("Authorization"), "body": body})
+                if server.failures:
+                    status, text = server.failures.pop(0)
+                    return self.answer(status, {"error": {"message": text}})
+                if self.path.startswith("/v1beta/models/"):
+                    lines = json.loads(body["contents"][0]["parts"][0]["text"])["lines"]
+                    out = json.dumps({"lines": [{"id": l["id"], "text": "VI " + l["text"]} for l in lines]})
+                    return self.answer(200, {"candidates": [{"content": {"parts": [{"text": out}]}}]})
                 if body["model"] == "missing-model":
                     return self.answer(404, {"error": {"message": "The model `missing-model` does not exist"}})
                 lines = json.loads(body["messages"][1]["content"])["lines"]
@@ -202,6 +211,40 @@ class TranslateTests(unittest.TestCase):
         self.assertEqual(error["code"], "model_missing")
         self.assertIn("gpt-5-mini, local-model", error["message"])
         self.assertNotIn("embedding", error["message"])
+
+    def test_a_full_quota_waits_as_long_as_the_service_asks(self):
+        server = TranslationServer(failures=[(429, "Quota exceeded for metric: free_tier_requests. Please retry in 1.2s.")])
+        try:
+            lines, reply = self.translate(options={"service": "openai", "endpoint": server.endpoint},
+                                          tracks=[{"id": "t1", "kind": "text", "role": "captions", "items": CAPTIONS[:3]}])
+        finally:
+            server.close()
+        self.assertEqual(len(reply["result"]["operations"]), 3)
+        self.assertTrue(any("quota is full" in (line.get("message") or "") for line in lines))
+
+    def test_a_daily_quota_stops_with_a_clear_message(self):
+        server = TranslationServer(failures=[(429, "Quota exceeded for metric: GenerateRequestsPerDayPerProjectPerModel-FreeTier")])
+        try:
+            error = self.translate(options={"service": "openai", "endpoint": server.endpoint})[1]["error"]
+        finally:
+            server.close()
+        self.assertEqual(error["code"], "quota")
+        self.assertIn("daily quota", error["message"])
+
+    def test_a_busy_default_gemini_model_gives_way_to_flash(self):
+        busy = [(503, "This model is currently experiencing high demand.")] * 4
+        server = TranslationServer(failures=busy)
+        try:
+            reply = self.translate(options={"service": "gemini", "apiKey": "AIza" + "x" * 35, "endpoint": server.endpoint},
+                                   tracks=[{"id": "t1", "kind": "text", "role": "captions", "items": CAPTIONS[:2]}])[1]
+        finally:
+            server.close()
+        result = reply["result"]
+        self.assertEqual(len(result["operations"]), 2)
+        self.assertIn("Gemini (gemini-flash-latest)", result["message"])
+        self.assertIn("gemini-flash-lite-latest was busy", result["message"])
+        self.assertTrue(server.calls[0]["path"].startswith("/v1beta/models/gemini-flash-lite-latest:"), "the default is the cheapest")
+        self.assertTrue(server.calls[-1]["path"].startswith("/v1beta/models/gemini-flash-latest:"))
 
     def test_a_model_of_the_other_service_is_refused(self):
         error = self.translate(options={"service": "gemini", "apiKey": "k", "model": "gpt-5-mini"})[1]["error"]

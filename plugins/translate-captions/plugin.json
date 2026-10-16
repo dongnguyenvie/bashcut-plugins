@@ -66,27 +66,27 @@
       "type": "enum",
       "choices": [
         "auto",
-        "gemini-flash-latest",
         "gemini-flash-lite-latest",
+        "gemini-flash-latest",
         "gemini-pro-latest",
-        "gpt-5-mini",
         "gpt-5-nano",
+        "gpt-5-mini",
         "gpt-5",
         "gpt-4.1-mini",
         "custom"
       ],
       "choiceLabels": {
         "auto": {
-          "en": "Default for the service (Gemini Flash latest, GPT-5 mini)",
-          "vi": "Mặc định theo dịch vụ (Gemini Flash mới nhất, GPT-5 mini)"
+          "en": "Default: the cheapest that translates well (Gemini Flash-Lite, GPT-5 mini)",
+          "vi": "Mặc định: rẻ nhất mà dịch tốt (Gemini Flash-Lite, GPT-5 mini)"
         },
         "gemini-flash-latest": {
-          "en": "Gemini · Flash, latest (fast, good)",
-          "vi": "Gemini · Flash, mới nhất (nhanh, tốt)"
+          "en": "Gemini · Flash, latest (a little better, costs more)",
+          "vi": "Gemini · Flash, mới nhất (tốt hơn chút, đắt hơn)"
         },
         "gemini-flash-lite-latest": {
-          "en": "Gemini · Flash-Lite, latest (cheapest)",
-          "vi": "Gemini · Flash-Lite, mới nhất (rẻ nhất)"
+          "en": "Gemini · Flash-Lite, latest (cheapest, fast)",
+          "vi": "Gemini · Flash-Lite, mới nhất (rẻ nhất, nhanh)"
         },
         "gemini-pro-latest": {
           "en": "Gemini · Pro, latest (best, slower)",

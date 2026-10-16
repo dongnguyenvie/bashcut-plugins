@@ -27,6 +27,7 @@ func translate(_ raw: JSON, host: Host) throws -> JSON {
         throw PluginError("no_captions", "There are no captions to translate. Make them first (Tools › Auto captions)")
     }
     let service = try Translator(options: request.options)
+    service.onWait = { host.progress(nil, $0) }
     let lines = items.enumerated().map { index, item in
         Line(id: "\(index + 1)", item: item["id"] as? String ?? "", text: (item["text"] as? String ?? "").replacingOccurrences(of: "\n", with: " "),
              seconds: Double(item["dur"] as? Int ?? 0) / request.fps)
@@ -68,6 +69,7 @@ func translate(_ raw: JSON, host: Host) throws -> JSON {
         return Double(text.count) / line.seconds > Double(style.maxCps) * 1.25
     }.count
     var message = "Translated \(operations.count) of \(lines.count) captions to \(language) with \(service.label)"
+    if let busy = service.fellBackFrom { message += " (\(busy) was busy)" }
     if !kept.isEmpty { message += "; \(kept.count) kept as they were (no translation came back)" }
     if tooFast > 0 { message += "; \(tooFast) still read faster than \(style.maxCps) characters a second" }
     return [
@@ -147,13 +149,19 @@ struct TranslationStyle {
 }
 
 /// Gemini or OpenAI (or an OpenAI-compatible server), with the user's key and optional model and endpoint.
-struct Translator {
+final class Translator {
     enum Kind: String { case gemini, openai }
 
     let kind: Kind
     let key: String
-    let model: String
+    private(set) var model: String
     let endpoint: String
+    /// The model was not chosen (Model: default), so a busy one may give way to a lighter one.
+    let defaultModel: Bool
+    /// Set when the default model was busy and a lighter one translated instead.
+    private(set) var fellBackFrom: String?
+    /// Told while a call waits for the service (quota or a busy model), so the job shows why and stays alive.
+    var onWait: ((String) -> Void)?
 
     var label: String { "\(kind == .gemini ? "Gemini" : "OpenAI") (\(model))" }
 
@@ -169,10 +177,11 @@ struct Translator {
                 "Add your \(kind == .gemini ? "Gemini" : "OpenAI") API key in Plugins › Translate Captions, or ask your agent "
                     + "to \"translate the captions to Vietnamese\" (it translates them itself with the translate-captions skill)")
         }
-        let fallback = kind == .gemini ? "gemini-flash-latest" : "gpt-5-mini"
+        let fallback = kind == .gemini ? "gemini-flash-lite-latest" : "gpt-5-mini"
         var chosen = (options["model"] as? String ?? "auto").trimmingCharacters(in: .whitespaces)
         if chosen == "custom" { chosen = (options["customModel"] as? String ?? "").trimmingCharacters(in: .whitespaces) }
-        model = chosen.isEmpty || chosen == "auto" ? fallback : chosen
+        defaultModel = chosen.isEmpty || chosen == "auto"
+        model = defaultModel ? fallback : chosen
         // A model of the other service is a mistake in the options, unless the endpoint is a server of the user's own.
         if base.isEmpty, (kind == .gemini) != model.hasPrefix("gemini"), options["model"] as? String != "custom" {
             throw PluginError(
@@ -183,14 +192,28 @@ struct Translator {
         endpoint = (base.isEmpty ? service : base).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     }
 
-    /// Translations by line ID; lines the service left out are missing.
+    /// Translations by line ID; lines the service left out are missing. When the default Gemini model (Flash-Lite,
+    /// the cheapest) stays busy (503), the rest of the job uses Flash.
     func translate(_ lines: [Line], style: TranslationStyle, before: [String]) throws -> [String: String] {
         let input = try style.input(lines, before: before)
-        let text = kind == .gemini
-            ? try gemini(system: style.instructions, user: input)
-            : try openAI(system: style.instructions, user: input)
+        let text: String
+        do {
+            text = kind == .gemini
+                ? try gemini(system: style.instructions, user: input)
+                : try openAI(system: style.instructions, user: input)
+        } catch let error as PluginError
+            where error.code == "busy" && kind == .gemini && defaultModel && fellBackFrom == nil
+        {
+            fellBackFrom = model
+            model = Self.otherGemini
+            onWait?("\(fellBackFrom ?? "") is busy: translating with \(model)")
+            text = try gemini(system: style.instructions, user: input)
+        }
         return parseLines(text, ids: Set(lines.map(\.id)))
     }
+
+    /// The model a busy default gives way to.
+    static let otherGemini = "gemini-flash-latest"
 
     private func gemini(system: String, user: String) throws -> String {
         let body: JSON = [
@@ -299,12 +322,15 @@ struct Translator {
         return url
     }
 
+    /// Sends one call. A full quota (429) waits as long as the service asks (at most a minute each time, three
+    /// minutes in all) and a busy service (5xx) is tried again after 3, 8 and 15 seconds; `onWait` says so meanwhile.
     private func send(_ request: URLRequest) throws -> JSON {
         var request = request
         request.timeoutInterval = 180
         var lastError: PluginError?
-        for attempt in 0..<3 {
-            if attempt > 0 { Thread.sleep(forTimeInterval: Double(attempt) * 2) }
+        var waited = 0.0
+        var busy = 0
+        for _ in 0..<8 {
             let done = DispatchSemaphore(value: 0)
             nonisolated(unsafe) var outcome: (Data?, URLResponse?, Error?)
             URLSession.shared.dataTask(with: request) { data, response, error in
@@ -312,8 +338,12 @@ struct Translator {
                 done.signal()
             }.resume()
             done.wait()
+            let name = kind == .gemini ? "Gemini" : "OpenAI"
             if let error = outcome.2 {
                 lastError = PluginError("network", error.localizedDescription)
+                busy += 1
+                guard busy <= 2 else { break }
+                pause(3, "\(name) did not answer; trying again")
                 continue
             }
             let status = (outcome.1 as? HTTPURLResponse)?.statusCode ?? 0
@@ -322,14 +352,57 @@ struct Translator {
             if status == 401 || status == 403 || (status == 400 && message.lowercased().contains("api key")) {
                 throw PluginError("auth", "The service refused the key: \(message)" + keyHint)
             }
-            if status == 429 || status >= 500 {
-                lastError = PluginError("http_\(status)", message)
+            if status == 429 {
+                let daily = message.contains("PerDay") || message.lowercased().contains("per day")
+                let delay = Self.retryDelay(object, message: message) ?? 20
+                guard !daily, waited + delay <= 180 else {
+                    throw PluginError("quota", Self.quotaMessage(name: name, model: model, message: message, daily: daily))
+                }
+                pause(min(delay + 1, 61), "\(name) quota is full for \(model): waiting \(Int(delay.rounded())) s")
+                waited += delay
+                lastError = PluginError("quota", Self.quotaMessage(name: name, model: model, message: message, daily: false))
+                continue
+            }
+            if status >= 500 {
+                busy += 1
+                lastError = PluginError("busy", "\(name) \(model) is busy (\(message))")
+                guard busy <= 3 else { break }
+                pause([3.0, 8, 15][busy - 1], "\(name) \(model) is busy: trying again")
                 continue
             }
             guard (200..<300).contains(status) else { throw PluginError("http_\(status)", message) }
             return object
         }
         throw lastError ?? PluginError("network", "The service did not answer")
+    }
+
+    /// Sleeps `seconds`, telling `onWait` every 10 seconds so the job's progress says why it waits.
+    private func pause(_ seconds: Double, _ reason: String) {
+        var left = seconds
+        while left > 0 {
+            onWait?(reason)
+            Thread.sleep(forTimeInterval: min(10, left))
+            left -= 10
+        }
+    }
+
+    /// The wait a 429 asks for: Gemini's RetryInfo `retryDelay` ("39s") or "retry in 39.09s" in the message.
+    static func retryDelay(_ object: JSON, message: String) -> Double? {
+        for detail in (object["error"] as? JSON)?["details"] as? [JSON] ?? [] {
+            if let delay = detail["retryDelay"] as? String, let seconds = Double(delay.replacingOccurrences(of: "s", with: "")) {
+                return seconds
+            }
+        }
+        guard let range = message.range(of: #"retry in ([0-9.]+)\s*s"#, options: [.regularExpression, .caseInsensitive])
+        else { return nil }
+        return Double(message[range].filter { $0.isNumber || $0 == "." })
+    }
+
+    static func quotaMessage(name: String, model: String, message: String, daily: Bool) -> String {
+        let free = message.contains("free_tier") ? " (free tier)" : ""
+        return daily
+            ? "\(name)'s daily quota\(free) for \(model) is used up: run it again tomorrow, choose another model, or use a paid key"
+            : "\(name)'s quota\(free) for \(model) stayed full: wait a minute and run it again, choose another model, or use a paid key"
     }
 }
 

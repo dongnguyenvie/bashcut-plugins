@@ -15,8 +15,8 @@ Vietsub and other caption translations for a BashCut edit, with the user's own k
 - **Add the Vietsub TikTok batch preset**: saves `presets/vietsub-tiktok.json` to BashCut's batch presets: import,
   captions of the spoken language, caption style, cover, translate to Vietnamese, review checks, TikTok and Shorts
   exports.
-- **Services:** Google Gemini (`gemini-flash-latest` by default) or OpenAI (`gpt-5-mini` by default). **Model** lists
-  the common ones (Gemini Flash, Flash-Lite and Pro by their always-latest aliases, GPT-5 mini, nano and GPT-5,
+- **Services:** Google Gemini (`gemini-flash-lite-latest`, the cheapest, by default; Flash when it is busy) or OpenAI (`gpt-5-mini` by default). **Model** lists
+  the common ones (Gemini Flash-Lite, Flash and Pro by their always-latest aliases, GPT-5 mini, nano and GPT-5,
   GPT-4.1 mini) and **Other** with a typed ID in **Other model**. When the service does not know the model, the error
   lists the models the key can use (from the service's model list). The **Endpoint** option points the OpenAI mode at
   any server with `/v1/chat/completions`, such as a local model (no key needed on 127.0.0.1 or localhost).
