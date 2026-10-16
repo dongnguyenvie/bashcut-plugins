@@ -330,18 +330,28 @@
             "type": "enum",
             "choices": [
               "auto",
+              "blur",
+              "box",
               "band",
               "zoom",
               "detect"
             ],
             "choiceLabels": {
               "auto": {
-                "en": "Best for the footage",
-                "vi": "Cách hợp với footage"
+                "en": "Blur them (a box on an older BashCut)",
+                "vi": "Làm mờ (BashCut cũ: khung tối)"
+              },
+              "blur": {
+                "en": "Blur just the subtitles",
+                "vi": "Chỉ làm mờ phần phụ đề"
+              },
+              "box": {
+                "en": "A rounded dark box over them",
+                "vi": "Khung tối bo góc che phụ đề"
               },
               "band": {
-                "en": "A dark band under the new captions",
-                "vi": "Dải tối dưới phụ đề mới"
+                "en": "A dark band across the picture",
+                "vi": "Dải tối ngang cả khung hình"
               },
               "zoom": {
                 "en": "Zoom them out of the frame",
@@ -400,10 +410,26 @@
             }
           },
           {
+            "id": "blur",
+            "title": {
+              "en": "Blur strength",
+              "vi": "Độ mờ"
+            },
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 0.2,
+            "default": 0.05,
+            "advanced": true,
+            "help": {
+              "en": "Blur radius as a share of the picture's short side: 0.03 for small subtitles, 0.05 hides most, more for big bold text",
+              "vi": "Bán kính mờ theo cạnh ngắn của khung: 0.03 cho phụ đề nhỏ, 0.05 che được hầu hết, tăng lên cho chữ to đậm"
+            }
+          },
+          {
             "id": "opacity",
             "title": {
-              "en": "Band opacity",
-              "vi": "Độ đậm của dải"
+              "en": "Box opacity",
+              "vi": "Độ đậm của khung"
             },
             "type": "number",
             "minimum": 0.5,

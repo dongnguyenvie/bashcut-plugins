@@ -403,8 +403,8 @@ class CoverTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.mkdtemp()
 
-    def cover(self, host, params=None, plugin_data=None):
-        session = Session(self.folder)
+    def cover(self, host, params=None, plugin_data=None, features=()):
+        session = Session(self.folder, features=features)
         try:
             return session.request("r1", "plugin.action", {
                 "action": "bashcut.translate-captions.cover", "params": params or {}, "options": {},
@@ -412,7 +412,7 @@ class CoverTests(unittest.TestCase):
         finally:
             session.close()
 
-    def test_band_over_moving_subtitles_and_captions_on_it(self):
+    def test_box_over_moving_subtitles_and_captions_on_it(self):
         host = CoverHost(ocr_frames(), source=(720, 1280), base_scale=1.5)
         result = self.cover(host, plugin_data={"cover": {"items": ["old-band", "gone"]}})["result"]
         video = result["data"]["videos"][0]
@@ -423,8 +423,10 @@ class CoverTests(unittest.TestCase):
         self.assertEqual(result["baseRev"], 13, "planned against the revision after the import")
         ops = result["operations"]
         self.assertEqual(ops[0], {"op": "delete", "item": "old-band"}, "an earlier band is replaced; a missing one ignored")
+        self.assertIn({"op": "addTrack", "track": {"id": "subtitle-cover", "kind": "video", "name": "Subtitle cover",
+                                                    "role": "overlay"}}, ops, "covers get a layer of their own")
         insert = next(op for op in ops if op["op"] == "insert")
-        self.assertEqual(insert["track"], "v2")
+        self.assertEqual(insert["track"], "subtitle-cover")
         self.assertEqual((insert["item"]["media"], insert["item"]["at"], insert["item"]["dur"]), ("band1", 0, 900))
         moved = [op for op in ops if op["op"] == "setProperties"]
         self.assertEqual([op["item"] for op in moved], ["c1"], "only captions over the covered clip move")
@@ -436,6 +438,28 @@ class CoverTests(unittest.TestCase):
         self.assertTrue(os.path.exists(result["files"][0]))
         ocr = next(call for call in host.calls if call["method"] == "media.ocr")["params"]
         self.assertEqual((ocr["media"], ocr["from"], ocr["to"]), ("m1", 0, 30))
+
+    def test_auto_blurs_a_cropped_copy_of_the_clip_when_the_app_can(self):
+        host = CoverHost(ocr_frames(logo=False), source=(720, 1280), base_scale=1.5, transform={"zoom": 1})
+        result = self.cover(host, features=["clip.blur"])["result"]
+        self.assertEqual(result["data"]["style"], "blur")
+        self.assertEqual(result["files"], [], "a blur needs no picture")
+        insert = next(op for op in result["operations"] if op["op"] == "insert")["item"]
+        self.assertEqual((insert["media"], insert["at"], insert["dur"], insert["in"]), ("m1", 0, 900, 0))
+        self.assertEqual((insert["blur"], insert["muted"], insert["transform"]), (0.05, True, {"zoom": 1}))
+        crop = insert["crop"]
+        # Lines from 0.82 to 0.905 (two lines) plus a quarter line: the crop keeps just that strip.
+        self.assertAlmostEqual(crop["top"], 0.81, places=3)
+        self.assertAlmostEqual(crop["bottom"], 1 - 0.915, places=3)
+        self.assertTrue(0.1 < crop["left"] < 0.2 and 0.1 < crop["right"] < 0.2, crop)
+        self.assertEqual(result["pluginData"]["cover"]["items"], [insert["id"]])
+
+    def test_auto_on_an_older_app_is_a_box_hugging_the_lines(self):
+        result = self.cover(CoverHost(ocr_frames(logo=False)))["result"]
+        self.assertEqual(result["data"]["style"], "box")
+        alpha = png_alpha(result["files"][0])
+        self.assertEqual(alpha(540, int(1920 * 0.84)), 255)
+        self.assertEqual(alpha(60, int(1920 * 0.84)), 0, "the box does not reach the picture's sides")
 
     def test_band_picture_is_dark_where_the_subtitles_are(self):
         import struct, zlib
@@ -460,11 +484,11 @@ class CoverTests(unittest.TestCase):
 
     def test_low_subtitles_on_a_full_frame_picture_are_zoomed_out(self):
         host = CoverHost(ocr_frames(logo=False, low=0.92))
-        result = self.cover(host, {"mode": "auto"})["result"]
+        result = self.cover(host, {"mode": "zoom"})["result"]
         self.assertEqual(result["data"]["zoomed"], 1)
         zoom = next(op for op in result["operations"] if op["op"] == "setProperties" and op["item"] == "clip1")
         transform = zoom["patch"]["transform"]
-        self.assertTrue(1 < transform["zoom"] <= 1.12)
+        self.assertTrue(1 < transform["zoom"] <= 1.2)
         # Picture share 0.92 - padding lands on the frame's bottom, the top stays at the top: tilt is down (negative).
         self.assertLess(transform["tilt"], 0)
         self.assertFalse(any(op["op"] == "insert" for op in result["operations"]))
@@ -472,12 +496,12 @@ class CoverTests(unittest.TestCase):
     def test_band_when_the_zoom_would_be_too_big(self):
         result = self.cover(CoverHost(ocr_frames(logo=False, low=0.7)), {"mode": "zoom"})["result"]
         self.assertEqual(result["data"]["zoomed"], 0)
-        self.assertEqual(len(result["data"]["bands"]), 1)
+        self.assertEqual(len(result["data"]["items"]), 1)
 
     def test_fixed_text_is_covered_only_when_asked(self):
         host = CoverHost(ocr_frames(subtitles=False))
         result = self.cover(host, {"coverLogos": True})["result"]
-        self.assertEqual(len(result["data"]["bands"]), 1)
+        self.assertEqual(len(result["data"]["items"]), 1)
         alpha = png_alpha(result["files"][0])
         self.assertEqual(alpha(int(1080 * 0.87), int(1920 * 0.05)), 255, "the logo is covered")
         self.assertEqual(alpha(540, int(1920 * 0.84)), 0, "no subtitle band without subtitles")

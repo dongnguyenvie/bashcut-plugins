@@ -3,12 +3,13 @@
 // For each video on the Main layer, BashCut's on-screen text reader (`media.ocr`, Apple Vision by default) looks at
 // one picture a second over the first seconds of its first clip. Lines near the horizontal centre whose text changes
 // from picture to picture are subtitles; text that stays the same (a logo, a sign, a channel name) is not. Their
-// boxes give the subtitle area and line height. Then either:
-// - band: a dark band over that area on the Overlay layer for the length of each clip, with the captions moved onto
-//   it; or
-// - zoom: the clip is zoomed (at most 1.2×) and moved down just enough that the area leaves the bottom of the frame,
-//   when the picture fills the frame and the subtitles sit low.
-// `auto` zooms when that takes 1.12× or less, and uses the band otherwise.
+// boxes give the subtitle area (tight: a quarter line above and below) and line height. Then, for each clip:
+// - blur (auto, when BashCut has host feature clip.blur): a copy of the clip cropped to that area and blurred, on a
+//   "Subtitle cover" layer;
+// - box (auto on an older BashCut): a rounded opaque box over the area;
+// - band: a full-width opaque band;
+// - zoom: the clip is zoomed (at most 1.2x) and moved down just enough that the area leaves the bottom of the frame.
+// The captions move onto the covered area.
 import CoreGraphics
 import Foundation
 import ImageIO
@@ -205,8 +206,29 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         ]
     }
 
-    // Plan each clip: a band, or a zoom when that is small enough; plus a box over each fixed text when asked.
-    var coverClips: [(clip: JSON, band: CGRect?, boxes: [CGRect])] = []
+    // How to hide them: a blurred copy of the clip cropped to the subtitles (C) where this BashCut can blur a clip,
+    // else a rounded box hugging them (B); a full-width band and a zoom are there when asked for.
+    let blurAvailable = hostFeatures.contains("clip.blur")
+    var style = mode == "auto" ? (blurAvailable ? "blur" : "box") : mode
+    var note: String?
+    if style == "blur", !blurAvailable {
+        style = "box"
+        note = "this BashCut cannot blur a clip (update it), so a box covers them"
+    }
+    let blur = min(0.2, max(0.01, request.number("blur", 0.05)))
+
+    // Plan each clip: the area over its subtitles (tight: what the text reader saw plus a little), and how it is covered.
+    struct Plan {
+        let clip: JSON
+        /// The covered area on the canvas, where the captions go.
+        let area: CGRect?
+        /// Drawn into the cover picture: a full-width band, and rounded boxes (the subtitles in style box, logos).
+        let band: CGRect?
+        let boxes: [CGRect]
+        /// A blurred copy of the clip cropped to the subtitles (style blur).
+        let blurCopy: JSON?
+    }
+    var plans: [Plan] = []
     var zoomOps: [JSON] = []
     var zoomed = 0
     for clip in clips {
@@ -219,17 +241,20 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
             CGRect(x: placement.left + x * placement.width, y: placement.top + y * placement.height,
                    width: width * placement.width, height: height * placement.height).intersection(canvas).integral
         }
-        let boxes = (logos[media] ?? []).map { text in
+        var boxes = (logos[media] ?? []).map { text in
             let pad = text.height * 0.35
             return onCanvas(text.x - pad, text.y - pad, text.width + 2 * pad, text.height + 2 * pad)
         }.filter { !$0.isEmpty }
-        var band: CGRect?
+        var area: CGRect?, band: CGRect?, blurCopy: JSON?
         if let subtitles = found[media] {
-            let pad = subtitles.lineHeight * 0.45
-            let lowSubtitles = (subtitles.top + subtitles.bottom) / 2 >= 0.5
-            if mode != "band", boxes.isEmpty, lowSubtitles,
-                let zoom = placement.zoomOut(below: subtitles.top - pad - extraAbove * subtitles.lineHeight * 1.3),
-                zoom.zoom <= (mode == "zoom" ? 1.2 : 1.12)
+            // A quarter line above and below, two thirds of a line at the sides (all as picture shares).
+            let pad = subtitles.lineHeight * 0.25
+            let side = subtitles.lineHeight * 0.66 * placement.height / max(1, placement.width)
+            let above = pad + extraAbove * subtitles.lineHeight * 1.3
+            let top = max(0, subtitles.top - above), bottom = min(1, subtitles.bottom + pad)
+            let left = max(0, subtitles.left - side), right = min(1, subtitles.right + side)
+            if style == "zoom", boxes.isEmpty, (subtitles.top + subtitles.bottom) / 2 >= 0.5,
+                let zoom = placement.zoomOut(below: top), zoom.zoom <= 1.2
             {
                 var transform = placement.transform
                 transform["zoom"] = (zoom.zoom * 1000).rounded() / 1000
@@ -238,13 +263,24 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
                 zoomed += 1
                 continue
             }
-            let above = pad + extraAbove * subtitles.lineHeight * 1.3
-            let rect = onCanvas(0, subtitles.top - above, 1, subtitles.bottom - subtitles.top + above + pad)
-            band = rect.isEmpty ? nil : rect
+            switch style {
+            case "band", "zoom":
+                band = onCanvas(0, top, 1, bottom - top)
+                area = band
+            case "blur":
+                area = onCanvas(left, top, right - left, bottom - top)
+                blurCopy = blurredCopy(of: clip, crop: (left, top, right, bottom), blur: blur)
+            default:
+                let box = onCanvas(left, top, right - left, bottom - top)
+                boxes.insert(box, at: 0)
+                area = box
+            }
         }
-        if band != nil || !boxes.isEmpty { coverClips.append((clip, band, boxes)) }
+        if area?.isEmpty == true { area = nil }
+        if band != nil || !boxes.isEmpty || blurCopy != nil {
+            plans.append(Plan(clip: clip, area: area, band: band, boxes: boxes, blurCopy: blurCopy))
+        }
     }
-    let bandClips = coverClips.compactMap { entry in entry.band.map { (clip: entry.clip, rect: $0) } }
 
     // One cover picture per distinct set of rectangles, imported once.
     var coverMedia: [String: String] = [:]
@@ -253,12 +289,12 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         ([band].compactMap { $0 } + boxes).map { "\(Int($0.minX)),\(Int($0.minY)),\(Int($0.width)),\(Int($0.height))" }
             .joined(separator: ";")
     }
-    for entry in coverClips {
-        let key = coverKey(entry.band, entry.boxes)
+    for plan in plans where plan.band != nil || !plan.boxes.isEmpty {
+        let key = coverKey(plan.band, plan.boxes)
         guard coverMedia[key] == nil else { continue }
         let name = "subtitle-cover-\(coverMedia.count + 1)-\(UUID().uuidString.prefix(6).lowercased()).png"
         let path = (outputDirectory as NSString).appendingPathComponent(name)
-        try drawCover(band: entry.band, boxes: entry.boxes, canvasWidth: Int(canvasWidth), canvasHeight: Int(canvasHeight),
+        try drawCover(band: plan.band, boxes: plan.boxes, canvasWidth: Int(canvasWidth), canvasHeight: Int(canvasHeight),
                       opacity: opacity, to: path)
         written.append(path)
         let imported = try host.call("media.import", ["path": path, "kind": "image", "origin": "built-in", "baseRev": "last"]) as? JSON ?? [:]
@@ -267,40 +303,52 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         }
         coverMedia[key] = media
     }
-    // The import changed the project: plan the edit against the new revision.
-    let fresh = try host.call("timeline.get") as? JSON ?? [:]
+    // An import changed the project: plan the edit against the new revision.
+    let fresh = written.isEmpty ? timeline : (try host.call("timeline.get") as? JSON ?? [:])
     guard let rev = fresh["rev"] as? Int else { throw PluginError("bad_answer", "timeline.get returned no revision") }
     let freshTracks = fresh["tracks"] as? [JSON] ?? tracks
 
+    // Covers go on layers of their own, in front of the other video layers: "Subtitle cover", and "Subtitle cover 2"
+    // for the picture when a clip has both a blurred copy and a picture (logos).
     var operations: [JSON] = earlier.filter(existing.contains).map { ["op": "delete", "item": $0] }
-    let overlay = freshTracks.first { $0["role"] as? String == "overlay" && $0["kind"] as? String == "video" }
-    var overlayID = overlay?["id"] as? String
-    if overlayID == nil, !coverClips.isEmpty {
-        overlayID = "subtitle-cover"
-        operations.append(["op": "addTrack", "track": ["id": "subtitle-cover", "kind": "video", "name": "Subtitle cover", "role": "overlay"]])
+    let trackIDs = Set(freshTracks.compactMap { $0["id"] as? String })
+    func layer(_ id: String, _ name: String) -> String {
+        if !trackIDs.contains(id), !operations.contains(where: { ($0["track"] as? JSON)?["id"] as? String == id }) {
+            operations.append(["op": "addTrack", "track": ["id": id, "kind": "video", "name": name, "role": "overlay"]])
+        }
+        return id
     }
-    var bandItems: [String] = []
-    for (clip, band, boxes) in coverClips {
-        guard let media = coverMedia[coverKey(band, boxes)], let overlayID else { continue }
-        let id = "subtitle-cover-\(UUID().uuidString.prefix(8).lowercased())"
-        bandItems.append(id)
-        operations.append(["op": "insert", "track": overlayID, "item": [
-            "id": id, "media": media, "at": clip["at"] as? Int ?? 0, "dur": clip["dur"] as? Int ?? 1, "in": 0,
-        ] as JSON])
+    var coverItems: [String] = []
+    for plan in plans {
+        let at = plan.clip["at"] as? Int ?? 0, dur = plan.clip["dur"] as? Int ?? 1
+        if var copy = plan.blurCopy {
+            let id = "subtitle-cover-\(UUID().uuidString.prefix(8).lowercased())"
+            copy["id"] = id
+            operations.append(["op": "insert", "track": layer("subtitle-cover", "Subtitle cover"), "item": copy])
+            coverItems.append(id)
+        }
+        if plan.band != nil || !plan.boxes.isEmpty, let media = coverMedia[coverKey(plan.band, plan.boxes)] {
+            let id = "subtitle-cover-\(UUID().uuidString.prefix(8).lowercased())"
+            let track = plan.blurCopy == nil
+                ? layer("subtitle-cover", "Subtitle cover") : layer("subtitle-cover-2", "Subtitle cover 2")
+            operations.append(["op": "insert", "track": track, "item": ["id": id, "media": media, "at": at, "dur": dur, "in": 0] as JSON])
+            coverItems.append(id)
+        }
     }
     operations += zoomOps
 
-    // Captions over the covered clips go onto the band.
+    // Captions over the covered clips go onto the covered area.
     var moved = 0
-    if moveCaptions, !bandClips.isEmpty {
+    let areas = plans.compactMap { plan in plan.area.map { (clip: plan.clip, rect: $0) } }
+    if moveCaptions, !areas.isEmpty {
         for item in captionItems(freshTracks) {
             let at = item["at"] as? Int ?? 0
             guard let id = item["id"] as? String,
-                let band = bandClips.first(where: { at >= ($0.clip["at"] as? Int ?? 0) && at < ($0.clip["at"] as? Int ?? 0) + ($0.clip["dur"] as? Int ?? 0) })
+                let area = areas.first(where: { at >= ($0.clip["at"] as? Int ?? 0) && at < ($0.clip["at"] as? Int ?? 0) + ($0.clip["dur"] as? Int ?? 0) })
             else { continue }
             var style = item["textStyle"] as? JSON ?? [:]
-            // Baseline (from the bottom) two fifths of the way up the band: one line sits about its middle, two fill it.
-            style["positionY"] = round3((canvasHeight - band.rect.maxY + band.rect.height * 0.4) / canvasHeight)
+            // Baseline (from the bottom) two fifths of the way up the area: one line sits about its middle, two fill it.
+            style["positionY"] = round3((canvasHeight - area.rect.maxY + area.rect.height * 0.4) / canvasHeight)
             operations.append(["op": "setProperties", "item": id, "patch": ["textStyle": style]])
             moved += 1
         }
@@ -310,14 +358,20 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         ? "No burned-in subtitles in \(order.count) video(s)"
         : "Covered burned-in subtitles in \(found.count) of \(order.count) video(s)"
     var how: [String] = []
-    if !bandClips.isEmpty { how.append("a band over \(bandClips.count) clip(s)") }
+    let covered = plans.filter { $0.area != nil }.count
+    if covered > 0 {
+        let verb = ["blur": "blurred on", "box": "a box over them on", "band": "a band over them on"][style] ?? "covered on"
+        how.append("\(verb) \(covered) clip(s)")
+    }
     if zoomed > 0 { how.append("zoomed \(zoomed) clip(s)") }
-    let logoClips = coverClips.filter { !$0.boxes.isEmpty }.count
+    let logoClips = plans.filter { $0.boxes.count > ($0.area != nil && style == "box" ? 1 : 0) }.count
     if logoClips > 0 { how.append("fixed text or logos covered on \(logoClips) clip(s)") }
     if !how.isEmpty { message += ": " + how.joined(separator: ", ") }
-    if moved > 0 { message += "; moved \(moved) caption(s) onto the band" }
+    if moved > 0 { message += "; moved \(moved) caption(s) onto the cover" }
+    if let note { message += " (\(note))" }
     var stored = detection
-    stored["items"] = bandItems
+    stored["items"] = coverItems
+    stored["style"] = style
     return [
         "label": "Cover burned-in subtitles",
         "baseRev": rev,
@@ -325,8 +379,29 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         "pluginData": mergedPluginData(request, "cover", stored),
         "files": written,
         "message": message,
-        "data": ["videos": report, "covered": coverClips.count + zoomed, "bands": bandItems, "zoomed": zoomed, "captionsMoved": moved],
+        "data": [
+            "videos": report, "style": style, "covered": covered + zoomed, "items": coverItems, "zoomed": zoomed,
+            "captionsMoved": moved,
+        ],
     ]
+}
+
+/// A copy of `clip` (same media, time, speed and framing) cropped to `crop` (left, top, right, bottom as shares of
+/// the picture), blurred by `blur` (a share of the picture's short side) and a little darker so new captions stand
+/// out; muted, since the clip below already plays its sound.
+func blurredCopy(of clip: JSON, crop: (Double, Double, Double, Double), blur: Double) -> JSON {
+    var copy: JSON = [:]
+    for key in ["media", "at", "dur", "in", "speed", "speedCurve", "reverse", "transform", "fill", "keyframes"] {
+        if let value = clip[key] { copy[key] = value }
+    }
+    copy["crop"] = [
+        "left": round3(min(0.95, crop.0)), "top": round3(min(0.95, crop.1)),
+        "right": round3(min(0.95, 1 - crop.2)), "bottom": round3(min(0.95, 1 - crop.3)), "radius": 0.02,
+    ]
+    copy["blur"] = round3(blur)
+    copy["color"] = ["exposure": -0.6]
+    copy["muted"] = true
+    return copy
 }
 
 /// Where the clip's picture is on the canvas: its fitted or filled size (timeline.get `scale`) times its zoom, moved
