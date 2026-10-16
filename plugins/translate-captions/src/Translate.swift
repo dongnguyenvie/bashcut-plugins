@@ -242,6 +242,22 @@ struct Translator {
         return text
     }
 
+    /// What is wrong with the key's shape, without showing it: a key of the other service, quotes or spaces, a short key.
+    var keyHint: String {
+        let trimmed = key.trimmingCharacters(in: CharacterSet(charactersIn: "\"' "))
+        if kind == .gemini, key.hasPrefix("sk-") {
+            return ". This looks like an OpenAI key: choose OpenAI as the service, or paste a Gemini key (it starts with AIza)"
+        }
+        if kind == .openai, key.hasPrefix("AIza") {
+            return ". This looks like a Gemini key: choose Google Gemini as the service, or paste an OpenAI key (it starts with sk-)"
+        }
+        if trimmed != key || key.contains(" ") { return ". The key has quotes or spaces in it: paste only the key" }
+        if kind == .gemini, !key.hasPrefix("AIza") || key.count != 39 {
+            return ". A Gemini key starts with AIza and has 39 characters; this one has \(key.count): copy it again from Google AI Studio"
+        }
+        return ". Check the key in Settings › Plugins › Translate Captions"
+    }
+
     /// Sends a call that names the model; when the service does not know the model, the error lists the ones it has.
     private func sendForModel(_ request: URLRequest) throws -> JSON {
         do {
@@ -303,7 +319,9 @@ struct Translator {
             let status = (outcome.1 as? HTTPURLResponse)?.statusCode ?? 0
             let object = outcome.0.flatMap { try? JSONSerialization.jsonObject(with: $0) as? JSON } ?? [:]
             let message = ((object["error"] as? JSON)?["message"] as? String) ?? "HTTP \(status)"
-            if status == 401 || status == 403 { throw PluginError("auth", "The service refused the key: \(message)") }
+            if status == 401 || status == 403 || (status == 400 && message.lowercased().contains("api key")) {
+                throw PluginError("auth", "The service refused the key: \(message)" + keyHint)
+            }
             if status == 429 || status >= 500 {
                 lastError = PluginError("http_\(status)", message)
                 continue
