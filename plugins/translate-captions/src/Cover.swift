@@ -403,11 +403,12 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
             case "blur":
                 var copy = blurredCopy(of: clip, crop: (left, top, right, bottom), blur: blur, tint: tint)
                 if mosaic {
-                    // Cells about a line tall (no letter fits in one), barely softened so they read as blocks;
-                    // edges fade over the padding around the lines, so the text stays under the opaque middle.
-                    let cell = min(0.1, max(0.008, subtitles.lineHeight * 0.9 * heightShare))
+                    // Cells about two thirds of a line (each the average of its area, so no letter survives), barely
+                    // softened so they read as blocks; edges fade over the padding around the lines, so the text
+                    // stays under the opaque middle.
+                    let cell = min(0.1, max(0.008, subtitles.lineHeight * 0.7 * heightShare))
                     copy["pixelate"] = round3(cell)
-                    copy["blur"] = round3(cell * 0.12)
+                    copy["blur"] = round3(cell * 0.24)
                     copy["feather"] = 0.25
                     var crop = copy["crop"] as? JSON ?? [:]
                     crop["radius"] = nil
