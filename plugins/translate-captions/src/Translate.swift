@@ -351,3 +351,32 @@ func parseLines(_ text: String, ids: Set<String>) -> [String: String] {
     }
     return result
 }
+
+/// Settings asks before saving the API key (host feature `options.check`): the key's shape for the chosen service
+/// first, then the service's model list, which costs nothing and proves the key works.
+func checkOption(_ params: JSON) -> JSON {
+    guard params["option"] as? String == "apiKey" else { return ["ok": true] }
+    var options = params["options"] as? JSON ?? [:]
+    options["apiKey"] = params["value"] as? String ?? ""
+    let service: Translator
+    do {
+        service = try Translator(options: options)
+    } catch let error as PluginError {
+        return ["ok": false, "message": error.code == "no_key" ? "The key is empty" : error.message]
+    } catch {
+        return ["ok": false, "message": "\(error)"]
+    }
+    let hint = service.keyHint
+    if !hint.hasPrefix(". Check the key") {
+        return ["ok": false, "message": String(hint.dropFirst(2))]
+    }
+    let name = service.kind == .gemini ? "Gemini" : "OpenAI"
+    do {
+        let models = try service.availableModels()
+        return ["ok": true, "message": "\(name) accepts the key (\(models.count) text models)"]
+    } catch let error as PluginError where error.code == "auth" {
+        return ["ok": false, "message": "\(name) refused the key: " + error.message.replacingOccurrences(of: "The service refused the key: ", with: "")]
+    } catch {
+        return ["ok": true, "message": "Saved without a check: \(name) did not answer (\((error as? PluginError)?.message ?? "\(error)"))"]
+    }
+}

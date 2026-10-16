@@ -54,7 +54,8 @@
       "help": {
         "en": "Your Gemini or OpenAI key. It is kept in the macOS Keychain",
         "vi": "Khoá Gemini hoặc OpenAI của bạn. Được lưu trong Keychain của macOS"
-      }
+      },
+      "check": true
     },
     {
       "id": "model",

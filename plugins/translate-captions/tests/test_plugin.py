@@ -276,6 +276,36 @@ class TranslateTests(unittest.TestCase):
         self.assertEqual([line["id"] for line in retry["lines"]], ["2", "5"])
 
 
+class OptionCheckTests(unittest.TestCase):
+    def check(self, value, **options):
+        with tempfile.TemporaryDirectory() as folder:
+            return call(folder, "options.check", {"option": "apiKey", "value": value, "options": options})["result"]
+
+    def test_an_openai_key_on_gemini_is_refused_without_calling_the_service(self):
+        result = self.check("sk-proj-abc", service="gemini")
+        self.assertFalse(result["ok"])
+        self.assertIn("OpenAI key", result["message"])
+
+    def test_a_short_gemini_key_is_refused(self):
+        result = self.check("abcdef", service="gemini")
+        self.assertFalse(result["ok"])
+        self.assertIn("39 characters; this one has 6", result["message"])
+
+    def test_a_key_the_service_lists_models_for_is_accepted(self):
+        server = TranslationServer()
+        try:
+            result = self.check("sk-good", service="openai", endpoint=server.endpoint)
+        finally:
+            server.close()
+        self.assertEqual(result, {"ok": True, "message": "OpenAI accepts the key (2 text models)"})
+        self.assertEqual(server.calls[0]["auth"], "Bearer sk-good")
+
+    def test_other_options_are_not_checked(self):
+        with tempfile.TemporaryDirectory() as folder:
+            result = call(folder, "options.check", {"option": "model", "value": "x", "options": {}})["result"]
+        self.assertEqual(result, {"ok": True})
+
+
 def ocr_frames(subtitles=True, logo=True, low=0.82):
     frames = []
     for second in range(30):

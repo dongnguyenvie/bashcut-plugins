@@ -12,6 +12,7 @@
 import Foundation
 
 func handle(method: String, params: JSON, host: Host) throws -> Any? {
+    if method == "options.check" { return checkOption(params) }
     guard method == "plugin.action" else { throw PluginError("unknown_method", "Translate Captions does not handle \(method)") }
     let action = params["action"] as? String ?? ""
     switch action {
