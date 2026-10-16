@@ -1,0 +1,550 @@
+{
+  "schema": "bashcut.plugin/1",
+  "id": "bashcut.translate-captions",
+  "name": {
+    "en": "Translate Captions",
+    "vi": "Dịch phụ đề"
+  },
+  "version": "0.0.1",
+  "apiVersion": 12,
+  "minApiVersion": 10,
+  "entrypoint": "bin/provider",
+  "transport": "session",
+  "category": "captions",
+  "capabilities": [],
+  "dependencies": [],
+  "options": [
+    {
+      "id": "service",
+      "title": {
+        "en": "Service",
+        "vi": "Dịch vụ"
+      },
+      "type": "enum",
+      "choices": [
+        "gemini",
+        "openai"
+      ],
+      "choiceLabels": {
+        "gemini": {
+          "en": "Google Gemini",
+          "vi": "Google Gemini"
+        },
+        "openai": {
+          "en": "OpenAI (or OpenAI-compatible)",
+          "vi": "OpenAI (hoặc tương thích OpenAI)"
+        }
+      },
+      "default": "gemini",
+      "scope": "user",
+      "bindsSecrets": true,
+      "help": {
+        "en": "Who translates. Your key below is sent only to this service. Without a key, ask your agent to translate instead",
+        "vi": "Dịch vụ dịch. Khoá bên dưới chỉ gửi cho dịch vụ này. Không có khoá thì nhờ agent dịch"
+      }
+    },
+    {
+      "id": "apiKey",
+      "title": {
+        "en": "API key",
+        "vi": "Khoá API"
+      },
+      "type": "secret",
+      "scope": "user",
+      "help": {
+        "en": "Your Gemini or OpenAI key. It is kept in the macOS Keychain",
+        "vi": "Khoá Gemini hoặc OpenAI của bạn. Được lưu trong Keychain của macOS"
+      },
+      "check": true
+    },
+    {
+      "id": "model",
+      "title": {
+        "en": "Model",
+        "vi": "Model"
+      },
+      "type": "enum",
+      "choices": [
+        "auto",
+        "gemini-flash-lite-latest",
+        "gemini-flash-latest",
+        "gemini-pro-latest",
+        "gpt-5-nano",
+        "gpt-5-mini",
+        "gpt-5",
+        "gpt-4.1-mini",
+        "custom"
+      ],
+      "choiceLabels": {
+        "auto": {
+          "en": "Default: the cheapest that translates well (Gemini Flash-Lite, GPT-5 mini)",
+          "vi": "Mặc định: rẻ nhất mà dịch tốt (Gemini Flash-Lite, GPT-5 mini)"
+        },
+        "gemini-flash-latest": {
+          "en": "Gemini · Flash, latest (a little better, costs more)",
+          "vi": "Gemini · Flash, mới nhất (tốt hơn chút, đắt hơn)"
+        },
+        "gemini-flash-lite-latest": {
+          "en": "Gemini · Flash-Lite, latest (cheapest, fast)",
+          "vi": "Gemini · Flash-Lite, mới nhất (rẻ nhất, nhanh)"
+        },
+        "gemini-pro-latest": {
+          "en": "Gemini · Pro, latest (best, slower)",
+          "vi": "Gemini · Pro, mới nhất (tốt nhất, chậm hơn)"
+        },
+        "gpt-5-mini": {
+          "en": "OpenAI · GPT-5 mini",
+          "vi": "OpenAI · GPT-5 mini"
+        },
+        "gpt-5-nano": {
+          "en": "OpenAI · GPT-5 nano (cheapest)",
+          "vi": "OpenAI · GPT-5 nano (rẻ nhất)"
+        },
+        "gpt-5": {
+          "en": "OpenAI · GPT-5 (best, slower)",
+          "vi": "OpenAI · GPT-5 (tốt nhất, chậm hơn)"
+        },
+        "gpt-4.1-mini": {
+          "en": "OpenAI · GPT-4.1 mini",
+          "vi": "OpenAI · GPT-4.1 mini"
+        },
+        "custom": {
+          "en": "Other: type its ID below",
+          "vi": "Khác: nhập ID bên dưới"
+        }
+      },
+      "default": "auto",
+      "scope": "user",
+      "help": {
+        "en": "A model of the chosen service. When BashCut cannot find the model, the error lists the ones your key can use",
+        "vi": "Model của dịch vụ đã chọn. Nếu không tìm thấy model, thông báo lỗi sẽ liệt kê các model mà khoá của bạn dùng được"
+      }
+    },
+    {
+      "id": "customModel",
+      "title": {
+        "en": "Other model",
+        "vi": "Model khác"
+      },
+      "type": "string",
+      "default": "",
+      "scope": "user",
+      "maxLength": 200,
+      "help": {
+        "en": "Used when Model is Other, such as gemini-3.5-flash, gpt-5.4-mini or a local server's model",
+        "vi": "Dùng khi Model là Khác, ví dụ gemini-3.5-flash, gpt-5.4-mini hoặc model của server trên máy"
+      }
+    },
+    {
+      "id": "endpoint",
+      "title": {
+        "en": "Endpoint",
+        "vi": "Địa chỉ"
+      },
+      "type": "string",
+      "default": "",
+      "scope": "user",
+      "maxLength": 500,
+      "bindsSecrets": true,
+      "help": {
+        "en": "Empty uses the service's own address. For OpenAI: any server with /v1/chat/completions, such as a local model",
+        "vi": "Để trống dùng địa chỉ của dịch vụ. Với OpenAI: máy chủ bất kỳ có /v1/chat/completions, ví dụ model chạy trên máy"
+      }
+    }
+  ],
+  "contributes": {
+    "actions": [
+      {
+        "id": "bashcut.translate-captions.translate",
+        "title": {
+          "en": "Translate captions…",
+          "vi": "Dịch phụ đề…"
+        },
+        "icon": "character.bubble",
+        "placements": [
+          "tools",
+          "menu.plugins"
+        ],
+        "when": "project && timeline",
+        "context": [
+          "timeline"
+        ],
+        "params": [
+          {
+            "id": "target",
+            "title": {
+              "en": "Translate to",
+              "vi": "Dịch sang"
+            },
+            "type": "enum",
+            "choices": [
+              "vi",
+              "en",
+              "zh",
+              "ja",
+              "ko",
+              "th",
+              "id",
+              "es",
+              "fr",
+              "de",
+              "pt",
+              "ru"
+            ],
+            "choiceLabels": {
+              "vi": {
+                "en": "Vietnamese",
+                "vi": "Tiếng Việt"
+              },
+              "en": {
+                "en": "English",
+                "vi": "Tiếng Anh"
+              },
+              "zh": {
+                "en": "Chinese (Simplified)",
+                "vi": "Tiếng Trung (giản thể)"
+              },
+              "ja": {
+                "en": "Japanese",
+                "vi": "Tiếng Nhật"
+              },
+              "ko": {
+                "en": "Korean",
+                "vi": "Tiếng Hàn"
+              },
+              "th": {
+                "en": "Thai",
+                "vi": "Tiếng Thái"
+              },
+              "id": {
+                "en": "Indonesian",
+                "vi": "Tiếng Indonesia"
+              },
+              "es": {
+                "en": "Spanish",
+                "vi": "Tiếng Tây Ban Nha"
+              },
+              "fr": {
+                "en": "French",
+                "vi": "Tiếng Pháp"
+              },
+              "de": {
+                "en": "German",
+                "vi": "Tiếng Đức"
+              },
+              "pt": {
+                "en": "Portuguese",
+                "vi": "Tiếng Bồ Đào Nha"
+              },
+              "ru": {
+                "en": "Russian",
+                "vi": "Tiếng Nga"
+              }
+            },
+            "default": "vi"
+          },
+          {
+            "id": "glossary",
+            "title": {
+              "en": "Names and terms",
+              "vi": "Tên riêng và thuật ngữ"
+            },
+            "type": "string",
+            "default": "",
+            "maxLength": 2000,
+            "help": {
+              "en": "Kept or translated as written, one per line or separated by ;, such as \"Tom Scott\" or \"grizzly = gấu xám\". Names in the project brief are kept too",
+              "vi": "Giữ nguyên hoặc dịch đúng như ghi, mỗi dòng một mục hoặc cách nhau bằng ;, ví dụ \"Tom Scott\" hoặc \"grizzly = gấu xám\". Tên trong brief của project cũng được giữ"
+            }
+          },
+          {
+            "id": "tone",
+            "title": {
+              "en": "Tone",
+              "vi": "Giọng văn"
+            },
+            "type": "enum",
+            "choices": [
+              "natural",
+              "casual",
+              "formal"
+            ],
+            "choiceLabels": {
+              "natural": {
+                "en": "Natural",
+                "vi": "Tự nhiên"
+              },
+              "casual": {
+                "en": "Casual, like social video",
+                "vi": "Thân mật, kiểu video mạng xã hội"
+              },
+              "formal": {
+                "en": "Formal",
+                "vi": "Trang trọng"
+              }
+            },
+            "default": "natural",
+            "advanced": true
+          },
+          {
+            "id": "maxCps",
+            "title": {
+              "en": "Most characters per second",
+              "vi": "Số ký tự tối đa mỗi giây"
+            },
+            "type": "integer",
+            "minimum": 8,
+            "maximum": 30,
+            "default": 17,
+            "advanced": true,
+            "help": {
+              "en": "A line that would be faster to read is shortened in translation",
+              "vi": "Dòng nào đọc nhanh hơn mức này sẽ được dịch gọn lại"
+            }
+          }
+        ]
+      },
+      {
+        "id": "bashcut.translate-captions.cover",
+        "title": {
+          "en": "Cover burned-in subtitles…",
+          "vi": "Che phụ đề có sẵn…"
+        },
+        "icon": "rectangle.bottomhalf.inset.filled",
+        "placements": [
+          "tools",
+          "menu.plugins"
+        ],
+        "when": "project && timeline",
+        "context": [
+          "timeline",
+          "media"
+        ],
+        "params": [
+          {
+            "id": "mode",
+            "title": {
+              "en": "Cover with",
+              "vi": "Che bằng"
+            },
+            "type": "enum",
+            "choices": [
+              "auto",
+              "blur",
+              "box",
+              "band",
+              "zoom",
+              "detect"
+            ],
+            "choiceLabels": {
+              "auto": {
+                "en": "Blur them (a box on an older BashCut)",
+                "vi": "Làm mờ (BashCut cũ: khung tối)"
+              },
+              "blur": {
+                "en": "Blur just the subtitles",
+                "vi": "Chỉ làm mờ phần phụ đề"
+              },
+              "box": {
+                "en": "A rounded dark box over them",
+                "vi": "Khung tối bo góc che phụ đề"
+              },
+              "band": {
+                "en": "A dark band across the picture",
+                "vi": "Dải tối ngang cả khung hình"
+              },
+              "zoom": {
+                "en": "Zoom them out of the frame",
+                "vi": "Zoom đẩy ra khỏi khung hình"
+              },
+              "detect": {
+                "en": "Only detect and report",
+                "vi": "Chỉ dò và báo cáo"
+              }
+            },
+            "default": "auto",
+            "help": {
+              "en": "Looks at the first seconds of each video for subtitles that are part of the picture, then hides them so the new captions read clearly",
+              "vi": "Xem những giây đầu của mỗi video để tìm phụ đề in sẵn trong hình, rồi che đi để phụ đề mới dễ đọc"
+            }
+          },
+          {
+            "id": "fit",
+            "title": {
+              "en": "Cover size",
+              "vi": "Kích thước vùng che"
+            },
+            "type": "enum",
+            "choices": [
+              "follow",
+              "fixed"
+            ],
+            "choiceLabels": {
+              "follow": {
+                "en": "Follow each subtitle (tight, reads the whole clip)",
+                "vi": "Bám theo từng câu (sát chữ, đọc cả clip)"
+              },
+              "fixed": {
+                "en": "One area for the whole clip",
+                "vi": "Một vùng cho cả clip"
+              }
+            },
+            "default": "follow"
+          },
+          {
+            "id": "coverLogos",
+            "title": {
+              "en": "Also cover fixed text and logos",
+              "vi": "Che cả chữ cố định và logo"
+            },
+            "type": "bool",
+            "default": false,
+            "help": {
+              "en": "Text that stays in place the whole time, such as a channel name or a logo with letters, gets a dark box. Only for footage you have the rights to; logos without letters are not found",
+              "vi": "Chữ đứng yên suốt video, như tên kênh hay logo có chữ, được phủ một khối tối. Chỉ dùng cho footage bạn có quyền; logo không có chữ thì không tìm được"
+            }
+          },
+          {
+            "id": "seconds",
+            "title": {
+              "en": "Seconds to look at (one area)",
+              "vi": "Số giây để dò (một vùng)"
+            },
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 120,
+            "default": 30,
+            "advanced": true
+          },
+          {
+            "id": "extraLinesAbove",
+            "title": {
+              "en": "Cover extra lines above",
+              "vi": "Che thêm số dòng phía trên"
+            },
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4,
+            "default": 0,
+            "advanced": true,
+            "help": {
+              "en": "Grow the band upwards by this many subtitle lines, for a blurred strip or a second subtitle row above the one found",
+              "vi": "Kéo dải lên thêm chừng này dòng phụ đề, cho dải bị làm mờ hoặc hàng phụ đề thứ hai nằm trên hàng tìm được"
+            }
+          },
+          {
+            "id": "look",
+            "title": {
+              "en": "Blur look",
+              "vi": "Kiểu làm mờ"
+            },
+            "type": "enum",
+            "choices": [
+              "mosaic",
+              "smooth"
+            ],
+            "choiceLabels": {
+              "mosaic": {
+                "en": "Mosaic with soft edges",
+                "vi": "Khảm ô vuông, mép mềm"
+              },
+              "smooth": {
+                "en": "Smooth blur",
+                "vi": "Mờ mượt"
+              }
+            },
+            "default": "mosaic",
+            "advanced": true
+          },
+          {
+            "id": "blur",
+            "title": {
+              "en": "Blur strength",
+              "vi": "Độ mờ"
+            },
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 0.2,
+            "default": 0.05,
+            "advanced": true,
+            "help": {
+              "en": "Blur radius as a share of the picture's short side: 0.03 for small subtitles, 0.05 hides most, more for big bold text",
+              "vi": "Bán kính mờ theo cạnh ngắn của khung: 0.03 cho phụ đề nhỏ, 0.05 che được hầu hết, tăng lên cho chữ to đậm"
+            }
+          },
+          {
+            "id": "tint",
+            "title": {
+              "en": "Blur colour",
+              "vi": "Màu vùng mờ"
+            },
+            "type": "enum",
+            "choices": [
+              "natural",
+              "dark",
+              "light"
+            ],
+            "choiceLabels": {
+              "natural": {
+                "en": "Follow the picture behind",
+                "vi": "Theo nền phía sau"
+              },
+              "dark": {
+                "en": "Darker (white captions stand out)",
+                "vi": "Tối hơn (chữ trắng nổi rõ)"
+              },
+              "light": {
+                "en": "Light frosted glass",
+                "vi": "Kính mờ trắng"
+              }
+            },
+            "default": "natural",
+            "advanced": true
+          },
+          {
+            "id": "opacity",
+            "title": {
+              "en": "Box opacity",
+              "vi": "Độ đậm của khung"
+            },
+            "type": "number",
+            "minimum": 0.5,
+            "maximum": 1,
+            "default": 1,
+            "advanced": true,
+            "help": {
+              "en": "1 hides the old subtitles completely; BashCut blends in linear light, so below 0.97 they start to show through",
+              "vi": "1 che kín phụ đề cũ; BashCut trộn màu theo ánh sáng tuyến tính nên dưới 0.97 chữ cũ bắt đầu lộ ra"
+            }
+          },
+          {
+            "id": "moveCaptions",
+            "title": {
+              "en": "Put the captions on the band",
+              "vi": "Đặt phụ đề lên dải"
+            },
+            "type": "bool",
+            "default": true,
+            "advanced": true
+          }
+        ]
+      },
+      {
+        "id": "bashcut.translate-captions.install-preset",
+        "title": {
+          "en": "Add the Vietsub TikTok batch preset",
+          "vi": "Thêm preset hàng loạt Vietsub TikTok"
+        },
+        "icon": "square.stack.3d.down.right",
+        "placements": [
+          "menu.plugins"
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "path": "skills/translate-captions"
+      }
+    ]
+  }
+}

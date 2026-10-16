@@ -25,7 +25,7 @@ OPTION_TYPES = ("string", "enum", "number", "integer", "bool", "file", "secret")
 PLACEMENTS = {
     "menu.plugins", "toolbar", "clip.context", "track.context", "timeline.context", "media.context",
     "panel.media", "panel.audio", "panel.text", "panel.stickers", "panel.effects", "panel.transitions",
-    "panel.filters", "panel.voice",
+    "panel.filters", "panel.voice", "panel.tools", "tools",
     "inspector.video", "inspector.audio", "inspector.text", "inspector.color", "inspector.speed",
 }
 CONTEXT_PARTS = {"timeline", "media", "project"}
