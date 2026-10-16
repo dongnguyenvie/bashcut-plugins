@@ -13,7 +13,7 @@ import re
 
 SCHEMA = "bashcut.plugin/1"
 API_MINIMUM = 1
-API_CURRENT = 11
+API_CURRENT = 12
 # Capabilities BashCut wires today (docs/guides/plugins.md › Capabilities).
 CAPABILITIES = ("voice.synthesize", "captions.transcribe", "audio.beats", "audio.loudness", "audio.sync",
                 "agent.chat", "agent.terminal")
@@ -51,6 +51,9 @@ MAX_VIEWS, MAX_REQUIRES, MAX_USES, MAX_FEATURES = 8, 16, 32, 32
 SYMBOL_PATTERN = r"[a-z0-9]+(?:\.[a-z0-9]+)*"
 VERSION_RANGE_PATTERN = r"\*|(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?)(?: +(?:(?:\^|~|>=|<=|>|<|=)?[0-9]+(?:\.[0-9]+){0,2}(?:-[A-Za-z0-9.-]+)?))*"
 VIEW_LOCATIONS = ("panel", "dock", "sheet", "inspector", "window")  # window: API 11
+# contributes.exportSteps (API 12): at most 8 per plugin, `when` over the data of media the timeline uses.
+MAX_EXPORT_STEPS = 8
+EXPORT_STEP_WHEN_PATTERN = r"media\.data(?:\.[A-Za-z][A-Za-z0-9_-]{0,63})+"
 FEATURE_PATTERN = r"[a-z][a-zA-Z0-9]*(?:[.-][a-zA-Z0-9]+)*"
 # View components (PluginViewNode.Kind in the app); each is also the host feature `views.<type>`. A type the host does
 # not know draws "Needs a newer BashCut", so view_problems accepts unknown types.
@@ -229,6 +232,7 @@ def manifest_problems(manifest):
             problems.append(f"skill path {path} must stay inside the plugin folder")
 
     problems += composition_problems(manifest, api, transport, container, views)
+    problems += export_step_problems(contributes.get("exportSteps", []), api)
 
     if len({o.get("id") for o in options}) != len(options) or len(options) > 64:
         problems.append("option ids must be unique (at most 64)")
@@ -276,7 +280,7 @@ def data_only_problems(manifest, api):
         return ["a plugin without an entrypoint must ship contributes.skills or contributes.library (apiVersion 7)"]
     runs = [field for field in ("capabilities", "providers", "dependencies", "options", "terminal")
             if manifest.get(field)]
-    runs += [f"contributes.{field}" for field in ("actions", "hooks", "views", "container", "platforms")
+    runs += [f"contributes.{field}" for field in ("actions", "hooks", "views", "container", "platforms", "exportSteps")
              if contributes.get(field)]
     if manifest.get("transport") == "session":
         runs.append("the session transport")
@@ -284,6 +288,34 @@ def data_only_problems(manifest, api):
         return ["a plugin without an entrypoint can only ship skills and library packs; add an entrypoint for "
                 + ", ".join(runs)]
     return []
+
+
+def export_step_problems(steps, api):
+    """contributes.exportSteps (plugin API 12, PluginExportSteps.swift in the app): blocking steps before a final export."""
+    if not steps:
+        return []
+    problems = []
+    if api < 12:
+        problems.append("contributes.exportSteps needs apiVersion 12")
+    if not isinstance(steps, list) or len(steps) > MAX_EXPORT_STEPS or len({s.get("id") for s in steps}) != len(steps):
+        return problems + [f"contributes.exportSteps lists at most {MAX_EXPORT_STEPS} steps with unique ids"]
+    for step in steps:
+        name = f'export step {step.get("id")}'
+        if not re.fullmatch(OPTION_ID_PATTERN, str(step.get("id", ""))):
+            problems.append(f"{name}: id must be a short key")
+        if not text_ok(step.get("title"), limit=60):
+            problems.append(f"{name}: title is required, up to 60 characters")
+        command = step.get("command") or {}
+        executable, arguments = command.get("executable", ""), command.get("arguments", [])
+        if "/" not in str(executable) or not relative_path_ok(executable) or not isinstance(arguments, list) \
+                or len(arguments) > 64:
+            problems.append(f"{name}: command must run a file inside the plugin folder (bin/…)")
+        if not re.fullmatch(EXPORT_STEP_WHEN_PATTERN, str(step.get("when", ""))) or len(str(step.get("when"))) > 200:
+            problems.append(f"{name}: when must be media.data.<key>[.<key>…], e.g. media.data.graphics.draft")
+        timeout = step.get("timeoutSeconds", 1800)
+        if not isinstance(timeout, int) or isinstance(timeout, bool) or not 60 <= timeout <= 7200:
+            problems.append(f"{name}: timeoutSeconds must be 60–7200")
+    return problems
 
 
 def composition_problems(manifest, api, transport, container, views):

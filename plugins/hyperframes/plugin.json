@@ -5,8 +5,8 @@
     "en": "HyperFrames Graphics",
     "vi": "Đồ hoạ HyperFrames"
   },
-  "version": "0.0.6",
-  "apiVersion": 8,
+  "version": "0.0.7",
+  "apiVersion": 12,
   "minApiVersion": 7,
   "entrypoint": "bin/provider",
   "transport": "session",
@@ -60,6 +60,23 @@
           "vi": "Đồ hoạ"
         },
         "location": "inspector"
+      }
+    ],
+    "exportSteps": [
+      {
+        "id": "finalise-graphics",
+        "title": {
+          "en": "Finalise draft graphics",
+          "vi": "Hoàn thiện đồ hoạ nháp"
+        },
+        "command": {
+          "executable": "bin/graphic",
+          "arguments": [
+            "finalise"
+          ]
+        },
+        "when": "media.data.graphics.draft",
+        "timeoutSeconds": 3600
       }
     ]
   }

@@ -801,10 +801,10 @@ class GraphicScriptTests(unittest.TestCase):
             project["brand"] = brand
         return project
 
-    def run_graphic(self, state, *args):
+    def run_graphic(self, state, *args, extra_env=None):
         path = self.folder / "state.json"
         path.write_text(json.dumps({"render": self.render, **state}))
-        env = {**environment(self.folder), "BASHCUT_CLI": str(self.cli), "FAKE_STATE": str(path)}
+        env = {**environment(self.folder), "BASHCUT_CLI": str(self.cli), "FAKE_STATE": str(path), **(extra_env or {})}
         out = subprocess.run([str(ROOT / "bin" / "graphic"), *args], capture_output=True, text=True, env=env, timeout=60)
         calls = json.loads(path.read_text()).get("calls", [])
         return out, calls
@@ -1226,6 +1226,36 @@ writeFileSync(join(out, "contact-sheet.jpg"), "jpg");
         self.assertEqual({"graphics": [], "drafts": 0}, json.loads(out.stdout))
         self.assertFalse(any(c["args"][:2] in (["plugins", "invoke"], ["timeline", "apply"]) for c in calls))
 
+    def test_finalise_is_rerender_all_final_for_placed_drafts_with_progress_under_an_export_step(self):
+        media = [self.draft_media("media-d1"), self.draft_media("media-f", draft=False, frames=165)]
+        items = [{"id": "a", "media": "media-d1", "at": 0, "dur": 165, "in": 0},
+                 {"id": "c", "media": "media-f", "at": 600, "dur": 165, "in": 0}]
+        project = self.project(rev=20, media=media, items=items)
+        out, calls = self.run_graphic({"projects": [project, project, project]}, "finalise",
+                                      extra_env={"BASHCUT_EXPORT_STEP": "finalise-graphics"})
+        self.assertEqual(0, out.returncode, out.stderr)
+        result = json.loads(out.stdout)
+        self.assertEqual((1, "rerender --all --final"), (result["drafts"], result["via"]))
+        invokes = [c["params"] for c in calls if c["args"][:2] == ["plugins", "invoke"]]
+        self.assertEqual([30], [p["fps"] for p in invokes], "the draft only, at full fps")
+        self.assertEqual(1, len([c for c in calls if c["args"][:2] == ["timeline", "apply"]]), "one undo step")
+        progress = [line for line in out.stderr.splitlines() if line.startswith("::progress ")]
+        self.assertTrue(progress[0].startswith("::progress 0.000 Rendering calendar (1 of 1)"), out.stderr)
+        self.assertEqual("::progress 1.000 Draft graphics finalised", progress[-1])
+        # Without BashCut's export step, stdout and stderr stay as they were.
+        out, _ = self.run_graphic({"projects": [project, project, project]}, "finalise")
+        self.assertNotIn("::progress", out.stderr)
+
+    def test_finalise_without_drafts_does_nothing_and_takes_no_arguments(self):
+        project = self.project(media=[self.draft_media("media-f", draft=False, frames=165)],
+                               items=[{"id": "c", "media": "media-f", "at": 0, "dur": 165, "in": 0}])
+        out, calls = self.run_graphic({"projects": [project]}, "finalise")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual({"via": None, "drafts": 0}, json.loads(out.stdout))
+        self.assertFalse(any(c["args"][:2] in (["plugins", "invoke"], ["timeline", "apply"]) for c in calls))
+        out, calls = self.run_graphic({"projects": [project]}, "finalise", "--all")
+        self.assertEqual((2, []), (out.returncode, calls))
+
     def test_rerender_of_a_draft_stays_a_draft(self):
         project = self.project(media=[self.draft_media("media-d1")], items=[{"id": "a", "media": "media-d1", "at": 0, "dur": 165, "in": 0}])
         out, calls = self.run_graphic({"projects": [project, project]}, "rerender", "a", "--set", "title=Mới")
@@ -1254,6 +1284,13 @@ writeFileSync(join(out, "contact-sheet.jpg"), "jpg");
         params = next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]
         self.assertEqual(30, params["fps"])
         self.assertNotIn("draft", params)
+        # finalise picks plan --final when every draft is a plan.cut graphic's media, so plan.cut follows the final.
+        placed = self.plan_project(media=[media], graphics=graphics)
+        placed["tracks"][0]["items"].append({"id": "g1-item", "media": "media-calendar", "at": 30, "dur": 96, "in": 0})
+        out, calls = self.run_graphic({**again, "projects": [placed]}, "finalise")
+        self.assertEqual(0, out.returncode, out.stderr)
+        self.assertEqual("plan --final", json.loads(out.stdout)["via"])
+        self.assertEqual(30, next(c for c in calls if c["args"][:2] == ["plugins", "invoke"])["params"]["fps"])
 
     def test_a_scene_slice_hash_keeps_only_the_times_it_shows(self):
         script = f"""import('{ROOT}/lib/graphic.mjs').then((g) => {{

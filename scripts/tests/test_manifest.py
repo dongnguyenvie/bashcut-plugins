@@ -59,6 +59,26 @@ class WindowViewTests(unittest.TestCase):
         self.assertIn("view browse: location window needs apiVersion 11", manifest_problems(self.manifest(10)))
 
 
+class ExportStepTests(unittest.TestCase):
+    STEP = {"id": "finalise-graphics", "title": {"en": "Finalise draft graphics", "vi": "Hoàn thiện đồ hoạ nháp"},
+            "command": {"executable": "bin/graphic", "arguments": ["finalise"]}, "when": "media.data.graphics.draft"}
+
+    def manifest(self, api=12, **step):
+        return {**BASE, "apiVersion": api, "capabilities": ["graphics.render"],
+                "contributes": {"exportSteps": [{**self.STEP, **step}]}}
+
+    def test_a_step_needs_api_12(self):
+        self.assertEqual(manifest_problems(self.manifest()), [])
+        self.assertIn("contributes.exportSteps needs apiVersion 12", manifest_problems(self.manifest(api=11)))
+
+    def test_bad_steps(self):
+        for step in ({"command": {"executable": "node"}}, {"command": {"executable": "/bin/sh"}},
+                     {"command": {"executable": "bin/../x"}}, {"when": "selection.kind"}, {"when": "media.data"},
+                     {"timeoutSeconds": 5}, {"title": ""}, {"id": "bad id"}):
+            with self.subTest(step=step):
+                self.assertTrue(any(p.startswith("export step") for p in manifest_problems(self.manifest(**step))))
+
+
 class DataOnlyTests(unittest.TestCase):
     PACK = {"schema": "bashcut.plugin/1", "id": "me.my-skills", "name": "My skills", "version": "0.1.0",
             "apiVersion": 7, "category": "agents", "contributes": {"skills": [{"path": "skills/beat-cut"}]}}

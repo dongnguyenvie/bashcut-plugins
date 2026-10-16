@@ -25,7 +25,10 @@ Plugin id `bashcut.hyperframes`, plugin API 7, Node.js.
   those seconds; PNGs and a contact sheet in seconds, nothing rendered, imported or placed.
   `--draft` on `plan`, `place` or `rerender` renders for review: 15 fps, full size, Chrome's faster capture (a 42 s
   diagram in about 10 s); the media records `draft`, and `plan --final` / `rerender --all --final` renders the drafts
-  again at full fps and swaps every use in one undo step before export. A `texture` or `paper` frame backdrop is baked
+  again at full fps and swaps every use in one undo step before export. `bin/graphic finalise` picks the right one
+  (`plan --final` when every draft is a `plan.cut` graphic, else `rerender --all --final`); it is the plugin's
+  **export step** (`contributes.exportSteps`, plugin API 12): a BashCut with plugin API 12 runs it with progress and Cancel before
+  a final export that covers drafts (`export start`, or **Finalise and Export** in the Export panel). A `texture` or `paper` frame backdrop is baked
   once per brand and size into a PNG (in the plugin cache) and drawn under the frames by `bin/encode-alpha`
   (`graphics.render` › `underlay`), so it no longer slows the capture.
 - **`bin/hf`**: the pinned HyperFrames CLI with telemetry off and the plugin's own Chrome: `catalog`, `add`, `lint`,
