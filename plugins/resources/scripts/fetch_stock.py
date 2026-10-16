@@ -31,7 +31,9 @@ parallel (videos until --max-mb, the rest kept for --pick), saved to the project
 clip`, tags = stock, slot, words) and drawn on numbered contact sheets, about --sheet-slots slots a sheet (a video
 tile shows the provider's frames). It prints one line per slot and the sheet paths; look at the sheets, then
 --pick the ones you choose: n@frame[:duration] places it there (library place), a bare n prints its library ID;
-a chosen video that was over the cap is downloaded first. The rest stay in the library for later edits.
+a chosen video that was over the cap is downloaded first. The rest stay in the library for later edits. A dropped
+connection, a timeout or HTTP 429/5xx is tried 3 times per file; a file still missing after that is named in its
+slot's line (skipped: n, source, id, url, error) and the rest of the batch is kept.
 """
 import argparse
 import concurrent.futures
@@ -40,6 +42,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.parse
 from pathlib import Path
 
@@ -53,17 +56,34 @@ KEYLESS_PHOTO = ("free", "wikimedia", "openverse", "nasa")
 KEYLESS_ANY = ("nasa", "archive", "documentary")
 # Internet Archive options, set from the command line: years "1960-1975", public domain only, largest video file (MB).
 ARCHIVE = {"years": None, "public_domain": False, "file_mb": 40}
+TRANSIENT = {6, 7, 18, 28, 35, 52, 55, 56}  # curl: DNS, connect, partial, timeout, TLS, empty, send, receive (reset)
+TRIES, BACKOFF = 3, 1.5  # seconds before the 2nd try, twice that before the 3rd
 
 
-def get(url, headers=None, timeout=30):
-    # curl, not urllib: it uses the system's certificates, which some Python installs lack.
-    command = ["curl", "-sfL", "-A", AGENT, "--max-time", str(timeout)]
+class FetchError(OSError):
+    """A request that failed for good; reason is the error without the URL ("curl exit 56 after 3 tries")."""
+
+    def __init__(self, reason, url):
+        super().__init__(f"{reason} for {url.split('?')[0]}")
+        self.reason = reason
+
+
+def get(url, headers=None, timeout=30, tries=TRIES):
+    # curl, not urllib: it uses the system's certificates, which some Python installs lack. Transient network errors
+    # (Openverse and Wikimedia reset connections now and then: curl 56) and HTTP 429/5xx are tried again with backoff.
+    command = ["curl", "-sL", "-A", AGENT, "--max-time", str(timeout), "-w", "%{stderr}%{http_code}"]
     for name, value in (headers or {}).items():
         command += ["-H", f"{name}: {value}"]
-    out = subprocess.run(command + [url], capture_output=True)
-    if out.returncode != 0:
-        raise OSError(f"curl exit {out.returncode} for {url.split('?')[0]}")
-    return out.stdout
+    for attempt in range(1, tries + 1):
+        out = subprocess.run(command + [url], capture_output=True)
+        status = int(re.sub(rb"\D", b"", (out.stderr or b"")[-3:]) or 0)
+        if out.returncode == 0 and status < 400:
+            return out.stdout
+        reason = f"http {status}" if out.returncode == 0 else f"curl exit {out.returncode}"
+        if attempt < tries and (out.returncode in TRANSIENT or status == 429 or status >= 500):
+            time.sleep(BACKOFF * attempt)
+            continue
+        raise FetchError(reason + (f" after {attempt} tries" if attempt > 1 else ""), url)
 
 
 def get_json(url, headers=None):
@@ -495,12 +515,21 @@ def library_add(row, dest, scope):
         row["libraryId"] = found if ":" in str(found) else f"{scope}:{found}"
 
 
-def fetch_body(url, timeout=300):
+def fetch_body(url, timeout=300, row=None):
+    """The file, or None once get gave up: logged as skipped, and the reason put on row["error"] when given."""
     try:
         return get(url, timeout=timeout)
     except OSError as error:
         print(json.dumps({"skipped": url.split("?")[0], "error": str(error)[:80]}), file=sys.stderr)
+        if row is not None:
+            row["error"] = f"download failed: {getattr(error, 'reason', str(error))}"[:120]
         return None
+
+
+def skipped(row):
+    """A candidate that could not be downloaded, named for the summary: n, source, URL and error."""
+    return {"n": row.get("n"), "source": row.get("source"), "id": row.get("id"), "url": row.get("url"),
+            "error": row.get("error")}
 
 
 def read_slots(args):
@@ -539,10 +568,8 @@ def gather(slots, source, dest, max_mb, min_short, scope, use_library):
     photos = [r for r in wanted if r["kind"] == "photo"]
     videos = [r for r in wanted if r["kind"] == "video"]
     with concurrent.futures.ThreadPoolExecutor(6) as pool:
-        for row, body in zip(photos, pool.map(lambda r: fetch_body(r["url"]), photos)):
-            if body is None:
-                row["error"] = "download failed"
-            else:
+        for row, body in zip(photos, pool.map(lambda r: fetch_body(r["url"], row=r), photos)):
+            if body is not None:
                 (dest / row["file"]).write_bytes(body)
         # videos in slot order, so the cap cuts the last candidates of a slot, not whole slots
         videos.sort(key=lambda r: (r["n"], r["slot"]))
@@ -552,9 +579,8 @@ def gather(slots, source, dest, max_mb, min_short, scope, use_library):
             if left is not None and left <= 0:
                 row["deferred"] = True
                 continue
-            body = fetch_body(row["url"])
+            body = fetch_body(row["url"], row=row)
             if body is None:
-                row["error"] = "download failed"
                 continue
             (dest / row["file"]).write_bytes(body)
             if left is not None:
@@ -708,10 +734,11 @@ def pick(dest, spec, scope):
     wanted = [(s, n) for s, n, _, _ in parse_pick(spec)]
     late = [r for r in rows if r.get("deferred") and (r.get("slot"), r.get("n")) in wanted]
     with concurrent.futures.ThreadPoolExecutor(4) as pool:  # deferred videos in parallel before placing in order
-        for row, body in zip(late, pool.map(lambda r: fetch_body(r["url"], timeout=1800), late)):
+        for row, body in zip(late, pool.map(lambda r: fetch_body(r["url"], timeout=1800, row=r), late)):
             if body is not None:
                 (dest / row["file"]).write_bytes(body)
                 row.pop("deferred")
+                row.pop("error", None)
             else:
                 row["failed"] = True
     for slot, n, frame, duration in parse_pick(spec):
@@ -720,7 +747,7 @@ def pick(dest, spec, scope):
             chosen.append({"slot": slot, "n": n, "error": "no such candidate"})
             continue
         if row.pop("failed", None) or row.get("deferred"):
-            chosen.append({"slot": row["slot"], "n": n, "error": "download failed"})
+            chosen.append({"slot": row["slot"], **skipped(row), "error": row.get("error") or "download failed"})
             continue
         if not row.get("libraryId"):
             library_add(row, dest, scope)
@@ -784,8 +811,10 @@ def main(argv=None):
             line = {"slot": slot, "candidates": len([r for r in mine if r.get("n")]),
                     "inLibrary": len([r for r in mine if r.get("libraryId")]),
                     "deferred": len([r for r in mine if r.get("deferred")]) or None,
-                    "error": next((r["error"] for r in mine if r.get("error") and not r.get("n")), None)}
-            print(json.dumps({k: v for k, v in line.items() if v not in (None, 0) or k == "candidates"}))
+                    "error": next((r["error"] for r in mine if r.get("error") and not r.get("n")), None),
+                    "skipped": [skipped(r) for r in mine if r.get("n") and r.get("error")]}
+            print(json.dumps({k: v for k, v in line.items() if v not in (None, 0, []) or k == "candidates"},
+                             ensure_ascii=False))
         print(json.dumps({"sheets": sheets, "manifest": str(dest / "candidates.json"),
                           "capped": capped or None}, ensure_ascii=False))
         return
@@ -803,6 +832,7 @@ def main(argv=None):
         dest.mkdir(parents=True, exist_ok=True)
         rows = []
         for item_id in [i.strip() for i in args.ids.split(",") if i.strip()]:
+            row = None
             try:
                 row = BY_ID[source](item_id, args.kind, args.min_short)
                 if not row or not row.get("url"):
@@ -810,7 +840,8 @@ def main(argv=None):
                 row["file"] = download(row, dest)
                 row.pop("preview", None)
             except (OSError, LookupError, ValueError, KeyError) as error:
-                row = {"id": item_id, "source": source, "error": str(error)[:120]}
+                url = (row or {}).get("url") if isinstance(error, OSError) else None
+                row = {"id": item_id, "source": source, "url": url, "error": str(error)[:120]}
             rows.append(row)
         if args.import_ and any("file" in r for r in rows):
             import_into(dest, rows)

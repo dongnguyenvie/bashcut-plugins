@@ -5,7 +5,7 @@
     "en": "Online Resources",
     "vi": "Tài nguyên trực tuyến"
   },
-  "version": "0.0.5",
+  "version": "0.0.6",
   "apiVersion": 11,
   "minApiVersion": 11,
   "transport": "session",
