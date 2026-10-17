@@ -4,8 +4,8 @@
     "vi": "Dịch phụ đề"
   },
   "summary": {
-    "en": "Vietsub with your own Gemini or OpenAI key: translate every caption and keep its timing and look, cover subtitles burned into the footage, and a Vietsub TikTok batch preset. Without a key, your agent translates.",
-    "vi": "Vietsub bằng khoá Gemini hoặc OpenAI của bạn: dịch từng dòng phụ đề mà giữ nguyên thời gian và kiểu chữ, che phụ đề in sẵn trong footage, kèm preset hàng loạt Vietsub TikTok. Không có khoá thì agent dịch giúp."
+    "en": "Vietsub with your own Gemini or OpenAI key: translate every caption and keep its timing and look, cover subtitles burned into the footage, blur channel logos and watermarks, and a Vietsub TikTok batch preset. Without a key, your agent translates.",
+    "vi": "Vietsub bằng khoá Gemini hoặc OpenAI của bạn: dịch từng dòng phụ đề mà giữ nguyên thời gian và kiểu chữ, che phụ đề in sẵn trong footage, làm mờ logo kênh và watermark, kèm preset hàng loạt Vietsub TikTok. Không có khoá thì agent dịch giúp."
   },
   "publisher": "bashcut",
   "category": "captions",
