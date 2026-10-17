@@ -364,10 +364,38 @@ def ocr_frames(subtitles=True, logo=True, low=0.82):
     return frames
 
 
+def write_png(path, width, height, pixel):
+    """An 8-bit RGB PNG whose pixel (x, y) is `pixel(x, y)` -> (r, g, b)."""
+    import struct, zlib
+    raw = b"".join(b"\x00" + bytes(c for x in range(width) for c in pixel(x, y)) for y in range(height))
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+    pathlib.Path(path).write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+                                   + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+
+
+def moving_pictures(folder, count=8, logo=True):
+    """Landscape pictures whose content changes from one to the next, with a still logo (a white ring) in the top
+    right corner at 85–93 % across and 6–14 % down when `logo`."""
+    import random
+    paths = []
+    for index in range(count):
+        noise = random.Random(index)
+        cells = [[(noise.randrange(256), noise.randrange(256), noise.randrange(256)) for _ in range(17)] for _ in range(10)]
+        def pixel(x, y):
+            if logo and 272 <= x < 298 and 11 <= y < 25:
+                return (255, 255, 255) if x < 276 or x >= 294 or y < 14 or y >= 22 else (20, 20, 20)
+            return cells[y // 18][x // 19]
+        path = os.path.join(folder, f"still-{index}.png")
+        write_png(path, 320, 180, pixel)
+        paths.append(path)
+    return paths
+
+
 class CoverHost:
     """Answers the host calls of the cover action: a 1080×1920 project with one portrait clip that fills it."""
 
-    def __init__(self, frames, source=(1080, 1920), base_scale=1.0, transform=None):
+    def __init__(self, frames, source=(1080, 1920), base_scale=1.0, transform=None, stills=(), media_fps=None):
         clip = {"id": "clip1", "at": 0, "dur": 900, "in": 0, "media": "m1"}
         if transform:
             clip["transform"] = transform
@@ -382,6 +410,8 @@ class CoverHost:
                          "media": [{"id": "m1", "kind": "video"}, {"id": "b0", "kind": "image"}], "tracks": self.tracks,
                          "scale": {"clip1": {"baseScale": base_scale, "sourceWidth": source[0], "sourceHeight": source[1]}}}
         self.frames = frames
+        self.stills = list(stills)
+        self.media_fps = media_fps
         self.calls = []
 
     def __call__(self, call):
@@ -393,6 +423,10 @@ class CoverHost:
             return {"result": {"job": "ocr1", "state": "running"}}
         if method == "jobs.status":
             return {"result": {"job": {"id": "ocr1", "state": "completed", "result": {"frames": self.frames}}}}
+        if method == "media.frames" and self.stills:
+            return {"result": {"frames": [{"path": path, "media": "m1"} for path in self.stills]}}
+        if method == "media.list" and self.media_fps:
+            return {"result": [{"id": "m1", "kind": "video", "fps": self.media_fps}]}
         if method == "media.import":
             self.timeline = dict(self.timeline, rev=self.timeline["rev"] + 1)
             return {"result": {"media": f"band{len([c for c in self.calls if c['method'] == 'media.import'])}"}}
@@ -567,6 +601,63 @@ class CoverTests(unittest.TestCase):
         alpha = png_alpha(result["files"][0])
         self.assertEqual(alpha(int(1080 * 0.87), int(1920 * 0.05)), 255, "the logo is covered")
         self.assertEqual(alpha(540, int(1920 * 0.84)), 0, "no subtitle band without subtitles")
+
+
+    def test_remove_logos_blurs_a_still_logo_without_letters(self):
+        host = CoverHost(ocr_frames(logo=False), source=(1920, 1080), base_scale=0.5625, stills=moving_pictures(self.folder))
+        session = Session(self.folder, features=["clip.blur", "clip.mosaic"])
+        try:
+            result = session.request("r1", "plugin.action", {
+                "action": "bashcut.translate-captions.logos", "params": {}, "options": {},
+                "context": context([], {"cover": {"items": ["old-band"]}}), "outputDirectory": self.folder}, on_call=host)[1]["result"]
+        finally:
+            session.close()
+        logo = result["data"]["videos"][0]["logos"]
+        self.assertEqual(len(logo), 1)
+        self.assertTrue(0.84 < logo[0][0] < 0.86 and 0.05 < logo[0][1] < 0.07, logo)
+        ops = result["operations"]
+        self.assertNotIn({"op": "delete", "item": "old-band"}, ops, "the subtitle covers are left alone")
+        self.assertFalse(any(op["op"] == "setProperties" for op in ops), "captions do not move")
+        inserts = [op for op in ops if op["op"] == "insert"]
+        self.assertEqual([op["track"] for op in inserts], ["logo-cover"], "no subtitle cover")
+        copy = inserts[0]["item"]
+        self.assertEqual((copy["media"], copy["at"], copy["dur"], copy["muted"]), ("m1", 0, 900, True))
+        self.assertGreater(copy["pixelate"], 0)
+        self.assertTrue(0.8 < copy["crop"]["left"] < 0.85 and copy["crop"]["top"] < 0.06, copy["crop"])
+        self.assertEqual(result["pluginData"]["logos"]["items"], [copy["id"]])
+        self.assertEqual(result["files"], [])
+
+    def test_text_that_moves_with_the_picture_is_not_a_logo(self):
+        frames = ocr_frames(subtitles=False, logo=False)
+        for frame in frames:
+            frame["text"].append({"box": [0.45, 0.6, 0.1, 0.04], "confidence": 1, "string": "PBRUN"})
+        host = CoverHost(frames, stills=moving_pictures(self.folder, logo=False))
+        result = self.cover(host, {"coverLogos": True}, features=["clip.blur"])["result"]
+        self.assertNotIn("logos", result["data"]["videos"][0])
+        self.assertEqual(result["data"]["covered"], 0)
+
+    def test_a_quiet_clip_with_few_subtitles_is_still_covered(self):
+        frames = [{"seconds": s, "frame": s * 30, "text": []} for s in range(40)]
+        for second, line in ((5, "Enough."), (12, "What?"), (30, "Are you gonna tell me or not?")):
+            frames[second]["text"].append({"box": [0.4, 0.86, 0.2, 0.05], "confidence": 1, "string": line})
+        result = self.cover(CoverHost(frames), {"mode": "detect"})["result"]
+        self.assertIsNotNone(result["data"]["videos"][0]["subtitles"], "three lines at one height in 3 of 40 pictures")
+
+    def test_covers_start_at_source_frames_of_the_media_rate(self):
+        WORDS = ["Hello there", "Where to", "Not now", "Quickly go", "Why me", "Stop it", "Look away", "Fine then",
+                 "Run fast", "Come back", "See you", "Wait up", "Oh no", "Too late", "All done"]
+        frames = [{"seconds": i * 0.5, "frame": int(i * 12.5), "text": [
+            {"box": [0.3, 0.82, 0.4, 0.04], "string": WORDS[i // 4]}]} for i in range(60)]
+        host = CoverHost(frames, media_fps=[25, 1])
+        result = self.cover(host, features=["clip.blur"], fit="follow")["result"]
+        copies = [op["item"] for op in result["operations"] if op["op"] == "insert"]
+        self.assertGreater(len(copies), 3)
+        for copy in copies:
+            # Timeline frames at 30 fps, in-points at 25 fps: never past the 750 source frames of the 30 s clip.
+            self.assertLessEqual(copy["in"] + copy["dur"] / 30 * 25, 750 + 1e-6, copy)
+            self.assertAlmostEqual(copy["in"] / 25, copy["at"] / 30, delta=0.05)
+        ocr = next(call for call in host.calls if call["method"] == "media.ocr")["params"]
+        self.assertEqual((ocr["from"], ocr["to"]), (0, 30))
 
 
 def png_alpha(path):

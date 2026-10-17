@@ -1,17 +1,19 @@
 ---
 name: translate-captions
-description: Translate a project's captions into another language while keeping their timing and look, cover subtitles already burned into the footage, and run the Vietsub TikTok batch. Use when the user wants Vietsub, subtitles in another language, a foreign clip re-captioned, or old subtitles hidden. Triggers: "vietsub", "dịch phụ đề", "dịch sub", "phụ đề tiếng Việt", "che phụ đề cũ", "che sub cũ", "translate captions".
+description: Translate a project's captions into another language while keeping their timing and look, cover subtitles already burned into the footage, and run the Vietsub TikTok batch. Use when the user wants Vietsub, subtitles in another language, a foreign clip re-captioned, or old subtitles or a channel logo hidden. Triggers: "vietsub", "dịch phụ đề", "dịch sub", "phụ đề tiếng Việt", "che phụ đề cũ", "che sub cũ", "xoá logo", "che logo", "xoá watermark", "translate captions".
 ---
 
 # Translate Captions
 
-Plugin `bashcut.translate-captions` adds three actions (Tools panel and Plugins menu):
+Plugin `bashcut.translate-captions` adds four actions (Tools panel and Plugins menu):
 
 - `bashcut.translate-captions.translate`: translates every caption on the caption layers with the user's own Gemini
   or OpenAI key (or an OpenAI-compatible server on this Mac). Timing, style and word style stay; word timings are
   dropped, so words are spread over each caption.
 - `bashcut.translate-captions.cover`: looks at the first seconds of each video on Main for subtitles burned into the
   picture and hides them, then moves the captions onto the cover.
+- `bashcut.translate-captions.logos`: finds logos, watermarks and channel names that stay in place near an edge or
+  corner of each video on Main (with or without letters) and blurs them; subtitles and captions are left alone.
 - `bashcut.translate-captions.install-preset`: saves the "Vietsub TikTok" batch preset.
 
 ## Vietsub one clip
@@ -23,8 +25,17 @@ Plugin `bashcut.translate-captions` adds three actions (Tools panel and Plugins 
    height, lines, examples); `fixedText` lists text that never changes (a channel name, a sign), which is never
    treated as a subtitle. Modes: `auto` (zoom when 1.12× is enough, else a band), `band`, `zoom` (up to 1.2×),
    `detect` (report only). `extraLinesAbove` (0–4) grows the band over a blurred strip or a second subtitle row above
-   the found one. `coverLogos` also boxes fixed text; use it only on footage the user has the rights to, and say so.
-   Run it again to replace the earlier cover.
+   the found one. `coverLogos` also hides logos the way `logos` does; use it only on footage the user has the rights to, and
+   say so. Run it again to replace the earlier cover.
+
+## Remove a logo or watermark
+
+`bashcut plugins run bashcut.translate-captions.logos --params '{}'` (a job), only on footage the user has the rights
+to. It reads the whole of each video: pixels that stay the same while the picture moves (a logo without letters too)
+and text that never changes. `data.videos[].logos` lists each box (x, y, width, height as shares of the picture). Each
+logo gets a mosaic of the clip over it on a "Logo cover" layer (`look: smooth` for a blur, `mode: box` for a dark
+box, `mode: detect` to report only). Run it again to replace the earlier logo covers. A blur hides a logo but leaves
+a soft patch; nothing paints the picture back in.
 3. Translate: `bashcut plugins run bashcut.translate-captions.translate --params '{"target": "vi", "glossary":
    "Manman; grizzly = gấu xám"}'` (a job). Put names of people, places and brands from the brief in `glossary`
    (`term` keeps it, `term = translation` forces one). `tone` is natural, casual or formal; `maxCps` (default 17)
@@ -65,6 +76,8 @@ An outline above about 6 fills the letters in at this size. Pick a font that `ba
 
 - Burned-in subtitles are found with on-screen text reading (Apple Vision): stylised or very small text, or
   subtitles only after the first `seconds` (default 30), can be missed. Report what `data.videos` says.
+- Logos: a shot where most of the picture stands still (a tripod interview, a still image) cannot tell a logo from
+  the scene, so only text in a corner counts there. A logo that moves, fades in late or sits in the middle is missed.
 - The band is opaque by default: BashCut blends in linear light, so a band below about 0.97 opacity lets white
   subtitles show through.
 - The cover follows a clip's zoom, pan and tilt but not keyframed motion; check moving shots.

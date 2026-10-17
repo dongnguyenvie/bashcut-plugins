@@ -1,10 +1,12 @@
-// Translate Captions: three actions.
+// Translate Captions: four actions.
 //
 // - bashcut.translate-captions.translate: translates every caption on the caption layers with the user's own Gemini or
 //   OpenAI key and keeps its timing and look (Translate.swift). Without a key it says to ask the agent, whose skill
 //   does the same through `captions export` and `timeline apply`.
 // - bashcut.translate-captions.cover: finds subtitles burned into the picture in the first seconds of each video and
 //   hides them under a dark band or by zooming them out of the frame (Cover.swift).
+// - bashcut.translate-captions.logos: the same reading for logos and watermarks only, which it blurs or boxes
+//   (Cover.swift, Logos.swift).
 // - bashcut.translate-captions.install-preset: saves the "Vietsub TikTok" batch preset (Preset.swift).
 //
 // Actions return proposed operations; BashCut applies them as one undoable edit with this plugin as the author.
@@ -18,6 +20,10 @@ func handle(method: String, params: JSON, host: Host) throws -> Any? {
     switch action {
     case "bashcut.translate-captions.translate": return try translate(params, host: host)
     case "bashcut.translate-captions.cover": return try cover(params, host: host)
+    case "bashcut.translate-captions.logos":
+        var request = params
+        request["params"] = (params["params"] as? JSON ?? [:]).merging(["onlyLogos": true, "fit": "fixed"]) { _, new in new }
+        return try cover(request, host: host)
     case "bashcut.translate-captions.install-preset": return try installPreset(params)
     default: throw PluginError("unknown_action", "Unknown action \(action)")
     }

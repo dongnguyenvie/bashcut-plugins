@@ -10,6 +10,8 @@
 // - band: a full-width opaque band;
 // - zoom: the clip is zoomed (at most 1.2x) and moved down just enough that the area leaves the bottom of the frame.
 // The captions move onto the covered area.
+// With coverLogos, or as the Remove logos action (onlyLogos: logos alone, over the whole clip), logos found by
+// Logos.swift get a mosaic or blur of the clip over each on "Logo cover" layers, or a dark box.
 import CoreGraphics
 import Foundation
 import ImageIO
@@ -88,7 +90,11 @@ func findSubtitles(_ frames: [(seconds: Double, texts: [SeenText])]) -> (Subtitl
     let zone = low.filter { !$0.isEmpty }.count >= high.filter { !$0.isEmpty }.count ? low : high
     let shown = zone.filter { !$0.isEmpty }.count
     let distinct = Set(zone.flatMap { $0.map { key($0.string) } }).count
-    guard shown >= max(2, Int((Double(pictures) * 0.15).rounded(.up))), distinct >= 2 else { return (nil, fixedList, fixedBoxes) }
+    // Shown in a sixth of the pictures, or (a quiet clip with few lines) at least three different lines at one height.
+    let middles = zone.flatMap { $0.map { $0.y + $0.height / 2 } }.sorted()
+    let steady = middles.count >= 3 && middles[middles.count * 9 / 10] - middles[middles.count / 10] <= 0.05
+    guard shown >= max(2, Int((Double(pictures) * 0.15).rounded(.up))) && distinct >= 2 || steady && shown >= 3 && distinct >= 3
+    else { return (nil, fixedList, fixedBoxes) }
 
     let lines = zone.flatMap { $0 }
     func percentile(_ values: [Double], _ share: Double) -> Double {
@@ -215,7 +221,9 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     let seconds = min(120, max(5, request.number("seconds", 30)))
     let opacity = min(1, max(0.5, request.number("opacity", 1)))
     let moveCaptions = request.bool("moveCaptions", true)
-    let coverLogos = request.bool("coverLogos", false)
+    // onlyLogos: the Remove logos action, which leaves subtitles and captions alone.
+    let onlyLogos = request.bool("onlyLogos", false)
+    let coverLogos = onlyLogos || request.bool("coverLogos", false)
     let extraAbove = min(4, max(0, request.number("extraLinesAbove", 0)))
     // follow: a cover per subtitle, sized to its lines (the whole clip is read); fixed: one area for the whole clip.
     let follow = request.string("fit", "follow") == "follow"
@@ -228,6 +236,20 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     let canvasHeight = (format["height"] as? NSNumber)?.doubleValue ?? 1920
     let rate = (format["fps"] as? [NSNumber])?.map(\.doubleValue) ?? [30, 1]
     let fps = rate.count == 2 && rate[1] > 0 ? rate[0] / rate[1] : 30
+    // In-points count frames of the media's own rate, positions and durations the project's.
+    var mediaRates: [String: Double] = [:]
+    for media in (try? host.call("media.list")) as? [JSON] ?? [] {
+        if let id = media["id"] as? String, let rate = (media["fps"] as? [NSNumber])?.map(\.doubleValue), rate.count == 2, rate[0] > 0, rate[1] > 0 {
+            mediaRates[id] = rate[0] / rate[1]
+        }
+    }
+    /// The source seconds a clip starts and ends at (at its own speed).
+    func sourceRange(_ clip: JSON) -> (start: Double, end: Double) {
+        let rate = mediaRates[clip["media"] as? String ?? ""] ?? fps
+        let speed = (clip["speed"] as? NSNumber)?.doubleValue ?? 1
+        let start = Double(clip["in"] as? Int ?? 0) / rate
+        return (start, start + Double(clip["dur"] as? Int ?? 0) / fps * speed)
+    }
     let scales = timeline["scale"] as? JSON ?? [:]
     let videoMedia = Set((timeline["media"] as? [JSON] ?? []).filter { $0["kind"] as? String == "video" }.compactMap { $0["id"] as? String })
     let clips = tracks.filter { $0["role"] as? String == "main" }.flatMap { $0["items"] as? [JSON] ?? [] }
@@ -237,22 +259,29 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     // Look at each video once: the first seconds of its first clip, or (follow) all of its clips every half second.
     var found: [String: Subtitles] = [:]
     var steps: [String: Double] = [:]
-    var logos: [String: [SeenText]] = [:]
+    var logos: [String: [LogoBox]] = [:]
     var report: [JSON] = []
     var order: [String] = []
     for clip in clips where !order.contains(clip["media"] as? String ?? "") { order.append(clip["media"] as? String ?? "") }
     for (index, media) in order.prefix(12).enumerated() {
-        host.progress(Double(index) / Double(min(order.count, 12)), "Looking for subtitles in video \(index + 1) of \(min(order.count, 12))")
+        host.progress(Double(index) / Double(min(order.count, 12)), "Looking for \(onlyLogos ? "logos" : "subtitles") in video \(index + 1) of \(min(order.count, 12))")
         let used = clips.filter { $0["media"] as? String == media }
         guard let first = used.first else { continue }
-        var from = Double(first["in"] as? Int ?? 0) / fps
-        var length = min(seconds, Double(first["dur"] as? Int ?? 0) / fps)
+        var from = sourceRange(first).start
+        var length = min(seconds, sourceRange(first).end - from)
         var step = length > 20 ? 1.0 : 0.5
         if follow {
-            from = used.map { Double($0["in"] as? Int ?? 0) / fps }.min() ?? from
-            let to = used.map { Double(($0["in"] as? Int ?? 0) + ($0["dur"] as? Int ?? 0)) / fps }.max() ?? from + length
+            from = used.map { sourceRange($0).start }.min() ?? from
+            let to = used.map { sourceRange($0).end }.max() ?? from + length
             length = max(1, to - from)
             step = max(0.5, (length / 3000 * 10).rounded(.up) / 10)
+        }
+        if onlyLogos {
+            // Logos only: the whole of every clip, a picture every few seconds (about 60 in all).
+            from = used.map { sourceRange($0).start }.min() ?? from
+            let to = used.map { sourceRange($0).end }.max() ?? from + length
+            length = max(1, to - from)
+            step = max(0.5, (length / 60 * 10).rounded(.up) / 10)
         }
         steps[media] = step
         let started = try host.call("media.ocr", [
@@ -272,19 +301,38 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         let (subtitles, fixed, fixedBoxes) = findSubtitles(frames)
         var entry: JSON = ["media": media, "pictures": frames.count, "subtitles": subtitles?.json ?? NSNull()]
         if !fixed.isEmpty { entry["fixedText"] = fixed }
+        if let subtitles, !onlyLogos { found[media] = subtitles }
+        if coverLogos {
+            // Logos without letters too: pixels that stand still over pictures spread across the clip.
+            let stills = (try? host.call("media.frames", ["media": media, "count": 16, "from": from, "to": from + max(1, length)])) as? JSON
+            let paths = (stills?["frames"] as? [JSON] ?? []).compactMap { $0["path"] as? String }
+            let found = mergeLogos(still: findStillLogos(paths), read: fixedBoxes)
+            if !found.isEmpty {
+                logos[media] = found
+                entry["logos"] = found.map { [round3($0.x), round3($0.y), round3($0.width), round3($0.height)] }
+            }
+        }
         report.append(entry)
-        if let subtitles { found[media] = subtitles }
-        if coverLogos, !fixedBoxes.isEmpty { logos[media] = fixedBoxes }
     }
     host.progress(0.9, "Covering")
 
+    let dataKey = onlyLogos ? "logos" : "cover"
     let detection: JSON = ["at": ISO8601DateFormatter().string(from: Date()), "videos": report]
-    let earlier = (request.pluginData["cover"] as? JSON)?["items"] as? [String] ?? []
+    // This action's covers from an earlier run, and the other action's logo covers when this one covers logos too.
+    let otherLogos = coverLogos ? ((request.pluginData[onlyLogos ? "cover" : "logos"] as? JSON)?["items"] as? [String] ?? [])
+        .filter { $0.hasPrefix("logo-cover-") } : []
+    let earlier = ((request.pluginData[dataKey] as? JSON)?["items"] as? [String] ?? []) + otherLogos
     let existing = Set(tracks.flatMap { $0["items"] as? [JSON] ?? [] }.compactMap { $0["id"] as? String })
     guard !found.isEmpty || !logos.isEmpty, mode != "detect" else {
-        let message = found.isEmpty
-            ? "No burned-in subtitles found in the first \(Int(seconds)) s of \(order.count) video(s)"
-            : "Found burned-in subtitles in \(found.count) of \(order.count) video(s); nothing changed (detect only)"
+        var parts: [String] = []
+        if !onlyLogos {
+            parts.append(found.isEmpty ? "no burned-in subtitles" : "burned-in subtitles in \(found.count) of \(order.count) video(s)")
+        }
+        if coverLogos { parts.append(logos.isEmpty ? "no logos" : "logos in \(logos.count) of \(order.count) video(s)") }
+        let looked = follow || onlyLogos ? " in \(order.count) video(s)" : " in the first \(Int(seconds)) s of \(order.count) video(s)"
+        let message = found.isEmpty && logos.isEmpty
+            ? (onlyLogos ? "No logos" : coverLogos ? "No burned-in subtitles or logos" : "No burned-in subtitles") + " found" + looked
+            : "Found " + parts.joined(separator: " and ") + "; nothing changed (detect only)"
         return [
             "message": message, "pluginData": mergedPluginData(request, "detect", detection),
             "data": ["videos": report, "covered": 0],
@@ -317,8 +365,10 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         /// Drawn into the cover picture: a full-width band, and rounded boxes (the subtitles in style box, logos).
         let band: CGRect?
         let boxes: [CGRect]
-        /// A blurred copy of the clip cropped to the subtitles (style blur).
+        /// A blurred copy of the clip cropped to the subtitles or a logo (style blur).
         let blurCopy: JSON?
+        /// The layer of a logo's blurred copy, one per logo so copies at the same time do not overlap.
+        var layer: (id: String, name: String)? = nil
     }
     var plans: [Plan] = []
     var zoomOps: [JSON] = []
@@ -333,11 +383,36 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
             CGRect(x: placement.left + x * placement.width, y: placement.top + y * placement.height,
                    width: width * placement.width, height: height * placement.height).intersection(canvas).integral
         }
-        var boxes = (logos[media] ?? []).map { text in
-            let pad = text.height * 0.35
-            return onCanvas(text.x - pad, text.y - pad, text.width + 2 * pad, text.height + 2 * pad)
-        }.filter { !$0.isEmpty }
         let clipAt = clip["at"] as? Int ?? 0, clipDur = clip["dur"] as? Int ?? 1, clipIn = clip["in"] as? Int ?? 0
+        // A logo: a mosaic or blur of the clip over it where BashCut can blur (unless a box or band was asked for),
+        // else a dark box.
+        let heightShare = placement.height / max(1, min(placement.width, placement.height))
+        var boxes: [CGRect] = []
+        for (index, logo) in (logos[media] ?? []).enumerated() {
+            let pad = max(logo.height * 0.3, 0.008)
+            let side = pad * placement.height / max(1, placement.width)
+            let (left, top) = (max(0, logo.x - side), max(0, logo.y - pad))
+            let (right, bottom) = (min(1, logo.right + side), min(1, logo.bottom + pad))
+            guard style == "blur" else {
+                let box = onCanvas(left, top, right - left, bottom - top)
+                if !box.isEmpty { boxes.append(box) }
+                continue
+            }
+            var copy = blurredCopy(of: clip, crop: (left, top, right, bottom), blur: max(blur, 0.03), tint: tint)
+            if mosaic {
+                // Cells about half the logo's height, so no letter or shape survives.
+                let cell = min(0.06, max(0.008, logo.height * 0.5 * heightShare))
+                copy["pixelate"] = round3(cell)
+                copy["blur"] = round3(cell * 0.5)
+                copy["feather"] = 0.2
+                var crop = copy["crop"] as? JSON ?? [:]
+                crop["radius"] = nil
+                copy["crop"] = crop
+            }
+            let layer = index == 0 ? ("logo-cover", "Logo cover") : ("logo-cover-\(index + 1)", "Logo cover \(index + 1)")
+            plans.append(Plan(clip: clip, at: clipAt, dur: clipDur, sourceIn: 0, area: nil, band: nil, boxes: [], blurCopy: copy,
+                              layer: layer))
+        }
         guard let subtitles = found[media] else {
             if !boxes.isEmpty {
                 plans.append(Plan(clip: clip, at: clipAt, dur: clipDur, sourceIn: 0, area: nil, band: nil, boxes: boxes, blurCopy: nil))
@@ -349,8 +424,6 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         // A mosaic's edges fade out, so its area reaches a little further to keep the text under the opaque middle.
         let pad = subtitles.lineHeight * (mosaic && style == "blur" ? 0.9 : 0.25)
         let side = subtitles.lineHeight * (mosaic && style == "blur" ? 1.2 : 0.5) * placement.height / max(1, placement.width)
-        // The picture's height as a share of its short side, to size mosaic cells from the line height.
-        let heightShare = placement.height / max(1, min(placement.width, placement.height))
         let above = pad + extraAbove * subtitles.lineHeight * 1.3
         func padded(_ box: (left: Double, top: Double, right: Double, bottom: Double)) -> (Double, Double, Double, Double) {
             // At least 6 % each way (a crop keeps at least 5 %): a one-word subtitle grows around its centre.
@@ -380,12 +453,15 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         var pieces: [(at: Int, dur: Int, offset: Int, box: (Double, Double, Double, Double))] = []
         let plainSpeed = ((clip["speed"] as? NSNumber)?.doubleValue ?? 1) == 1 && clip["speedCurve"] == nil && clip["reverse"] == nil
         if follow, plainSpeed, style != "band" {
-            let clipStart = Double(clipIn) / fps, clipEnd = Double(clipIn + clipDur) / fps
+            let (clipStart, clipEnd) = sourceRange(clip)
+            let rate = mediaRates[media] ?? fps
             for span in subtitleSpans(subtitles, step: steps[media] ?? 0.5) where span.end > clipStart && span.start < clipEnd {
-                let first = Int((max(span.start, clipStart) * fps).rounded()) - clipIn
-                let last = Int((min(span.end, clipEnd) * fps).rounded()) - clipIn
+                let first = Int(((max(span.start, clipStart) - clipStart) * fps).rounded())
+                let last = min(clipDur, Int(((min(span.end, clipEnd) - clipStart) * fps).rounded()))
                 guard last > first else { continue }
-                pieces.append((clipAt + first, last - first, first, padded(span.box)))
+                // The copy's in-point in source frames.
+                let offset = Int((Double(first) / fps * rate).rounded(.down))
+                pieces.append((clipAt + first, last - first, offset, padded(span.box)))
             }
         } else {
             pieces.append((clipAt, clipDur, 0, whole))
@@ -475,9 +551,10 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     for plan in plans {
         let at = plan.at, dur = plan.dur
         if var copy = plan.blurCopy {
-            let id = "subtitle-cover-\(UUID().uuidString.prefix(8).lowercased())"
+            let id = "\(plan.layer == nil ? "subtitle" : "logo")-cover-\(UUID().uuidString.prefix(8).lowercased())"
             copy["id"] = id
-            operations.append(["op": "insert", "track": layer("subtitle-cover", "Subtitle cover"), "item": copy])
+            let track = plan.layer.map { layer($0.id, $0.name) } ?? layer("subtitle-cover", "Subtitle cover")
+            operations.append(["op": "insert", "track": track, "item": copy])
             coverItems.append(id)
         }
         if plan.band != nil || !plan.boxes.isEmpty, let media = coverMedia[coverKey(plan.band, plan.boxes)] {
@@ -507,7 +584,9 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         }
     }
 
-    var message = found.isEmpty
+    var message = onlyLogos
+        ? "Found logos in \(logos.count) of \(order.count) video(s)"
+        : found.isEmpty
         ? "No burned-in subtitles in \(order.count) video(s)"
         : "Covered burned-in subtitles in \(found.count) of \(order.count) video(s)"
     var how: [String] = []
@@ -517,8 +596,11 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
         how.append("\(verb) \(covered) clip(s)")
     }
     if zoomed > 0 { how.append("zoomed \(zoomed) clip(s)") }
-    let logoClips = plans.filter { $0.boxes.count > ($0.area != nil && style == "box" ? 1 : 0) }.count
-    if logoClips > 0 { how.append("fixed text or logos covered on \(logoClips) clip(s)") }
+    let logoClips = Set(plans.filter { $0.layer != nil || $0.boxes.count > ($0.area != nil && style == "box" ? 1 : 0) }
+        .compactMap { $0.clip["id"] as? String }).count
+    if logoClips > 0 {
+        how.append("\(style == "blur" ? (mosaic ? "mosaic over" : "blurred") : "a box over") logos on \(logoClips) clip(s)")
+    }
     let pieces = plans.filter { $0.area != nil }.count
     if follow, pieces > covered { how.append("\(pieces) covers following the subtitles") }
     if !how.isEmpty { message += ": " + how.joined(separator: ", ") }
@@ -528,10 +610,10 @@ func cover(_ raw: JSON, host: Host) throws -> JSON {
     stored["items"] = coverItems
     stored["style"] = style
     return [
-        "label": "Cover burned-in subtitles",
+        "label": onlyLogos ? "Remove logos" : "Cover burned-in subtitles",
         "baseRev": rev,
         "operations": operations,
-        "pluginData": mergedPluginData(request, "cover", stored),
+        "pluginData": mergedPluginData(request, dataKey, stored),
         "files": written,
         "message": message,
         "data": [
