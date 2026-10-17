@@ -14,6 +14,14 @@ Plugin `bashcut.translate-captions` adds three actions (Tools panel and Plugins 
   picture and hides them, then moves the captions onto the cover.
 - `bashcut.translate-captions.install-preset`: saves the "Vietsub TikTok" batch preset.
 
+## Check the key first
+
+Before translating or starting the batch, read `bashcut plugins options bashcut.translate-captions`: `apiKey` shows
+`{"set": true}` or `{"set": false}` (never the key itself), next to `service` and `endpoint`. The action can
+translate when the key is set, or when `service` is `openai` and `endpoint` is on this Mac (`127.0.0.1` or
+`localhost`, no key needed). Otherwise skip the action and translate yourself (below) from the start, and tell the
+user once that a key in Settings › Plugins › Translate Captions lets BashCut do it.
+
 ## Vietsub one clip
 
 1. Captions of what is said first: `bashcut captions generate --media <id>` (a job). Whisper detects the spoken
@@ -33,8 +41,8 @@ Plugin `bashcut.translate-captions` adds three actions (Tools panel and Plugins 
 
 ## Without an API key: translate yourself
 
-When the action fails with `no_key`, the user has not added a key (Settings › Plugins › Translate Captions; only the
-user can, it goes to the Keychain). Offer to translate the captions yourself instead:
+When the check above finds no key, or the action still fails with `no_key`, the user has not added one (Settings ›
+Plugins › Translate Captions; only the user can, it goes to the Keychain). Translate the captions yourself instead:
 
 1. `bashcut captions export --as json`: `revision`, and per cue `item`, `seconds`, `text`.
 2. Translate each cue on its own, in order, using its neighbours for meaning: the same number of lines, nothing merged
@@ -51,7 +59,8 @@ user can, it goes to the Keychain). Offer to translate the captions yourself ins
 `bashcut batch run --preset "Vietsub TikTok" --inputs <clip1>,<clip2>,…` (the user approves the batch once in the app;
 follow it with `bashcut batch status --wait 110`). Each clip becomes a portrait project: import and place, captions
 of the spoken language, caption style, cover, translate to Vietnamese, review checks, a TikTok and a Shorts export.
-The translate step needs the key: without one those items stop at that step; translate them yourself as above and
+The translate step needs the key (check it first, as above): without one every item stops at that step, so say so
+before the batch starts; translate them yourself as above and
 export with `bashcut export start --presets tiktok,shorts`.
 
 Caption look: Whisper captions come in the system font, regular weight, which sinks into a busy picture. Restyle
