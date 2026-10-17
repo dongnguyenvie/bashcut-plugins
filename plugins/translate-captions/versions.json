@@ -6,8 +6,8 @@
       "vi": "Dịch phụ đề"
     },
     "summary": {
-      "en": "Vietsub with your own Gemini or OpenAI key: translate every caption and keep its timing and look, cover subtitles burned into the footage, and a Vietsub TikTok batch preset. Without a key, your agent translates.",
-      "vi": "Vietsub bằng khoá Gemini hoặc OpenAI của bạn: dịch từng dòng phụ đề mà giữ nguyên thời gian và kiểu chữ, che phụ đề in sẵn trong footage, kèm preset hàng loạt Vietsub TikTok. Không có khoá thì agent dịch giúp."
+      "en": "Vietsub with your own Gemini or OpenAI key: translate every caption and keep its timing and look, cover subtitles burned into the footage, blur channel logos and watermarks, and a Vietsub TikTok batch preset. Without a key, your agent translates.",
+      "vi": "Vietsub bằng khoá Gemini hoặc OpenAI của bạn: dịch từng dòng phụ đề mà giữ nguyên thời gian và kiểu chữ, che phụ đề in sẵn trong footage, làm mờ logo kênh và watermark, kèm preset hàng loạt Vietsub TikTok. Không có khoá thì agent dịch giúp."
     },
     "publisher": "bashcut",
     "category": "captions",
@@ -16,6 +16,7 @@
     "actions": [
       "bashcut.translate-captions.translate",
       "bashcut.translate-captions.cover",
+      "bashcut.translate-captions.logos",
       "bashcut.translate-captions.install-preset"
     ],
     "hooks": []
@@ -36,6 +37,22 @@
       "size": 299483,
       "downloadBytes": 0,
       "releasedAt": "2026-10-16"
+    },
+    {
+      "version": "0.0.2",
+      "apiVersion": 12,
+      "minApiVersion": 10,
+      "minAppVersion": "0.0.24",
+      "platforms": [
+        "macos-arm64",
+        "macos-x86_64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/translate-captions-v0.0.2/bashcut.translate-captions-0.0.2.zip",
+      "sha256": "9b9e18794f4fdc17cc894173fb39a19b782a6b545fc9a8ec015cd5223e555ca9",
+      "signature": "ed25519:RHlFmHPiXTxpGTG1vtvh2biU+vifRSO5bIKCPRSFvPO1hsle/2qaowOZ9m9WOhCz5CTEIipRzO7+wMbQHn0IAg==",
+      "size": 327969,
+      "downloadBytes": 0,
+      "releasedAt": "2026-10-17"
     }
   ]
 }
