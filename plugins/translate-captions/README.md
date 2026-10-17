@@ -10,8 +10,13 @@ Vietsub and other caption translations for a BashCut edit, with the user's own k
 - **Cover burned-in subtitles…**: on-screen text reading (`media.ocr`) over the first 30 seconds of each video on
   Main finds subtitles (centred lines whose text changes) apart from fixed text (logos, signs). They are hidden by an
   opaque band on the Overlay layer, with the captions moved onto it, or by zooming them out of the frame when 1.12×
-  is enough. Options: extra lines above (for a blurred strip), band opacity, and covering fixed text and logos (off by
+  is enough. Options: extra lines above (for a blurred strip), band opacity, and covering logos as Remove logos does (off by
   default; only for footage you have the rights to).
+- **Remove logos…**: logos, watermarks and channel names that stay in place near an edge or a corner, with or without
+  letters, over the whole of each video on Main: pixels that keep their colour while the picture moves (from 16
+  pictures, `media.frames`) and text that never changes (`media.ocr`). Each gets a mosaic (or a smooth blur, or a dark
+  box) of the clip over it on a "Logo cover" layer; subtitles and captions are left alone. Only for footage you have
+  the rights to. A shot where most of the picture stands still counts only text in a corner.
 - **Add the Vietsub TikTok batch preset**: saves `presets/vietsub-tiktok.json` to BashCut's batch presets: import,
   captions of the spoken language, caption style, cover, translate to Vietnamese, review checks, TikTok and Shorts
   exports.
@@ -30,12 +35,13 @@ Needs BashCut with plugin API 10 or later (the Tools panel).
 
 - `bin/provider`: the entrypoint BashCut runs, built by `build.sh` (not in git)
 - `build.sh`: builds `bin/provider` (universal binary) from `src/`; not shipped
-- `plugin.json`: manifest: options (service, key, model, other model, endpoint) and the three actions
+- `plugin.json`: manifest: options (service, key, model, other model, endpoint) and the four actions
 - `presets/vietsub-tiktok.json`: the batch pipeline the third action saves
 - `skills/translate-captions/SKILL.md`: the agent skill, including translating without a key
 - `src/Handlers.swift`: dispatch and shared request helpers
 - `src/Translate.swift`: batching, instructions and the two services
-- `src/Cover.swift`: finding burned-in subtitles and covering them
+- `src/Cover.swift`: finding burned-in subtitles and covering them (and logos)
+- `src/Logos.swift`: finding logos that stand still
 - `src/Preset.swift`: saving the batch preset
 - `src/main.swift`: the protocol (requests, responses, progress, host calls)
 - `tests/test_plugin.py`: runs the entrypoint like BashCut, with host calls answered by fixtures and a mock

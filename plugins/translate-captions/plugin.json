@@ -400,8 +400,8 @@
             "type": "bool",
             "default": false,
             "help": {
-              "en": "Text that stays in place the whole time, such as a channel name or a logo with letters, gets a dark box. Only for footage you have the rights to; logos without letters are not found",
-              "vi": "Chữ đứng yên suốt video, như tên kênh hay logo có chữ, được phủ một khối tối. Chỉ dùng cho footage bạn có quyền; logo không có chữ thì không tìm được"
+              "en": "Logos, watermarks and channel names that stay in place get the same blur (a box when Cover with is a box or band). Only for footage you have the rights to. Remove logos… does this alone",
+              "vi": "Logo, watermark và tên kênh đứng yên được làm mờ giống phụ đề (khung tối khi chọn che bằng khung hoặc dải). Chỉ dùng cho footage bạn có quyền. Xoá logo… làm riêng việc này"
             }
           },
           {
@@ -526,6 +526,97 @@
             "type": "bool",
             "default": true,
             "advanced": true
+          }
+        ]
+      },
+      {
+        "id": "bashcut.translate-captions.logos",
+        "title": {
+          "en": "Remove logos…",
+          "vi": "Xoá logo…"
+        },
+        "icon": "eye.slash",
+        "placements": [
+          "tools",
+          "menu.plugins"
+        ],
+        "when": "project && timeline",
+        "context": [
+          "timeline",
+          "media"
+        ],
+        "params": [
+          {
+            "id": "mode",
+            "title": {
+              "en": "Hide with",
+              "vi": "Che bằng"
+            },
+            "type": "enum",
+            "choices": [
+              "auto",
+              "box",
+              "detect"
+            ],
+            "choiceLabels": {
+              "auto": {
+                "en": "Blur them (a box on an older BashCut)",
+                "vi": "Làm mờ (BashCut cũ: khung tối)"
+              },
+              "box": {
+                "en": "A rounded dark box",
+                "vi": "Khung tối bo góc"
+              },
+              "detect": {
+                "en": "Only detect and report",
+                "vi": "Chỉ dò và báo cáo"
+              }
+            },
+            "default": "auto",
+            "help": {
+              "en": "Finds logos, watermarks and channel names that stay in place in a corner or along an edge, with or without letters, over the whole of each video on Main. Only for footage you have the rights to",
+              "vi": "Tìm logo, watermark và tên kênh đứng yên ở góc hoặc mép hình, có chữ hay không, trên toàn bộ mỗi video ở lớp Main. Chỉ dùng cho footage bạn có quyền"
+            }
+          },
+          {
+            "id": "look",
+            "title": {
+              "en": "Blur look",
+              "vi": "Kiểu làm mờ"
+            },
+            "type": "enum",
+            "choices": [
+              "mosaic",
+              "smooth"
+            ],
+            "choiceLabels": {
+              "mosaic": {
+                "en": "Mosaic with soft edges",
+                "vi": "Khảm ô vuông, mép mềm"
+              },
+              "smooth": {
+                "en": "Smooth blur",
+                "vi": "Mờ mượt"
+              }
+            },
+            "default": "mosaic",
+            "advanced": true
+          },
+          {
+            "id": "blur",
+            "title": {
+              "en": "Blur strength",
+              "vi": "Độ mờ"
+            },
+            "type": "number",
+            "minimum": 0.03,
+            "maximum": 0.2,
+            "default": 0.05,
+            "advanced": true,
+            "help": {
+              "en": "Smooth blur radius as a share of the picture's short side",
+              "vi": "Bán kính mờ mượt theo cạnh ngắn của khung"
+            }
           }
         ]
       },
