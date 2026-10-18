@@ -53,6 +53,22 @@
       "size": 327969,
       "downloadBytes": 0,
       "releasedAt": "2026-10-17"
+    },
+    {
+      "version": "0.0.3",
+      "apiVersion": 12,
+      "minApiVersion": 10,
+      "minAppVersion": "0.0.24",
+      "platforms": [
+        "macos-arm64",
+        "macos-x86_64"
+      ],
+      "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/translate-captions-v0.0.3/bashcut.translate-captions-0.0.3.zip",
+      "sha256": "098b1aba2c75a11719180615fe23d1ad64e9589f20f425cf457f3c500e453069",
+      "signature": "ed25519:mV15c1eFp7IE99+OYTyFEdBgm1vjjewFev24KGgoTYbooI3iyWrc5k6+M/4Mq+Rj1G91ovweWbvsAvmJ1CjbDw==",
+      "size": 328225,
+      "downloadBytes": 0,
+      "releasedAt": "2026-10-18"
     }
   ]
 }
