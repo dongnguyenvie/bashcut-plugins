@@ -48,6 +48,13 @@
       "label": "Cover burned-in subtitles"
     },
     {
+      "action": "bashcut.translate-captions.logos",
+      "params": {
+        "mode": "auto"
+      },
+      "label": "Remove logos"
+    },
+    {
       "action": "bashcut.translate-captions.translate",
       "params": {
         "target": "vi"

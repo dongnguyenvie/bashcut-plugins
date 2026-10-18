@@ -705,7 +705,7 @@ class PresetTests(unittest.TestCase):
         self.assertEqual(pipeline["name"], "Vietsub TikTok")
         actions = [step["action"] for step in pipeline["steps"]]
         self.assertEqual(actions, ["media.import", "captions.generate", "captions.style", "bashcut.translate-captions.cover",
-                                   "bashcut.translate-captions.translate", "review.run", "export"])
+                                   "bashcut.translate-captions.logos", "bashcut.translate-captions.translate", "review.run", "export"])
         self.assertEqual(pipeline["template"]["outputs"], ["tiktok", "shorts"])
         self.assertNotIn("language", pipeline["template"], "Whisper detects the spoken language")
         # What BashCut's BatchPipeline needs to read a saved preset.

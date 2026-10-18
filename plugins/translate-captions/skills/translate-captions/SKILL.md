@@ -69,7 +69,7 @@ Plugins › Translate Captions; only the user can, it goes to the Keychain). Tra
 `bashcut plugins run bashcut.translate-captions.install-preset` saves the preset (once). Then
 `bashcut batch run --preset "Vietsub TikTok" --inputs <clip1>,<clip2>,…` (the user approves the batch once in the app;
 follow it with `bashcut batch status --wait 110`). Each clip becomes a portrait project: import and place, captions
-of the spoken language, caption style, cover, translate to Vietnamese, review checks, a TikTok and a Shorts export.
+of the spoken language, caption style, cover, remove logos, translate to Vietnamese, review checks, a TikTok and a Shorts export.
 The translate step needs the key (check it first, as above): without one every item stops at that step, so say so
 before the batch starts; translate them yourself as above and
 export with `bashcut export start --presets tiktok,shorts`.
