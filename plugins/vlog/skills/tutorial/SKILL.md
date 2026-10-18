@@ -21,10 +21,11 @@ Outputs: landscape → `youtube-1080`, plus `shorts` for a vertical cut; vertica
 | Frozen screen `maxStillSeconds` | at least the reading time of what is on it: about letters ÷ 15 + 1–1.5 s; key text held ≥5 s (T09 §3, §7) | a dialog to read holds; a loading spinner does not | `review measure`, then `review picture`; `bashcut review layout` → `holdSeconds` |
 | Speechless stretch | look again at any lift over 10–20 s with no speech: silence is not empty picture in a screen demo (T06 §3) | a silent demonstration may be the step itself | `bashcut media speech-map --media <id>` → `gaps`; `bashcut narration windows --min-seconds <n>` |
 | Shortest shot `minShotSeconds` | long enough to see the click and its result | a vertical tip cuts tighter | `review shots --summary` min |
-| Zoom onto the screen | 1.5–2.5× as a start, eased, up to the clip's headroom | a Retina recording in a 1080 project has room to zoom without upscaling; a 1080 recording does not | `bashcut timeline get` → `scale.maxZoomNative`, `pixelRatio`; `bashcut clip motion --focus` |
+| Zoom onto the screen | 1.5–2.5× as a start, eased, up to the clip's headroom; one framing per narration line, aimed at the panel it names | a Retina recording in a 1080 project has room to zoom without upscaling; a 1080 recording does not; a small panel needs more | `bashcut timeline get` → `scale.maxZoomNative`, `pixelRatio`; `bashcut clip motion --focus`; `bashcut ui frame <frame> --phone` per line |
+| Live speech beside the voiceover | each camera clip within about 2 LU of the voiceover | camera mics differ by 15–20 dB; one presenter sat at −31 LUFS against a −17.5 LUFS voiceover | `bashcut audio mix-measure` → `speechWindows` |
 | Hook `hookSeconds` | 5–7 s landscape (structure below); a vertical tip 1.5–3 s | the result must play with its own sound before the explanation | `bashcut review layout --to F`, `transcript words --to F` |
 | Captions `captionLineChars`, `captionMaxLines` | landscape subtitles 6–8 words or 32–42 characters × 2 lines; vertical 15–32 characters (T09 §3, §7) | landscape takes a sidecar caption file, vertical burns them in (T09 §7) | `bashcut review layout` → `longestLineChars` |
-| Music under the voice | the deep end of 5–18 dB (T11 §3), or none | dense instruction needs every word | `bashcut audio mix-measure` → `musicUnderSpeech` |
+| Music under the voice | 15–20 dB under the quieter voice (the deep end of T11 §3's 5–18), or none | dense instruction needs every word; a bed set for the voiceover sat only 0–4 LU under the presenter | `bashcut audio mix-measure` → `musicUnderSpeech` per window |
 
 ## Structure (1–3 min landscape, 30–60 s vertical)
 
@@ -42,8 +43,12 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 
 ## Cuts and motion
 
-- Zoom onto the part of the screen being talked about (keyframed transform zoom at the factor you chose, eased;
-  `bc:effects`), back out between steps.
+- Zoom onto the part of the screen each line talks about: one framing per narration line, aimed at the panel the
+  line names, a new one where the screen changes (a contact sheet of the recording and its scene cuts), checked with
+  `ui frame --phone` at the line's key word (`bc:effects` §5). Build with `clip motion --focus`, or plan.cut
+  `focus` / `focusKeys` once BashCut ships them (branch `feat/focus-visible-band`). Never one framing reused across
+  the screen shots: one edit kept pan 0, tilt −480, zoom 1.9 on every screen and missed each line's panel. Back out
+  between steps.
 - Speed up typing, loading and waiting at the speed below, or cut it; a frozen screen holds only as long as there is
   something to read.
 - Presenter on an overlay layer at the bottom centre (landscape: a corner), captions between screen and face, never
@@ -66,15 +71,23 @@ and says why (`bashcut.vlog:plan` §3); review compares it with the section mark
 
 - Captions from the presenter; every shortcut, menu path and value on screen as text ("⌘K → Export").
 - Sound: the presenter's voice; mute the screen recording unless its sound is the result; quiet music bed or none;
-  click sounds only if they help.
+  click sounds only if they help. With a voiceover beside the presenter, level each camera clip to the voiceover
+  (about 2 LU) after reading its source peak, set the bed 15–20 LU under the quieter voice, and re-check true peak
+  (`bc:audio-mix`, "Real speech vs voiceover").
+- Words: cut restarts the transcript hides (a word over about 1 s or under about 0.4 confidence: re-transcribe that
+  window, `bc:footage-survey`); a voiceover line never repeats the presenter's next or previous line
+  (`bc:voiceover`).
 - Look: leave the screen recording ungraded; grade only the presenter camera to natural skin (`bc:color-grade`).
 
 For the Shorts output, make a vertical cut of the hook and one step (`bashcut.vlog:publish`).
 
 ## Review notes
 
-- A viewer notices: screen text too small to read at phone width, a frozen spinner, a zoom that misses the click,
-  the presenter covering the part of the screen in use. Treat these as blockers.
+- A viewer notices: screen text too small to read at phone width, a frozen spinner, a zoom that misses the click
+  or the panel the line names, the presenter covering the part of the screen in use, a presenter much quieter than
+  the voiceover, the same intro said twice. Treat these as blockers.
+- Review does not pass while `effects` or `sound` is still `pending` (`run checklist`; BashCut answers
+  `stage_pending`): do the stage or log it skipped with the reason.
 - Deliberate in a tutorial: screen shots held while there is something to read (`shot-long` at `info`), the repeated
   framing of one screen recording.
 - `needs_user`: private details on screen to blur or cut (emails, keys, names), the app version shown, the link and
@@ -84,9 +97,12 @@ For the Shorts output, make a vertical cut of the hook and one step (`bashcut.vl
 
 What this recipe adds to the plan (`bashcut.vlog:plan` §3); `bc:edit-workflow` and the critic read it.
 
-- `stages`: `{"effects": {"required": true, "why": "zoom onto the panel in use, fast-forward waiting"}, "colour": {"rules": ["leave the screen recording ungraded; grade only the presenter"]}, "visuals": {"skill": "bc:visual-plan", "after": "voiceover", "required": true, "why": "the narration carries it; each step gets the screen, a zoom or a step card"}}`
+- `stages`: `{"effects": {"required": true, "why": "one zoom per narration line onto the panel it names, fast-forward waiting"}, "sound": {"required": true, "why": "camera speech levelled to the voiceover, music 15-20 LU under both"}, "colour": {"rules": ["leave the screen recording ungraded; grade only the presenter"]}, "visuals": {"skill": "bc:visual-plan", "after": "voiceover", "required": true, "why": "the narration carries it; each step gets the screen, a zoom or a step card"}}`
 - `checks` (source: tutorial recipe): `result-first` the hook shows the output; `screen-readable` screen text reads
-  at phone width; `zoom-on-click` each zoom lands on the click; `presenter-clear` the presenter never covers the part
-  in use; `private-hidden` no email, key or name left on screen; `shortcuts-shown` every shortcut and menu path is
-  on screen as text.
+  at phone width; `zoom-on-click` each narration line's zoom lands on the panel or click it names, one framing per
+  line, checked with `ui frame`; `presenter-clear` the presenter never covers the part in use; `private-hidden` no
+  email, key or name left on screen; `shortcuts-shown` every shortcut and menu path is on screen as text;
+  `voice-match` every live-speech window within about 2 LU of the voiceover, music 15–20 LU under, no true peak over
+  the ceiling (`audio mix-measure`); `no-restart` no restart or phrase said twice, and no voiceover line repeating
+  the live line beside it.
 - `askAtIntake`: `["privateOnScreen", "ctaLink"]`.
