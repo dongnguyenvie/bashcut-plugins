@@ -407,22 +407,6 @@
       "id": "bashcut.translate-captions",
       "versions": [
         {
-          "version": "0.0.1",
-          "apiVersion": 12,
-          "minApiVersion": 10,
-          "minAppVersion": "0.0.24",
-          "platforms": [
-            "macos-arm64",
-            "macos-x86_64"
-          ],
-          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/translate-captions-v0.0.1/bashcut.translate-captions-0.0.1.zip",
-          "sha256": "10470b8cda757742741c61d80267e2bea37200d7e4883adad1af8b2e22cbb7f8",
-          "signature": "ed25519:HEhi5fqx+Sab5OjH5tDTvd3rPCpvl8wzQIYfkzswxrksytC33dSB1Y7Pg7vI4umTqNG5L6x/ilUmOyhmsZOBDg==",
-          "size": 299483,
-          "downloadBytes": 0,
-          "releasedAt": "2026-10-16"
-        },
-        {
           "version": "0.0.2",
           "apiVersion": 12,
           "minApiVersion": 10,
@@ -451,6 +435,22 @@
           "sha256": "098b1aba2c75a11719180615fe23d1ad64e9589f20f425cf457f3c500e453069",
           "signature": "ed25519:mV15c1eFp7IE99+OYTyFEdBgm1vjjewFev24KGgoTYbooI3iyWrc5k6+M/4Mq+Rj1G91ovweWbvsAvmJ1CjbDw==",
           "size": 328225,
+          "downloadBytes": 0,
+          "releasedAt": "2026-10-18"
+        },
+        {
+          "version": "0.0.4",
+          "apiVersion": 12,
+          "minApiVersion": 10,
+          "minAppVersion": "0.0.24",
+          "platforms": [
+            "macos-arm64",
+            "macos-x86_64"
+          ],
+          "url": "https://github.com/dongnguyenvie/bashcut-plugins/releases/download/translate-captions-v0.0.4/bashcut.translate-captions-0.0.4.zip",
+          "sha256": "2825c1908a6f66dae0a0780684af8b539969542caa9144cd356894a3a0c1c0a6",
+          "signature": "ed25519:0Ao8i2SyeSS6R9vKsgkCRx/AhXvjoQdAKts6BV9cJdwBKZTJ0uNvcRz69LMG2dyrfe1o7ECC4jgGv78NIzdGAw==",
+          "size": 328250,
           "downloadBytes": 0,
           "releasedAt": "2026-10-18"
         }
