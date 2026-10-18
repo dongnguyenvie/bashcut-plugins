@@ -18,8 +18,8 @@ Vietsub and other caption translations for a BashCut edit, with the user's own k
   box) of the clip over it on a "Logo cover" layer; subtitles and captions are left alone. Only for footage you have
   the rights to. A shot where most of the picture stands still counts only text in a corner.
 - **Add the Vietsub TikTok batch preset**: saves `presets/vietsub-tiktok.json` to BashCut's batch presets: import,
-  captions of the spoken language, caption style, cover, translate to Vietnamese, review checks, TikTok and Shorts
-  exports.
+  captions of the spoken language, caption style, cover, remove logos, translate to Vietnamese, review checks, TikTok
+  and Shorts exports.
 - **Services:** Google Gemini (`gemini-flash-lite-latest`, the cheapest, by default; Flash when it is busy) or OpenAI (`gpt-5-mini` by default). **Model** lists
   the common ones (Gemini Flash-Lite, Flash and Pro by their always-latest aliases, GPT-5 mini, nano and GPT-5,
   GPT-4.1 mini) and **Other** with a typed ID in **Other model**. When the service does not know the model, the error

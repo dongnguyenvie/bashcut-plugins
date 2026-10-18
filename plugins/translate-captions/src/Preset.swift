@@ -1,6 +1,6 @@
 // The "Vietsub TikTok" batch preset: each English (or any language) clip becomes a portrait project with captions of
-// what is said, burned-in subtitles covered, the captions translated to Vietnamese and styled, review checks, and a
-// TikTok and a Shorts export. The pipeline ships in presets/vietsub-tiktok.json; this action saves it where
+// what is said, burned-in subtitles covered, logos removed, the captions translated to Vietnamese and styled, review
+// checks, and a TikTok and a Shorts export. The pipeline ships in presets/vietsub-tiktok.json; this action saves it where
 // `batch presets` keeps saved pipelines, so it shows in the Batch window's presets and `batch run --preset`.
 import Foundation
 
