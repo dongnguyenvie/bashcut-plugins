@@ -23,7 +23,10 @@ silence or narration (T02 §4). Narration is a choice; **none** is valid when th
   shortest line you would write (about one short sentence); `--levels` shows how loud the mix is there.
 
 **Real speech first**: build from the person's own lines (`media transcript --as text`; keep the last clean take of a
-repeat) and write voiceover only for the gaps. Narration that describes what the picture shows is cut (T02 §4).
+repeat) and write voiceover only for the gaps. Narration that describes what the picture shows is cut (T02 §4), and
+so is narration that says what the person says next or just said: compare each voiceover line with the live speech
+on both sides and drop or rewrite a duplicate ("Mình chỉ bạn làm từng bước nhé" before the presenter's own "mình sẽ
+hướng dẫn từng bước" said it twice).
 
 ## 2. Story options (create mode)
 
@@ -108,7 +111,8 @@ One row per beat, section by section:
 Before showing the script (T02 §4):
 
 1. **Delete each beat** in your head: if the story still works, cut it.
-2. **Mute the voiceover**: does the picture still tell it? Lines that only describe the picture go.
+2. **Mute the voiceover**: does the picture still tell it? Lines that only describe the picture go; so do lines
+   the next or previous live line already says.
 3. **Audio only**: does it make sense without the picture?
 4. **Quote the weakest line exactly** and fix or remove it. Check `promise.hook` against the last beat.
 
